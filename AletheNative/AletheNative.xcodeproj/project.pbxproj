@@ -1,0 +1,864 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A1E7000000000000000000B1 /* AletheFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = A1E7000000000000000000C1 /* AletheFoundation */; };
+		A1E7000000000000000000B2 /* AletheDesign in Frameworks */ = {isa = PBXBuildFile; productRef = A1E7000000000000000000C2 /* AletheDesign */; };
+		A1E7000000000000000000B3 /* AletheTerminal in Frameworks */ = {isa = PBXBuildFile; productRef = A1E7000000000000000000C3 /* AletheTerminal */; };
+		A1E7000000000000000000B4 /* AletheModel in Frameworks */ = {isa = PBXBuildFile; productRef = A1E7000000000000000000C4 /* AletheModel */; };
+		A1E7000000000000000000B5 /* AletheAgents in Frameworks */ = {isa = PBXBuildFile; productRef = A1E7000000000000000000C5 /* AletheAgents */; };
+		A1E7000000000000000000B6 /* AletheDocuments in Frameworks */ = {isa = PBXBuildFile; productRef = A1E7000000000000000000C6 /* AletheDocuments */; };
+		A1E70000000000000000000B7 /* AlethePluginKit in Frameworks */ = {isa = PBXBuildFile; productRef = A1E70000000000000000000C7 /* AlethePluginKit */; };
+		A1E70000000000000000000B8 /* AletheThemePack in Frameworks */ = {isa = PBXBuildFile; productRef = A1E70000000000000000000C8 /* AletheThemePack */; };
+		A1E70000000000000000000BA /* AletheGit in Frameworks */ = {isa = PBXBuildFile; productRef = A1E70000000000000000000CA /* AletheGit */; };
+		A1E70000000000000000000BC /* AletheMerge in Frameworks */ = {isa = PBXBuildFile; productRef = A1E70000000000000000000CC /* AletheMerge */; };
+		A1E70000000000000000000B9 /* AletheTodos in Frameworks */ = {isa = PBXBuildFile; productRef = A1E70000000000000000000C9 /* AletheTodos */; };
+		A1E70000000000000000000BB /* AletheFiles in Frameworks */ = {isa = PBXBuildFile; productRef = A1E70000000000000000000CB /* AletheFiles */; };
+		A1E70000000000000000000BD /* AletheGitControl in Frameworks */ = {isa = PBXBuildFile; productRef = A1E70000000000000000000CD /* AletheGitControl */; };
+		A1E70000000000000000000BE /* AletheExtensionHost in Frameworks */ = {isa = PBXBuildFile; productRef = A1E70000000000000000000CE /* AletheExtensionHost */; };
+		A1E70000000000000000000BF /* AletheIntegrations in Frameworks */ = {isa = PBXBuildFile; productRef = A1E70000000000000000000CF /* AletheIntegrations */; };
+		A1E70000000000000000000B0 /* AletheOrchestrator in Frameworks */ = {isa = PBXBuildFile; productRef = A1E70000000000000000000C0 /* AletheOrchestrator */; };
+		A1E70000000000000000004B1 /* AletheRemote in Frameworks */ = {isa = PBXBuildFile; productRef = A1E70000000000000000004C1 /* AletheRemote */; };
+		A1E7000000000000000E0041 /* AletheSampleSidebar.appex in Embed ExtensionKit Extensions */ = {isa = PBXBuildFile; fileRef = A1E7000000000000000E0002 /* AletheSampleSidebar.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A1E7000000000000000E0042 /* AletheExtensionSDK in Frameworks */ = {isa = PBXBuildFile; productRef = A1E7000000000000000E0043 /* AletheExtensionSDK */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A1E7000000000000000000D1 /* Alethe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Alethe.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1E7000000000000000000D2 /* AletheUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AletheUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1E7000000000000000E0001 /* AletheSample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AletheSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1E7000000000000000E0002 /* AletheSampleSidebar.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.extensionkit-extension"; includeInIndex = 0; path = AletheSampleSidebar.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		A1E7000000000000000000E1 /* Alethe */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Alethe;
+			sourceTree = "<group>";
+		};
+		A1E7000000000000000000E2 /* AletheUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = AletheUITests;
+			sourceTree = "<group>";
+		};
+		A1E7000000000000000E0011 /* SampleApp */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SampleApp;
+			sourceTree = "<group>";
+		};
+		A1E7000000000000000E0012 /* SidebarExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SidebarExtension;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXContainerItemProxy section */
+		A1E700000000000000000801 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A1E700000000000000000501 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A1E700000000000000000201;
+			remoteInfo = Alethe;
+		};
+		A1E7000000000000000E0051 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A1E700000000000000000501 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A1E7000000000000000E0022;
+			remoteInfo = AletheSampleSidebar;
+		};
+		A1E7000000000000000E0053 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A1E700000000000000000501 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A1E7000000000000000E0021;
+			remoteInfo = AletheSample;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A1E7000000000000000E0034 /* Embed ExtensionKit Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(EXTENSIONS_FOLDER_PATH)";
+			dstSubfolderSpec = 16;
+			files = (
+				A1E7000000000000000E0041 /* AletheSampleSidebar.appex in Embed ExtensionKit Extensions */,
+			);
+			name = "Embed ExtensionKit Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A1E7000000000000000000F1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1E7000000000000000000B1 /* AletheFoundation in Frameworks */,
+				A1E7000000000000000000B2 /* AletheDesign in Frameworks */,
+				A1E7000000000000000000B3 /* AletheTerminal in Frameworks */,
+				A1E7000000000000000000B4 /* AletheModel in Frameworks */,
+				A1E7000000000000000000B5 /* AletheAgents in Frameworks */,
+				A1E7000000000000000000B6 /* AletheDocuments in Frameworks */,
+				A1E70000000000000000000B7 /* AlethePluginKit in Frameworks */,
+				A1E70000000000000000000B8 /* AletheThemePack in Frameworks */,
+				A1E70000000000000000000BA /* AletheGit in Frameworks */,
+				A1E70000000000000000000BC /* AletheMerge in Frameworks */,
+				A1E70000000000000000000B9 /* AletheTodos in Frameworks */,
+				A1E70000000000000000000BB /* AletheFiles in Frameworks */,
+				A1E70000000000000000000BD /* AletheGitControl in Frameworks */,
+				A1E70000000000000000000BE /* AletheExtensionHost in Frameworks */,
+				A1E70000000000000000000BF /* AletheIntegrations in Frameworks */,
+				A1E70000000000000000000B0 /* AletheOrchestrator in Frameworks */,
+				A1E70000000000000000004B1 /* AletheRemote in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1E7000000000000000000F2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1E7000000000000000E0032 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1E7000000000000000E0036 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1E7000000000000000E0042 /* AletheExtensionSDK in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A1E700000000000000000101 = {
+			isa = PBXGroup;
+			children = (
+				A1E7000000000000000000E1 /* Alethe */,
+				A1E7000000000000000000E2 /* AletheUITests */,
+				A1E7000000000000000E0013 /* Samples */,
+				A1E700000000000000000102 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A1E700000000000000000102 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A1E7000000000000000000D1 /* Alethe.app */,
+				A1E7000000000000000000D2 /* AletheUITests.xctest */,
+				A1E7000000000000000E0001 /* AletheSample.app */,
+				A1E7000000000000000E0002 /* AletheSampleSidebar.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A1E7000000000000000E0013 /* Samples */ = {
+			isa = PBXGroup;
+			children = (
+				A1E7000000000000000E0011 /* SampleApp */,
+				A1E7000000000000000E0012 /* SidebarExtension */,
+			);
+			name = Samples;
+			path = Samples/AletheSampleExtension;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A1E700000000000000000201 /* Alethe */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1E700000000000000000401 /* Build configuration list for PBXNativeTarget "Alethe" */;
+			buildPhases = (
+				A1E700000000000000000303 /* Check string catalogs */,
+				A1E700000000000000000301 /* Sources */,
+				A1E7000000000000000000F1 /* Frameworks */,
+				A1E700000000000000000302 /* Resources */,
+				A1E70000000000000000003D2 /* Embed orchestrator helper */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A1E7000000000000000000E1 /* Alethe */,
+			);
+			name = Alethe;
+			packageProductDependencies = (
+				A1E7000000000000000000C1 /* AletheFoundation */,
+				A1E7000000000000000000C2 /* AletheDesign */,
+				A1E7000000000000000000C3 /* AletheTerminal */,
+				A1E7000000000000000000C4 /* AletheModel */,
+				A1E7000000000000000000C5 /* AletheAgents */,
+				A1E7000000000000000000C6 /* AletheDocuments */,
+				A1E70000000000000000000C7 /* AlethePluginKit */,
+				A1E70000000000000000000C8 /* AletheThemePack */,
+				A1E70000000000000000000CA /* AletheGit */,
+				A1E70000000000000000000CC /* AletheMerge */,
+				A1E70000000000000000000C9 /* AletheTodos */,
+				A1E70000000000000000000CB /* AletheFiles */,
+				A1E70000000000000000000CD /* AletheGitControl */,
+				A1E70000000000000000000CE /* AletheExtensionHost */,
+				A1E70000000000000000000CF /* AletheIntegrations */,
+				A1E70000000000000000000C0 /* AletheOrchestrator */,
+				A1E70000000000000000004C1 /* AletheRemote */,
+			);
+			productName = Alethe;
+			productReference = A1E7000000000000000000D1 /* Alethe.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A1E700000000000000000202 /* AletheUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1E700000000000000000403 /* Build configuration list for PBXNativeTarget "AletheUITests" */;
+			buildPhases = (
+				A1E700000000000000000304 /* Sources */,
+				A1E7000000000000000000F2 /* Frameworks */,
+				A1E700000000000000000305 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A1E700000000000000000901 /* PBXTargetDependency */,
+				A1E7000000000000000E0054 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A1E7000000000000000000E2 /* AletheUITests */,
+			);
+			name = AletheUITests;
+			productName = AletheUITests;
+			productReference = A1E7000000000000000000D2 /* AletheUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		A1E7000000000000000E0021 /* AletheSample */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1E7000000000000000E0063 /* Build configuration list for PBXNativeTarget "AletheSample" */;
+			buildPhases = (
+				A1E7000000000000000E0031 /* Sources */,
+				A1E7000000000000000E0032 /* Frameworks */,
+				A1E7000000000000000E0033 /* Resources */,
+				A1E7000000000000000E0034 /* Embed ExtensionKit Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A1E7000000000000000E0052 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A1E7000000000000000E0011 /* SampleApp */,
+			);
+			name = AletheSample;
+			productName = AletheSample;
+			productReference = A1E7000000000000000E0001 /* AletheSample.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A1E7000000000000000E0022 /* AletheSampleSidebar */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1E7000000000000000E0066 /* Build configuration list for PBXNativeTarget "AletheSampleSidebar" */;
+			buildPhases = (
+				A1E7000000000000000E0035 /* Sources */,
+				A1E7000000000000000E0036 /* Frameworks */,
+				A1E7000000000000000E0037 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A1E7000000000000000E0012 /* SidebarExtension */,
+			);
+			name = AletheSampleSidebar;
+			packageProductDependencies = (
+				A1E7000000000000000E0043 /* AletheExtensionSDK */,
+			);
+			productName = AletheSampleSidebar;
+			productReference = A1E7000000000000000E0002 /* AletheSampleSidebar.appex */;
+			productType = "com.apple.product-type.extensionkit-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A1E700000000000000000501 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					A1E700000000000000000201 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					A1E700000000000000000202 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = A1E700000000000000000201;
+					};
+					A1E7000000000000000E0021 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					A1E7000000000000000E0022 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+				};
+			};
+			buildConfigurationList = A1E700000000000000000402 /* Build configuration list for PBXProject "AletheNative" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+				"pt-BR",
+			);
+			mainGroup = A1E700000000000000000101;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = A1E700000000000000000102 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A1E700000000000000000201 /* Alethe */,
+				A1E700000000000000000202 /* AletheUITests */,
+				A1E7000000000000000E0021 /* AletheSample */,
+				A1E7000000000000000E0022 /* AletheSampleSidebar */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A1E700000000000000000302 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1E700000000000000000305 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1E7000000000000000E0033 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1E7000000000000000E0037 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A1E700000000000000000303 /* Check string catalogs */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Check string catalogs";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/usr/bin/python3 \"$SRCROOT/Scripts/check-strings.py\" \"$SRCROOT\"\n";
+			showEnvVarsInLog = 0;
+		};
+		A1E70000000000000000003D2 /* Embed orchestrator helper */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Embed orchestrator helper";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\n# The helper is built by SwiftPM, not as an Xcode package product: depending on an executable\n# product makes Xcode link the shared package targets into the app as dynamic frameworks.\nhelper=alethe-orchestrator-mcp\nscratch=\"$PROJECT_TEMP_DIR/OrchestratorHelper\"\ncase \"$CONFIGURATION\" in Release) config=release ;; *) config=debug ;; esac\narchs=\"\"\nfor arch in $ARCHS; do archs=\"$archs --arch $arch\"; done\n# A clean environment: Xcode's build settings would otherwise steer SwiftPM's compiler and SDK.\nenv -i HOME=\"$HOME\" PATH=/usr/bin:/bin:/usr/sbin:/sbin DEVELOPER_DIR=\"$DEVELOPER_DIR\" \\\n  xcrun swift build --package-path \"$SRCROOT/Packages/AletheKit\" --scratch-path \"$scratch\" \\\n  -c \"$config\" $archs --product \"$helper\"\nbuilt=\"$(env -i HOME=\"$HOME\" PATH=/usr/bin:/bin:/usr/sbin:/sbin DEVELOPER_DIR=\"$DEVELOPER_DIR\" \\\n  xcrun swift build --package-path \"$SRCROOT/Packages/AletheKit\" --scratch-path \"$scratch\" \\\n  -c \"$config\" $archs --show-bin-path)\"\ndest=\"$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers\"\nmkdir -p \"$dest\"\nditto \"$built/$helper\" \"$dest/$helper\"\n# Signed like the app (hardened runtime) before the app itself is signed around it.\ncodesign --force --options runtime --timestamp=none --identifier \"$PRODUCT_BUNDLE_IDENTIFIER.orchestrator-mcp\" \\\n  --sign \"${EXPANDED_CODE_SIGN_IDENTITY:--}\" \"$dest/$helper\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A1E700000000000000000301 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1E700000000000000000304 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1E7000000000000000E0031 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1E7000000000000000E0035 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A1E700000000000000000901 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A1E700000000000000000201 /* Alethe */;
+			targetProxy = A1E700000000000000000801 /* PBXContainerItemProxy */;
+		};
+		A1E7000000000000000E0052 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A1E7000000000000000E0022 /* AletheSampleSidebar */;
+			targetProxy = A1E7000000000000000E0051 /* PBXContainerItemProxy */;
+		};
+		A1E7000000000000000E0054 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A1E7000000000000000E0021 /* AletheSample */;
+			targetProxy = A1E7000000000000000E0053 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		A1E700000000000000000701 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALETHE_SIGN_IDENTITY = "-";
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		A1E700000000000000000702 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALETHE_SIGN_IDENTITY = "-";
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		A1E700000000000000000703 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "$(ALETHE_SIGN_IDENTITY)";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_DEBUG_DYLIB = NO;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				EX_ENABLE_EXTENSION_POINT_GENERATION = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Alethe/Alethe.entitlements;
+				INFOPLIST_FILE = "Alethe-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Alethe;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Alethe uses the microphone for dictation into terminals and fields. Speech is transcribed on this Mac.";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kc1t.alethe.mac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Debug;
+		};
+		A1E700000000000000000704 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "$(ALETHE_SIGN_IDENTITY)";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_DEBUG_DYLIB = NO;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				EX_ENABLE_EXTENSION_POINT_GENERATION = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Alethe/Alethe.entitlements;
+				INFOPLIST_FILE = "Alethe-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Alethe;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Alethe uses the microphone for dictation into terminals and fields. Speech is transcribed on this Mac.";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kc1t.alethe.mac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Release;
+		};
+		A1E700000000000000000705 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "$(ALETHE_SIGN_IDENTITY)";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kc1t.alethe.mac.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TEST_TARGET_NAME = Alethe;
+			};
+			name = Debug;
+		};
+		A1E700000000000000000706 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "$(ALETHE_SIGN_IDENTITY)";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kc1t.alethe.mac.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TEST_TARGET_NAME = Alethe;
+			};
+			name = Release;
+		};
+		A1E7000000000000000E0061 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Samples/AletheSampleExtension/SampleApp/AletheSample.entitlements;
+				CODE_SIGN_IDENTITY = "$(ALETHE_SIGN_IDENTITY)";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_DEBUG_DYLIB = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Alethe Sample";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kc1t.alethe.sample;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Debug;
+		};
+		A1E7000000000000000E0062 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Samples/AletheSampleExtension/SampleApp/AletheSample.entitlements;
+				CODE_SIGN_IDENTITY = "$(ALETHE_SIGN_IDENTITY)";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_DEBUG_DYLIB = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Alethe Sample";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kc1t.alethe.sample;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Release;
+		};
+		A1E7000000000000000E0064 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Samples/AletheSampleExtension/SidebarExtension/AletheSampleSidebar.entitlements;
+				CODE_SIGN_IDENTITY = "$(ALETHE_SIGN_IDENTITY)";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_DEBUG_DYLIB = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Alethe Sample Sidebar";
+				EX_DISABLE_APPEXTENSION_ATTRIBUTES_GENERATION = YES;
+				INFOPLIST_FILE = "Samples/AletheSampleExtension/SidebarExtension-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				SKIP_INSTALL = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kc1t.alethe.sample.sidebar;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Debug;
+		};
+		A1E7000000000000000E0065 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Samples/AletheSampleExtension/SidebarExtension/AletheSampleSidebar.entitlements;
+				CODE_SIGN_IDENTITY = "$(ALETHE_SIGN_IDENTITY)";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_DEBUG_DYLIB = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Alethe Sample Sidebar";
+				EX_DISABLE_APPEXTENSION_ATTRIBUTES_GENERATION = YES;
+				INFOPLIST_FILE = "Samples/AletheSampleExtension/SidebarExtension-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				SKIP_INSTALL = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kc1t.alethe.sample.sidebar;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A1E700000000000000000401 /* Build configuration list for PBXNativeTarget "Alethe" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1E700000000000000000703 /* Debug */,
+				A1E700000000000000000704 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1E700000000000000000402 /* Build configuration list for PBXProject "AletheNative" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1E700000000000000000701 /* Debug */,
+				A1E700000000000000000702 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1E700000000000000000403 /* Build configuration list for PBXNativeTarget "AletheUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1E700000000000000000705 /* Debug */,
+				A1E700000000000000000706 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1E7000000000000000E0063 /* Build configuration list for PBXNativeTarget "AletheSample" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1E7000000000000000E0061 /* Debug */,
+				A1E7000000000000000E0062 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1E7000000000000000E0066 /* Build configuration list for PBXNativeTarget "AletheSampleSidebar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1E7000000000000000E0064 /* Debug */,
+				A1E7000000000000000E0065 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/AletheKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A1E7000000000000000000C1 /* AletheFoundation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */;
+			productName = AletheFoundation;
+		};
+		A1E7000000000000000000C2 /* AletheDesign */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */;
+			productName = AletheDesign;
+		};
+		A1E7000000000000000000C3 /* AletheTerminal */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */;
+			productName = AletheTerminal;
+		};
+		A1E7000000000000000000C4 /* AletheModel */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */;
+			productName = AletheModel;
+		};
+		A1E7000000000000000000C5 /* AletheAgents */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */;
+			productName = AletheAgents;
+		};
+		A1E7000000000000000000C6 /* AletheDocuments */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */;
+			productName = AletheDocuments;
+		};
+		A1E70000000000000000000C7 /* AlethePluginKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */;
+			productName = AlethePluginKit;
+		};
+		A1E70000000000000000000C8 /* AletheThemePack */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */;
+			productName = AletheThemePack;
+		};
+		A1E70000000000000000000CA /* AletheGit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */;
+			productName = AletheGit;
+		};
+		A1E70000000000000000000CC /* AletheMerge */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */;
+			productName = AletheMerge;
+		};
+		A1E70000000000000000000C9 /* AletheTodos */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */;
+			productName = AletheTodos;
+		};
+		A1E70000000000000000000CB /* AletheFiles */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */;
+			productName = AletheFiles;
+		};
+		A1E70000000000000000000CD /* AletheGitControl */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */;
+			productName = AletheGitControl;
+		};
+		A1E70000000000000000000CE /* AletheExtensionHost */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */;
+			productName = AletheExtensionHost;
+		};
+		A1E70000000000000000000CF /* AletheIntegrations */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */;
+			productName = AletheIntegrations;
+		};
+		A1E70000000000000000000C0 /* AletheOrchestrator */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */;
+			productName = AletheOrchestrator;
+		};
+		A1E70000000000000000004C1 /* AletheRemote */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */;
+			productName = AletheRemote;
+		};
+		A1E7000000000000000E0043 /* AletheExtensionSDK */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1E700000000000000000601 /* XCLocalSwiftPackageReference "Packages/AletheKit" */;
+			productName = AletheExtensionSDK;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = A1E700000000000000000501 /* Project object */;
+}

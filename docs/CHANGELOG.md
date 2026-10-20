@@ -1,0 +1,1696 @@
+# Changelog
+
+Notable user-facing changes to **Alethe** are documented here. The format is based on
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows
+[Semantic Versioning](https://semver.org/). Dates use UTC.
+
+> **Rule:** every feature addition, change, or removal must be recorded under
+> `[Unreleased]` in the same task. During a release, `[Unreleased]` becomes the new
+> dated version and a new empty `[Unreleased]` section is added at the top.
+
+## [Unreleased]
+
+### Dialog parity
+- Conversations, handoff, session cost, diagnostics, remote pairing, link preview, import, layout
+  design, GSD activity, welcome and crash dialogs now use themed window overlays in the web interface.
+  Dialog bodies scroll at high zoom; conversation filters and imported-profile selection use themed
+  controls. Nested onboarding import returns to onboarding without closing its parent.
+
+### Browser setup parity
+- Add Content and browser setup use themed window overlays. Open a browser from the main menu,
+  validate its address, name it and set page zoom, JavaScript and hidden-page resource policy.
+  Browser names persist across relaunch. Escape closes dropdowns before their containing modal,
+  including while a text field is focused.
+
+### Fixed
+- Fixed a native macOS worker-rule settings compilation error in duplicate-name validation.
+- Native macOS web-style menus now expose data actions and Debug onboarding retry; Git and integration
+  dialogs use themed overlays, dropdowns fit the window, and terminal focus expands across the window.
+- Fixed a native macOS sidebar menu compilation error caused by a missing view builder.
+- Fixed the web-style Home usage enable action to save its toolbar preference through the supported setter.
+
+- Fixed a native macOS workspace-tab event handler compilation error.
+- Fixed a native macOS Settings compilation error in the tabbed layout.
+- Removed an unsupported sidebar list-spacing modifier that prevented the native macOS app from compiling,
+  including its reintroduction during sidebar polish.
+
+## [1.7.0] — 2026-09-20
+
+The release where Alethe stops being one fixed app and becomes a platform. Features now load as
+**plugins**, and a **plugin catalogue** inside Preferences installs and updates them in one click,
+pinned to a SHA-256 checksum so what runs is exactly what the listing was reviewed against. Around
+it: **orchestration v2** — a board where a lead agent delegates to Claude and Codex workers, asks
+you before leaving its sandbox, and reads each vendor's remaining quota before deciding where work
+goes; **remote control** grown into a real mobile client with a live terminal, agent chat and
+interactive questions; **optional project grids**; **9router** routing; **cloud sync** for
+preferences; and three new agents — **Cursor CLI**, **Kiro CLI** and plain **WSL** terminals.
+
+### Added
+
+- **Per-agent orchestration spend.** Worker cards now show their session cost, while the header totals reported spend by provider for the selected planner and preserves delegated-worker usage across app restarts.
+
+- **Reset credit details.** The Codex reset credit is now shown as a compact button beside the credit count; clicking it opens a separate modal with expiry information and the action to use the credit.
+
+- **Optional named grids per project.** A project can be split into named grids, each with its own
+  terminals and its own layout. Grids are opt-in: a project starts with none, its terminals stay
+  ungrouped, and the grid rows appear in either sidebar only after you create the first one — an
+  existing project is left exactly as it was. A new session picks its grid from Advanced options in
+  the New session modal, a terminal moves between grids (and back to ungrouped) without ending its
+  session, and deleting a grid asks whether to keep its terminals or close them with it.
+
+- **Install a plugin straight from the catalogue.** A listing that publishes a package can now
+  be installed in one click instead of being downloaded and imported by hand. The index pins each
+  package to a SHA-256 checksum, so what installs is the exact build the listing was reviewed
+  against — the manual route never had that guarantee. An installed plugin still arrives switched
+  off and still goes through the trust dialog before it can run.
+  A listing whose version differs from the installed one is flagged, so the same button updates
+  a plugin in place.
+
+- **WSL terminals.** WSL (Windows Subsystem for Linux) is now available as a terminal type
+  alongside Shell in the new-terminal and new-tab pickers — it opens the default WSL distro in the
+  chosen folder. It behaves like a plain shell (no agent session, resume, or completion tracking)
+  and can be turned off in Preferences → Terminal like any other provider.
+
+- **Sidebar chat rows light up while the agent is thinking.** A chat that is busy answering now
+  keeps its full-color, active look in the Projects sidebar even when it is not the focused
+  terminal, so it is easy to spot which chats are still running. When the answer finishes in the
+  background, the spinner is replaced by a small `✓` glyph — the row goes back to the usual dimmed
+  style, with the check marking that a response is ready to be read.
+
+- **Cloud sync (free tier).** The Cloud card in Sync your data now works: sign in with your GitHub
+  account (device flow — no token to paste) and upload or download your preferences — name, theme,
+  UI settings and which plugins are enabled — across devices. The free tier covers preferences only;
+  full projects and stats sync stays reserved for the upcoming Premium plan. The card keeps showing
+  "Coming soon" until the build is configured with a sync server.
+
+- **Optional GitHub sign-in during onboarding.** When cloud sync is configured, the profile step
+  offers a real "Sign in with GitHub" (replacing the avatar-by-username import). Signing in fills
+  your name and photo from the account, restores preferences already stored in the cloud, and
+  uploads them when onboarding finishes. It is entirely optional — skipping it keeps the app fully
+  local, as before.
+
+- **Plugin system.** Alethe now loads features as plugins instead of hard-wiring every one of them
+  into the app. Official plugins ship inside the installer, are on by default, and can be switched
+  off in Preferences → Plugins; turning one off removes its surfaces immediately, with no
+  restart. Each plugin declares what it needs in its manifest, and the app refuses anything it did
+  not ask for.
+
+- **Themes can come from a plugin.** A plugin can now register a full theme — application palette,
+  picker swatch, and terminal colors — without touching the app's stylesheet. Contributed colors are
+  validated before they reach the page, so a theme can style the UI but cannot reach the network or
+  inject rules of its own.
+
+- **Theme Pack, the first bundled plugin.** Ember, Golden Premium, Dark Lemon, and Orca moved out of
+  the core stylesheet into an official plugin. They look and behave exactly as before, and are now
+  removable. Selecting a theme whose plugin is disabled falls back to the default theme and keeps
+  your choice, so re-enabling the plugin restores it.
+
+- **Git Control is now an official plugin.** Source control works exactly as before — same panel,
+  same placement setting, same left or right sidebar — but it can now be turned off entirely, and
+  its tab appears and disappears without a restart. Its old switch in Preferences → Features is gone:
+  the plugin's own switch replaces it, and if you had the feature turned off, it stays off.
+
+- Panes, sidebar tabs and commands are now contribution points, so a plugin can add a whole
+  workspace pane, its own sidebar tab, or an entry in the command palette.
+
+- **Ctrl+P now finds commands, not just terminals.** Plugin-contributed commands are listed above
+  the terminal results and match on their own keywords. Git Control ships the first one: "Source
+  Control", which reveals its panel on whichever side it is placed.
+
+- **Plugins are only loaded when you actually use them.** A plugin now announces its tabs and
+  commands in its manifest, so Alethe can draw them without running any of its code, and loads the
+  plugin the first time you open one of them. An installed plugin you never touch costs one small
+  file read at startup instead of running. Git Control is the first to work this way.
+
+- **Plugins can be installed from a folder.** A plugin dropped into the plugins folder is served
+  through an address that resolves only inside that plugin's own directory, with traversal and
+  symlink escapes refused. Nothing is loaded from the internet and nothing is evaluated from text.
+
+- **Import a plugin by picking its folder.** Preferences → Plugins → Import plugin opens a folder
+  picker and copies the plugin in, checking its manifest first and refusing anything that reaches
+  outside the folder you chose. The plugin arrives switched off — importing is not consent to run
+  it. Pasting a manifest by hand is still there, under Advanced.
+
+- **Todo List is now an official plugin.** The checklist works exactly as before — same panel, same
+  tags, same per-project assignment — but it can be turned off entirely, and its settings now open
+  from a button in its own panel instead of the sidebar toolbar. Its old switch in Preferences →
+  Features is gone; the plugin's switch replaces it, and if you had the feature turned off, it stays
+  off. Your list and your Todo folder are carried over on first run and also left untouched where
+  they were, so nothing is lost if you go back.
+
+- A todo assigned to a project you later delete now shows up as unassigned instead of disappearing
+  from the list while still counting towards the progress bar.
+
+- **A plugin catalogue in Preferences.** Plugins published by other people are now listed inside
+  Alethe, with what each one is allowed to do spelled out before you decide. *Get plugin* opens the
+  author's page in your browser — Alethe never downloads or installs anything for you, and the
+  plugin still arrives switched off after you import it. The list is kept for six hours and is shown
+  from your last copy when you are offline, marked as such.
+
+- **Plugins can remember things.** A plugin now has its own storage, so what it holds survives
+  closing the app. It is kept apart from the plugin's own files, which means updating a plugin no
+  longer risks taking its data with it, and one plugin cannot read another's. Removing a plugin
+  removes what it stored.
+
+- **Plugins now have their own page in Preferences.** Every plugin is listed with its version, kind,
+  description, and whether it ships with Alethe or came from your disk, alongside a switch to turn it
+  on or off and the reason when one fails to load. Each entry spells out what the plugin is allowed
+  to do — add themes, add panes, add a sidebar tab, read and write Git state — in plain words instead
+  of manifest tokens. Enabling a plugin from your own disk now asks first, naming those permissions
+  and saying outright that nobody has reviewed it, and plugins installed that way can be uninstalled
+  from the same page, which also links straight to the plugins folder.
+
+- Empty project and group workspaces now use a quiet launcher-style state with a large Alethe mark
+  and direct keyboard-labelled actions instead of boxed empty-state cards.
+
+- **9router integration.** Alethe can now install, run, and route agents through
+  [9router](https://github.com/decolua/9router), a local proxy that spreads Claude Code, Codex, and
+  OpenCode traffic across multiple providers with automatic fallback. Alethe detects what you
+  already have — whether Node.js is present, and whether a 9router is already on your PATH — and
+  lets you pick between running your own install or letting Alethe install a private,
+  version-pinned copy for you (your global npm packages are untouched). Missing Node.js can be
+  installed from the same dialog. Preferences -> Integrations starts and stops the proxy, opens its
+  dashboard, and holds the endpoint key and port. Routing is off by default, and the master toggle
+  stops the proxy and stops injecting the proxy address the moment it is switched off. An optional
+  topbar pill starts and stops the proxy in one click, and a new optional onboarding step offers
+  the choice during first run.
+
+- The new-terminal modal now offers "Route through 9router" per agent, with an "always route new
+  agents" default and an inline start button when the proxy is installed but not running. Only
+  terminals opened after a change are affected: an agent keeps the address it started with, so
+  changing the route means restarting it.
+
+- The new-terminal flow can now start an orchestration with the selected Claude Code or Codex agent
+  as its planner. Alethe keeps the planner above a ready canvas inside one dedicated pane group,
+  without replacing or rearranging the project's surrounding terminal layout.
+
+- A worker on the orchestration board whose report mentions an image it produced now gets its own
+  card on the canvas, directly below it, automatically — no click needed to see it (previously it
+  was a small thumbnail hidden inside the worker card's click-to-expand detail panel). Click the
+  card to open a full-size preview. Only the first image is promoted this way; a second one or a
+  plain link still show in the expanded detail panel as before.
+
+- Clicking an image link in a terminal (png, jpg, gif, webp, bmp, avif, ico, svg) now offers "Open
+  in grid" like markdown and text files already did — it opens in its own pane with a header
+  (drag, open in Explorer, focus mode, close) and the image scaled to fit.
+
+- **Kiro CLI** is now a selectable agent alongside Claude Code, Codex, Copilot, OpenCode,
+  Antigravity, Mimo, and Freebuff — pick it from the new-terminal/new-tab pickers, onboarding,
+  preferences, and the quick-open palette, with its own icon, accent color, install flow
+  (`irm 'https://cli.kiro.dev/install.ps1' | iex`), and unrestricted-mode flag
+  (`--trust-all-tools`).
+
+- Delegated work can now ask before it leaves the folder it was given. Turned on for a run, a worker
+  keeps acting on its own inside that folder and only stops — for the network, another folder, or
+  anything else its sandbox would otherwise refuse — on the orchestration board, where you answer.
+  A worker that is asking shows the question on its own card — the command it wants to run, or that
+  it wants to change files, the reason it gave, and the folder when that folder is not the run's —
+  with four answers right there: approve once, approve for the rest of its session, decline, or
+  abort. Declining lets it carry on down another path; aborting ends its turn. The buttons go quiet
+  while the answer is on its way, and say so if the worker did not take it.
+
+- **Waiting on you** is now a state of its own across the whole board, and it outranks everything
+  else. A worker that is asking is not running, not failed and not finished: it is holding its slot
+  doing nothing until you answer, so it leads the run's state, the planner's state, the counts in
+  the summary rail, the run node and the pane header. Its dot breathes, and its card and run node
+  take a filled surface so it reads before anything else on the canvas.
+
+- A worker waiting on you in a run or a planner you are not looking at now reaches you anyway. The
+  header counts it across every planner, the planner tabs flag it, and the "needs you elsewhere"
+  list puts it above failures and interruptions — a failure is already over, a blocked worker is
+  still costing you a slot.
+
+- Claude's own subagents and teammates now show up on the orchestration board next to any Codex
+  workers a planner delegated, under a shared "Subagents" branch — one board for everything a
+  terminal is running, native or delegated.
+
+- Codex's own native subagents report to the same board too, through a generated hook forwarder
+  (Codex has no built-in http hook, unlike Claude Code) — each carries the Codex icon so its origin
+  reads at a glance next to any Claude subagents on the same tree.
+
+- The orchestration board now only shows the planners and runs that belong to the open project —
+  a terminal from another project no longer leaks onto a board it has nothing to do with.
+
+- A shell a planner backgrounds on its own (a dev server, a long build) shows up on the board too,
+  next to its subagents, and stays "running" there for as long as the planner leaves it up.
+
+- A worker that changed files can now show the diff right on its card — the same unified diff its
+  own `alethe_diff` tool reads, no need to leave the board to see what it actually did.
+
+- Delegated work can now target a Claude worker, not only Codex — `alethe_delegate` takes an
+  `agent` param. A Claude worker reports its own result, tokens, cost and diff, and resumes
+  correctly after a restart; it runs with permissions bypassed, since its headless mode has no
+  interactive approval channel to route a question through.
+
+- A Codex terminal can now register as a planner too, the same way a Claude terminal already does —
+  it can call `alethe_delegate` and target either a Codex or a Claude worker.
+
+- The orchestration board now warns when Claude or Codex is close to its usage cap, right in the
+  header — no more finding out only after new work stalls waiting on a reset.
+
+- A finished worker that ran in its own isolated worktree can now be applied to the branch right
+  from its card — commits, merges and cleans up the worktree in one click, no more leaving the app
+  to land what it did by hand.
+
+- A worker's report can now show its own images and links right on the card — a local image path
+  or a URL mentioned in the summary renders inline (an image) or as a one-click open-in-pane button
+  (a link), instead of sitting there as plain text. Clicking a thumbnail opens it full size; a link
+  chip shows the site's host up front instead of the raw URL.
+
+- Remote control can now show a **chat instead of a terminal**. A Terminal/Chat switch in the shared
+  terminal's header swaps the live output for the agent conversation — your prompts, the agent's
+  replies with code blocks, and each tool call collapsed into a line you can expand. It reads the
+  same session transcript the handoff capsule does, so it only applies to Claude Code and Codex;
+  any other terminal says so and stays on the terminal view. The choice is remembered per device,
+  the message box works the same in both views, and new messages arrive on their own without
+  reloading.
+
+- Playwright MCP can now run its own dedicated browser, headed or headless, instead of always
+  attaching to the shared browser Alethe uses for Browser Panes. Pick the mode in Preferences →
+  Features, under the Playwright toggle.
+
+- Workers whose process died with Alethe are now shown as interrupted instead of quietly reading as
+  running or failed. They appear with a dashed outline and a dashed amber edge on the board, get
+  their own line in the summary rail and their own counter in the pane header, and the tooltip
+  explains that the thread is still on disk so the work can be picked up again. A planner with
+  interrupted work is flagged in the tab strip and in the "needs you elsewhere" list, the same way
+  a failure is.
+
+- The orchestration pane now separates the runs a project has going at the same time. Every round
+  of delegation gets its own tab, named after the label the lead gave it, showing how many workers
+  it owns and a dot for the worst state among them, and the board, the summary rail and the message
+  box below always belong to the tab you picked. A line beside the tabs counts the runs and workers
+  the project has in total, and a run that is not on screen still tells you when one of its workers
+  failed — on its own tab and in a list on the rail that takes you straight there.
+
+- The orchestration pane was rebuilt around a board of worker cards. Workers are laid out in
+  columns by what they are doing right now — running, queued, failed, finished — and each card
+  shows its id, status, latest report, elapsed time, how much of the model context window it has
+  burned, tokens spent, and whether it works in its own worktree or already has a diff. Clicking a
+  card opens it in place, with the worker's plan and its full last report, and a summary rail on
+  the right keeps the totals, the share of workers already finished, the slots in use, and a
+  clickable list of every worker that jumps to its card, with the finished ones folded away. The
+  message box moved to the bottom of the pane and always addresses the worker you selected, saying
+  whether the text will steer the turn it is running now or become its next turn.
+
+- Agent orchestration, off by default under a new preference. When it is on, Claude Code terminals
+  get a set of Alethe tools for handing independent units of work to Codex workers that Alethe runs
+  in parallel, up to a concurrency limit it enforces itself. The lead gets job ids back immediately
+  and waits for every worker to settle before it can report, so it never claims an outcome it does
+  not have. Each worker can optionally get its own detached git worktree, which is what makes it
+  safe to run several of them over the same files, and each carries a time budget after which
+  Alethe stops it rather than letting it hold a slot forever. Alethe pins every worker to
+  workspace-scoped writes, and can correct one while it is still running or cancel it outright
+  without losing its context. Worker status, plan, elapsed time, token usage and unified diff are
+  reported as they change. The same orchestrator also ships as a standalone MCP server, so the
+  tools can be used from any editor without Alethe running.
+
+- When an agent opens a page in the shared browser, Alethe asks where it should go. The browser
+  itself has no window, which is right most of the time — an agent reading a page needs no
+  interface at all — so the question only comes up when a page actually appears. All three
+  answers are spelled out: show it in a pane, open it in your own browser, or leave it running
+  out of sight. Nothing takes over the layout on its own. A pane attaches to the agent's own
+  tab rather than opening a copy, so its work can be watched and taken over by hand; your own
+  browser gets a copy instead, since no page in it can be driven from here.
+
+- Tabs in a browser pane can be closed from the tab strip. An agent that navigates a lot leaves
+  tabs behind and nothing reaped them, so they piled up for as long as the browser lived.
+
+- Browser panes can now render inside the pane itself instead of in a native child webview.
+  Toggle it from the pane toolbar. The page is painted from CDP screencast frames onto a canvas,
+  which is ordinary DOM, so clipping, z-order and dragging behave like any other pane, and it
+  streams only while the pane is actually visible. Mouse, wheel and keyboard are forwarded back
+  to the page. The browser runs without a window of its own, so the pane is the only view, and a
+  tab strip appears when more than one page is open — including tabs an agent opened, so its
+  work can be watched live and taken over by hand.
+
+- A commit graph, cherry-pick, revert, reset-to-commit, and branch-from-commit now live in the
+  Git panel, alongside an incoming/outgoing changes view against the remote.
+
+- Agent worktrees can now be integrated through a full merge cycle: analyze for conflicts,
+  auto-commit pending work before integrating, spawn an ephemeral conflict-resolution agent when
+  needed, validate with the project's configured commands, and finalize with an optional health
+  check that boots the app in an isolated environment. The Merge Center in the sidebar tracks
+  every worktree pending review, with reject/validate/test/review actions per agent.
+
+- An end-to-end test harness (WebdriverIO) covering onboarding, the git pipeline, the commit
+  graph, and conflict/merge UI flows.
+
+- Projects can now be given an animated rainbow color, both as the sidebar swatch and as the
+  project container's border.
+
+- The embedded terminal font now bundles "Caskaydia Cove Nerd Font Mono" so Powerline/Nerd Font
+  glyphs (icons and separators used by TUIs like OpenCode's `opentui`) render correctly on every
+  OS instead of falling back to a mismatched system font.
+
+- A new "GSD Sync" tab in the right sidebar shows a read-only activity feed for each project's GSD
+  Sync child sessions — no PTY terminal involved, reads straight from `opencode export`.
+
+- An Audit Center (main menu) captures uncaught errors and unhandled promise rejections as they
+  happen, with search/filter and one-click copy or JSON export of the full report.
+
+- The Markdown sidebar now lists a project's planning docs (`.alethe/plans/`) as quick-open tabs
+  when no document is selected.
+
+- An in-app folder/file browser (breadcrumbs, search, drive quick-jump) is available as an
+  alternative to the OS file picker for any environment that can't show a native dialog.
+
+- Duplicate in-app notifications (same title and body within 5 seconds) are now collapsed into
+  one instead of stacking.
+
+- New projects can now be created directly from a GitHub URL — Alethe clones the repo and injects
+  an AI context briefing into AGENTS.md/CLAUDE.md. Pointing a new project at a folder that already
+  has an exported Alethe config (`.alethe/project.json`) now offers to restore it instead of
+  starting from scratch.
+
+- Project configs can be exported to a file and re-imported as a new project from the sidebar's
+  project menu, for sharing a project's setup or moving it to a new machine.
+
+- Two new themes: **Catppuccin Frappé** (cool slate surfaces with a soft pink accent) and
+  **Gruvbox Material** (muted earthy tones on a hard dark background). Both cover the full UI
+  palette and ship a matching 16-colour terminal palette, and are selectable under
+  Preferences > Appearance.
+
+- Git status decorations and standard file type icons in the File Explorer. Changed, uncommitted,
+  untracked, staged, deleted, and conflicted files now display standard VS Code-like status colors
+  (amber for modified, green for untracked/added, red for deleted/conflict) and badge letters (`M`,
+  `U`, `A`, `D`, `!`, `R`). Parent folders propagate the status of their dirty contents and display
+  a matching status dot indicator (`●`). Files across the tree also render extension-aware icons.
+
+- Cursor CLI (`cursor-agent`) as a first-class agent: pick it when creating a pane or a sub-tab,
+  enable or disable it under Preferences → Terminal, point it at a custom binary, and install it
+  from inside Alethe when it is missing. Panes keep their conversation — Alethe opens a chat through
+  the CLI and reattaches to it with `--resume` on every relaunch, including after a crash or a
+  restart — and its models are read from the signed-in account instead of a hardcoded list. Cursor's
+  `mcp.json` (global and per repository) also joins the MCP tab, so its servers can be listed,
+  edited, and copied to and from the other agents.
+
+- Pull Request review and squash merge from the merge panel. Alethe locates an open GitHub Pull
+  Request for an agent worktree through the local GitHub CLI (`gh auth login` required), opens its
+  metadata, and can start an AI review inside the same isolated worktree — the agent is instructed to
+  only inspect the diff, never to commit, push, merge, or comment on GitHub. Merging stays an
+  explicit human action: before the squash merge Alethe re-fetches the PR, blocks it when the head
+  SHA moved since the review, when the PR is a draft, or when GitHub reports conflicts, and passes
+  the same SHA to GitHub as a concurrency guard. No GitHub token is stored; authentication is
+  delegated to the local GitHub CLI.
+
+- Local voice dictation with on-device Parakeet TDT v3 (sherpa-onnx). Enable it under Preferences →
+  Integrations, download the model once (~640 MB), then press Ctrl+E (⌘E on macOS) to dictate into
+  the active terminal. The mic indicator appears only while listening or while the model is
+  transcribing (spinner), so a long transcription does not look like a freeze. Choose Toggle or Hold
+  mode and pick a microphone; System default follows the OS input device. Mic capture uses the
+  native audio stack (cpal/PipeWire), not WebKit getUserMedia, so AppImages still see microphones.
+  On Linux, Alethe also enables WebKitGTK media-stream as a fallback path for other features.
+
+- Agent CLIs installed via nvm, bun, `npm --prefix`, pnpm or volta are now detected on Linux
+  even when Alethe is launched from the desktop menu — which inherits a minimal PATH — matching
+  the existing `~/.local/bin` and `~/.cargo/bin` fallbacks. Onboarding and agent tabs now see
+  these installs instead of reporting them as missing.
+
+- A new "PRs" tab in the right sidebar lists every open GitHub Pull Request you're involved in as
+  author or reviewer, across every repo you can see — a global `gh search prs --involves=@me`
+  through the local GitHub CLI, not limited to repos registered as Alethe projects. Each PR can be
+  sent to the TODO list with one click, creating a linked task (duplicate-safe) that carries a
+  quick-open link back to the PR. A Pomodoro timer also lives in the TODO panel now: configurable
+  focus/short-break/long-break durations (default 25/5/15), an optional "focus on" a task, a
+  desktop notification at the end of each phase, and a live countdown pill centered in the title
+  bar while it runs. A session survives an app restart, resuming from the real elapsed time.
+
+### Changed
+
+- **Open-source and brand terms clarified.** Alethe remains licensed under
+  AGPL-3.0-or-later so covered derivatives stay open source, while the Alethe name,
+  logo, application icon, and official branding are expressly reserved to Kauã Miguel.
+  Modified builds must use independent branding, and commercial use of the Alethe
+  brand requires prior written permission.
+
+- **Interactive Remote Control questions for Codex and Claude Code.** Structured agent questions now
+  appear as touch-friendly cards on the phone, including descriptions, multiple questions, and
+  multi-select and free-form choices. Answers drive the live terminal prompt directly, with
+  stale-question validation, loading and retry states, and read-only handling. Active turns can
+  also be stopped from the phone, including turns started on the desktop that are still awaiting a
+  response. Drafts survive page reloads, shared-chat changes refresh automatically, and returning
+  from the background triggers immediate state recovery with bounded network reconnect backoff.
+  The mobile workspace list now marks working chats, unanswered questions, saved drafts, and ended
+  sessions. Each interactive prompt carries its exact agent call identity, preventing a delayed
+  phone response from answering a newer question, and conversation messages can be copied with
+  touch-friendly feedback.
+
+- **Mobile chat for Codex and Claude Code.** Chat opens by default for supported agents, with
+  conversation loading, immediate outgoing messages, delivery and response-wait feedback, faster
+  refreshes, and retry controls that preserve the visible history. Drafts survive navigation and
+  view changes; mobile Enter adds a line. Replies have clearer formatting, larger touch targets,
+  persistent expanded tool details, and a jump-to-latest control. Rate limits keep the device paired.
+
+- **The lead agent can now see how much of each vendor's limit is left.** Every orchestrator tool
+  answers with the current headroom for Claude and Codex — which window is closest to full, when it
+  resets, the detected plan — so the agent doing the delegating decides with the same numbers the
+  usage widget shows you, instead of delegating blind. Ask it to send work to a side that is running
+  out and it is told which side has more room, with the figures behind the call — and when both
+  sides are running out it is told that too, rather than being pointed at an agent that is just as
+  close to its ceiling. It is still the one that chooses: Alethe reports, it never silently moves
+  work to another vendor.
+
+- **The board now shows why a worker ran where it ran.** When one agent is running out, the line
+  from a delegation to its worker is labelled with the reason — `chosen · codex week 91%` when the
+  lead went to the side with room, `ignored hint · codex week 91%` when it sent work into the
+  strained one anyway. Lines stay clean when both sides had room, so a label always means something.
+
+- **The quota warning no longer misses a worker that ran out for the week.** It compared only the
+  5-hour window, so an agent sitting at 60% of its weekly limit while comfortable on the hour raised
+  no warning at all. Both the chip and the lead agent now read whichever window is closest to full.
+
+- **Correcting a Claude worker now actually stops it.** Steering one used to wait out whatever it was
+  already doing and only apply the correction on the following turn — precisely when the run was
+  going the wrong way. The correction now interrupts the turn in flight and starts as the next one,
+  the same way steering a Codex worker already behaved. Cancelling a Claude worker also clears
+  anything it still had queued, so nothing starts a last turn on the way out.
+
+- A pane whose type has no provider — because the plugin that supplies it is disabled — now says
+  so instead of quietly turning into a terminal pointed at that pane's folder.
+
+- **9router settings rebuilt around state.** The Integrations panel now opens with a single status
+  line (off / ready / routing through the address it is using) with the start, stop, and dashboard
+  actions beside it, instead of hiding whether the proxy runs inside a button label. What is shown
+  depends on what is true: with nothing installed you get only the install offer; the endpoint key,
+  port, and auto-start appear once routing is on; the install picker appears only when you actually
+  have two installs. Scattered coloured warnings were folded into one notice list with severity, and
+  the "only new terminals change route" note dropped from a permanent warning to a hint shown while
+  routing is actually running.
+
+- **New session modal redesigned.** The dialog is now a single stack of identical rows: an
+  **Open as** field that switches between a plain terminal and an orchestration, then the
+  agent (planner), then the folder (project). Choosing orchestration relabels the fields, limits
+  the agent list to the planners, and reveals an optional **Goal** that is sent to the planner as
+  its first message. Permissions, 9router routing, the runtime profile, and the manual folder path
+  moved into **Advanced**. The footer gained a **Create more** switch that keeps the dialog open
+  after opening a terminal, and the primary button now states what it will do
+  (`Open Claude Code` / `Create orchestration`) with a `Ctrl`/`Cmd` + `Enter` shortcut. The dialog
+  itself is rounder and its title reads `New session` instead of a lowercase `new terminal`.
+
+- Remote control now renders a real terminal on the phone. The shared output is fed through a
+  terminal emulator instead of being stripped of its escape codes and dropped into a plain text
+  block, so colors, box drawing, and in-place redraws (an agent's input box, spinners, progress
+  bars) show as they do on the desktop instead of piling up as duplicated frames. The mirror keeps
+  the desktop pane's column count, so nothing wraps mid-box; text is auto-sized to fit the screen
+  width, with buttons and pinch to adjust it and horizontal panning when the terminal is wider than
+  the phone. Live output is now appended incrementally rather than re-rendering the whole
+  scrollback on every chunk.
+
+- The remote chat screen is now mobile-first: the terminal fills the real height of the screen
+  (the page itself no longer scrolls), the header is more compact, "Jump to latest" floats over the
+  output, and the message box rises above the on-screen keyboard when it opens, growing with the
+  text as you type.
+
+- Settings → Multi-Agent & Telemetry and → About no longer show untranslated Portuguese strings
+  or native browser `alert`/`prompt` popups. The scheduler, metrics, traces, plugin manager, and
+  GSD audit sections are now fully localized and styled through the same design tokens as the
+  rest of the Settings modal; installing a plugin now uses an inline manifest field instead of a
+  browser prompt.
+
+- A native subagent's card no longer offers to message it — it never had a real process on the
+  other end, so the composer used to accept a message and then report the worker never got it.
+
+- A worker's last report now renders as markdown instead of raw text, matching the rest of the app.
+
+- The orchestration board is now a forest read top to bottom. The planner sits alone at the top of
+  the canvas with its own product logo, connectors drop from it to every run it started, and each
+  run stands above a row of its workers. Runs no longer stack down the board — they stand side by
+  side, each its own tree, separated by empty board rather than by a drawn frame.
+
+- The frames around each run are gone. Nothing is drawn around a run any more: whitespace does the
+  grouping, and everything the frame used to signal — a run that failed, a run that was
+  interrupted, a run still working — is now carried by the run node itself, through its state dot,
+  its state word, its border and the bar of worker states along its bottom edge.
+
+- Clicking the planner at the top of the board opens the terminal that planner runs in. When that
+  terminal is no longer open the node says so instead of leading nowhere.
+
+- The list of runs and workers in the summary rail became a real tree: each run is a row you can
+  fold open to see its own workers, indented under it, with the same chevrons and indentation the
+  file explorer uses. Runs that are still live open by default and finished ones start folded, so a
+  planner with twenty runs stays readable. Clicking any row still brings that node into view on the
+  canvas.
+
+- The selected planner tab no longer sits on a tinted panel. Selection now reads through weight,
+  contrast and its lit bottom edge.
+
+- Redesigned the Alethe Remote home list to match the desktop Project Sidebar: a folder icon tinted
+  by the project's own color replaces the old initials avatar, groups render as a plain label with a
+  hairline rule instead of a boxed section, and chats sit indented under their project with the
+  real Claude Code / Codex / OpenCode logos instead of letter badges. Projects with more than one
+  chat collapse by default and expand on tap; searching always expands matches.
+
+- Alethe Remote now mirrors the selected desktop theme, app icon, motion preference, and language
+  while it is open. Its splash, workspace, terminal view, connection feedback, empty states, and
+  recovery screens now use the same Alethe design tokens and official branding.
+
+- Notifications that ask something now read as one line rather than a block. The choices sit
+  inline as chips after the message, separated by a hairline, with a single filled chip for the
+  answer most people want and a plain one for declining. Stacking buttons underneath had broken
+  the single shape the notification has.
+
+- Standardized modal dropdowns on the Todo List picker pattern, including consistent portal-based
+  menus, searchable model selection, keyboard handling, long-list scrolling, and reliable clicks
+  inside modal focus traps.
+
+- Elite Indigo is now the default UI theme and the default app icon for new installations. The
+  application icon, the installer icon and the installer artwork all use the same Indigo mark.
+
+- Replaced the home and loading backdrop artwork with the same monochrome portrait, so the
+  backdrop and the installer icon come from one mark.
+
+- Updated the Windows NSIS installer sidebar artwork from the Elite Dev source design, so the
+  Indigo portrait is framed as a face at 164x314 instead of being cropped to the edge of the
+  panel.
+
+- Added an Animated/Reduced motion preference and lowered the home ASCII background's CPU cost by
+  caching image processing and pausing it while hidden, while preserving the creator's original 8px
+  ASCII design and 30 FPS animated cadence.
+
+- Hardened the production renderer with a defense-in-depth Content Security Policy and replaced its
+  broad core/plugin defaults with the audited permissions used by the main webview. Privileged custom
+  commands still depend on their own authorization and input-validation boundaries.
+
+- You can talk to a worker directly from its card, without going through the agent that started it.
+  Type into one that is working and the correction lands on what it is doing right now; type into
+  one that has finished and it picks the work up again with everything it already learned. A worker
+  that is busy no longer refuses: the message waits and becomes its next turn, so adding to it never
+  means interrupting it.
+
+- Workers on Windows could write files but not run anything — no build, no test, no command. Their
+  sandbox cannot start programs installed from the Microsoft Store, and a Store-installed PowerShell
+  was the shell they were reaching for, so every command was denied before it ran while the worker
+  still reported the turn as finished. Workers now reach for the system shell instead. What they are
+  allowed to touch is unchanged.
+
+- Workers that finished used to stay running forever, one process each, until something else closed
+  the app. The most recent few are still kept so their work can be followed up on, and the rest are
+  let go on their own.
+
+- Delegated work is no longer lost when Alethe closes. What each worker was asked, what it reported,
+  which run and which agent session it belonged to, and the worktree it used are all kept, so the
+  history is there on the next start. Work that was still in flight is shown as interrupted rather
+  than as running, because its process did not survive — but the conversation did: sending more work
+  to such a worker starts it again and it picks up with everything it had already read, instead of
+  beginning from nothing.
+
+- Delegated work is now something you can watch. A pane shows every worker Alethe is running as a
+  card of its own — what it was asked to do, whether it is waiting for a slot, working or finished,
+  how long it has taken, the plan it is following, what it reported back, how many tokens it spent,
+  and whether it took an isolated worktree. It updates as the workers do, so a long-running one
+  stays legible instead of going quiet. Add it from the project's add-content menu while agent
+  orchestration is on.
+
+### Fixed
+
+- File references printed by Claude and Codex, including root-level relative paths such as
+  `README.md`, are now clickable in terminal panes, open relative to that terminal's folder, and
+  copy their resolved full path from the link menu.
+
+- **Claude conversations stay with their grid panes.** Switching chats with `/new`, `/clear`, or `/resume` now updates the saved conversation even in inactive tabs and after reconnecting a terminal. Reopening the app uses the latest saved conversation, and activity in another pane no longer changes a pane's session assignment.
+
+- Remote Control no longer reopens automatically after restarting Alethe when it was left enabled
+  in saved preferences; it now requires an explicit enable action in each app session.
+
+- Claude and Codex session callbacks are now bound to their own terminal instance, preventing a late
+  response from one chat from renaming or reassigning another pane.
+
+- Repeatedly opening the MCP panel no longer starts duplicate concurrent scans, reducing resource
+  spikes when the modal is searched and closed several times.
+
+- MCP modal operations now stop applying results after the modal closes, and short-lived skill-scan
+  caching prevents repeated modal opens from walking all skill directories again.
+
+- The usage modal now explains Codex reset credits and provides a real action to consume one when
+  available, clarifying that it resets an eligible limit without deleting chats or settings.
+
+- The usage modal now lists available Codex limit resets with their expiry details and lets users
+  consume a specific reset credit.
+
+- **Garbled accents in the plugin catalogue text.** Several strings in the Plugins preferences
+  showed mis-encoded characters ("pÃ¡gina" instead of "página") in both languages.
+
+- The "Browser" sub-option under Playwright browser in the onboarding feature list had no icon,
+  unlike every other row. It now shows the Browser module glyph, aligned with the icon column.
+
+- A plugin installed from disk never loaded on Windows: its files were requested at an address the
+  webview does not resolve there. It also failed silently, leaving an empty panel with no
+  explanation — a panel whose plugin failed to start now says so, and why.
+
+- A plugin whose folder name did not match its identifier appeared in the list but could never load
+  its code, failing with no explanation. Such a folder is now ignored outright.
+
+- A plugin folder dropped straight into the plugins directory started out enabled, skipping the
+  confirmation that was supposed to gate anything unreviewed. A local plugin now runs only after you
+  turn it on yourself.
+
+- Uninstalling a plugin used its display name instead of its identifier, so any plugin whose name
+  differed from its id could not be removed.
+
+- The loading placeholder shown while a graph or markdown pane opened had no styling at all, because
+  it referenced a CSS class that was never defined.
+
+- Switching the sidebar's visual style no longer resets which sidebar tab was open: the two sidebar
+  shells kept separate copies of that state.
+
+- Putting a group or project on standby now tears all of its terminal and agent process trees down
+  through one reliable batch operation. Per-instance PTY registries also prevent Claude, Codex,
+  shell, and MCP wrapper processes from surviving an app update or overlapping Alethe instance.
+
+- Codex handoffs on Windows now write escaped bridge-script paths to project `config.toml` files,
+  preventing `\U` TOML parse errors from blocking the receiving session.
+
+- Dragging on the orchestration canvas now always pans it. It used to also trigger the browser's
+  own text-selection drag, fighting the canvas's own pan handling.
+
+- "Apply" on an isolated worker's worktree no longer fails with "worktree not found" when the open
+  project isn't the one the worker actually ran in — it now resolves the real repo from the
+  worktree itself instead of assuming the project's own folder.
+
+- Clicking "apply" a second time on a worktree that already merged and was cleaned up no longer
+  re-fails with "worktree not found" and re-offers the button — it's now treated as already done
+  and the button disappears from the card.
+
+- A link already rendered as a markdown link in a worker's report no longer also shows as a
+  duplicate chip underneath it.
+
+- An interrupted worker can be messaged again. Sending it a message is exactly how it comes back:
+  Alethe re-queues it and resumes its thread with the message as its next turn, and the message box
+  now says so before you send.
+
+- The orchestration board now carries the real product logos. Claude Code, Codex, OpenCode,
+  Antigravity and every other CLI Alethe knows show their own mark on the worker cards, the planner
+  tabs, the summary rail and the message box, exactly like the rest of the app; a CLI Alethe does
+  not recognise keeps a neutral glyph instead of borrowing someone else's logo.
+
+- A run now looks like the parent of its workers instead of another worker. The run node states
+  what it is, names the delegation, counts how many of its workers are done and carries a bar of
+  its own workers' states along its bottom edge, and the same bar runs under each planner tab, so
+  the shape of a run reads before any of its text does.
+
+- Worker cards were rebuilt around one idea per line: the CLI and the worker id on top with the
+  clock beside them, what the worker last said underneath, and everything else — status, context
+  share, tokens, worktree, diff — demoted to a single quiet line. Context use moved to a hairline
+  along the bottom edge of the card instead of a labelled row competing with the rest.
+
+- A running worker is now visibly alive without being loud: its status edge breathes while it
+  works and its clock keeps ticking, and both stop for anyone who asked for reduced motion. A
+  failed worker is findable at a glance — its card is tinted, its edge is red and its run frame
+  turns red with it.
+
+- Run frames now read as groups rather than stray dashed rectangles: each one is a soft panel
+  behind its own workers, tinted when the run failed or was interrupted, and the run's name is no
+  longer printed twice.
+
+- The message box moved under the canvas it belongs to, so the canvas, its input line and the
+  summary rail read as one instrument. It also shows who it is aimed at, with that worker's logo
+  and live state, and highlights when the message would land on the turn already running.
+
+- The summary rail sits alongside the board for its full height now, shows the planner it is
+  summarising, and lists each worker with its CLI logo next to its state.
+
+- The tabs on the orchestration board are now the agents that asked for the work, not the rounds of
+  delegation. Each agent terminal with orchestration wired in gets one tab, named after the
+  terminal itself, and everything that terminal has ever delegated lives under it; calls made from
+  outside a terminal collect in a last tab marked as having no planner. Picking a tab no longer
+  hides work — the canvas shows every run that planner started at the same time, each one boxed in
+  its own labelled frame stacked down the board, with its worker connectors staying inside its
+  frame. Panning, zooming, fit, picking a worker and the message box all work across the whole
+  board, and the summary rail now totals the planner instead of a single run and lists its runs so
+  you can bring any one of them into view.
+
+- Worker and planner cards now show which CLI is behind them: a small vendor mark in that vendor's
+  colour on the tab of a planner and on the card of a worker. A vendor Alethe has no mark for keeps
+  the neutral glyph rather than being given an invented one.
+
+- The dot grid behind the orchestration board is fainter, so it reads as texture and no longer
+  competes with the cards, frames and connectors drawn on top of it.
+
+- The orchestration board is now a node canvas instead of status columns. The run you picked sits
+  on the left as a single node — its label, its worker count and the worst state among its
+  workers — and every worker it started hangs off it to the right, joined by a drawn connector, so
+  the delegation that fanned out into those workers is visible on screen. Each connector is tinted
+  by what its worker is doing: green while it runs, red when it failed, dashed amber while it waits
+  for a slot, and plain once it is over. Workers do not depend on each other and Alethe does not
+  pretend otherwise — the only links drawn are the ones that really exist. The canvas pans by
+  dragging the empty background, zooms with Ctrl (or Cmd) and the scroll wheel or the corner
+  control, and has a "fit" button that frames the whole run again; picking a worker in the summary
+  rail centres its card. The worker cards, the summary rail, the run tabs and the message box all
+  work exactly as before.
+
+- Workers could stall each other. Correcting, cancelling, or handing more work to one of them wrote
+  to that worker while holding the lock the whole orchestrator shares, so a worker that had stopped
+  reading was enough to freeze every other job; the same applied to the status updates the app
+  itself listens for, and to preparing isolated worktrees. All of them now happen outside the lock.
+
+- Delegating a batch that could not be isolated left part of it behind: the jobs created before the
+  failure stayed queued forever with worktrees on disk and no worker coming. A batch is now accepted
+  whole or refused whole, and anything already created is cleaned up.
+
+- Handing more work to a worker that was still busy took a second slot from the queue and never gave
+  it back, so the number of workers Alethe would run shrank over a session. It is now refused with a
+  reason. Stopped workers are also reaped instead of being left as zombie processes.
+
+- Agent tools served by Alethe over HTTP rejected the clients that use them. The token header was
+  matched exactly as written, but header names are case-insensitive and clients normally send them
+  lowercased, so the request came back unauthorized with an empty body — which the client reported
+  as a parse error rather than a rejected credential. The header is now matched without regard to
+  case.
+
+- Starting a second Alethe — a development build alongside an installed one — killed every terminal
+  running in the first, along with everything those terminals had launched. On startup Alethe clears
+  out terminal processes left behind by a session that ended badly, and the list it reads for that
+  was kept in one fixed location shared by every build, so the starting instance found the other
+  one's *live* terminals there and treated them as leftovers. The list now belongs to the instance
+  that wrote it, and is ignored entirely while that instance is still running.
+
+- Every terminal in the grid could freeze at once while the window sat behind another one, and only
+  a reload brought them back. Panes drew their queued output on animation frames, which the system
+  stops handing out to a window nobody is looking at, so output piled up until it crossed the queue
+  limit and was dropped mid-escape-sequence, leaving each pane parked on a sequence that never
+  ended. Output now also drains on a timer, so a frame that never arrives can no longer strand it.
+
+- The Source Control panel in the right sidebar no longer stays empty for a selected project that
+  has no open terminal — it now falls back to the project's default working directory.
+
+- The ephemeral conflict-resolution agent's initial prompt is now delivered reliably to OpenCode.
+  Confirming the prompt actually reached the screen used to scan the PTY's raw byte stream, where
+  ANSI escape codes interleaved with the text broke any string match; it now reads the screen
+  already rendered by xterm.js instead. Retyping only happens if the input box still looks
+  visibly empty, and resending Enter only continues while the screen stays identical between
+  attempts, so a delivered prompt is never duplicated or resent after the agent has already
+  started responding.
+
+- Closing the app now actually stops the agents it started. Shutdown handed the work to a
+  detached thread that killed sessions one after another, each waiting on `taskkill`, and the
+  process exited before it got through them — so terminals were left running with nothing to
+  attach them to. Reopening then failed to resume those sessions, because the abandoned process
+  was still holding them. The kills now run in parallel and shutdown waits for them, up to four
+  seconds.
+
+- Terminals stop refusing keystrokes while a session is being killed. Killing one runs `taskkill`
+  and waits for it — under load that takes seconds — and it did so holding a lock that the
+  process snapshot needs, which in turn holds the lock every keystroke goes through. One slow
+  kill therefore stopped every terminal in the app from accepting input, while output, which
+  never takes that lock, kept arriving: panes that could be read but not typed into. The pid is
+  now read and the lock released before the kill, and the snapshot never waits on a session it
+  only wants to report on.
+
+- On Linux a browser left behind by a previous run was never cleared, so it kept the profile
+  locked and the next session could not start. The check recognised only the Windows spellings;
+  google-chrome, chromium-browser and microsoft-edge all went unmatched.
+
+- The offer to show an agent's page now appears in the case that actually happens. It was raised
+  only when a tab was created, but an agent attaching over the debugging protocol navigates the
+  blank tab already open rather than making a new one, so the page arrived as a change to an
+  existing tab and went unannounced. Each tab is still offered only once, however far it
+  navigates afterwards.
+
+- A terminal printing fast no longer stalls the whole window. A PTY hands over up to 64 KB every
+  16 ms while a frame draws 16 KB, so a noisy command outran the terminal four to one and the
+  queue grew without limit: the pane kept drawing output from minutes earlier and asked for a
+  frame every 16 ms indefinitely, which starved every other pane, since they all draw on the
+  same thread. The backlog is now capped and the oldest output is dropped, so a terminal under
+  a flood shows what is happening now instead of replaying what already scrolled past.
+
+- Reloading a browser pane now actually refetches the page. It discarded the tab and opened a new
+  one, which landed on the same cached copy, so an edited page kept showing its old version. The
+  tab is kept and reloaded without its cache instead.
+
+- Reloading a browser pane now bypasses the cache and keeps the tab it is showing. It used to
+  discard the tab and open a new one, which landed on the same cached copy, so a page being
+  edited kept coming back unchanged no matter how many times it was reloaded.
+
+- The topbar customization pencil no longer reserves empty space while hidden and expands only
+  when the status area is hovered or the control receives keyboard focus.
+
+- Parking a terminal to free memory now says so. It kills the process tree, so the pane simply
+  fell silent and was indistinguishable from a frozen one, and the restart that brings the
+  session back was not something a reader had any reason to try.
+
+- Confirmation dialogs work again. The permission for them was missing, so every confirm — including
+  the one guarding app close — was rejected before it could be shown, and the action behind it was
+  silently abandoned.
+
+- Two Alethe instances no longer redirect each other's agent events. The hook endpoint was written
+  to a single shared file, so whichever started last captured the events of both.
+
+- Terminals are no longer killed behind your back under memory pressure. At critical pressure
+  the app terminated one hidden, idle session every five seconds and never brought any of them
+  back, so a burst of memory use from anything on the machine left a row of dead terminals that
+  each had to be started again by hand. It did this even on the default policy, which promises
+  that a session is only ever terminated after you opt in. Manual mode is now honoured at every
+  pressure level and warns instead.
+
+- A browser pane showing a tab that was not in the foreground stayed blank forever. Chromium
+  reports a background tab as hidden and stops rendering it, so its screencast produced no
+  frames at all; the tab is now brought to the front before streaming starts. This is what made
+  a pane opened next to other tabs, or one watching a tab an agent had opened, never paint.
+
+- The embedded browser pane no longer hangs on "Connecting to the browser". It depended on the
+  translation function, which is rebuilt on every render, so each repaint tore the session down
+  and opened a new one and no first frame ever survived.
+
+- Starting an agent no longer opens a browser. Every Claude terminal used to launch one just to
+  fill in the Playwright endpoint, and because the check and the launch were not serialised,
+  terminals starting together each launched their own; restoring a workspace could therefore
+  open several browsers at once and exhaust memory. The shared browser is now started only when
+  something actually needs it, agents attach to it when it is already running, and Playwright
+  falls back to its own default otherwise.
+
+- The automation browser is now shut down with the app and any copy left by a previous run is
+  cleared on startup. Chromium deliberately detaches from the job object that ties every other
+  child process to Alethe, so it used to survive a crash and keep holding its profile.
+
+- Memory relief actually runs now. The resource manager raised one event per pressure level and
+  nothing on the frontend listened to any of them, so every level was a no-op — and the most
+  severe one was emitted as `resource::drop-caches`, a name no listener could match. Cached
+  polling results are dropped from medium pressure upward, and at critical pressure the app now
+  says how little memory is left and how much the terminals are holding, instead of freezing
+  without warning.
+
+- The embedded browser no longer escapes its pane. Its native surface is composited above the
+  page, so an ancestor's `overflow: hidden` never clipped it and the raw bounding box let it
+  overhang the layout; the surface is now measured against every clipping ancestor and the
+  viewport. A browser living in an inactive workspace tab stayed on screen over the active one,
+  because a hidden tab keeps its layout box. Re-showing a hidden surface could reveal it at its
+  previous position, and a move that failed was remembered as applied and never retried.
+
+- Dropdowns, confirmations, an in-flight pane drag and a display scale change now hide or
+  resync the native surfaces, which previously only reacted to dialogs and menus.
+
+- Switching the app icon had no effect in packaged builds. The icon bytes were loaded with
+  fetch, which answers to the Content Security Policy's connect-src, and the bundler inlines
+  the smaller icons as data URLs — a scheme connect-src does not allow. The picker still
+  rendered every option because images are governed by img-src instead, so the selection
+  moved while the window icon never changed. Inlined icons are now decoded directly.
+
+- The embedded browser pane no longer escapes its cell on scaled displays. Its webview was
+  positioned with CSS-pixel coordinates while the window places child webviews in physical
+  pixels, so the two only lined up at a device pixel ratio of 1 — on a HiDPI screen the
+  browser was drawn oversized and offset, covering the rest of the layout.
+
+- Changing the terminal palette now repaints the rows already on screen. Only the option was
+  being swapped, so existing output kept the previous colours until the next redraw.
+
+- Terminal text no longer disappears on light themes. xterm's built-in ANSI palette assumes a
+  dark background, so anything an agent painted as white or bright white rendered white on a
+  light surface. Light themes now carry an ANSI palette that keeps every hue — so agent
+  branding survives — and re-points only the neutrals that would otherwise vanish.
+
+- Light-theme detection is now derived from each theme's own background luminance instead of
+  a hardcoded pair of theme names. The OpenCode icon and the Markdown pane were picking their
+  dark-theme variants on any light theme outside that pair, rendering a pale icon and dark
+  syntax highlighting on a light surface.
+
+- The terminal no longer falls back to the dark palette when the selected theme has no
+  terminal colours of its own. Orca had been silently rendering a dark terminal since it was
+  added, and every light theme showed the same mismatch. The resolver is now an exhaustive
+  map, so a theme without terminal colours fails the build instead of shipping wrong.
+
+- Windows updates no longer close the app without coming back. The update manifest pointed Windows
+  at the MSI, but the installer nearly everyone actually has is the NSIS `setup.exe` the download
+  page serves. An MSI applied over an NSIS install neither upgrades it nor restarts the app, so the
+  updater downloaded, closed Alethe, and left the old version behind. The generic Windows entry now
+  points at the NSIS installer; the `-msi` and `-nsis` entries are still published for anyone
+  pinning one deliberately. Existing installs that ended up with both an MSI and an NSIS entry
+  registered will settle onto NSIS after this update.
+
+- The **Continue in Claude Code** button in the agent handoff dialog was unreadable. It painted its
+  label with a colour token that does not exist anywhere in the app, so the text fell back to the
+  inherited foreground and sat light-on-accent.
+
+- Installing a CLI from inside Alethe no longer ends in a dialog that spins forever. The install
+  screen now watches for the CLI itself while the installer runs, instead of waiting only for the
+  installer's shell to exit — some of them hand the prompt back or leave a progress bar behind and
+  never exit — so the dialog closes on its own as soon as the CLI is really there. Detection also
+  re-reads the machine's environment on every check, so a CLI that adds itself to PATH is found
+  without restarting the app.
+
+- AppImage no longer crashes on Arch Linux and other non-Ubuntu distributions with AMD/NVIDIA GPUs
+  under Wayland (`EGL_BAD_PARAMETER` on startup). The Wayland client libraries bundled by
+  `linuxdeploy` conflicted with the host system's versions; the build now tells the bundler to
+  leave them out and let the OS supply them.
+
+- Multiple features (Graphify, GSD plugin, AI Memory) now share a lock when writing to
+  `opencode.json`, preventing race conditions where concurrent read-modify-write cycles
+  clobbered each other's MCP entries.
+
+- On Linux, killing a terminal left grandchild processes (node, claude, codex, MCP servers) running
+  as orphans. The `kill_process_tree` function was a no-op on non-Windows, so only the immediate
+  shell died while its descendants survived. It now sends `SIGTERM` to the entire process group
+  (portable-pty already calls `setsid()`), waits 200 ms, then escalates to `SIGKILL`.
+
+- On Linux, orphaned agent and shell processes could outlive the app because the kill-on-close
+  guard was a no-op. The Windows implementation uses a Job Object that kills descendants when the
+  app exits; on Linux the guard now reports as active and relies on the shutdown handler (which
+  sends `SIGTERM` to every process group) combined with orphan sweep at next startup.
+
+### Removed
+
+- Removed the previous app-icon themes; the icon picker now offers only the four Elite
+  marks. Preferences still pointing at a removed icon are migrated to Elite Original on
+  load. The UI themes they shared a name with are untouched.
+
+## [1.6.0] — 2026-08-17
+
+### Added
+
+- Added Normal and Clean application-wide visual styles. Normal preserves the production UI with
+  colored borders and rounded surfaces, while Clean uses the new compact project tree, flat right
+  sidebar, square terminal containers, restrained hover states, and single-row profile footer.
+- Added shared Clean visual tokens for row and control heights, spacing, radii, borders, hover
+  surfaces, and transition behavior so the minimal language can be extended consistently.
+- The onboarding now asks which interface style to use (Normal or Clean) with a live preview of each
+  one, right after the theme step.
+- Claude Code and Codex conversations can now be continued in the other agent from the terminal
+  toolbar or Recent chats — so hitting a usage limit on one agent no longer ends the conversation,
+  you carry it into the other and keep working. Alethe builds an editable context packet, redacts
+  anything that looks like a secret, token, password, API key or credential before it leaves the
+  machine, opens the target agent in a new pane, keeps the source conversation available, and
+  removes the temporary packet after the first target turn or when its pane is closed.
+- The right sidebar now keeps a cumulative, per-profile history of up to 12 recently opened
+  Markdown files as switchable tabs, persisted across app launches. Markdown files can be sent
+  there from the Explorer or dropped from the desktop, history tabs can be closed individually,
+  and they remain available while visiting the Todos, Git, or MCP sidebar modes.
+- GitHub Copilot CLI is now available as an agent throughout onboarding, installation, quick launch,
+  terminal creation, sub-tabs, CLI path overrides and unrestricted mode.
+- New **Golden Premium** theme, with its own terminal palette.
+- New **MCP** tab in the right sidebar: a single place to see every MCP server configured on the
+  machine, grouped by server name and showing which agents have it. It reads Claude Code
+  (`~/.claude.json`, `.mcp.json`), Codex (`~/.codex/config.toml`), OpenCode (`opencode.json`) and
+  Antigravity (`~/.gemini/config/mcp_config.json`), with a Global/Project switch — so a server
+  present in Claude but missing in Codex is visible at a glance. At project scope it also reads the
+  servers `claude mcp add` writes by default, which Claude keeps inside `~/.claude.json` under the
+  project's entry rather than in the repo, and labels each row with the file it came from. Environment values are masked and
+  only leave the backend one key at a time, on an explicit click. A config that cannot be parsed is
+  reported as read-only and is never written to. Servers can be added, removed and enabled/disabled;
+  every write is preceded by a backup, validated by re-parsing the result and checking that no other
+  server changed, and committed atomically. A server can be **copied from one agent to another** in
+  one click, and adding a new one takes a form, a pasted JSON block in any of the shapes the agents'
+  own docs use, or a search of the official MCP registry — which turns a published package into a
+  ready-to-run command and pre-fills the variables it expects, marking the secret ones empty. The
+  last successful search of each term is kept on disk so the list still opens when the registry is
+  unreachable, labelled with the date it was captured. Alethe translates a server to each target's
+  format and refuses, rather than silently dropping, a field the target cannot express. A per-agent
+  **Check** button asks the agent itself whether it can actually reach each server — the one thing no
+  config file can answer. The first time the app opens with the feature on, a card shows what was
+  found and offers to align the agents in one click; it can be reopened at any time from
+  Preferences → Features, where the whole feature can also be turned off.
+- The MCP tab splits into **Servers** and **Skills**, each with its own search and an **Add more**
+  button that opens the manager straight on the registry search. Every row shows the icon of each
+  agent that has the entry, greyed out for the ones missing it, and a row of agent buttons filters
+  the list down to a single agent. A server or a skill can be removed from every agent at once
+  instead of one row at a time, and the add flow asks which agents get it before writing anything.
+  The registry search filters by whether a server runs locally or remotely.
+- A **Skills** tab in the same manager lists every skill installed for each agent, reading
+  `~/.claude/skills`, `~/.codex/skills` and the shared `~/.agents/skills` store. It resolves links
+  (including Windows junctions) so a skill shared between agents is shown once with its real
+  location, renders the SKILL.md frontmatter, folder structure and body, and surfaces where the
+  skill was installed from. Skills that ship with the agent are locked and cannot be deleted;
+  removing a linked skill unlinks it from that agent only and keeps the shared copy the other
+  agents point at.
+- Grid layouts are now edited directly on the grid. Every pane and every project container carries
+  resize edges: dragging against a neighbour resizes the tracks as before, but dragging towards an
+  empty cell stretches the pane over it, cell by cell. Double-clicking an edge — or the expand button
+  that appears on a pane with empty space next to it — makes that pane swallow all the free space
+  around it, so a lone pane on the bottom row can finally take the whole row without opening a
+  dialog. Empty cells also became drop targets: dragging a pane or a container onto one moves it
+  there instead of swapping with a neighbour.
+- The project container header has a **+** button that creates a new terminal in that project.
+- Agents that are not installed can now be installed from inside Alethe. The onboarding agent step
+  and the "not found" overlay of a terminal both offer an **Install** button that runs the official
+  installer in a real shell and streams its output, then confirms the CLI is reachable before
+  reporting success. Alethe probes the machine for Node, npm, WinGet, Scoop and Chocolatey and only
+  offers the methods that work there, preferring each vendor's official installer — which needs no
+  Node — and listing the alternatives under **Other ways**.
+- A **Recent chats** button on the terminal toolbar, next to Open in VS Code, lists the Claude and
+  Codex conversations of that pane's working directory and resumes any of them, either in a new pane
+  on the current grid or in the pane it was opened from. The panel opens on the tab matching the
+  pane's agent, and unrestricted mode is a checkbox applied to the resumed session.
+- **Ctrl+B** toggles the left sidebar open and closed. The topbar button now shows the shortcut in
+  its tooltip.
+- When an agent can only be installed through npm and Node.js is missing, its install dialog now says
+  so instead of dead-ending on "no automatic installer". It offers a one-click Node.js install
+  through WinGet, Scoop or Chocolatey when one of them is available, and a **Download Node.js**
+  button otherwise. Once Node lands, the agent's own installer appears without reopening the card.
+- Freebuff and Mimo can now be installed from inside Alethe like the other agents, with their
+  documentation links — until now they were the only agents with no installer at all.
+- Installed agents can be **uninstalled** from the onboarding agent step. Confirmation happens in a
+  dialog that shows the exact command about to run, and the agent is only reported as removed once
+  its CLI can no longer be found. Only one agent can be installed, updated or uninstalled at a time —
+  package managers share a single global directory and corrupt each other when run in parallel.
+  Agents whose only installer is a vendor script offer no uninstall, since none of them documents
+  one and guessing what to delete
+  would be worse than doing nothing.
+- Agents with a newer release published on npm can be updated in place from that table.
+- Right-clicking a terminal pane pastes the clipboard (text, images and files) when nothing is
+  selected; with a selection, the right click copies it and clears the highlight.
+- A URL printed in a terminal can now be opened as a browser pane in the grid, next to the existing
+  "open in app" and "open in browser" actions — the same one-click **Open in grid** that Markdown and
+  video links already had.
+- The Files sidebar now supports quick previews, adding or dragging files into the workspace grid,
+  revealing entries in File Explorer, renaming, and confirmed deletion. Git file rows can also open
+  the working file in the grid or reveal it alongside the existing stage, discard, commit, and sync actions.
+- Browser panes now offer app-first, balanced, and keep-alive resource modes. App-first is the default,
+  and every mode releases hidden native webviews when Alethe detects memory pressure.
+- The layout organizer now includes adaptive presets and keeps the eight most recently saved layouts
+  separately for each project, group, and workspace.
+- New **Ember** interface theme: cool charcoal surfaces, hairline dividers and a single ember-orange
+  accent for live state, with a matching terminal palette. Selectable in Preferences → Appearance and
+  as the terminal theme; it does not ship a native app icon variant.
+- Remote control now pairs through a **short-lived pairing window**. The QR code is valid for two
+  minutes and stops working as soon as one device pairs; a paired device receives its own session
+  token and can be revoked individually. Preferences → Remote control can reopen or close the window
+  at any time.
+- A message sent from a paired phone now raises a desktop notification naming the device and showing
+  what it sent, so remote input is never silently typed into a terminal.
+- Individual terminals can now be hidden from remote devices from the sidebar context menu. A hidden
+  terminal disappears from the phone's list and its output and input are refused server-side.
+- Remote control gained a **read-only mode** (on by default) and a separate switch that decides
+  whether plain shell terminals accept remote input. With both at their defaults a paired phone can
+  watch terminals but cannot type into them.
+- Session scans that take longer than 250 ms are now recorded in `logs/app-events.log`.
+- Restored browser panes in the workspace grid. **Add browser** is available from the app menu
+  and each project's three-dot menu, opens a dedicated URL and settings dialog, and runs every
+  page in a native incognito webview whose cookies, cache, autofill, and site storage are discarded
+  when the pane closes.
+- Added a live Remote Control device counter to the top bar with direct access to the connection
+  panel.
+- The project editor now warns when its folder is not a Git repository and offers initialization
+  without leaving the dialog.
+
+### Changed
+
+- The sidebar's **Organization** block is back to the 1.5.0 layout: the label with the four layout
+  modes, plus the workspace grid button — the reworked panel with stacked icon rows and a scope
+  switch in its header was reverted.
+- The right sidebar no longer depends on the Todos feature being enabled — it now appears whenever
+  Todos, MCP, or Git-on-the-right is active.
+- Installing an agent now happens in a dialog. It lists every method that works on this machine —
+  the vendor's own installer, npm, WinGet, Scoop, Chocolatey — with the exact command each one runs,
+  and you pick which to use instead of being given one button and a hidden "other ways" list.
+- The onboarding agent step was rebuilt as a table. Every agent is one row with its icon, the
+  resolved path of its CLI, the installed version, a status tag, and its actions — install, update
+  or uninstall — so all rows line up regardless of what each agent offers. Above it there is a
+  counter strip (enabled, up to date, with updates, installable), a search field that matches on name
+  or path, and All / Detected / Installable filters. A **Scan again** link re-runs detection without
+  leaving the step, for when an agent was installed outside Alethe.
+- GitHub Copilot is drawn with its official mark instead of the generic robot placeholder, so every
+  agent in the app now carries its own logo.
+- Setting MCP up is no longer a step of first-run onboarding. It is offered once as its own card
+  after the app opens, and stays available in Preferences → Features — onboarding goes back to five
+  steps.
+- The layout designer dialog now uses the same drag-and-drop engine as the rest of the app. Cards
+  follow the cursor without lag, only the cell under the pointer lights up, a plain click still just
+  selects, and cards are resized with the same edge handles as the real grid.
+- Switching workspace tabs no longer reloads them. Every tab in the tab bar — the same ones Ctrl+Tab
+  cycles through — stays mounted in the background instead of being torn down, so its terminals keep
+  their scrollback, their PTY attachment and their scroll position. Coming back to a tab no longer
+  shows a boot spinner and never restarts anything, however many projects you move between. The two
+  most recently used background tabs also keep receiving output, so returning to them costs nothing
+  at all; the rest pause their stream while hidden and redraw on return. None of them are suspended
+  for being idle while they stay mounted. A tab that produced no output while it was away skips the
+  redraw entirely and comes back untouched.
+- The terminal boot overlay uses the same dot-matrix loader as the sidebar instead of its own
+  spinner.
+- Terminals start faster. Resolving an agent's launcher scanned every directory in PATH on every
+  boot; successful lookups are now remembered and revalidated against the file itself, so installing
+  or removing a CLI is still picked up immediately.
+- Critical Windows memory pressure now suspends one eligible hidden idle runtime at a time, preserving
+  session scrollback while preventing system-wide stalls that can make even Alt+Tab stop responding.
+- High-volume terminal output now coalesces runtime activity timestamps, avoiding repeated global
+  state updates and skips remote-control serialization when no remote device is connected, without
+  delaying terminal rendering or process I/O.
+- Spotify playback widgets now share connection and track requests instead of polling the backend
+  independently.
+- The title bar now uses a lightweight connected-device count and pauses remote-control polling while
+  the app is inactive, avoiding repeated QR-code generation for a badge update.
+- Native browser panes now share one overlay observer instead of each watching the entire application
+  DOM independently.
+- Remote-control polling now reuses the pairing QR code until its URL or token changes.
+- GSD session watching now reads child state in one background command instead of launching three Git
+  root-resolution processes per watched item every five seconds.
+- Layout editing now provides a smoother drag preview, a clearer preset/history library, and reduced-
+  motion support. Sidebar activity indicators now share the trailing action slot with the three-dot
+  menu, while Todo edit and delete actions no longer reserve empty space before hover or keyboard focus.
+- Repository instructions now explicitly require English for source comments, JSDoc, internal logs,
+  documentation, changelog entries, and default user-facing strings.
+- Windows installers now include the official WebView2 bootstrapper and automatically install the
+  Evergreen Runtime when it is missing, instead of downloading the bootstrapper separately.
+- App icon choices now update the running native window and taskbar icon immediately.
+- Memory monitoring no longer parks runtimes, closes tabs, or blocks new sessions automatically.
+  Memory Analytics now bases its health alert on available Windows memory and keeps session closure
+  under explicit user control.
+- Resource health is recorded periodically in `logs/resource.log`, and failed `projects.json` saves
+  are logged and retried instead of being silently discarded.
+- Everything inside a group now sits indented under a barely-there rail that picks up the group's
+  color on hover, so a grouped project is distinguishable from a loose one without adding noise.
+- Groups and projects now expand and collapse with a short height-and-fade animation, and the
+  disclosure chevron rotates instead of swapping icons. Both respect reduced-motion.
+- Group headers now read as section labels — quiet 11px text and a rule line, with no folder mark —
+  so they are no longer mistaken for project rows, and project and session rows were tightened to a
+  28px scale so the group no longer competes with them.
+- Reworked both sidebar styles into a flat three-level list. Groups are now section dividers (label,
+  rule, add and collapse actions) instead of a tree level, every project renders as a single folder
+  row with its sessions underneath, and the boxed active-project card, its primary badge and its
+  separate new-terminal button are gone — the row's + creates a session and clicking a group header
+  only expands or collapses it.
+- Row actions (+ and the three-dot menu) now appear on hover, and the selected session is marked
+  only by a solid background.
+- Hidden and paused agents are now signalled only by a desaturated agent logo and a softer name —
+  the strikethrough and the italic "disabled" styling are gone.
+- The agent logo is now the leading element of every terminal row; the running indicator and the
+  response-ready badge moved to the right end of the row.
+- Standardized the entire changelog in English and made English the explicit default language for
+  versioned repository content and commit messages.
+- Simplified Clean sidebar selection with subtle background feedback and no side markers, preserved
+  animated running-state indicators, removed the Ungrouped heading and Primary badge, increased tree
+  spacing, and added a direct new-terminal action to every project.
+- The Clean sidebar footer now keeps the latest known Spotify track visible when playback is
+  inactive and stays hidden when no real track is available, without an empty connection prompt.
+- Clean mode now presents a dedicated New Agent action, folder-based project rows, one focused row at
+  a time, dimmed inactive agent icons, and matching flat selection feedback in the top bar.
+- Extended Clean styling across dialogs, dropdowns, context menus, workspace panes, browser/video/
+  Markdown surfaces, sub-tabs, Home cards, empty states, and floating inspectors with neutral focus,
+  flat hover feedback, reduced motion, and no heavy elevation shadows.
+- Tightened the Clean sidebar tree: New Agent moved below the toolbar and reads as a quiet row,
+  project rows dropped the branch label, agent counter and standalone AI icon, every project now
+  expands by default with its own chevron, and group, project and terminal rows were reduced in
+  height with clearer indentation between the three levels.
+- Removed finished-agent badges from Clean sidebar items while preserving the aligned state gutter
+  and animated working indicator for agents that are actively running.
+- Removed the workspace's animated gradient focus frame in both visual styles, increased the Clean
+  sidebar's separation between groups and projects, and added group logo selection to both group
+  creation and editing with a folder fallback.
+- Removed the space-consuming terminal header bar in both visual styles and kept its controls
+  available in a compact hover overlay that does not reduce terminal content height. The overlay
+  now also shows the active conversation's agent logo and name on the left.
+- Spotify now refreshes existing connections automatically and falls back to the most recently
+  played track when nothing is currently active, while connection prompts no longer appear in the
+  sidebar or Home dock.
+- Increased inactive Clean top-bar tab and logo contrast, aligned Spotify and profile footer rows to
+  the same proportions, and restyled the profile menu with the shared compact Clean popover metrics.
+- Matched the Clean right sidebar to the left sidebar's flat toolbar, controls, spacing, and list
+  treatment, and standardized every Clean menu and dropdown on the profile menu's smooth entrance
+  motion, including model, project, agent-usage, context, Home, and terminal-link selectors.
+- Project and group rows now prefer their configured logo over the folder fallback in Clean mode,
+  and the right sidebar mirrors the left toolbar's button sizing, spacing, utilities, and active states.
+- Claude rows in both sidebar styles now show the live conversation title, falling back to the first
+  user prompt and then the agent name, with long titles truncated without disturbing row actions.
+- Groups are always ordered above loose projects at every sidebar level, orphaned subgroups remain
+  visible at the root, and configurable group logos replace the folder fallback in both styles.
+- The Clean Organization layout strip now matches the 40 px footer rhythm with compact, flat controls.
+- Extended Clean mode to the remaining top-bar controls: flat icon buttons without scale-on-hover,
+  borderless usage, RAM, profile and sync pills, and a lighter usage popover.
+- Visible-pane calculations now run once per state update and are shared instead of running once per
+  open pane.
+- Off-screen terminal history loading is deferred until the pane becomes visible, and heavy TUI
+  writes are processed in 16 KB chunks instead of 64 KB chunks.
+
+### Removed
+
+- The Merge Center is **out of this version and will return in a later one**. Out for now: its
+  sidebar panel, the **Merge** tab of the project editor, the branch testing dialog, the merge store,
+  and the `merge_analyze` / `merge_prepare` / `merge_finalize` / `merge_abort` /
+  `merge_preflight_abort` / `merge_rebase_onto_target` / `merge_force_cleanup` backend commands,
+  along with the `merge_analyzer` and `conflict_resolution` modules behind them. Projects do not
+  carry a post-merge action setting in this version. Worktrees, the conflict-resolution agent
+  settings and GSD Sync are untouched — they only shared the `merge.` prefix.
+- Removed the optional GitHub repository clone field from the new-project dialog.
+- Removed the Infinite Rainbow project-color option, its animated styles, and its workspace focus
+  treatment. Existing invalid or retired accent values now fall back to a stable solid color.
+- Removed the unused WebGL terminal rendering path and dependency. Terminals continue to use the
+  Canvas 2D renderer without a behavior change.
+
+### Fixed
+
+- Panes running in a worktree now resume their conversation. A pane created with worktree isolation
+  came back as a fresh agent every time the app reopened, with its history gone and its sidebar title
+  never filled in, while panes in the repository root were unaffected. Claude folds a dot into a
+  hyphen when it names a project's session directory, and worktrees live under
+  `<repo>/.alethe/worktrees/<id>` — so the computed directory never existed, the pane never learned
+  its real session id, and each reopen saved an empty session over the pointer to the real one.
+- The left and right sidebars no longer come back collapsed. A collapsible panel closes itself
+  whenever the layout squeezes it under its minimum width — which is what minimizing the window, or
+  restoring it narrow, does to both sidebars at once — and nothing ever reopened them, so they stayed
+  shut even though the saved preference still said they were open. They are now reopened whenever the
+  window has room for them again.
+- The left and right sidebars no longer close on their own. Closing the app tears the window down and
+  the panel group reports one last zero-width layout on the way out, which was saved as if both
+  sidebars had been collapsed by hand — so the next launch opened with both closed. Layout changes
+  that arrive while the window is hidden are now ignored. Separately, dragging a separator until the
+  sidebar collapsed left its "the user is resizing" flag stuck on, because a collapsed separator
+  stops receiving pointer events and never saw its own release.
+- Picking a server in the MCP manager's list now switches the detail panel. Opening the manager from
+  a server row in the sidebar pinned the selection to that server: every click re-ran the effect that
+  applies the requested server and snapped the list straight back.
+- Continuing a Claude conversation in Codex no longer launches Codex with `--add-dir`, a Claude Code
+  flag that Codex rejects on startup.
+- A Codex pane that was not visible when it started now recovers from a busy session on its own. The
+  bootstrap error is written and the process exits before the stream listeners exist, and a hidden
+  pane never read the buffered output, so the retry that opens a fresh session never ran.
+- Home now adapts to the width of the pane it is in, not the width of the window. Its layout was
+  driven by window breakpoints, so opening Home in a narrow pane of a wide window kept the wide
+  layout: the shortcut pills spilled outside the "new terminal / new project / new group" cards and
+  the message count in the activity card ran over the word next to it. The sections now collapse on
+  the space they actually have, long labels truncate instead of overflowing, and the big activity
+  number scales with its card.
+- Two paths inside the same parentheses are no longer underlined as one link. A path opened right
+  after a bracket ran straight to the closing bracket, ignoring every space in between, so
+  `(/pt-br/vitrine-dupla/projetos e /en/double-showcase/projects)` came back as a single link. The
+  bracket now only caps the link instead of defining it, and each path is detected on its own.
+- An extensionless path in terminal output no longer swallows the rest of the sentence as a link:
+  `/pt-br/vitrine-dupla/trajetoria — 5 variações` used to underline the whole line. A space now ends
+  the link unless a file extension is waiting on the other side, which is what a path with spaces
+  actually looks like.
+- Invalid CLI overrides are rejected instead of being saved and launched. Existing invalid overrides
+  are cleared automatically, preventing the Antigravity desktop application from opening when Alethe
+  expects the `agy` command-line executable.
+- The agent update button in onboarding no longer fails silently. It decided success purely by
+  checking whether the CLI binary was still on PATH, which is true even when the update itself
+  failed (network error, permission denied, ...), since the previous binary is still there. The
+  installer's real exit code is now checked first, and a failed update shows a toast instead of
+  quietly leaving the CLI on its old version. It also now catches the case where the installer
+  genuinely succeeds but a second, unmanaged install of the same CLI earlier on PATH shadows the
+  one that was just updated: if the resolved binary's version hasn't moved, the update is reported
+  as failed and the toast names the shadowing binary's path instead of reporting a false success.
+- Antigravity no longer shows "Version unknown" forever in onboarding. Latest-version lookup only
+  ever checked the npm registry, and Antigravity ships through a native installer instead of npm,
+  so it never had a package to look up. It now falls back to the latest tag on its public GitHub
+  releases when an agent has no npm package.
+- A terminal that accepted keystrokes but rendered nothing — recoverable only by restarting it — now
+  recovers on its own. Output is gated per PTY by a visibility flag, and the call that switches it
+  back on was silently ignored whenever it landed while the session was spawning or restarting,
+  leaving the stream off with nothing to turn it back on. The resource sampler now re-asserts
+  visibility for every PTY on each pass, so a stuck stream clears within one sample instead of
+  lasting until the terminal is restarted.
+- An agent pane no longer loses the conversation it was resuming when you leave and come back to it
+  quickly. The saved session was being read destructively at launch, so a pane torn down mid-launch —
+  switching workspace tabs with Ctrl+Tab, for example — erased the only record of its conversation and
+  came back on a different chat. The record now survives until a new session actually replaces it.
+- The terminal "command not found" overlay was written in English regardless of the selected
+  language; its text now goes through the translation system like the rest of the app.
+- A pane no longer starts an empty chat when you come back to it after a long time away. The session
+  claim that prevents two panes from writing to the same conversation was tied to the PTY id, so a
+  PTY that ended on its own — parked by memory control, suspended, or killed — left the conversation
+  permanently marked as taken and the pane silently dropped its own session id.
+- Reopening a pane no longer replays its history line by line. The stored scrollback was fed to the
+  terminal in 16 KB slices, one rendered frame each, so a large buffer visibly scrolled from the top
+  down to the prompt and took seconds; it is now written in a single pass straight to the bottom.
+- Switching conversation from inside the CLI with `/new` or `/resume` now sticks. Alethe pinned the
+  session id given at launch and sent the old one back on the next restart, dragging the pane to the
+  previous chat.
+- Ctrl+Tab did nothing after coming back to the app from another window. Returning left the webview
+  with no focused element, and WebView2 then kept the key for its own focus traversal instead of
+  handing it to the app. Focus is now parked on the app shell whenever nothing else holds it, so
+  every shortcut keeps working. Ctrl+Tab also focuses the first terminal of the tab it switches to,
+  instead of switching with the keyboard pointed at nothing.
+- Agent CLIs installed through Homebrew were invisible on macOS. An `.app` launched from Finder does
+  not run as a login shell, so it inherits the minimal Launch Services PATH without `.zshrc` /
+  `.zprofile`. Launcher discovery and the PATH rebuilt for terminals now include the default Homebrew
+  prefixes (`/opt/homebrew/bin` and `sbin` on Apple Silicon, `/usr/local/bin` and `sbin` on Intel) as
+  a fixed fallback.
+- The Antigravity usage widget showed "—" on Linux. The OAuth token lookup used an explicit keyring
+  target required by the Windows Credential Manager, which prevented the Linux Secret Service (GNOME
+  Keyring / KWallet) from finding the entry written by the `agy` CLI. Credential discovery now
+  supports both layouts and also looks for the `agy` binary in `~/.local/bin` and `~/.cargo/bin` on
+  Linux and macOS.
+- Pasting an image or files into a terminal did nothing on Linux, silently. `read_clipboard_payload`
+  was implemented on Windows only and errored out everywhere else without falling back. A Linux/BSD
+  backend using `wl-paste` / `wl-copy` (Wayland) or `xclip` (X11) now handles screenshots, images
+  copied from the web (`image/png`) and files copied in a file manager (`text/uri-list`). macOS is
+  still unimplemented.
+- **Remote control is now off by default and stays off until you turn it on.** Alethe used to open a
+  LAN listener on every launch, and the on/off switch was lost when the app restarted. The setting is
+  now saved with your preferences and the listener only starts while it is enabled.
+- The remote pairing address and QR code are only shown while a pairing window is open, and the
+  address the phone uses is no longer carried in the page URL after pairing.
+- Remote control session lifetime, the device limit, and per-device revocation now apply to the whole
+  remote surface. They previously only guarded the live WebSocket, so an expired or revoked device
+  could still read terminal output and send messages over HTTP.
+- A paired phone now only receives output from the terminal it is watching. Every terminal's output
+  was previously broadcast to every connected device.
+- The remote workspace listing now sends only the fields the phone renders, instead of copying raw
+  workspace records.
+- Remote requests split across network packets are no longer truncated, oversized requests are
+  rejected, and a failed request always gets a response instead of leaving the phone waiting.
+- Remote connections now time out, are capped in number, must authenticate within ten seconds, and
+  repeated bad tokens temporarily block the offending address — a device on the same network can no
+  longer exhaust the app's connections.
+- Remote control now re-reads the machine's network address every time it is enabled, so the pairing
+  QR code stays valid after switching Wi-Fi networks.
+- The **App icon** setting in Preferences → Appearance now actually changes the taskbar and window
+  icon. It previously sent the bundled asset URL to the native window, which silently failed, so the
+  icon never left the default variant. Each icon now ships at 32, 48, and 64 pixels and the variant
+  matching the display scaling is used, so the taskbar no longer shows a blurry downscale.
+- Submitting `/new` in an agent terminal now clears both the visible conversation and its persisted
+  terminal scrollback, so the fresh session no longer inherits the previous conversation on screen.
+- Terminals now recover automatically when a native PTY write stalls instead of blocking every
+  later keystroke until a manual refresh, and use the stable xterm DOM renderer to avoid a renderer
+  transition race that could leave the terminal unable to accept input.
+- Large terminal pastes now use bounded high-throughput IPC chunks, preserve Unicode boundaries, share
+  the normal input queue, skip synchronous per-character prompt-history work, and always close
+  bracketed-paste mode after partial failures. This prevents Claude Code and Codex pastes from freezing
+  the app, interleaving with typing, or stopping halfway.
+- Native browser panes now remain hidden for the full lifetime of modal and menu overlays, including
+  closing animations, preventing them from flashing above or interfering with dialogs.
+- Opening a terminal's tabs lane now moves only its left floating identity to the right, while the
+  existing right-side actions remain anchored in place. The pane drag handle moves into the lane,
+  directly above its tab items, so it no longer covers terminal content.
+- Fixed the freezes and runaway memory growth introduced with the new sidebar. The conversation
+  title shown on each session row was rescanning and fully parsing every Claude session file of the
+  project — up to hundreds of MB — every 12 seconds, on the thread that serves the whole UI. Rows
+  now read only their own session file, off the main thread, and stop once the title is known.
+- Session scans no longer load a whole record into memory, so a single oversized message can no
+  longer abort the app with an out-of-memory error and take every open terminal down with it.
+- Closing the app no longer crashes or becomes unresponsive mid-shutdown. Process-tree cleanup now
+  runs outside the native event loop, while a frontend deadline destroys the window if the native
+  quit request does not settle, so slow Windows process termination cannot hold the interface open.
+- The corrected Windows installer now identifies itself as 1.5.1 so it reliably upgrades existing
+  1.5.0 installations instead of entering same-version maintenance mode.
+- Sidebar visibility and widths now change only after explicit user input, so startup and automatic
+  layout adjustments cannot close a sidebar or overwrite its saved size; pending workspace changes
+  are also flushed before the native window closes.
+- Prevented private browser panes from failing to start when development-mode effect remounts
+  briefly overlap while a previous native webview is closing.
+- Fixed the Git initialization button contrast across accent colors by using the theme's matching
+  foreground token.
+- Fixed project-name overflow so long paths use a clean ellipsis without colliding with status
+  badges in either visual style.
+- Fixed backup imports by excluding locked WebView runtime caches, ignoring those entries in legacy
+  archives, validating the archive before deleting local data, and closing active terminals before
+  restoration.
+- Clean sidebar group headers now only expand or collapse the tree instead of also adding every
+  project in the group to the workspace.
+- GitHub repository cloning no longer depends on a hardcoded `D:\Projects` directory. The selected
+  destination is now respected, with `~/Alethe/<repository>` as the cross-platform fallback.
+- Background agents now report completion through the lightweight off-screen activity channel.
+- Lightweight background output is accumulated between updates instead of being discarded, so
+  activity detection and Codex busy-session recovery remain reliable off screen.
+- Output written while an agent pane restores its history is replayed after the restore instead of
+  leaving a permanent gap.
+- Remote Control no longer drops accented characters when a UTF-8 sequence crosses a buffer cut.
+- Memory-pressure spawn blocking now queues every new request. The reduced concurrency ceiling only
+  controls how many existing waiters may be released.
+- Synchronized the bundled GSD plugin version with its actual v11 content so older worktrees receive
+  automatic updates.
+- Main terminals can no longer claim a GSD child conversation merely because GSD monitoring was
+  disabled after its sentinel file had been created.
+- New GSD plugin instances clear stale synchronization markers left by crashed or closed processes.
+- Terminal hover and click coordinates are remeasured after app zoom changes, keeping xterm.js link
+  detection aligned with the pointer.
+- Development builds on Linux now also apply the Alethe icon at runtime. Packaged builds remain the
+  reliable icon source for compositors that prefer desktop-file lookup.
+- Linux now sets `WEBKIT_DISABLE_DMABUF_RENDERER=1` before creating the webview, avoiding the known
+  WebKitGTK DMA-BUF animation and fractional-scaling issues documented by Tauri.
+- Linux animations now prefer compositable properties and avoid `transition: all` and animated width.
+- GSD child sessions are read-only across xterm input, paste, prompt history, and force-kill shortcuts.
+- OpenCode no longer emits unsupported OSC 66 width queries in xterm.js because spawns set the
+  documented `OPENTUI_FORCE_EXPLICIT_WIDTH=false` compatibility flag.
+- OpenCode redraw nudges after spawn and resize now share a 400 ms lock, preventing overlapping TUI
+  redraws.
+- The `windowsPty` xterm.js option is now enabled only on Windows, fixing dense TUI redraws on Linux
+  and macOS.
+- Scrollback resynchronization now cuts only at valid UTF-8 character boundaries.
+- Conflict-resolution model selections are no longer overwritten by background project updates while
+  the edit dialog is open.
+- The full project form now inherits a folder selected on the empty-workspace screen, and truncated
+  paths expose their complete value on hover.
+- Git initialization and refresh actions use consistent full-width stacking in narrow sidebars.
+- Windows orphan-process cleanup now logs Job Object failures, records root processes, and cleans
+  verified leftovers after an unclean shutdown.
+- Merge diff summaries and test briefings now include uncommitted worktree changes, not only commits
+  between branches.
+- GSD Sync sessions now appear in Tasks for OpenCode terminals even when worktree isolation is off.
+- GSD test procedures include files committed on the current worktree since it diverged from
+  `main` or `master`.
+- Provider model search no longer pollutes another provider's cache during rapid switching, preserves
+  one selection per provider, and accepts custom searched models with Enter.
+- Off-screen agent terminals no longer render full output continuously. They receive lightweight
+  activity updates and restore complete scrollback immediately when shown, without pausing agents.
+- Migrating existing terminals now restarts each live pane in its new worktree instead of leaving the
+  visible process in the old directory.
+- Worktree migration now reinstalls GSD monitoring and uses the latest unsaved project configuration.
+- Enabling GSD monitoring creates a missing `.planning/` directory instead of failing silently.
+- The **Open folder as project** button now uses a visible text color in every theme.
+- Terminal hover links now support mixed-case protocols such as `Https://` and bare deployment
+  domains such as `example.vercel.app`, while excluding file names and email addresses.
+- Workspace panel sizes now persist per profile and workspace screen for outer project containers and
+  nested terminal splits in Auto, Spotlight, and Sidebar layouts.
+- Sidebar drag-and-drop now keeps list geometry stable, separates reordering from group nesting, and
+  uses theme-native insertion lines and subtle neutral targets.
+- The topbar widgets no longer jump sideways when you hover them. The pencil button that opens the
+  widget settings used to expand from zero width on hover, pushing every pill 26px to the left —
+  enough for the pill you were reaching for to slide out from under the cursor, which dropped the
+  hover, collapsed the button and shifted everything back, flickering in place. Its slot is now
+  reserved at all times and only the button itself fades in.
+
+## [1.5.0] — 2026-08-09
+
+### Added
+
+- Added authenticated LAN Remote Control for browsing agent chats, watching live output, and sending
+  one message at a time from a mobile browser.
+- Added Remote Control enable and disable controls, device limits, token regeneration, named devices,
+  session metadata, one-hour default expiry, and individual revocation.
+- Added Agent Sandbox job and thread identifiers, structured spawn acknowledgements, persistent Codex
+  app-server threads, parent-to-worker relationships, and reply relay back to the Claude planner.
+- Added persistent Agent Sandbox projects with project folders, live session restoration, project
+  switching, on-demand workers, and regular project terminal synchronization.
+- Added regular shell workers to Agent Sandbox so long-running development servers remain visible as
+  plain terminal panes.
+- Added development and installer icon themes independent from the interface theme.
+- Added **Erase all data (fresh install)** after backup export for a complete local reset.
+
+### Changed
+
+- CLI detection during onboarding is time-boxed per provider so slow PATH entries cannot freeze setup.
+- New profiles reach onboarding cleanly, and parking terminals no longer blocks account switching.
+- The default profile image and generated app icons now use the dark Alethe artwork.
+- Agent Sandbox project creation entry points are hidden behind a build flag while the feature is
+  archived.
+- The startup screen now shares the Home background and ASCII-art treatment.
+- Profile export now includes the complete profile, including Todos, history, metrics, preferences,
+  tokens, scrollback, and all other stored data.
+- Account switching closes each pseudoconsole before waiting for its final scrollback flush and can
+  resume parked sessions without restarting the app.
+- The Accounts modal has clearer hierarchy, spacing, and profile creation controls.
+- Project dropdowns use the Todo List's viewport-safe portal behavior, path containment, truncation,
+  Escape handling, and consistent styling.
+- Concurrent panes cannot resume the same Codex conversation, and active-writer errors split across
+  output chunks recover reliably.
+- Agent Sandbox workers run unrestricted and non-interactively by default. Claude uses
+  `--dangerously-skip-permissions`; Codex uses unrestricted approvals.
+- Sandbox workers use readiness-aware prompt delivery, delayed bracketed paste, separate submission,
+  settle detection, deadline fallback, and supported prompt arguments.
+- Automated Claude and Codex workers default to Haiku where applicable, preserve their own working
+  directories, skip Codex trust checks for the selected Sandbox folder, and report structured errors
+  without exposing task text.
+- Automated workers move from Working to Done or Error based on streamed output, while submitted
+  prompts are cleared to prevent duplicate execution after HMR.
+- Sandbox stop and project-switch operations invalidate in-flight spawns, and startup failures release
+  the retry guard.
+- Windows Sandbox path comparison is case-insensitive and ignores trailing separators.
+- Agent Sandbox panes use the same terminal headers, dimensions, backgrounds, and xterm surface as
+  regular workspace terminals, with resize and Focus mode support.
+- The real planner-to-worker proof of concept replaces mocked communication: Claude plans, Codex works,
+  and `/spawn` creates a visible terminal in the session.
+- Development-only Welcome, Theme Picker, and Redo Onboarding actions are hidden in production.
+- New users receive the default purple avatar when they do not select a custom image.
+- Todo items now animate on entry, hover, drag, and reorder targeting.
+- Markdown viewer comments and their shortcut are temporarily disabled while the feature is repaired.
+- Empty-workspace defaults, disabled-button contrast, sidebar drag previews, and sidebar transitions
+  received clearer visual feedback.
+- Agent Sandbox evolved from a temporary draggable PTY demonstration into a full-screen, compact,
+  design-system-aligned terminal canvas with real providers and messaging.
+- Sidebar drop targets now exist only during an active DnD-kit drag.
+- Top bar controls, tabs, status pills, and window actions now share consistent spacing, height, and
+  radius values; the customization control no longer reserves space while hidden.
+- Remote WebSocket clients authenticate before counting toward limits, bind to the selected LAN
+  address, strip control characters, and receive restrictive security headers.
+- Remote addresses remain hidden behind a generic placeholder until QR pairing completes.
+- Form dropdowns now use the compact 32 px system-wide standard.
+- Remote security policy, session lifetime, LAN status, and device revocation moved to a dedicated
+  Preferences category, leaving the QR dialog focused on quick access.
+
+## [1.4.1] — 2026-08-07
+
+### Fixed
+
+- Corrected release notes in the **What's New** dialog and GitHub release so they use this repository's
+  `CHANGELOG.md` instead of a stale external copy.
+
+## [1.4.0] — 2026-08-07
+
+Graphify became optional, the `alethe` command gained direct project opening, and this release delivered
+a broad stability and security pass across AgentCanvas networking, image paste, session restoration,
+memory controls, and Linux/macOS parity for Antigravity and OpenCode.
+
+### Added
+
+- Added an optional Graphify preference without rewriting agent MCP configuration.
+- Added the `alethe` terminal command to open the current or selected directory in the existing app
+  window, creating a project only when necessary.
+- Added documented code standards and ESLint/Prettier commands.
+- Added double-click file opening from File Explorer and monospaced diff panes from Git Control.
+- Added **About & Updates** with installed-version details, update checks, download progress, visible
+  errors, and a sidebar version shortcut.
+- Added real Merge Center review: project validation commands, dedicated reviewer agents, direct
+  feedback delivery, heuristic API-contract checks, stack detection, and isolated live health probes.
+- Added in-app Git repository initialization with a safe initial commit for features that require Git.
+- Added a GSD Planning Completion Gate that always leaves accept, review, and reject decisions available
+  to the user and exposes real validation failures.
+- Added automatic OpenCode GSD state maintenance for `task.md`, `status.md`, and `progress.md`, plus an
+  isolated child session for `goal.md`, `plan.md`, and structured test procedures.
+- Added double-click Focus mode for every pane title.
+- Added configurable GSD Sync model fallback chains based first on the model that just succeeded in the
+  parent conversation.
+- Added a project-scoped, read-only GSD Sync viewer with passive completion indication; it was later
+  moved into the Tasks sidebar.
+- Added code-aware GSD validation planning based on the real changed-file list and structured
+  preparation, action, and verification steps in `.planning/procedure.json`.
+- Added broader GSD activity triggers so edits and shell work synchronize even without a native task
+  list update.
+- Added a pre-spawn system-memory headroom check with a 45-second upper bound.
+- Added prominent Git initialization to the sidebar and project editor, including empty-repository
+  commits and transparent initialization before isolated-agent worktree creation.
+
+### Changed
+
+- GSD Sync sessions moved from a separate right-side drawer into the existing Tasks sidebar.
+- Internal quality work moved project persistence off Tokio's blocking path, reduced Ghostty polling,
+  consolidated provider session and usage helpers, and standardized the Claude Code label.
+- Terminal themes moved from the Terminal settings page to Preferences → Appearance.
+
+### Fixed
+
+- Secured the AgentCanvas local HTTP listener with a per-launch `X-Alethe-Token` and limited request
+  bodies to 1 MB.
+- Closed sidebars no longer reserve width in the main content area; only top-bar control space remains.
+- Stabilized the pane-area Zustand fallback to prevent React #185 during project hydration.
+- Disabled unstable xterm.js WebGL rendering in the Windows WebView to avoid teardown races.
+- Sidebar resize persistence no longer rebuilds `defaultSize` during the resize event.
+- GSD test briefings are scoped to the files changed in the current session and exclude Alethe-generated
+  `.opencode/`, `opencode.json`, and `.planning/` infrastructure.
+- Graphify and GSD setup commands now run on blocking worker threads instead of freezing Tauri IPC when
+  spawning agents.
+- PTY write, resize, suspend, kill, and process-tree termination no longer block the Tauri dispatcher or
+  hold the global session lock during slow work; process kills have a three-second timeout.
+- GSD planning gates skip unsupported providers, install monitoring retroactively for existing OpenCode
+  worktrees, and replay task updates queued during an active synchronization cycle.
+- Multi-Agent telemetry continues after receiver lag and displays real load failures.
+- Onboarding agent detection no longer gets stuck under React StrictMode, and CLI/model discovery runs
+  on blocking workers with a six-second per-agent safety limit.
+- The Multi-Agent & Telemetry page now reads real `.planning/task.md` data, removes the non-functional
+  plugin manager, and routes all visible text through localization.
+- The Merge Center has its own maximum height and scroll area so multiple cards cannot push the project
+  list out of view.
+- Rejecting or accepting worktrees now stops agent processes before deletion, runs Git operations on
+  blocking workers, and tracks cleanup failures as recoverable orphaned worktrees.
+- Concurrent GSD Sync polling merges only entries resolved by each poll instead of replacing shared
+  state, preventing child sessions from flickering or disappearing.
+- PTY spawn and scrollback attachment now run on blocking workers so one slow terminal cannot freeze all
+  app IPC.
+- Deleting a worktree agent also deletes its hidden GSD viewer terminal and PTY.
+- Repository-root discovery excludes GSD viewer panes and can resolve the shared Git root from any
+  existing worktree.
+- GSD viewer panes trust Alethe-tracked child session IDs that OpenCode intentionally omits from normal
+  session listings.
+- Merge Center **Accept** now performs the real analyze, prepare, resolve, validate, and fast-forward
+  merge flow; **Reject** removes the worktree while preserving its branch.
+- Automatic worktree isolation applies only to new agents. Existing terminal migration is explicit,
+  suspends the PTY, checks uncommitted changes, and reports complete, partial, or failed results.
+- Existing-terminal migration validates that the folder is a Git repository before doing any work and
+  shows the localized isolation warning instead of a raw Rust error.
+- Git initialization seeds a `.gitignore` for common generated and secret directories before staging,
+  preventing `node_modules` and similar trees from freezing the app.
+- Windows verbatim `\\?\` prefixes are removed from worktree and merge paths before they reach shells,
+  session matching, or PTY spawn.
+- Session detection for isolated OpenCode, Codex, and Antigravity agents keeps retrying while the
+  terminal remains open instead of expiring after 30 seconds.
+- New Terminal and Home quick-launch paths once again provision worktrees when automatic isolation is
+  enabled and surface provisioning failures in a toast.
+- New isolated worktrees always derive from the real repository root instead of nesting under the most
+  recently used worktree.
+- Test Briefing now shows the real branch file diff and actual validation command results.
+- The default Merge Center badge now says **Awaiting action** instead of claiming review readiness.
+- Image paste works again for OpenCode, Claude Code, and Codex from screenshots, web images, and Explorer
+  files by sending a file path to the PTY.
+- Antigravity CLI detection now checks the real `agy` binary on Linux and macOS.
+- Closing or restarting terminals now kills complete process trees on Linux and macOS as well as
+  Windows.
+- Working-directory comparison is centralized and only normalizes case and separators for Windows
+  paths.
+- Keyboard shortcut labels follow the active platform consistently across Home and the sidebar.
+- OpenCode panes claim, persist, and resume their own session IDs instead of falling back to another
+  pane's most recent conversation.
+- Antigravity sessions use each conversation's timestamp and compare directory boundaries correctly.
+- OpenCode directory matching remains case-sensitive on Linux and macOS.
+- Enabled `@xterm/addon-unicode11` so emoji and symbol widths match terminal applications.
+- **Resume last session** restarts agents through the normal spawn queue and memory supervisor, with
+  confirmation when multiple panes will restart.
+- The implemented Antigravity usage card now appears in AI Usage Details.
+- Antigravity credentials are read from the exact `gemini:antigravity` Windows Credential Manager target
+  as UTF-8, allowing real quota display.
+- Protected xterm.js renderer changes, writes, and scrolling against disposed-renderer races after
+  graphics context loss; PTY suspension now removes the session only after shutdown confirmation.
+- Merge Center cards now truncate long status, branch, and action text correctly in narrow sidebars.
+- Missing OpenCode sessions with a server-assigned `parent_id` are treated as inconclusive instead of
+  being discarded as orphaned.
+- Rainbow container borders now draw inside the box with the correct radius, showing the full edge
+  animation instead of only the corners.
+- Closing Tasks no longer collapses the left Merge Center sidebar after removal of the old GSD drawer.
+- A broad silent-failure audit moved Git/session/agent/backup operations off the Tauri dispatcher,
+  preserves corrupted metrics instead of overwriting them, exposes restart and hook failures, and keeps
+  GSD polling alive when one session fails.
+
+## [1.3.0] — 2026-07-27
+
+This release integrates multi-provider Graphify and macOS contributions, redesigns Home, loading, and
+the sidebar, and adds Antigravity support.
+
+### Added
+
+- Added multi-provider Graphify as an MCP server for Claude, Codex, and OpenCode, with a per-project
+  graph viewer, project configuration, non-destructive config merging, and graph snapshots.
+- Added an opt-in native Ghostty terminal backend on macOS through an NSView layered over the WebView.
+- Added AppKit-level rounded window corners on macOS.
+- Added Antigravity (`agy`) CLI detection, spawn and resume by conversation, session discovery, and a
+  dedicated usage widget.
+- Added experimental window opacity control.
+
+### Changed
+
+- Strengthened merge and worktree state with monotonic `projects.json` writes, Git-lock classification,
+  backoff, orphan tracking and cleanup, and an auto-finalizing merge state machine.
+- Added macOS Keychain discovery for Claude tokens and prevented `EDITOR=vi` from leaking from npm into
+  development shells.
+- Redesigned Home with interactive ASCII artwork, smooth dashboard transitions, a mini-terminal quick
+  launcher, a compact Spotify dock, clearer usage and focus panels, and real streak/activity data.
+- Rebuilt the loading screen with animated Alethe ASCII branding and dot-matrix progress.
+- Reorganized the Projects sidebar around a fixed active-project card, a flat project list, colored
+  monograms, always-visible menus, activity indicators, and reduced metadata clutter.
+- Terminal links now exclude explanatory text, input failures recover the PTY, Codex restart preserves
+  the conversation, and input focus recovers after mounting, interaction, or graphics loss.
+- Unrestricted mode became a prominent one-click control in the Add AI dialog.
+- Memory management now monitors by default; intelligent LRU behavior requires explicit opt-in.
+- The new-terminal dialog gained card selection, a prominent folder field, and recent-folder shortcuts.
+- Automatic resume removes orphaned Claude, Codex, and Antigravity conversation IDs before spawn.
+
+### Fixed
+
+- Windows paths are escaped correctly as TOML strings in `graphify_codex_config_write`.
+- The merge finalization fallback stops polling after entering a failed state.
+
+### Removed
+
+- Removed the **Loose/Ungrouped** section label above ungrouped sidebar projects.
+- Removed the parked-terminal text notice from the overlay; the resume action remains available.
+
+[Unreleased]: https://github.com/Kc1t/alethe-agents/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/Kc1t/alethe-agents/compare/v1.4.1...v1.5.0
+[1.4.1]: https://github.com/Kc1t/alethe-agents/compare/v1.4.0...v1.4.1
+[1.4.0]: https://github.com/Kc1t/alethe-agents/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/Kc1t/alethe-agents/releases/tag/v1.3.0

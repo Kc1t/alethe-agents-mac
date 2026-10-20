@@ -1,0 +1,1683 @@
+import { listen } from '@tauri-apps/api/event'
+import { getCurrentWebview } from '@tauri-apps/api/webview'
+import { FitAddon } from '@xterm/addon-fit'
+import { SearchAddon } from '@xterm/addon-search'
+import { Unicode11Addon } from '@xterm/addon-unicode11'
+import { Terminal } from '@xterm/xterm'
+import type { Dispatch, MutableRefObject, SetStateAction } from 'react'
+import { useEffect, useRef } from 'react'
+
+import { recordAgentActivityInput } from '../../lib/activityTracker'
+import { cliPathMatchesAgent } from '../../lib/agentCliPath'
+import { AgentCompletionMonitor } from '../../lib/agentCompletionMonitor'
+import { deliverOpenCodePrompt } from '../../lib/agentPromptDelivery'
+import { resolveAgentCliCommand } from '../../lib/agentProviders'
+import { preparePtyRuntimeLaunch } from '../../lib/agentRuntimeAdapter'
+import { claudeSessionFromHook } from '../../lib/claudeSessionTracking'
+import { getLocale, translate } from '../../lib/i18n'
+import { isWindows } from '../../lib/platform'
+import { usePtyPanelVisible } from '../../lib/ptyVisibility'
+import { router9EnvFor } from '../../lib/router9'
+import {
+  claimDiscoveredSession,
+  claimMostRecentSession,
+  isSessionClaimed,
+  registerSessionClaim,
+  releaseSessionClaim,
+} from '../../lib/sessionDiscovery'
+import { buildAgentLaunch } from '../../lib/sessionLaunch'
+import {
+  peekSession,
+  removeSession,
+  savedConversationIdFor,
+  saveSession,
+} from '../../lib/sessionResume'
+import { waitForSessionHint } from '../../lib/sessionWatch'
+import { acquireSpawnSlot, releaseSpawnSlot } from '../../lib/spawnQueue'
+import {
+  agentHooksSettingsPath,
+  aiMemoryCodexConfigWrite,
+  aiMemoryDetect,
+  aiMemoryMcpConfigPath,
+  aiMemoryOpenCodeConfigWrite,
+  attachPty,
+  clearPtyScrollback,
+  codexHooksConfigWrite,
+  codexMcpConfigWrite,
+  createCursorChat,
+  findCliLauncher,
+  graphifyCodexConfigWrite,
+  graphifyEnsureGraph,
+  graphifyMcpConfigPath,
+  graphifyOpenCodeConfigWrite,
+  gsdOpenCodePluginWrite,
+  killPty,
+  listenPtyActivity,
+  listenPtyData,
+  listenPtyExit,
+  orchestratorMcpConfigPath,
+  playwrightMcpConfigPath,
+  ptyExists,
+  readClipboardPayload,
+  readGsdChildSession,
+  resizePty,
+  setPtyVisible,
+  snapshotAntigravitySessions,
+  snapshotClaudeSessions,
+  snapshotCodexSessions,
+  snapshotOpenCodeSessions,
+  spawnPty,
+  writeClipboardText,
+  writePty,
+} from '../../lib/tauri'
+import {
+  type AgentRuntimeProfile,
+  type AgentType,
+  isShellAgentType,
+  type Theme,
+} from '../../lib/types'
+import type { AgentHookPayload } from '../../stores/agentCanvasStore'
+import { useProjectsStore } from '../../stores/projectsStore'
+import { useTerminalsStore } from '../../stores/terminalsStore'
+import { useUiStore } from '../../stores/uiStore'
+import {
+  formatDroppedPaths,
+  getTerminalScrollbackRows,
+  getWheelScrollLines,
+  normalizePastedText,
+  shouldScrollHostScrollback,
+} from './terminalInput'
+import {
+  type DetectedTerminalLink,
+  detectTerminalLinks,
+  getLogicalTerminalLine,
+  makeXtermLink,
+} from './terminalLinks'
+import {
+  TERMINAL_WRITE_FALLBACK_MS,
+  TERMINAL_WRITE_FRAME_BUDGET,
+  trimPendingWrites,
+  writePtyChunked,
+  writePtyWithTimeout,
+} from './terminalWrite'
+import { getXtermTheme, type LinkActionState } from './xtermThemes'
+
+// Early exits trigger a single fresh-session retry.
+const EARLY_EXIT_MS = 4000
+
+const PANEL_RESYNC_DEBOUNCE_MS = 80
+
+function isBrowserInputPending(): boolean {
+  const scheduling = (
+    navigator as Navigator & {
+      scheduling?: { isInputPending?: (opts?: { includeContinuous?: boolean }) => boolean }
+    }
+  ).scheduling
+  return scheduling?.isInputPending?.() ?? false
+}
+
+let aiMemoryMissingWarned = false
+
+/** The terminal's own name is what the person recognises a planner by, not its pty id. */
+function plannerLabelFor(ptyId: string): string {
+  for (const project of useProjectsStore.getState().projects) {
+    for (const terminal of project.terminals) {
+      if (terminal.tabs.some((tab) => tab.ptyId === ptyId)) return terminal.name
+    }
+  }
+  return ptyId
+}
+
+type BootPhase = 'preparing' | 'queued' | 'spawning' | 'attaching' | 'ready'
+
+export function useXtermSession(params: {
+  ptyId: string
+  command?: AgentType | null
+  cwd?: string | null
+  extraArgs?: string[]
+  initialInput?: string
+  sessionId?: string
+  env?: Record<string, string>
+  graphifyRepo?: string | null
+
+  gsdWatcherEnabled?: boolean
+
+  trustSessionId?: boolean
+
+  readOnly?: boolean
+  runtimeProfile: AgentRuntimeProfile
+  useRouter9?: boolean
+  terminalTheme: Theme
+  cliPathOverride: string | null
+  sessionPersistenceKey: string
+  retryKey: number
+  containerRef: MutableRefObject<HTMLDivElement | null>
+  terminalRef: MutableRefObject<Terminal | null>
+  ptyIdRef: MutableRefObject<string | null>
+  lastCtrlCRef: MutableRefObject<number>
+  linkActionsRef: MutableRefObject<LinkActionState | null>
+  spawnedAtRef: MutableRefObject<number>
+  usedResumeRef: MutableRefObject<boolean>
+  earlyExitRetriedRef: MutableRefObject<boolean>
+  forceFreshRef: MutableRefObject<boolean>
+  onSpawnedRef: MutableRefObject<((id: string) => void) | undefined>
+  onSessionIdRef: MutableRefObject<((id: string | undefined) => void) | undefined>
+  onInitialInputSentRef: MutableRefObject<(() => void) | undefined>
+  onExitRef: MutableRefObject<((code: number | null) => void) | undefined>
+  onLaunchErrorRef: MutableRefObject<((error: unknown) => void) | undefined>
+  onAgentCompleteRef: MutableRefObject<(() => void) | undefined>
+  setBootPhase: Dispatch<SetStateAction<BootPhase>>
+  setCommandNotFound: Dispatch<SetStateAction<string | null>>
+  setLinkActions: Dispatch<SetStateAction<LinkActionState | null>>
+  setRetryKey: Dispatch<SetStateAction<number>>
+  setDropActive: Dispatch<SetStateAction<boolean>>
+  showLinkActionsMenu: (event: MouseEvent, link: DetectedTerminalLink) => void
+  recordPromptInput: (data: string) => boolean
+  navigateHistory: (direction: 'up' | 'down') => void
+}) {
+  const {
+    ptyId,
+    command,
+    cwd,
+    extraArgs,
+    initialInput,
+    sessionId,
+    env,
+    graphifyRepo,
+    gsdWatcherEnabled,
+    trustSessionId,
+    readOnly,
+    runtimeProfile,
+    useRouter9,
+    terminalTheme,
+    cliPathOverride,
+    sessionPersistenceKey,
+    retryKey,
+    containerRef,
+    terminalRef,
+    ptyIdRef,
+    lastCtrlCRef,
+    linkActionsRef,
+    spawnedAtRef,
+    usedResumeRef,
+    earlyExitRetriedRef,
+    forceFreshRef,
+    onSpawnedRef,
+    onSessionIdRef,
+    onInitialInputSentRef,
+    onExitRef,
+    onLaunchErrorRef,
+    onAgentCompleteRef,
+    setBootPhase,
+    setCommandNotFound,
+    setLinkActions,
+    setRetryKey,
+    setDropActive,
+    showLinkActionsMenu,
+    recordPromptInput,
+    navigateHistory,
+  } = params
+
+  const isPanelVisible = usePtyPanelVisible(ptyId)
+  const isPanelVisibleRef = useRef(isPanelVisible)
+  const wasPanelVisibleRef = useRef(isPanelVisible)
+
+  const isFirstVisibilityRunRef = useRef(true)
+  /** lastIoAt captured when the panel went hidden; null until it has been hidden once. */
+  const lastIoWhenHiddenRef = useRef<number | null>(null)
+
+  const resyncTerminalRef = useRef<(() => Promise<void>) | null>(null)
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    if (import.meta.env.DEV) {
+      console.debug('[Alethe][xterm] mount', {
+        sessionPersistenceKey,
+        retryKey,
+        ptyId: ptyIdRef.current,
+      })
+    }
+
+    let disposed = false
+    // Keep lifecycle callbacks bound to this XTermView instance. The parent updates the refs on
+    // every render, but a late async launch result must never write a session into a different tab
+    // after the active tab has changed.
+    const emitSessionId = onSessionIdRef.current
+    const spawnQueueAbort = new AbortController()
+    let unlistenData: (() => void) | null = null
+    let unlistenActivity: (() => void) | null = null
+    let unlistenExit: (() => void) | null = null
+    let unlistenDragDrop: (() => void) | null = null
+    let unlistenSessionHook: (() => void) | null = null
+    const savedAttachedSessionId = savedConversationIdFor(
+      peekSession(sessionPersistenceKey),
+      command,
+      cwd,
+    )
+    let attachedSessionId = trustSessionId
+      ? (sessionId ?? savedAttachedSessionId)
+      : (savedAttachedSessionId ?? sessionId)
+    let attachedPtyId = ptyId
+    const persistAttachedSession = () => {
+      if (disposed || !command || readOnly) return
+      saveSession(sessionPersistenceKey, {
+        sessionId: attachedPtyId,
+        claudeSessionId: command === 'claude' ? attachedSessionId : undefined,
+        codexSessionId: command === 'codex' ? attachedSessionId : undefined,
+        opencodeSessionId: command === 'opencode' ? attachedSessionId : undefined,
+        antigravitySessionId: command === 'antigravity' ? attachedSessionId : undefined,
+        cwd: cwd ?? '',
+        agent: command,
+        timestamp: Date.now(),
+      })
+    }
+    const adoptSession = (nextSessionId: string) => {
+      if (disposed || !command || readOnly || nextSessionId === attachedSessionId) return
+      attachedSessionId = nextSessionId
+      if (cwd) {
+        releaseSessionClaim(sessionPersistenceKey)
+        releaseSessionClaim(attachedPtyId)
+        registerSessionClaim(command, cwd, nextSessionId, sessionPersistenceKey)
+        registerSessionClaim(command, cwd, nextSessionId, attachedPtyId)
+      }
+      persistAttachedSession()
+      emitSessionId?.(nextSessionId)
+    }
+    let resizeTimer: number | null = null
+    let writeFrame: number | null = null
+    let writeFallback: number | null = null
+    let pendingWrites: string[] = []
+    let pendingWriteLength = 0
+    let pendingWriteDrainResolvers: Array<() => void> = []
+    let resumeErrorBuffer = ''
+
+    let resyncCaptureRef: string[] | null = null
+    let lastCols = 0
+    let lastRows = 0
+    let forceNextResize = false
+    let completionMonitor: AgentCompletionMonitor | null = null
+    let linkProviderDisposable: { dispose: () => void } | null = null
+    let linkScrollDisposable: { dispose: () => void } | null = null
+    let writeRecoveryPending = false
+    let queuedInput = ''
+    let inputFlushScheduled = false
+    let inputWriteChain = Promise.resolve()
+    // True while `sendInitialInput` is typing/confirming/sending Enter for
+    // the initial prompt (see `start()` below). Confirmed live: ANY write
+    // failure during that window triggered the automatic recovery below
+    // (`flushInput`), which restarts the PTY — and restarting right in the
+    // middle of delivering the initial prompt kills the just-born process
+    // and loses the session it had just started.
+    let initialInputInFlight = false
+
+    const resourcePolicy = useProjectsStore.getState().preferences.resourcePolicy
+    const terminal = new Terminal({
+      cursorBlink: !readOnly,
+
+      disableStdin: Boolean(readOnly),
+      convertEol: false,
+      allowProposedApi: true,
+      scrollback: getTerminalScrollbackRows({
+        agent: command != null && !isShellAgentType(command),
+        memoryBudgetMb: resourcePolicy.memoryBudgetMb,
+      }),
+
+      // Match the Windows ConPTY backend when configuring terminal repaint behavior.
+
+      ...(isWindows() ? { windowsPty: { backend: 'conpty' as const, buildNumber: 22000 } } : {}),
+      fontFamily: 'Cascadia Mono, Consolas, "Courier New", monospace',
+      fontSize: 14,
+      theme: getXtermTheme(terminalTheme),
+    })
+    const fitAddon = new FitAddon()
+    const searchAddon = new SearchAddon()
+    terminal.loadAddon(fitAddon)
+    terminal.loadAddon(searchAddon)
+
+    terminal.loadAddon(new Unicode11Addon())
+    terminal.unicode.activeVersion = '11'
+    terminal.open(container)
+    terminalRef.current = terminal
+    const clampHorizontalScroll = () => {
+      container.scrollLeft = 0
+      const xterm = container.querySelector<HTMLElement>('.xterm')
+      const viewport = container.querySelector<HTMLElement>('.xterm-viewport')
+      const screen = container.querySelector<HTMLElement>('.xterm-screen')
+      if (xterm) xterm.scrollLeft = 0
+      if (viewport) viewport.scrollLeft = 0
+      if (screen) screen.style.maxWidth = '100%'
+    }
+    linkProviderDisposable = terminal.registerLinkProvider({
+      provideLinks: (bufferLineNumber, callback) => {
+        const logicalLine = getLogicalTerminalLine(terminal.buffer.active, bufferLineNumber)
+        if (!logicalLine?.text) {
+          callback(undefined)
+          return
+        }
+        const links = detectTerminalLinks(logicalLine.text).map((link) =>
+          makeXtermLink(logicalLine.startLine, terminal.cols, link, {
+            openMenu: showLinkActionsMenu,
+          }),
+        )
+        callback(links.length > 0 ? links : undefined)
+      },
+    })
+
+    linkScrollDisposable = terminal.onScroll(() => {
+      if (linkActionsRef.current) setLinkActions(null)
+    })
+
+    terminal.focus()
+
+    const cancelScheduledFlush = () => {
+      if (writeFrame !== null) window.cancelAnimationFrame(writeFrame)
+      if (writeFallback !== null) window.clearTimeout(writeFallback)
+      writeFrame = null
+      writeFallback = null
+    }
+
+    const flushPendingWrite = () => {
+      cancelScheduledFlush()
+      if (disposed) return
+      if (pendingWriteLength === 0) return
+
+      let budget = TERMINAL_WRITE_FRAME_BUDGET
+      let output = ''
+      while (budget > 0 && pendingWrites.length > 0) {
+        if (output && isBrowserInputPending()) break
+        const head = pendingWrites[0]
+        const take = Math.min(budget, head.length)
+        output += head.slice(0, take)
+        budget -= take
+        pendingWriteLength -= take
+        if (take === head.length) pendingWrites.shift()
+        else pendingWrites[0] = head.slice(take)
+      }
+
+      if (output) {
+        try {
+          const isLastQueuedWrite = pendingWriteLength === 0
+          terminal.write(
+            output,
+            isLastQueuedWrite
+              ? () => {
+                  if (disposed || pendingWriteLength > 0 || writeFrame !== null) return
+                  if (writeFallback !== null) return
+                  const resolvers = pendingWriteDrainResolvers
+                  pendingWriteDrainResolvers = []
+                  resolvers.forEach((resolve) => resolve())
+                }
+              : undefined,
+          )
+          clampHorizontalScroll()
+        } catch {
+          /* The terminal may have been disposed before the queued write. */
+        }
+      }
+      if (pendingWriteLength > 0) scheduleFlush()
+    }
+
+    const scheduleFlush = () => {
+      if (writeFrame === null) writeFrame = window.requestAnimationFrame(flushPendingWrite)
+      if (writeFallback === null) {
+        writeFallback = window.setTimeout(flushPendingWrite, TERMINAL_WRITE_FALLBACK_MS)
+      }
+    }
+
+    const queueTerminalWrite = (chunk: string) => {
+      if (!chunk) return
+      pendingWrites.push(chunk)
+      pendingWriteLength += chunk.length
+      pendingWriteLength = trimPendingWrites(pendingWrites, pendingWriteLength).length
+      scheduleFlush()
+    }
+
+    const queueTerminalWriteAndWait = (chunk: string): Promise<void> => {
+      if (!chunk) return Promise.resolve()
+      return new Promise((resolve) => {
+        pendingWriteDrainResolvers.push(resolve)
+        queueTerminalWrite(chunk)
+      })
+    }
+
+    // Scrollback replays go straight to xterm instead of through the frame
+    // budget: a few MB of history split into 16 KB slices costs one rendered
+    // frame each, which is what made switching panes crawl from the top of the
+    // buffer down to the prompt.
+    const writeReplayAtOnce = (replay: string): Promise<void> =>
+      new Promise((resolve) => {
+        try {
+          terminal.write(replay, () => {
+            try {
+              terminal.scrollToBottom()
+            } catch {
+              /* The terminal may have been disposed before scrolling. */
+            }
+            resolve()
+          })
+        } catch {
+          resolve()
+        }
+      })
+
+    const getTerminalLineHeight = () => {
+      const row = container.querySelector<HTMLElement>('.xterm-rows > div')
+      return row?.getBoundingClientRect().height || terminal.options.fontSize || 18
+    }
+
+    const onWheel = (event: WheelEvent) => {
+      // Let alternate-screen TUIs handle their own mouse tracking and scrolling.
+
+      if (!shouldScrollHostScrollback(terminal.buffer.active.type, event.shiftKey)) return
+      const lines = getWheelScrollLines(event, getTerminalLineHeight())
+      if (lines === 0) return
+      event.preventDefault()
+      event.stopPropagation()
+      try {
+        terminal.scrollLines(lines)
+      } catch {
+        /* Ignore scrolling after the terminal has been disposed. */
+      }
+    }
+    container.addEventListener('wheel', onWheel, { passive: false, capture: true })
+
+    const requestWriteRecovery = (id: string, source: 'input' | 'paste', error: unknown) => {
+      console.warn(`[pty-${source}] write failed for ${id}; requesting recovery`, error)
+      if (source === 'input' && initialInputInFlight) {
+        // Restarting now would kill the process right in the middle of
+        // delivering the initial prompt, losing the session with no chance
+        // to resume — let `sendInitialInput` handle the failure itself
+        // (logs and gives up) instead of triggering this destructive recovery.
+        console.warn(
+          `[pty-input] automatic recovery SUPPRESSED on ${id}: initial prompt delivery still in progress`,
+        )
+        return
+      }
+      if (disposed || writeRecoveryPending || id !== ptyIdRef.current) return
+      writeRecoveryPending = true
+      window.dispatchEvent(
+        new CustomEvent('alethe:terminal-restart-request', { detail: { ptyId: id } }),
+      )
+      window.setTimeout(() => {
+        writeRecoveryPending = false
+      }, 5_000)
+    }
+
+    const pasteText = (raw: string) => {
+      try {
+        if (!raw) return
+        const id = ptyIdRef.current
+        if (!id) return
+        const text = normalizePastedText(raw)
+        useTerminalsStore.getState().recordIo(id)
+        recordPromptInput(text)
+        inputWriteChain = inputWriteChain
+          .then(() => writePtyChunked(id, text, terminal.modes.bracketedPasteMode))
+          .catch((error) => requestWriteRecovery(id, 'paste', error))
+      } catch (err) {
+        console.warn('[pty-paste] ignored invalid clipboard payload:', err)
+      }
+    }
+
+    // Resolve clipboard text, Explorer file drops, and native image payloads.
+
+    const resolveClipboardPaste = async (): Promise<string> => {
+      const payload = await readClipboardPayload()
+      switch (payload.kind) {
+        case 'text':
+          return payload.text
+        case 'paths':
+          return formatDroppedPaths(payload.paths)
+        case 'image':
+          return formatDroppedPaths([payload.path])
+        case 'empty':
+          return ''
+      }
+    }
+
+    const isOverThisPane = (pos: { x: number; y: number }) => {
+      const dpr = window.devicePixelRatio || 1
+      const el = document.elementFromPoint(pos.x / dpr, pos.y / dpr)
+      return !!el && container.contains(el)
+    }
+    void getCurrentWebview()
+      .onDragDropEvent((event) => {
+        const p = event.payload
+        if (p.type === 'enter' || p.type === 'over') {
+          setDropActive(isOverThisPane(p.position))
+        } else if (p.type === 'leave') {
+          setDropActive(false)
+        } else if (p.type === 'drop') {
+          setDropActive(false)
+          if (isOverThisPane(p.position) && p.paths.length > 0) {
+            pasteText(formatDroppedPaths(p.paths))
+            terminal.focus()
+          }
+        }
+      })
+      .then((un) => {
+        if (disposed) un()
+        else unlistenDragDrop = un
+      })
+      .catch(() => {})
+
+    terminal.attachCustomKeyEventHandler((event) => {
+      if (event.type !== 'keydown') return true
+      const ctrl = event.ctrlKey || event.metaKey
+      if (!ctrl || event.altKey) return true
+
+      const key = event.key.toLowerCase()
+
+      if (
+        key === '+' ||
+        key === '=' ||
+        key === '-' ||
+        key === '_' ||
+        key === '0' ||
+        event.code === 'NumpadAdd' ||
+        event.code === 'NumpadSubtract' ||
+        event.code === 'Numpad0'
+      ) {
+        return false
+      }
+
+      if (key === 'c' && terminal.hasSelection()) {
+        const selection = terminal.getSelection()
+        if (selection) {
+          void writeClipboardText(selection).catch(() => navigator.clipboard?.writeText(selection))
+          terminal.clearSelection()
+          return false
+        }
+      }
+      if (key === 'c' && !readOnly) {
+        const now = Date.now()
+        const id = ptyIdRef.current
+        if (id && now - lastCtrlCRef.current < 1500) {
+          lastCtrlCRef.current = 0
+          terminal.write('\r\n\x1b[33m[force kill — PTY terminated]\x1b[0m\r\n')
+          void killPty(id)
+          return false
+        }
+        lastCtrlCRef.current = now
+      }
+
+      if (key === 'v' && !readOnly) {
+        event.preventDefault()
+        void resolveClipboardPaste()
+          .catch(() => navigator.clipboard?.readText() ?? '')
+          .then(pasteText)
+          .catch(() => {
+            terminal.focus()
+          })
+        return false
+      }
+
+      // Ctrl+B toggles the left sidebar; the shell must not also receive it.
+      if (key === 'b' && !event.shiftKey) return false
+
+      if (!readOnly && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+        navigateHistory(event.key === 'ArrowUp' ? 'up' : 'down')
+        return false
+      }
+      return true
+    })
+
+    let shouldRestoreTerminalFocus = false
+    const focusTerminal = () => {
+      shouldRestoreTerminalFocus = true
+      terminal.focus()
+    }
+    const rememberTerminalFocus = () => {
+      shouldRestoreTerminalFocus = true
+    }
+    const rememberPointerFocusIntent = (event: PointerEvent) => {
+      const target = event.target
+      if (target instanceof Node) {
+        shouldRestoreTerminalFocus = container.contains(target)
+      }
+    }
+    const forgetTerminalFocus = (event: FocusEvent) => {
+      const nextTarget = event.relatedTarget
+      if (nextTarget instanceof Node && !container.contains(nextTarget)) {
+        shouldRestoreTerminalFocus = false
+      }
+    }
+    const restoreLastTerminalFocus = () => {
+      if (document.visibilityState === 'hidden' || !shouldRestoreTerminalFocus) return
+      terminal.focus()
+    }
+    container.addEventListener('pointerdown', focusTerminal, true)
+    container.addEventListener('click', focusTerminal)
+    container.addEventListener('focusin', rememberTerminalFocus)
+    container.addEventListener('focusout', forgetTerminalFocus)
+    document.addEventListener('pointerdown', rememberPointerFocusIntent, true)
+    window.addEventListener('focus', restoreLastTerminalFocus)
+    document.addEventListener('visibilitychange', restoreLastTerminalFocus)
+
+    const onPaste = (event: ClipboardEvent) => {
+      const raw = event.clipboardData?.getData('text/plain') ?? ''
+      event.preventDefault()
+      event.stopPropagation()
+      if (raw) {
+        pasteText(raw)
+        return
+      }
+      void resolveClipboardPaste()
+        .catch(() => raw)
+        .then(pasteText)
+        .catch(() => {
+          terminal.focus()
+        })
+    }
+    container.addEventListener('paste', onPaste)
+
+    const onContextMenu = (event: MouseEvent) => {
+      event.preventDefault()
+      event.stopPropagation()
+      if (readOnly) return
+
+      if (terminal.hasSelection()) {
+        const selection = terminal.getSelection()
+        if (selection) {
+          void writeClipboardText(selection).catch(() => navigator.clipboard?.writeText(selection))
+          terminal.clearSelection()
+        }
+      } else {
+        void resolveClipboardPaste()
+          .catch(() => navigator.clipboard?.readText() ?? '')
+          .then(pasteText)
+          .catch(() => {
+            terminal.focus()
+          })
+      }
+    }
+    container.addEventListener('contextmenu', onContextMenu)
+
+    const flushInput = () => {
+      inputFlushScheduled = false
+      if (disposed || !queuedInput) return
+      const id = ptyIdRef.current
+      if (!id) return
+      const chunk = queuedInput
+      queuedInput = ''
+      inputWriteChain = inputWriteChain
+        .then(() => writePtyWithTimeout(id, chunk))
+        .catch((error) => requestWriteRecovery(id, 'input', error))
+    }
+    const queueInput = (id: string, data: string) => {
+      if (id !== ptyIdRef.current || !data || writeRecoveryPending) return
+      queuedInput += data
+      if (inputFlushScheduled) return
+      inputFlushScheduled = true
+      queueMicrotask(flushInput)
+    }
+
+    const runResize = () => {
+      resizeTimer = null
+      const id = ptyIdRef.current
+      if (!id) return
+
+      const rect = container.getBoundingClientRect()
+      if (rect.width < 50 || rect.height < 30) return
+      const activeBuffer = terminal.buffer.active
+      const distanceFromBottom = Math.max(0, activeBuffer.baseY - activeBuffer.viewportY)
+      try {
+        fitAddon.fit()
+      } catch (error) {
+        if (import.meta.env.DEV) console.error('[Alethe][xterm] fit failed', error)
+
+        return
+      }
+      const resizedBuffer = terminal.buffer.active
+      if (distanceFromBottom === 0) terminal.scrollToBottom()
+      else terminal.scrollToLine(Math.max(0, resizedBuffer.baseY - distanceFromBottom))
+      try {
+        terminal.refresh(0, Math.max(0, terminal.rows - 1))
+      } catch (error) {
+        if (import.meta.env.DEV) console.error('[Alethe][xterm] refresh failed', error)
+      }
+      clampHorizontalScroll()
+      const force = forceNextResize
+      forceNextResize = false
+      if (!force && terminal.cols === lastCols && terminal.rows === lastRows) return
+      lastCols = terminal.cols
+      lastRows = terminal.rows
+      if (import.meta.env.DEV) {
+        console.debug(`[pty-debug] ${id}: fit() -> resizePty ${terminal.cols}x${terminal.rows}`)
+      }
+      void resizePty(id, terminal.cols, terminal.rows)
+    }
+    const scheduleResize = (force = false) => {
+      // Ignore delayed resize callbacks after unmount.
+
+      if (disposed) return
+      forceNextResize ||= force
+      if (resizeTimer !== null) window.clearTimeout(resizeTimer)
+      resizeTimer = window.setTimeout(runResize, 80)
+    }
+    const scheduleObservedResize = () => scheduleResize()
+    const onResizeRequest = (event: Event) => {
+      const targetPtyId = (event as CustomEvent<{ ptyId?: string }>).detail?.ptyId
+      if (targetPtyId && targetPtyId !== ptyIdRef.current) return
+      scheduleResize(true)
+      window.setTimeout(() => scheduleResize(true), 120)
+      window.setTimeout(() => scheduleResize(true), 320)
+    }
+    const ro = new ResizeObserver(scheduleObservedResize)
+    ro.observe(container)
+    const onZoomChanged = () => {
+      const currentFontSize = terminal.options.fontSize
+      terminal.options.fontSize = currentFontSize
+      scheduleResize(true)
+    }
+    window.addEventListener('alethe:zoom-changed', onZoomChanged)
+    window.addEventListener('alethe:terminal-resize-request', onResizeRequest)
+
+    const initialFitTimer = window.setTimeout(() => {
+      scheduleResize()
+    }, 150)
+
+    // Rebuild the terminal screen from the backend replay.
+
+    const doResync = async () => {
+      const id = ptyIdRef.current
+      if (!id || disposed) return
+      try {
+        const arrivedDuringFetch: string[] = []
+        resyncCaptureRef = arrivedDuringFetch
+        const replay = await attachPty(id)
+        resyncCaptureRef = null
+        if (disposed) return
+        terminal.reset()
+        pendingWrites = []
+        pendingWriteLength = 0
+        cancelScheduledFlush()
+        if (replay) void writeReplayAtOnce(replay)
+        for (const chunk of arrivedDuringFetch) queueTerminalWrite(chunk)
+      } catch {
+        resyncCaptureRef = null
+      }
+    }
+    resyncTerminalRef.current = doResync
+
+    // Separate rendered data from lightweight activity updates.
+
+    const registerPtyStreamListeners = async (
+      id: string,
+      inspectChunk?: (chunk: string) => void,
+    ): Promise<boolean> => {
+      const dataUnlisten = await listenPtyData(id, (chunk) => {
+        useTerminalsStore.getState().recordIo(id)
+        if (resyncCaptureRef) resyncCaptureRef.push(chunk)
+        queueTerminalWrite(chunk)
+        completionMonitor?.handleOutput(chunk)
+        inspectChunk?.(chunk)
+      })
+      if (disposed) {
+        dataUnlisten()
+        return false
+      }
+      unlistenData = dataUnlisten
+
+      const activityUnlisten = await listenPtyActivity(id, (chunk) => {
+        useTerminalsStore.getState().recordIo(id)
+        completionMonitor?.handleOutput(chunk)
+        inspectChunk?.(chunk)
+      })
+      if (disposed) {
+        activityUnlisten()
+        return false
+      }
+      unlistenActivity = activityUnlisten
+      return true
+    }
+
+    const attachExistingPty = async (existingId: string) => {
+      setBootPhase('attaching')
+      attachedPtyId = existingId
+      if (command && cwd && !readOnly) {
+        registerSessionClaim(command, cwd, attachedSessionId, sessionPersistenceKey)
+        registerSessionClaim(command, cwd, attachedSessionId, existingId)
+      }
+      if (attachedSessionId !== sessionId) emitSessionId?.(attachedSessionId)
+      ptyIdRef.current = existingId
+      useTerminalsStore.getState().registerPty(existingId)
+      onSpawnedRef.current?.(existingId)
+
+      void setPtyVisible(existingId, isPanelVisibleRef.current).catch(() => {})
+
+      if (command === 'claude' || command === 'codex' || command === 'opencode') {
+        completionMonitor = new AgentCompletionMonitor({
+          ptyId: existingId,
+          agent: command,
+          label: command,
+          cwd,
+          onStatusChange: (status) => useTerminalsStore.getState().setStatus(existingId, status),
+          onComplete: () => onAgentCompleteRef.current?.(),
+        })
+      }
+
+      // Defer replay work until the pane is visible.
+
+      if (isPanelVisibleRef.current) {
+        const replay = await attachPty(existingId)
+        if (disposed) return
+        if (replay) await writeReplayAtOnce(replay)
+        if (disposed) return
+      }
+
+      if (!(await registerPtyStreamListeners(existingId))) return
+
+      const exitUnlisten = await listenPtyExit(existingId, (payload) => {
+        console.info(
+          `[pty-launch] ${command ?? 'shell'} EXIT (attach) id=${existingId} code=${payload.code ?? '—'} reason=${payload.reason ?? '—'}`,
+        )
+        if (payload.reason === 'restarted') {
+          useTerminalsStore.getState().markExited(existingId)
+          return
+        }
+        if (payload.reason === 'suspended') {
+          useTerminalsStore.getState().markSuspended(existingId)
+          completionMonitor?.dispose()
+          completionMonitor = null
+          return
+        }
+        useTerminalsStore.getState().markExited(existingId)
+        completionMonitor?.dispose()
+        completionMonitor = null
+        removeSession(sessionPersistenceKey)
+        onExitRef.current?.(payload.code)
+      })
+      if (disposed) {
+        exitUnlisten()
+        return
+      }
+      unlistenExit = exitUnlisten
+
+      scheduleResize()
+      if (!disposed) setBootPhase('ready')
+    }
+
+    terminal.onData((data) => {
+      if (readOnly) return
+      const id = ptyIdRef.current
+      if (!id) return
+      useTerminalsStore.getState().recordIo(id)
+      const startsNewSession = recordPromptInput(data)
+      completionMonitor?.handleInput(data)
+      const trackedPtyId = ptyIdRef.current
+      if (trackedPtyId) recordAgentActivityInput(trackedPtyId, data)
+      if (container.scrollWidth > container.clientWidth + 2) scheduleResize(true)
+      clampHorizontalScroll()
+      queueInput(id, data)
+      if (startsNewSession && command && !isShellAgentType(command)) {
+        cancelScheduledFlush()
+        pendingWrites = []
+        pendingWriteLength = 0
+        terminal.clear()
+        terminal.scrollToBottom()
+        // queueInput schedules its flush first, so this runs only after /new
+        // reaches the agent and before its fresh-session output is persisted.
+        queueMicrotask(() => {
+          inputWriteChain = inputWriteChain
+            .then(() => clearPtyScrollback(id))
+            .catch((error) => console.warn('[pty-scrollback] failed to clear after /new:', error))
+        })
+      }
+    })
+
+    const RESUMABLE_AGENTS = ['claude', 'codex', 'cursor', 'opencode', 'antigravity']
+
+    async function start() {
+      try {
+        // Subscribe before either spawning or attaching. A SessionStart can arrive
+        // before spawnPty resolves, and remounting a live PTY must restore tracking.
+        if (command === 'claude' && !readOnly) {
+          const off = await listen<AgentHookPayload>('agent-hook', (event) => {
+            if (event.payload.plannerId !== attachedPtyId) return
+            const reported = claudeSessionFromHook(event.payload)
+            if (reported) adoptSession(reported)
+          })
+          if (disposed) {
+            off()
+            return
+          }
+          unlistenSessionHook = off
+        }
+        // Skip zero-sized panes; the observer retries after layout settles.
+        try {
+          const rect = container?.getBoundingClientRect()
+          if (rect && rect.width >= 50 && rect.height >= 30) fitAddon.fit()
+        } catch {
+          /* Resize observation will retry fitting after layout settles. */
+        }
+        setCommandNotFound(null)
+        setBootPhase('preparing')
+
+        const existingRuntime = useTerminalsStore.getState().byPtyId[ptyId]
+        if (existingRuntime?.alive && !existingRuntime.parked) {
+          await attachExistingPty(ptyId)
+          return
+        }
+        const backendHasPty = await ptyExists(ptyId).catch(() => false)
+        if (backendHasPty) {
+          await attachExistingPty(ptyId)
+          return
+        }
+
+        let launcherOverride: string | undefined
+        if (command && command !== 'shell') {
+          if (cliPathOverride) {
+            if (cliPathMatchesAgent(command, cliPathOverride)) {
+              launcherOverride = cliPathOverride
+              console.info(`[pty-launch] ${command} using override: ${cliPathOverride}`)
+            } else {
+              useProjectsStore.getState().setCliPath(command, null)
+              useUiStore.getState().pushToast({
+                title: translate(getLocale(), 'prefs.cliPathMismatch'),
+                body: translate(getLocale(), 'prefs.cliPathMismatchBody', {
+                  agent: command,
+                  command: resolveAgentCliCommand(command) ?? command,
+                }),
+              })
+            }
+          }
+          if (!launcherOverride) {
+            const auto = await findCliLauncher(resolveAgentCliCommand(command) ?? command)
+            console.info(`[pty-launch] ${command} findCliLauncher → ${auto ?? 'null (NOT FOUND)'}`)
+            if (!auto) {
+              console.warn(
+                `[pty-launch] ${command} unresolved — showing the not-found overlay and staying offline`,
+              )
+              setCommandNotFound(command)
+              useTerminalsStore.getState().setStatus(ptyId, 'offline')
+              return
+            }
+          }
+        }
+
+        const savedSession =
+          command && RESUMABLE_AGENTS.includes(command) ? peekSession(sessionPersistenceKey) : null
+        const savedConversationId = savedConversationIdFor(savedSession, command, cwd)
+        // The synchronous session record may be newer than projects.json after closing.
+        let resumeId = trustSessionId
+          ? (sessionId ?? savedConversationId)
+          : (savedConversationId ?? sessionId)
+        // Retry an unavailable resumed conversation with a fresh session.
+
+        if (forceFreshRef.current) {
+          console.warn(`[pty-launch] ${command} reopening without resume (early-exit fallback)`)
+          resumeId = undefined
+        }
+        if (
+          resumeId &&
+          cwd &&
+          command &&
+          isSessionClaimed(command, cwd, resumeId, sessionPersistenceKey)
+        ) {
+          console.warn(
+            `[pty-launch] ${command} session ${resumeId} is already claimed; starting a fresh writer`,
+          )
+          resumeId = undefined
+          removeSession(sessionPersistenceKey)
+          emitSessionId?.(undefined)
+        }
+        // Reserve the resume ID before creating the PTY. Without this early
+        // claim, two panes can pass the check above at the same time and both
+        // launch `codex resume`, which makes Codex reject one writer.
+        if (resumeId && cwd && command) {
+          registerSessionClaim(command, cwd, resumeId, sessionPersistenceKey)
+        }
+
+        // Trusted session IDs can precede their transcript appearing in a snapshot.
+        if (
+          !trustSessionId &&
+          (command === 'claude' ||
+            command === 'codex' ||
+            command === 'antigravity' ||
+            command === 'opencode') &&
+          resumeId &&
+          cwd
+        ) {
+          try {
+            const existing =
+              command === 'claude'
+                ? await snapshotClaudeSessions(cwd)
+                : command === 'codex'
+                  ? await snapshotCodexSessions(cwd)
+                  : command === 'antigravity'
+                    ? await snapshotAntigravitySessions(cwd)
+                    : await snapshotOpenCodeSessions(cwd)
+            const notListed = !existing.some((session) => session.id === resumeId)
+
+            if (notListed && command !== 'opencode') {
+              console.warn(`[pty-launch] ${command} ignoring orphaned session ${resumeId}`)
+              resumeId = undefined
+              removeSession(sessionPersistenceKey)
+              emitSessionId?.(undefined)
+            }
+          } catch {
+            /* A failed snapshot must not discard a known conversation. */
+          }
+          if (disposed) return
+        }
+
+        // Cursor keeps its chats in an opaque store, so there is nothing to scan for afterwards:
+        // the pane asks the CLI for a chat up front and holds that ID for every later relaunch.
+        if (command === 'cursor' && !resumeId && cwd) {
+          resumeId = (await createCursorChat(cwd).catch(() => undefined)) || undefined
+          if (disposed) return
+        }
+
+        if (command === 'opencode' && !resumeId && cwd && !forceFreshRef.current) {
+          try {
+            const sessions = await snapshotOpenCodeSessions(cwd)
+
+            // Exclude the GSD child session from parent-session discovery.
+
+            const gsdChildId = await readGsdChildSession(cwd).catch(() => null)
+            const candidates = gsdChildId ? sessions.filter((s) => s.id !== gsdChildId) : sessions
+            const claimed = claimMostRecentSession('opencode', cwd, candidates)
+            if (claimed) resumeId = claimed.id
+          } catch {
+            /* Discovery is optional when no previous OpenCode session is available. */
+          }
+          if (disposed) return
+        }
+        const preparedRuntime = command
+          ? preparePtyRuntimeLaunch(command, runtimeProfile, extraArgs ?? [], env)
+          : { args: extraArgs ?? [], env }
+
+        // Read at spawn time rather than through a selector: the PTY environment is fixed when the
+        // process starts, so turning 9router off only ever affects terminals opened afterwards.
+        const router9Env =
+          useRouter9 && command
+            ? router9EnvFor(command, useProjectsStore.getState().preferences.router9)
+            : {}
+        const launchEnv =
+          Object.keys(router9Env).length > 0
+            ? { ...(preparedRuntime.env ?? {}), ...router9Env }
+            : preparedRuntime.env
+
+        // Prepare optional integrations before spawning.
+        const mcpConfigPaths: string[] = []
+        let hooksSettingsPath: string | undefined
+
+        if (
+          graphifyRepo &&
+          (command === 'claude' || command === 'codex' || command === 'opencode')
+        ) {
+          void graphifyEnsureGraph(graphifyRepo).catch(() => undefined)
+          if (command === 'claude') {
+            const p = await graphifyMcpConfigPath(graphifyRepo).catch(() => undefined)
+            if (p) mcpConfigPaths.push(p)
+          } else if (command === 'opencode') {
+            await graphifyOpenCodeConfigWrite(graphifyRepo).catch(() => {})
+          } else if (command === 'codex') {
+            await graphifyCodexConfigWrite(graphifyRepo).catch(() => {})
+          }
+          if (disposed) return
+        }
+
+        const aiMemoryEnabled = useProjectsStore.getState().preferences.enabledFeatures.aiMemory
+        if (
+          aiMemoryEnabled &&
+          cwd &&
+          (command === 'claude' || command === 'codex' || command === 'opencode')
+        ) {
+          const status = await aiMemoryDetect().catch(() => undefined)
+          if (status?.installed) {
+            if (command === 'claude') {
+              const p = await aiMemoryMcpConfigPath(cwd).catch(() => undefined)
+              if (p) mcpConfigPaths.push(p)
+            } else if (command === 'opencode') {
+              await aiMemoryOpenCodeConfigWrite(cwd).catch(() => {})
+            } else if (command === 'codex') {
+              await aiMemoryCodexConfigWrite(cwd).catch(() => {})
+            }
+          } else if (!aiMemoryMissingWarned) {
+            aiMemoryMissingWarned = true
+            useUiStore.getState().pushToast({
+              title: translate(getLocale(), 'aiMemory.notInstalledTitle'),
+              body: translate(getLocale(), 'aiMemory.notInstalledBody'),
+            })
+          }
+          if (disposed) return
+        }
+
+        // Claude only: it takes an ephemeral --mcp-config, so nothing is left behind pointing at a
+        // dead endpoint. Codex and OpenCode need in-repo config writes.
+        //
+        // This must never start a browser. The config points at the shared browser when one is
+        // already running and otherwise leaves Playwright on its default, which opens a browser
+        // only once the agent reaches for one.
+        const playwrightEnabled = useProjectsStore.getState().preferences.enabledFeatures.playwright
+        if (playwrightEnabled && command === 'claude') {
+          const { playwrightBrowserMode, playwrightDedicatedHeadless } =
+            useProjectsStore.getState().preferences
+          const p = await playwrightMcpConfigPath({
+            dedicated: playwrightBrowserMode === 'dedicated',
+            headless: playwrightDedicatedHeadless,
+          }).catch(() => undefined)
+          if (p) mcpConfigPaths.push(p)
+          if (disposed) return
+        }
+
+        const orchestratorEnabled =
+          useProjectsStore.getState().preferences.enabledFeatures.orchestrator
+        if (orchestratorEnabled && command === 'claude') {
+          const p = await orchestratorMcpConfigPath(ptyId, plannerLabelFor(ptyId), command).catch(
+            () => undefined,
+          )
+          if (p) mcpConfigPaths.push(p)
+          if (disposed) return
+        }
+
+        // Tags every Claude pane's hooks with its ptyId. SessionStart/UserPromptSubmit report the
+        // conversation the CLI is actually on, which is what keeps the pane in sync after an in-CLI
+        // /clear or /resume; with the orchestrator on, the same file also carries its subagent and
+        // tool-call hooks so the canvas can hang them off this planner.
+        if (command === 'claude') {
+          hooksSettingsPath = await agentHooksSettingsPath(ptyId, orchestratorEnabled).catch(
+            () => undefined,
+          )
+          if (disposed) return
+        }
+
+        if (orchestratorEnabled && command === 'codex' && cwd) {
+          // Same idea for Codex: it has its own native subagents (SubagentStart/Stop), just no http
+          // hook handler — codexHooksConfigWrite points them at a generated forwarder instead.
+          await codexHooksConfigWrite(cwd, ptyId).catch(() => undefined)
+          if (disposed) return
+
+          // Registers this Codex terminal as a planner too, so it can call alethe_delegate.
+          await codexMcpConfigWrite(cwd, ptyId, plannerLabelFor(ptyId), command).catch(
+            () => undefined,
+          )
+          if (disposed) return
+        }
+
+        const { preferences } = useProjectsStore.getState()
+        if (
+          command === 'opencode' &&
+          cwd &&
+          gsdWatcherEnabled &&
+          preferences.enabledFeatures.gsdSync
+        ) {
+          const modelChain = preferences.gsdSyncModelChain ?? []
+
+          await gsdOpenCodePluginWrite(cwd, modelChain).catch((error) => {
+            console.error(`[pty-launch] gsdOpenCodePluginWrite failed for ${cwd}:`, error)
+          })
+          if (disposed) return
+        }
+
+        const launch = command
+          ? buildAgentLaunch(
+              command,
+              preparedRuntime.args,
+              resumeId,
+              undefined,
+              mcpConfigPaths,
+              hooksSettingsPath,
+            )
+          : { args: preparedRuntime.args, sessionId: undefined, createdSession: false }
+        const spawnArgs = launch.args.length > 0 ? launch.args : undefined
+        attachedSessionId = launch.sessionId
+        if (command && command !== 'shell') {
+          console.info(
+            `[pty-launch] ${command} args=${JSON.stringify(spawnArgs ?? [])} resumeId=${resumeId ?? '—'} launcherOverride=${launcherOverride ?? '(auto/PATH)'}`,
+          )
+        }
+        if (launch.sessionId && launch.sessionId !== sessionId) {
+          emitSessionId?.(launch.sessionId)
+        }
+        if (command && cwd) {
+          registerSessionClaim(command, cwd, launch.sessionId, sessionPersistenceKey)
+        }
+
+        // Claude reports identity through its own hooks. Shared-directory timestamps
+        // cannot tell which pane created or resumed a conversation.
+        const discoveredSessionsBeforePromise =
+          cwd && !launch.sessionId
+            ? command === 'codex'
+              ? snapshotCodexSessions(cwd).catch(() => [])
+              : command === 'antigravity'
+                ? snapshotAntigravitySessions(cwd).catch(() => [])
+                : command === 'opencode'
+                  ? snapshotOpenCodeSessions(cwd).catch(() => [])
+                  : null
+            : null
+
+        // Too many parallel PTY spawns can stall the app.
+        setBootPhase('queued')
+        const acquiredSpawnSlot = await acquireSpawnSlot(spawnQueueAbort.signal)
+        if (!acquiredSpawnSlot) return
+        if (disposed) {
+          releaseSpawnSlot()
+          return
+        }
+        setBootPhase('spawning')
+        let response: { id: string }
+        try {
+          response = await spawnPty({
+            cols: terminal.cols,
+            rows: terminal.rows,
+            id: ptyId,
+            command: command ? resolveAgentCliCommand(command) : undefined,
+            cwd: cwd ?? undefined,
+            extraArgs: spawnArgs,
+            launcherOverride,
+            env: launchEnv,
+          })
+        } finally {
+          releaseSpawnSlot()
+        }
+        console.info(`[pty-launch] ${command ?? 'shell'} spawn OK id=${response.id}`)
+        spawnedAtRef.current = Date.now()
+        usedResumeRef.current = Boolean(resumeId)
+        if (disposed) return
+        setBootPhase('attaching')
+        attachedPtyId = response.id
+        ptyIdRef.current = response.id
+        useTerminalsStore.getState().registerPty(response.id)
+        onSpawnedRef.current?.(response.id)
+
+        // Apply visibility before the first output batch.
+
+        void setPtyVisible(response.id, isPanelVisibleRef.current).catch(() => {})
+        if (command && cwd && attachedSessionId) {
+          // Owned by the tab as well as the PTY: the PTY id changes on every
+          // respawn, and a claim only reachable through a dead PTY id would make
+          // the tab treat its own conversation as taken and start a fresh one.
+          registerSessionClaim(command, cwd, attachedSessionId, sessionPersistenceKey)
+          registerSessionClaim(command, cwd, attachedSessionId, response.id)
+        }
+
+        if (command === 'claude' || command === 'codex' || command === 'opencode') {
+          completionMonitor = new AgentCompletionMonitor({
+            ptyId: response.id,
+            agent: command,
+            label: command,
+            cwd,
+            onStatusChange: (status) => useTerminalsStore.getState().setStatus(response.id, status),
+            onComplete: () => onAgentCompleteRef.current?.(),
+          })
+        }
+
+        // Preserve the latest identity, including hooks received during spawn.
+        if (command && RESUMABLE_AGENTS.includes(command)) {
+          persistAttachedSession()
+
+          if (
+            (command === 'codex' || command === 'antigravity' || command === 'opencode') &&
+            cwd &&
+            discoveredSessionsBeforePromise
+          ) {
+            const detectCreatedSession = async () => {
+              const before = new Set((await discoveredSessionsBeforePromise).map((s) => s.id))
+              if (launch.sessionId) before.add(launch.sessionId)
+
+              let attempt = 0
+              while (!disposed) {
+                const delayMs = attempt < 10 ? 3000 : 15000
+                if (command === 'codex') {
+                  await Promise.race([
+                    new Promise((resolve) => setTimeout(resolve, delayMs)),
+                    waitForSessionHint('codex'),
+                  ])
+                } else {
+                  await new Promise((resolve) => setTimeout(resolve, delayMs))
+                }
+                if (disposed) return
+                const sessions =
+                  command === 'codex'
+                    ? await snapshotCodexSessions(cwd).catch(() => [])
+                    : command === 'antigravity'
+                      ? await snapshotAntigravitySessions(cwd).catch(() => [])
+                      : await snapshotOpenCodeSessions(cwd).catch(() => [])
+
+                // Same filtering as the resume block above.
+                let filteredSessions = sessions
+                if (command === 'opencode') {
+                  const gsdChildId = await readGsdChildSession(cwd).catch(() => null)
+                  if (gsdChildId) filteredSessions = sessions.filter((s) => s.id !== gsdChildId)
+                }
+
+                if (disposed) return
+                const newSession = claimDiscoveredSession(
+                  command,
+                  cwd,
+                  before,
+                  filteredSessions,
+                  sessionPersistenceKey,
+                )
+                if (newSession) {
+                  adoptSession(newSession.id)
+                  return
+                }
+                attempt += 1
+              }
+            }
+            void detectCreatedSession()
+          }
+        }
+
+        let resumeConflictHandled = false
+        const handleResumeConflict = () => {
+          resumeConflictHandled = true
+          earlyExitRetriedRef.current = true
+          forceFreshRef.current = true
+          removeSession(sessionPersistenceKey)
+          emitSessionId?.(undefined)
+          terminal.write(
+            '\r\n\x1b[33m[alethe] Codex session is busy — opening a fresh session…\x1b[0m\r\n',
+          )
+          void killPty(response.id).catch(() => {})
+          setRetryKey((value) => value + 1)
+        }
+
+        // Codex writes the bootstrap error and exits before the stream listeners below
+        // exist, so a hidden pane would never see it: it does not read the replay, and by
+        // the time it is shown the process is long gone. `attach_pty` only reads the
+        // scrollback, so asking for it early costs nothing and consumes nothing.
+        if (command === 'codex' && usedResumeRef.current && !isPanelVisibleRef.current) {
+          const early = await attachPty(response.id).catch(() => '')
+          if (disposed) return
+          if (early && /already has an active writer|thread\/resume failed/i.test(early)) {
+            handleResumeConflict()
+            return
+          }
+        }
+
+        // Inspect the initial replay before registering live stream listeners.
+        if (isPanelVisibleRef.current) {
+          const replay = await attachPty(response.id)
+          if (disposed) return
+          if (
+            replay &&
+            command === 'codex' &&
+            usedResumeRef.current &&
+            /already has an active writer|thread\/resume failed/i.test(replay)
+          ) {
+            handleResumeConflict()
+            return
+          }
+          if (replay) await queueTerminalWriteAndWait(replay)
+          if (disposed) return
+        }
+
+        const inspectResumeConflict = (chunk: string) => {
+          if (command !== 'codex' || !usedResumeRef.current || resumeConflictHandled) return
+          // PTY events can split the bootstrap error between chunks, so keep
+          // a bounded rolling buffer instead of matching each chunk alone.
+          resumeErrorBuffer = `${resumeErrorBuffer}${chunk}`.slice(-8192)
+          if (/already has an active writer|thread\/resume failed/i.test(resumeErrorBuffer)) {
+            handleResumeConflict()
+          }
+        }
+        if (!(await registerPtyStreamListeners(response.id, inspectResumeConflict))) return
+
+        const exitUnlisten = await listenPtyExit(response.id, (payload) => {
+          if (disposed) return
+          console.info(
+            `[pty-launch] ${command ?? 'shell'} EXIT id=${response.id} code=${payload.code ?? '—'} reason=${payload.reason ?? '—'}`,
+          )
+          if (payload.reason === 'restarted') {
+            useTerminalsStore.getState().markExited(response.id)
+            return
+          }
+          if (payload.reason === 'suspended') {
+            useTerminalsStore.getState().markSuspended(response.id)
+            completionMonitor?.dispose()
+            completionMonitor = null
+            return
+          }
+          const isAgent = command ? RESUMABLE_AGENTS.includes(command) : false
+          const elapsed = Date.now() - spawnedAtRef.current
+
+          if (
+            isAgent &&
+            elapsed < EARLY_EXIT_MS &&
+            usedResumeRef.current &&
+            !earlyExitRetriedRef.current
+          ) {
+            earlyExitRetriedRef.current = true
+            forceFreshRef.current = true
+            console.warn(
+              `[pty-launch] ${command} exited after ${elapsed}ms with resume — opening a fresh session (fallback)`,
+            )
+            useTerminalsStore.getState().markExited(response.id)
+            completionMonitor?.dispose()
+            completionMonitor = null
+            removeSession(sessionPersistenceKey)
+            emitSessionId?.(undefined)
+            terminal.write(
+              '\r\n\x1b[33m[alethe] sessão anterior indisponível — reabrindo sessão nova…\x1b[0m\r\n',
+            )
+            setRetryKey((v) => v + 1)
+            return
+          }
+
+          if (isAgent && elapsed < EARLY_EXIT_MS) {
+            console.warn(
+              `[pty-launch] ${command} exited after ${elapsed}ms (code ${payload.code ?? '—'}) — no retry`,
+            )
+            terminal.write(
+              `\r\n\x1b[31m[alethe] ${command} encerrou imediatamente (code ${payload.code ?? '—'}).\x1b[0m\r\n` +
+                '\x1b[90mVerifique a instalação do CLI ou configure o caminho nas preferências.\x1b[0m\r\n',
+            )
+          }
+          useTerminalsStore.getState().markExited(response.id)
+          completionMonitor?.dispose()
+          completionMonitor = null
+
+          removeSession(sessionPersistenceKey)
+          onExitRef.current?.(payload.code)
+        })
+        if (disposed) {
+          exitUnlisten()
+          return
+        }
+        unlistenExit = exitUnlisten
+
+        const prompt = initialInput?.trim()
+        if (prompt) {
+          const sendInitialInput = async () => {
+            // "Quiet output for 700ms" is the WRONG signal for OpenCode —
+            // confirmed live, repeatedly: it goes quiet as soon as the
+            // welcome screen finishes drawing, well before it's done
+            // connecting to MCP servers (the footer shows "4 MCP" — likely
+            // that connection, not the UI, is what actually takes a while).
+            // A fixed minimum wait didn't fix it either (confirmed live: it
+            // sent early and the screen stayed empty). For OpenCode,
+            // "readiness" is now checked a different way — by reading the
+            // actually-rendered screen (see the isOpencode block below)
+            // instead of guessing by time — just a short wait here so it
+            // doesn't type over the very first paint. Other providers keep
+            // the old criterion, which never had this problem.
+            const isOpencode = command === 'opencode'
+            const earliestSendAt = Date.now() + (isOpencode ? 4_000 : 1_500)
+            const timedSendAt = Date.now() + 4_000
+            // Deadline much larger than the minimum, as a safety net: with a
+            // heavy panel (another TUI terminal) open alongside, the
+            // WebView's main thread can get congested enough to delay even
+            // this loop's own setTimeouts — tested live, only a much larger
+            // ceiling (2min) guarantees enough wall-clock time even with
+            // delayed ticks.
+            const deadline = Date.now() + 120_000
+            let readyToSend = false
+            while (!disposed && Date.now() < deadline) {
+              await new Promise((resolve) => window.setTimeout(resolve, 250))
+              const runtime = useTerminalsStore.getState().byPtyId[response.id]
+              const quietFor = runtime ? Date.now() - runtime.lastIoAt : 0
+              // OpenCode: only the fixed minimum wait matters (earliestSendAt
+              // already covers it). Other providers: keep the old "quiet
+              // output" criterion, which never had this problem.
+              const settled = isOpencode || quietFor >= 700 || Date.now() >= timedSendAt
+              if (Date.now() >= earliestSendAt && runtime?.alive && settled) {
+                readyToSend = true
+                break
+              }
+            }
+            if (disposed || !readyToSend) return
+            try {
+              try {
+                terminal.focus()
+              } catch {
+                /* pane may already be unmounting — ignore */
+              }
+              if (isOpencode) {
+                // Instead of guessing "readiness" by time or scanning the
+                // raw byte stream (interleaved \x1b escape codes broke any
+                // string match), reads the screen already RENDERED by
+                // xterm.js itself — the same buffer it uses to draw, with
+                // every ANSI code already applied and resolved to plain
+                // text. The typing/confirmation logic itself lives in
+                // `agentPromptDelivery.ts` (extracted to be reusable outside
+                // this component, e.g. by the e2e suite — see
+                // `e2e/support/openCodePrompt.ts` — without duplicating or
+                // reinventing something already tested live).
+                const readVisibleScreenText = (rows = 200): string => {
+                  const buffer = terminal.buffer.active
+                  const start = Math.max(0, buffer.length - rows)
+                  const lines: string[] = []
+                  for (let y = start; y < buffer.length; y++) {
+                    const line = buffer.getLine(y)
+                    if (line) lines.push(line.translateToString(true))
+                  }
+                  return lines.join('\n')
+                }
+                const delivered = await deliverOpenCodePrompt(prompt, deadline, {
+                  readScreenText: readVisibleScreenText,
+                  write: (data) => writePty(response.id, data),
+                  sleep: (ms) => new Promise((resolve) => window.setTimeout(resolve, ms)),
+                  isCancelled: () => disposed,
+                })
+                if (!delivered) {
+                  console.warn(
+                    `[pty-launch] opencode did not confirm the typed text on screen before the deadline id=${response.id}`,
+                  )
+                  return
+                }
+              } else {
+                await writePtyChunked(response.id, prompt, terminal.modes.bracketedPasteMode)
+                await new Promise((resolve) => window.setTimeout(resolve, 150))
+                await writePty(response.id, '\r')
+                window.setTimeout(() => void writePty(response.id, '\r').catch(() => {}), 1_200)
+              }
+              onInitialInputSentRef.current?.()
+            } catch (error) {
+              console.warn('[pty-launch] could not send the initial prompt:', error)
+            }
+          }
+          initialInputInFlight = true
+          void sendInitialInput().finally(() => {
+            initialInputInFlight = false
+          })
+        }
+
+        scheduleResize()
+        if (!disposed) setBootPhase('ready')
+      } catch (err) {
+        console.error(`[pty-launch] ${command ?? 'shell'} FAILED to start:`, err)
+        onLaunchErrorRef.current?.(err)
+        if (!disposed) terminal.writeln(`Failed to start PTY: ${String(err)}`)
+        if (!disposed) setBootPhase('ready')
+      }
+    }
+    void start()
+
+    return () => {
+      if (import.meta.env.DEV) {
+        console.debug('[Alethe][xterm] unmount', {
+          sessionPersistenceKey,
+          retryKey,
+          ptyId: ptyIdRef.current,
+        })
+      }
+      disposed = true
+      spawnQueueAbort.abort()
+      container.removeEventListener('wheel', onWheel, true)
+      container.removeEventListener('pointerdown', focusTerminal, true)
+      container.removeEventListener('click', focusTerminal)
+      container.removeEventListener('paste', onPaste)
+      container.removeEventListener('focusin', rememberTerminalFocus)
+      container.removeEventListener('focusout', forgetTerminalFocus)
+      document.removeEventListener('pointerdown', rememberPointerFocusIntent, true)
+      window.removeEventListener('focus', restoreLastTerminalFocus)
+      document.removeEventListener('visibilitychange', restoreLastTerminalFocus)
+      container.removeEventListener('contextmenu', onContextMenu)
+      window.removeEventListener('alethe:zoom-changed', onZoomChanged)
+      window.removeEventListener('alethe:terminal-resize-request', onResizeRequest)
+      ro.disconnect()
+      if (resizeTimer !== null) window.clearTimeout(resizeTimer)
+      cancelScheduledFlush()
+      pendingWrites = []
+      pendingWriteLength = 0
+      pendingWriteDrainResolvers = []
+      queuedInput = ''
+      window.clearTimeout(initialFitTimer)
+      unlistenData?.()
+      unlistenActivity?.()
+      unlistenExit?.()
+      unlistenDragDrop?.()
+      unlistenSessionHook?.()
+      linkProviderDisposable?.dispose()
+      linkScrollDisposable?.dispose()
+      completionMonitor?.dispose()
+      completionMonitor = null
+      setLinkActions(null)
+      if (terminalRef.current === terminal) terminalRef.current = null
+      ptyIdRef.current = null
+      if (resyncTerminalRef.current === doResync) resyncTerminalRef.current = null
+      terminal.dispose()
+    }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionPersistenceKey, retryKey])
+
+  useEffect(() => {
+    isPanelVisibleRef.current = isPanelVisible
+    const wasVisible = wasPanelVisibleRef.current
+    wasPanelVisibleRef.current = isPanelVisible
+
+    if (isFirstVisibilityRunRef.current) {
+      isFirstVisibilityRunRef.current = false
+      return
+    }
+
+    let cancelled = false
+    let resyncTimer: number | null = null
+
+    // While hidden the PTY still reports activity, so lastIoAt tells us whether anything was
+    // produced. If nothing was, the buffer on screen is already correct and resyncing would only
+    // clear the terminal and rewrite identical bytes — a visible flash for no reason.
+    const ioAtNow = () => useTerminalsStore.getState().byPtyId[ptyId]?.lastIoAt ?? 0
+    if (!isPanelVisible) lastIoWhenHiddenRef.current = ioAtNow()
+
+    void setPtyVisible(ptyId, isPanelVisible)
+      .catch(() => false)
+      .then((applied) => {
+        if (!applied && isPanelVisible) {
+          console.warn(
+            `[pty-visibility] ${ptyId} was not registered when the panel became visible; ` +
+              'the resource sampler will reconcile it',
+          )
+        }
+        if (cancelled || !isPanelVisible || wasVisible) return
+        if (lastIoWhenHiddenRef.current !== null && ioAtNow() === lastIoWhenHiddenRef.current)
+          return
+        resyncTimer = window.setTimeout(() => {
+          if (!cancelled) void resyncTerminalRef.current?.()
+        }, PANEL_RESYNC_DEBOUNCE_MS)
+      })
+
+    return () => {
+      cancelled = true
+      if (resyncTimer !== null) window.clearTimeout(resyncTimer)
+    }
+  }, [ptyId, isPanelVisible])
+}

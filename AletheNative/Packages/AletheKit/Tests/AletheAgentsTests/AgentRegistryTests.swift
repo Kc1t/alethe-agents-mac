@@ -1,0 +1,49 @@
+import Testing
+@testable import AletheAgents
+
+@Suite struct AgentRegistryTests {
+    let registry = AgentRegistry.builtin
+
+    @Test func upstreamAgentsAreRegisteredInItsOrder() {
+        #expect(registry.kinds == [.claude, .codex, .copilot, .cursor, .antigravity, .opencode, .mimo, .freebuff, .kiro, .shell])
+        #expect(registry.descriptor(for: .cursor)?.cliCommand == "cursor-agent")
+        #expect(registry.descriptor(for: .antigravity)?.cliCommand == "agy")
+        #expect(registry.descriptor(for: .kiro)?.cliCommand == "kiro-cli")
+        #expect(registry.descriptor(for: .copilot)?.displayName == "GitHub Copilot")
+        #expect(registry.descriptor(for: .shell)?.isShell == true)
+    }
+
+    @Test func unrestrictedFlagsMatchUpstream() {
+        #expect(registry.descriptor(for: .claude)?.unrestrictedFlag == "--dangerously-skip-permissions")
+        #expect(registry.descriptor(for: .codex)?.unrestrictedFlag == "--dangerously-bypass-approvals-and-sandbox")
+        #expect(registry.descriptor(for: .opencode)?.unrestrictedFlag == "--dangerously-skip-permissions")
+        #expect(registry.descriptor(for: .cursor)?.unrestrictedFlag == "--force")
+        #expect(registry.descriptor(for: .shell)?.unrestrictedFlag == nil)
+        #expect(registry.descriptor(for: .copilot)?.unrestrictedFlag == "--allow-all")
+        #expect(registry.descriptor(for: .antigravity)?.unrestrictedFlag == "--dangerously-skip-permissions")
+        #expect(registry.descriptor(for: .kiro)?.unrestrictedFlag == "--trust-all-tools")
+        #expect(registry.descriptor(for: .mimo)?.unrestrictedFlag == nil)
+        #expect(registry.descriptor(for: .freebuff)?.unrestrictedFlag == nil)
+    }
+
+    @Test func parsesCaseInsensitivelyAndRejectsUnknown() {
+        #expect(registry.parse(" Claude ") == .claude)
+        #expect(registry.parse("codex") == .codex)
+        #expect(registry.parse("wsl") == nil)
+        #expect(registry.parse("") == nil)
+        #expect(registry.parse(nil) == nil)
+    }
+
+    @Test func enabledKindsKeepRegistryOrderAndTheShell() {
+        #expect(registry.enabledKinds(nil) == registry.kinds)
+        #expect(registry.enabledKinds(["codex", "claude", "bogus"]) == [.claude, .codex, .shell])
+        #expect(registry.enabledKinds([]) == [.shell])
+    }
+
+    @Test func togglingAgentsKeepsAllOnAsNil() {
+        let off = registry.enabled(nil, setting: .kiro, on: false)
+        #expect(off?.contains("kiro") == false && off?.contains("claude") == true)
+        #expect(registry.enabled(off, setting: .kiro, on: true) == nil, "all on again is stored as all")
+        #expect(registry.enabled(nil, setting: .shell, on: false) == nil, "the shell stays")
+    }
+}

@@ -1,0 +1,229 @@
+import {
+  Bot,
+  Boxes,
+  ChevronRight,
+  Cloud,
+  Code2,
+  Gift,
+  MousePointer2,
+  Sparkles,
+  Terminal,
+  type LucideIcon,
+} from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+
+import { commandContributions, commandLabel, useContributions } from '../../lib/plugins'
+import { useProjectsStore } from '../../stores/projectsStore'
+import { useUiStore } from '../../stores/uiStore'
+import type { AgentType, BuiltinAgentType } from '../../lib/types'
+import { useT } from '../../lib/i18n'
+import { Modal } from './Modal'
+import controls from './controls.module.css'
+
+const ICONS: Record<BuiltinAgentType, LucideIcon> = {
+  shell: Terminal,
+  wsl: Terminal,
+  claude: Sparkles,
+  codex: Code2,
+  copilot: Bot,
+  cursor: MousePointer2,
+  antigravity: Sparkles,
+  opencode: Boxes,
+  freebuff: Gift,
+  mimo: Bot,
+  kiro: Cloud,
+}
+
+type TerminalHit = {
+  kind: 'terminal'
+  key: string
+  projectId: string
+  projectName: string
+  terminalId: string
+  terminalName: string
+  type: AgentType
+  cwd: string
+}
+
+type CommandHit = {
+  kind: 'command'
+  key: string
+  label: string
+  icon: LucideIcon | undefined
+  run: () => void | Promise<void>
+}
+
+type Hit = TerminalHit | CommandHit
+
+export function FindJumpModal() {
+  const t = useT()
+  const open = useUiStore((s) => s.openModal === 'findJump')
+  const closeModal = useUiStore((s) => s.closeModal)
+  const projects = useProjectsStore((s) => s.projects)
+  const openTerminalWorkspace = useProjectsStore((s) => s.openTerminalWorkspace)
+
+  const [query, setQuery] = useState('')
+  const [cursor, setCursor] = useState(0)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (open) {
+      setQuery('')
+      setCursor(0)
+                                             
+      setTimeout(() => inputRef.current?.focus(), 50)
+    }
+  }, [open])
+
+  const commands = useContributions(commandContributions)
+
+  const hits = useMemo<Hit[]>(() => {
+    const q = query.trim().toLowerCase()
+
+    const commandHits: CommandHit[] = commands
+      .map((command) => ({
+        kind: 'command' as const,
+        key: `command:${command.id}`,
+        label: commandLabel(t, command),
+        icon: command.icon as LucideIcon | undefined,
+        run: command.run,
+        haystack: `${commandLabel(t, command)} ${command.keywords ?? ''}`.toLowerCase(),
+      }))
+      .filter((hit) => !q || hit.haystack.includes(q))
+      .map(({ haystack: _haystack, ...hit }) => hit)
+
+    const terminalHits: TerminalHit[] = projects.flatMap((p) =>
+      p.terminals.map((term) => {
+        const active = term.tabs.find((s) => s.id === term.activeTabId) ?? term.tabs[0]
+        return {
+          kind: 'terminal' as const,
+          key: `terminal:${p.id}:${term.id}`,
+          projectId: p.id,
+          projectName: p.name,
+          terminalId: term.id,
+          terminalName: term.name,
+          type: active?.type ?? 'shell',
+          cwd: active?.cwd ?? term.cwd,
+        }
+      }),
+    )
+    const filteredTerminals = q
+      ? terminalHits.filter((h) =>
+          `${h.projectName} ${h.terminalName} ${h.cwd}`.toLowerCase().includes(q),
+        )
+      : terminalHits
+
+    return [...commandHits, ...filteredTerminals].slice(0, 50)
+  }, [commands, projects, query, t])
+
+  const jump = (hit: Hit) => {
+    if (hit.kind === 'command') {
+      closeModal()
+      void hit.run()
+      return
+    }
+    openTerminalWorkspace(hit.projectId, hit.terminalId)
+    useUiStore.getState().setActiveView('workspace')
+    useUiStore.getState().requestPaneFocus(hit.terminalId)
+    closeModal()
+  }
+
+  const onKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setCursor((c) => Math.min(c + 1, hits.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setCursor((c) => Math.max(c - 1, 0))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      const hit = hits[cursor]
+      if (hit) jump(hit)
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={closeModal} title={t('term.findTerminalTitle')} width={520}>
+      <input
+        ref={inputRef}
+        className={controls.input}
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value)
+          setCursor(0)
+        }}
+        onKeyDown={onKey}
+        placeholder={t('term.findPlaceholder')}
+        autoFocus
+      />
+
+      <div style={{ marginTop: 12, maxHeight: 320, overflowY: 'auto' }}>
+        {hits.length === 0 ? (
+          <div style={{ padding: 24, textAlign: 'center', color: 'var(--fg-faint)' }}>
+            {t('term.nothingFound')}
+          </div>
+        ) : (
+          hits.map((hit, i) => {
+            const Icon =
+              hit.kind === 'command'
+                ? (hit.icon ?? ChevronRight)
+                : (ICONS[hit.type as BuiltinAgentType] ?? Bot)
+            const active = i === cursor
+            return (
+              <button
+                key={hit.key}
+                type="button"
+                onClick={() => jump(hit)}
+                onMouseEnter={() => setCursor(i)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  width: '100%',
+                  padding: '8px 10px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: active ? 'var(--accent-faint)' : 'transparent',
+                  color: 'var(--fg)',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                }}
+              >
+                <Icon size={14} />
+                <span style={{ fontWeight: 500 }}>
+                  {hit.kind === 'command' ? hit.label : hit.terminalName}
+                </span>
+                {hit.kind === 'terminal' ? (
+                  <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>
+                    · {hit.projectName}
+                  </span>
+                ) : (
+                  <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>
+                    · {t('term.findCommandGroup')}
+                  </span>
+                )}
+                {hit.kind === 'terminal' && hit.cwd ? (
+                  <span
+                    style={{
+                      marginLeft: 'auto',
+                      fontSize: 10,
+                      fontFamily: 'var(--font-mono)',
+                      color: 'var(--fg-faint)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      maxWidth: 220,
+                    }}
+                    title={hit.cwd}
+                  >
+                    {hit.cwd}
+                  </span>
+                ) : null}
+              </button>
+            )
+          })
+        )}
+      </div>
+    </Modal>
+  )
+}
