@@ -64,11 +64,10 @@ struct PlaywrightOptions: View {
         }
         .font((metrics.isWebInterface ? metrics.font(size: 10) : metrics.font(.footnote)))
             .foregroundStyle(theme[.textSecondary])
-        switch mode.wrappedValue {
-        case .dedicated:
+        if case .dedicated = mode.wrappedValue {
             Toggle("settings.playwright.dedicatedHeadless", isOn: dedicatedHeadless)
                 .accessibilityIdentifier("settings.playwright.dedicatedHeadless")
-        case .shared:
+        } else if case .shared = mode.wrappedValue {
             sharedBrowser
         }
     }
@@ -112,15 +111,14 @@ struct PlaywrightOptions: View {
     }
 
     private func status(_ state: PlaywrightBrowser.State) -> Text {
-        switch state {
-        case .stopped:
+        if case .stopped = state {
             Text("settings.playwright.status.stopped")
-        case .starting:
+        } else if case .starting = state {
             Text("settings.playwright.status.starting")
-        case .running(let info):
+        } else if case .running(let info) = state {
             Text(verbatim: String(format: String(localized: "settings.playwright.status.running"),
                                   info.endpoint, info.executable.lastPathComponent))
-        case .failed(let error):
+        } else if case .failed(let error) = state {
             Text(verbatim: error.map(PlaywrightBrowser.message) ?? String(localized: "settings.playwright.status.stopped"))
                 .foregroundStyle(theme[.statusStopped])
         }

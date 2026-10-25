@@ -22,7 +22,9 @@ final class AgentInstaller {
     func toolchain(launchers: LauncherCache) async -> InstallToolchain {
         launchers.invalidate()
         let node = launchers.resolve("node")
-        return InstallToolchain(node: node == nil ? nil : await CLIVersion.probe(node!),
+        var version: String?
+        if let node { version = await CLIVersion.probe(node) }
+        return InstallToolchain(node: version,
                                 npm: launchers.resolve("npm") != nil, brew: launchers.resolve("brew") != nil)
     }
 

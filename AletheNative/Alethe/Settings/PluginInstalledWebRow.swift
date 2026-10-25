@@ -34,13 +34,15 @@ struct PluginInstalledWebRow: View {
                         Task { do { try await host.setEnabled(!record.isEnabled, for: record.id) } catch { failed = true } }
                     } label: {
                         Capsule().fill(theme[record.isEnabled ? .accentSoft : .bgElevated])
-                            .overlay(Capsule().strokeBorder(theme[record.isEnabled ? .accentBorder : .borderStrong], lineWidth: metrics.size(1)))
+                            .overlay(Capsule().strokeBorder(theme[record.isEnabled ? .accentBorder : .borderStrong],
+                                lineWidth: metrics.size(1)))
                             .overlay(alignment: record.isEnabled ? .trailing : .leading) {
                                 Circle().fill(theme[record.isEnabled ? .accent : .fgFaint])
                                     .frame(width: metrics.size(12), height: metrics.size(12)).padding(metrics.size(3))
                             }.frame(width: metrics.size(32), height: metrics.size(18))
                     }.buttonStyle(.plain).accessibilityLabel(Text(verbatim: record.manifest.name))
-                        .accessibilityValue(Text(record.isEnabled ? "settings.web.reference.market.stateEnabled" : "settings.web.reference.market.stateDisabled"))
+                        .accessibilityValue(Text(record.isEnabled ? "settings.web.reference.market.stateEnabled"
+                            : "settings.web.reference.market.stateDisabled"))
                         .accessibilityIdentifier("settings.plugins.\(record.id)")
                 }
             }

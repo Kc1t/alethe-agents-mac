@@ -59,9 +59,11 @@ struct MultiagentWorkerSettings: View {
             HStack(spacing: metrics.size(8)) {
                 TextField(text: shortcutBinding(row.id, \.name)) { workerLabel("shortcutName") }
                     .modifier(ProjectGroupWebInput())
-                InterfaceSelect(selection: shortcutBinding(row.id, \.rule), options: ["any", "finished", "finishedIsolated"], appearance: .shortcut,
+                InterfaceSelect(selection: shortcutBinding(row.id, \.rule), options: ["any", "finished",
+                    "finishedIsolated"], appearance: .shortcut,
                     searchText: { value in
-                        String(localized: String.LocalizationValue(workerLabelKeys[value == "any" ? "shortcutRuleAny" : value == "finished" ? "shortcutRuleFinished" : "shortcutRuleIsolated"] ?? value))
+                        String(localized: String.LocalizationValue(workerLabelKeys[value == "any" ? "shortcutRuleAny"
+                            : value == "finished" ? "shortcutRuleFinished" : "shortcutRuleIsolated"] ?? value))
                     }) {
                     workerLabel($0 == "any" ? "shortcutRuleAny" : $0 == "finished" ? "shortcutRuleFinished" : "shortcutRuleIsolated")
                 }

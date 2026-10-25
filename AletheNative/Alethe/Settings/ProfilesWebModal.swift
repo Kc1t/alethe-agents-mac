@@ -50,7 +50,8 @@ struct ProfilesWebModal: View {
         .task(id: environment.profiles?.document) { await load() }
         .gitWebSheet(item: $switching, width: 440) { entry in
             WebConfirmationModal(
-                title: Text(verbatim: String(format: String(localized: "settings.profiles.switch.confirm"), environment.profileName(entry))),
+                title: Text(verbatim: String(format: String(localized: "settings.profiles.switch.confirm"),
+                    environment.profileName(entry))),
                 message: Text("settings.profiles.switch.message"), confirm: "settings.profiles.switch", destructive: false,
                 confirmIdentifier: "settings.profiles.switchConfirm") { switchProfile(entry) }
         }
@@ -77,7 +78,8 @@ struct ProfilesWebModal: View {
             .background(theme[.accentFaint], in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
             .overlay {
                 if side > 32 {
-                    RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.accent].opacity(0.45), lineWidth: metrics.size(1))
+                    RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.accent].opacity(0.45),
+                        lineWidth: metrics.size(1))
                 }
             }
     }
@@ -174,7 +176,8 @@ struct ProfilesWebModal: View {
         HStack(spacing: metrics.size(7)) {
             if !active {
                 Button { switching = entry } label: {
-                    Label { Text("profiles.web.switchButton") } icon: { icon(busy == .switching ? "arrow.triangle.2.circlepath" : "arrow.left.arrow.right") }
+                    Label { Text("profiles.web.switchButton") } icon: {
+                        icon(busy == .switching ? "arrow.triangle.2.circlepath" : "arrow.left.arrow.right") }
                 }
                 .buttonStyle(AletheButtonStyle(.primary)).disabled(busy != nil)
                 .accessibilityIdentifier("settings.profiles.switch.\(name)")
@@ -255,7 +258,8 @@ struct ProfilesWebModal: View {
                 Spacer()
                 Button("editor.cancel") { pendingDelete = nil }.disabled(busy != nil)
                 Button { remove(entry) } label: {
-                    Label { Text("profiles.web.confirmDeleteButton") } icon: { icon(busy == .delete ? "arrow.triangle.2.circlepath" : "trash") }
+                    Label { Text("profiles.web.confirmDeleteButton") } icon: {
+                        icon(busy == .delete ? "arrow.triangle.2.circlepath" : "trash") }
                 }
                 .labelStyle(WebProfileActionLabelStyle())
                 .buttonStyle(AletheButtonStyle(.danger))

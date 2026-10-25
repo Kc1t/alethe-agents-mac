@@ -50,20 +50,20 @@ enum ProjectSettingsTransfer {
     }
 
     static func describe(_ change: ProjectSettingsFile.Change) -> String {
-        switch change {
-        case .name(let from, let to):
-            format("projectSettings.change.name", from, to)
-        case .color(let from, let to):
-            format("projectSettings.change.color", colorName(from), colorName(to))
-        case .autoWorktree(let from, let to):
-            format("projectSettings.change.autoWorktree", onOff(from), onOff(to))
-        case .worktreeMode(let from, let to):
-            format("projectSettings.change.worktreeMode", modeName(from), modeName(to))
-        case .layoutMode(let from, let to):
-            format("projectSettings.change.layout", layoutName(from), layoutName(to))
-        case .githubURL(let from, let to):
-            format("projectSettings.change.repository", from ?? "—", to ?? "—")
+        if case .name(let from, let to) = change {
+            return format("projectSettings.change.name", from, to)
+        } else if case .color(let from, let to) = change {
+            return format("projectSettings.change.color", colorName(from), colorName(to))
+        } else if case .autoWorktree(let from, let to) = change {
+            return format("projectSettings.change.autoWorktree", onOff(from), onOff(to))
+        } else if case .worktreeMode(let from, let to) = change {
+            return format("projectSettings.change.worktreeMode", modeName(from), modeName(to))
+        } else if case .layoutMode(let from, let to) = change {
+            return format("projectSettings.change.layout", layoutName(from), layoutName(to))
+        } else if case .githubURL(let from, let to) = change {
+            return format("projectSettings.change.repository", from ?? "—", to ?? "—")
         }
+        preconditionFailure("Unexpected case")
     }
 
     private static func colorName(_ color: ProjectColor) -> String {

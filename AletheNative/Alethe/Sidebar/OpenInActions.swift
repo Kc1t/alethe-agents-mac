@@ -12,8 +12,7 @@ enum OpenInActions {
                 VSCodeLauncher.resolve(resolver: { launchers.resolve($0) },
                                        appURL: { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0) })
             }.value
-            switch resolution {
-            case .cli(let executable):
+            if case .cli(let executable) = resolution {
                 let process = Process()
                 process.executableURL = URL(filePath: executable)
                 process.arguments = arguments
@@ -28,7 +27,7 @@ enum OpenInActions {
                 } catch {
                     inform(String(localized: "openIn.vscode.failed"), text: error.localizedDescription)
                 }
-            case .app(let app):
+            } else if case .app(let app) = resolution {
                 let configuration = NSWorkspace.OpenConfiguration()
                 do {
                     _ = try await NSWorkspace.shared.open([URL(filePath: path, directoryHint: .isDirectory)],
@@ -36,7 +35,7 @@ enum OpenInActions {
                 } catch {
                     inform(String(localized: "openIn.vscode.failed"), text: error.localizedDescription)
                 }
-            case .missing:
+            } else if case .missing = resolution {
                 inform(String(localized: "openIn.vscode.missing"), text: String(localized: "openIn.vscode.missing.detail"))
             }
         }

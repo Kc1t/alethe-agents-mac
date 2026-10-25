@@ -27,11 +27,14 @@ struct OrchestrationSettings: View {
                     choice("orchestrationSkillBackend", selection: binding(\.skill.backend),
                            values: ["auto", "skill", "mcp"], prefix: "orchestrationSkillBackend.")
                     choice("orchestrationSkillStrategy", selection: binding(\.skill.defaultStrategy),
-                           values: ["auto", "economy", "balanced", "quality", "research", "parallel", "rescue"], prefix: "orchestrationSkillStrategy.")
-                    provider("orchestrationSkillConserve", selection: binding(\.skill.conserveProvider), empty: "orchestrationSkillProviderNone")
+                           values: ["auto", "economy", "balanced", "quality", "research", "parallel", "rescue"],
+                               prefix: "orchestrationSkillStrategy.")
+                    provider("orchestrationSkillConserve", selection: binding(\.skill.conserveProvider),
+                        empty: "orchestrationSkillProviderNone")
                     choice("orchestrationSkillSwitch", selection: binding(\.skill.providerSwitch),
                            values: ["ask", "automatic", "never"], prefix: "orchestrationSkillSwitch.")
-                    provider("orchestrationSkillPreferred", selection: binding(\.skill.preferredProvider), empty: "orchestrationSkillProviderAuto")
+                    provider("orchestrationSkillPreferred", selection: binding(\.skill.preferredProvider),
+                        empty: "orchestrationSkillProviderAuto")
                 }
                 .settingsRowSurface(.standalone)
                 hint("orchestrationSkillHint")
@@ -53,7 +56,8 @@ struct OrchestrationSettings: View {
                         }
                     }
                     OrchestrationField("orchestrationDefaultTimeout") {
-                        TextField(value: binding(\.defaultTimeoutSeconds), format: .number.grouping(.never)) { label("orchestrationDefaultTimeout") }
+                        TextField(value: binding(\.defaultTimeoutSeconds), format: .number.grouping(.never)) {
+                            label("orchestrationDefaultTimeout") }
                             .modifier(ProjectGroupWebInput())
                         hint("orchestrationTimeoutHint")
                     }
@@ -63,7 +67,8 @@ struct OrchestrationSettings: View {
                         pluginsDraft ?? settings.workerDisabledPlugins.joined(separator: "\n")
                     } set: { value in
                         pluginsDraft = value
-                        binding(\.workerDisabledPlugins).wrappedValue = value.components(separatedBy: .whitespacesAndNewlines.union(CharacterSet(charactersIn: ",")))
+                        binding(\.workerDisabledPlugins)
+                            .wrappedValue = value.components(separatedBy: .whitespacesAndNewlines.union(CharacterSet(charactersIn: ",")))
                     }, height: 72, label: "orchestrationWorkerPlugins")
                     .focused($pluginsFocused)
                     .onChange(of: pluginsFocused) { _, focused in if !focused { pluginsDraft = nil } }
@@ -88,7 +93,7 @@ struct OrchestrationSettings: View {
                         }
                     }
                 }
-                Button { 
+                Button {
                     var number = 1
                     while settings.roles.contains(where: { $0.name == "role-\(number)" }) { number += 1 }
                     binding(\.roles).wrappedValue.append(.init(name: "role-\(number)"))
@@ -107,7 +112,8 @@ struct OrchestrationSettings: View {
     private func saveRole(_ index: Int, _ role: OrchestrationRole) {
         var roles = settings.roles
         guard roles.indices.contains(index), role.isValid,
-              !roles.enumerated().contains(where: { $0.offset != index && $0.element.name == role.name && $0.element.orchestrator == role.orchestrator }) else { return }
+              !roles.enumerated().contains(where: {
+                  $0.offset != index && $0.element.name == role.name && $0.element.orchestrator == role.orchestrator }) else { return }
         let old = roles[index].name
         roles[index] = role
         if old != role.name, !roles.contains(where: { $0.name == old }) {
@@ -135,13 +141,14 @@ struct OrchestrationSettings: View {
 }
 
 func orchestrationAgentName(_ value: String) -> String {
-    switch value { case "claude": "Claude Code"; case "codex": "Codex"; case "agy": "Agy / Antigravity"; case "kimi": "Kimi Code"; default: value }
+    ["claude": "Claude Code", "codex": "Codex", "agy": "Agy / Antigravity", "kimi": "Kimi Code"][value] ?? value
 }
 
 func label(_ key: String) -> Text { Text(LocalizedStringKey(labelKeys[key] ?? key)) }
 
 private let roleWidths: [CGFloat] = [96, 88, 104, 120, 96, 40, 88, 104, 28]
-private let roleLabels = ["orchestrationRoleName", "orchestrationOrchestrator", "orchestrationAgent", "orchestrationModel", "orchestrationEffort", "orchestrationReadOnly", "orchestrationBudget", "orchestrationFallback"]
+private let roleLabels = ["orchestrationRoleName", "orchestrationOrchestrator", "orchestrationAgent",
+    "orchestrationModel", "orchestrationEffort", "orchestrationReadOnly", "orchestrationBudget", "orchestrationFallback"]
 
 struct OrchestrationField<Content: View>: View {
     let key: String
@@ -196,7 +203,8 @@ private struct OrchestrationRoleRow: View {
                     .frame(width: metrics.size(96))
                     .onChange(of: draft) { _, value in if !invalid { binding(\.name).wrappedValue = value } }
                 InterfaceSelect(selection: optional(\.orchestrator), options: ["", "claude", "codex"],
-                    optionDisabled: { value in roles.contains { $0 != role && $0.name == role.name && ($0.orchestrator ?? "") == value } }) { value in
+                    optionDisabled: { value in roles.contains {
+                        $0 != role && $0.name == role.name && ($0.orchestrator ?? "") == value } }) { value in
                     if value.isEmpty { label("orchestrationOrchestratorAny") } else { Text(verbatim: orchestrationAgentName(value)) }
                 }.frame(width: metrics.size(88))
                 InterfaceSelect(selection: Binding { role.agent } set: { agent in
@@ -205,7 +213,8 @@ private struct OrchestrationRoleRow: View {
                 if metrics.isWebInterface {
                     WebDropdown(selection: optional(\.model), options: [""] + (role.model.map { [$0] } ?? []),
                         searchable: true, searchText: { $0 }, customValue: { $0 },
-                        customOptionLabel: { String(localized: "dropdown.orchestration.custom").replacingOccurrences(of: "{value}", with: $0) }) { value in
+                        customOptionLabel: { String(localized: "dropdown.orchestration.custom")
+                            .replacingOccurrences(of: "{value}", with: $0) }) { value in
                         if value.isEmpty { label("orchestrationCliDefault") } else { Text(verbatim: value) }
                     }.frame(width: metrics.size(120)).accessibilityLabel(label("orchestrationModel"))
                 } else {

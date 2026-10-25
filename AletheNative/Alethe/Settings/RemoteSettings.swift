@@ -47,9 +47,12 @@ struct RemoteSettings: View {
         .formStyle(.grouped)
         .accessibilityIdentifier("settings.remote")
         .task { await poll() }
-        .webConfirm(isPresented: $confirmEnable, message: String(localized: remote.useTailscale ? "settings.remote.enable.warningTailscale" : "settings.remote.enable.warning"), title: String(localized: "settings.remote.enable.confirm"),
+        .webConfirm(isPresented: $confirmEnable,
+            message: String(localized: remote.useTailscale ? "settings.remote.enable.warningTailscale" : "settings.remote.enable.warning"),
+                title: String(localized: "settings.remote.enable.confirm"),
                     confirmTitle: String(localized: "settings.remote.enable.turnOn")) { controller.setEnabled(true) }
-        .confirmationDialog("settings.remote.enable.confirm", isPresented: Binding(get: { !metrics.isWebInterface && confirmEnable }, set: { confirmEnable = $0 }), titleVisibility: .visible) {
+        .confirmationDialog("settings.remote.enable.confirm", isPresented: Binding(get: {
+            !metrics.isWebInterface && confirmEnable }, set: { confirmEnable = $0 }), titleVisibility: .visible) {
             Button("settings.remote.enable.turnOn") { controller.setEnabled(true) }
                 .accessibilityIdentifier("settings.remote.enable.turnOn")
             Button("editor.cancel", role: .cancel) {}
@@ -68,9 +71,11 @@ struct RemoteSettings: View {
         } message: { _ in
             Text("settings.remote.revoke.detail")
         }
-        .webConfirm(isPresented: $confirmRevokeAll, message: String(localized: "settings.remote.revokeAll.detail"), title: String(localized: "settings.remote.revokeAll.confirm"),
+        .webConfirm(isPresented: $confirmRevokeAll, message: String(localized: "settings.remote.revokeAll.detail"),
+            title: String(localized: "settings.remote.revokeAll.confirm"),
                     confirmTitle: String(localized: "settings.remote.revokeAll"), destructive: true) { controller.revokeAll() }
-        .confirmationDialog("settings.remote.revokeAll.confirm", isPresented: Binding(get: { !metrics.isWebInterface && confirmRevokeAll }, set: { confirmRevokeAll = $0 }), titleVisibility: .visible) {
+        .confirmationDialog("settings.remote.revokeAll.confirm", isPresented: Binding(get: {
+            !metrics.isWebInterface && confirmRevokeAll }, set: { confirmRevokeAll = $0 }), titleVisibility: .visible) {
             Button("settings.remote.revokeAll", role: .destructive) { controller.revokeAll() }
                 .accessibilityIdentifier("settings.remote.revokeAll.confirm")
             Button("editor.cancel", role: .cancel) {}
@@ -110,7 +115,8 @@ struct RemoteSettings: View {
     private var reachSection: some View {
         Section {
             if metrics.isWebInterface {
-                WebSelectRow(title: "settings.web.reference.remote.reachTitle", selection: Binding(get: { remote.useTailscale }, set: { tailscale in update { $0.useTailscale = tailscale } }),
+                WebSelectRow(title: "settings.web.reference.remote.reachTitle", selection: Binding(get: {
+                    remote.useTailscale }, set: { tailscale in update { $0.useTailscale = tailscale } }),
                              options: tailscaleAvailable || remote.useTailscale ? [false, true] : [false],
                              triggerWidth: nil, titleSize: 11, titleToken: .fgMuted, spacing: 10) {
                     $0 ? String(localized: "settings.remote.reach.tailscale") : String(localized: "settings.remote.reach.lan")
@@ -190,7 +196,8 @@ struct RemoteSettings: View {
                     .accessibilityIdentifier("settings.remote.maxDevices")
                 .settingsRowSurface(.option)
                 WebSelectRow(title: "settings.remote.expiry", detail: "settings.remote.expiry.help",
-                             selection: Binding(get: { remote.sessionExpirySecs }, set: { value in update { $0.sessionExpirySecs = value } }),
+                             selection: Binding(get: { remote.sessionExpirySecs }, set: { value in update {
+                                 $0.sessionExpirySecs = value } }),
                              options: Self.expiryOptions(including: remote.sessionExpirySecs), triggerWidth: nil,
                              titleSize: 12, titleWeight: .medium, detailSize: 10.5, spacing: 14) { Self.expiryLabel($0) }
                     .accessibilityIdentifier("settings.remote.expiry")
@@ -319,11 +326,14 @@ struct RemoteSettings: View {
     }
 
     static func expiryLabel(_ seconds: Int) -> String {
-        switch seconds {
-        case 900: String(localized: "settings.remote.expiry.15m")
-        case 3600: String(localized: "settings.remote.expiry.1h")
-        case 86400: String(localized: "settings.remote.expiry.24h")
-        default: Duration.seconds(seconds).formatted(.units(allowed: [.hours, .minutes], width: .wide))
+        if case 900 = seconds {
+            return String(localized: "settings.remote.expiry.15m")
+        } else if case 3600 = seconds {
+            return String(localized: "settings.remote.expiry.1h")
+        } else if case 86400 = seconds {
+            return String(localized: "settings.remote.expiry.24h")
+        } else {
+            return Duration.seconds(seconds).formatted(.units(allowed: [.hours, .minutes], width: .wide))
         }
     }
 

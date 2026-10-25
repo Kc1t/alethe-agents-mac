@@ -28,6 +28,27 @@ enum SidebarDragSelfTest {
         func r(_ rect: CGRect) -> String { "(\(Int(rect.minX)),\(Int(rect.minY)) \(Int(rect.width))x\(Int(rect.height)))" }
         for region in regions { report.append("  \(region.target) hit=\(r(region.hit)) visual=\(r(region.visual))") }
 
+        checkTable(surface: surface, regions: regions, report: &report, failures: &failures)
+
+        checkPlans(regions: regions, size: size, doc: document(), report: &report, failures: &failures)
+
+        guard UserDefaults.standard.bool(forKey: "debug.sidebarDragSelfTest.drags") else {
+            report.append("SKIPPED scripted drags (set debug.sidebarDragSelfTest.drags to run them)")
+            report.append("selftest failures=\(failures)")
+            return
+        }
+        guard NSApp.isActive, window.isKeyWindow else {
+            report.append("SKIPPED scripted drags: the app is inactive or the window is not key (it lives in another Space)")
+            report.append("selftest failures=\(failures)")
+            return
+        }
+        let context = DragContext(state: state, geometry: geometry, document: document, restore: restore,
+                                  surface: surface, window: window, size: size)
+        await checkDrags(context, regions: regions, report: &report, failures: &failures)
+    }
+
+    private static func checkTable(surface: NSView, regions: [SidebarDropRegion],
+                                   report: inout [String], failures: inout Int) {
         if let table = findTable(from: surface) {
             var worst: CGFloat = 0
             var matched = 0
@@ -52,12 +73,17 @@ enum SidebarDragSelfTest {
             report.append("CHECK no NSTableView found to cross-check")
         }
 
-        let doc = document()
+    }
+
+    private static func checkPlans(regions: [SidebarDropRegion], size: CGSize, doc: WorkspaceDocument,
+                                   report: inout [String], failures: inout Int) {
         func markY(_ plan: SidebarDropPlan) -> CGFloat {
-            switch plan.mark {
-            case .line(let rect, let edge, _): edge == .before ? rect.minY : rect.maxY
-            case .box(let rect): rect.midY
+            if case .line(let rect, let edge, _) = plan.mark {
+                return edge == .before ? rect.minY : rect.maxY
+            } else if case .box(let rect) = plan.mark {
+                return rect.midY
             }
+            preconditionFailure("Unexpected case")
         }
         var samples = 0
         var plans = 0
@@ -77,7 +103,8 @@ enum SidebarDragSelfTest {
                 if let paneID { sources.append(.item(.pane(paneID))) }
                 for source in sources {
                     samples += 1
-                    guard let plan = SidebarWebDropRules.plan(source, regions: regions, at: point, width: size.width, in: doc) else { continue }
+                    guard let plan = SidebarWebDropRules.plan(source, regions: regions, at: point, width: size.width,
+                        in: doc) else { continue }
                     plans += 1
                     var reach = max(region.hit.height, 60)
                     if case .terminals(let project) = region.target {
@@ -93,6 +120,11 @@ enum SidebarDragSelfTest {
         report.append("\(stray.isEmpty ? "PASS" : "FAIL") marks near the pointer: samples=\(samples) plans=\(plans) stray=\(stray.count)")
         for line in stray.prefix(10) { report.append("  stray: \(line)") }
 
+        checkProjectPlan(regions: regions, size: size, doc: doc, report: &report, failures: &failures)
+    }
+
+    private static func checkProjectPlan(regions: [SidebarDropRegion], size: CGSize, doc: WorkspaceDocument,
+                                         report: inout [String], failures: inout Int) {
         let rows = regions.compactMap { region -> (ProjectID, SidebarDropRegion)? in
             if case .project(let id) = region.target { (id, region) } else { nil }
         }
@@ -108,19 +140,68 @@ enum SidebarDragSelfTest {
             report.append("\(ok ? "PASS" : "FAIL") first project onto the top half of the last project row -> \(upper.map { "\($0.action)" } ?? "none")")
         }
 
-        guard UserDefaults.standard.bool(forKey: "debug.sidebarDragSelfTest.drags") else {
-            report.append("SKIPPED scripted drags (set debug.sidebarDragSelfTest.drags to run them)")
-            report.append("selftest failures=\(failures)")
-            return
+    }
+
+    private struct DragContext {
+        let state: SidebarWebDragState
+        let geometry: SidebarDropGeometry
+        let document: () -> WorkspaceDocument
+        let restore: () -> Void
+        let surface: NSView
+        let window: NSWindow
+        let size: CGSize
+    }
+
+    private static func checkDrags(_ context: DragContext, regions: [SidebarDropRegion],
+                                   report: inout [String], failures: inout Int) async {
+        let state = context.state
+        let geometry = context.geometry
+        let document = context.document
+        let restore = context.restore
+        let rows = regions.compactMap { region -> (ProjectID, SidebarDropRegion)? in
+            if case .project(let id) = region.target { (id, region) } else { nil }
         }
-        guard NSApp.isActive, window.isKeyWindow else {
-            report.append("SKIPPED scripted drags: the app is inactive or the window is not key (it lives in another Space)")
-            report.append("selftest failures=\(failures)")
-            return
-        }
-        var recorded: SidebarDropPlan.Action?
-        state.configure(geometry: geometry, document: document, perform: { recorded = $0 })
+        let runner = DragRunner(context: context)
+        state.configure(geometry: geometry, document: document, perform: { runner.recorded = $0 })
         defer { restore(); geometry.pointerOverride = nil; state.debugHoldsButton = false }
+        if rows.count >= 2 {
+            let a = rows[0].0, b = rows[rows.count - 1].0
+            for fraction in [0.12, 0.88] as [CGFloat] {
+                guard let start = runner.projectRegion(a).map(runner.grab) else { continue }
+                await runner.scenario("project onto the last row (\(fraction))", source: .item(.project(a)), from: start, to: {
+                    runner.projectRegion(b).map { CGPoint(x: $0.visual.midX, y: $0.visual.minY + $0.visual.height * fraction) }
+                })
+            }
+            if let start = runner.projectRegion(a).map(runner.grab) {
+                await runner.scenario("project, Escape cancels", source: .item(.project(a)), from: start, escapeBeforeRelease: true, to: {
+                    runner.projectRegion(b).map { CGPoint(x: $0.visual.midX, y: $0.visual.minY + 3) }
+                })
+                await runner.scenario("project released outside the list", source: .item(.project(a)), from: start, to: { nil })
+            }
+        } else {
+            report.append("CHECK fewer than two project rows; project drags skipped")
+        }
+        failures += runner.failures
+        report.append(contentsOf: runner.report)
+        report.append("selftest failures=\(failures)")
+
+    }
+
+    @MainActor
+    private final class DragRunner {
+        let context: DragContext
+        var recorded: SidebarDropPlan.Action?
+        var failures = 0
+        var report: [String] = []
+        var state: SidebarWebDragState { context.state }
+        var geometry: SidebarDropGeometry { context.geometry }
+        var surface: NSView { context.surface }
+        var window: NSWindow { context.window }
+        var size: CGSize { context.size }
+
+        init(context: DragContext) { self.context = context }
+
+        func document() -> WorkspaceDocument { context.document() }
 
         func event(_ type: NSEvent.EventType, _ point: CGPoint) -> NSEvent? {
             let local = CGPoint(x: point.x, y: surface.isFlipped ? point.y : surface.bounds.height - point.y)
@@ -181,25 +262,6 @@ enum SidebarDragSelfTest {
             if !ok { failures += 1 }
             report.append("\(ok ? "PASS" : "FAIL") drag \(name): startedAtStep=\(startedAt.map(String.init) ?? "never") ghost=\(sawGhost) key=\(window.isKeyWindow) dropped=\(recorded.map { "\($0)" } ?? "nothing") expected=\(expected.map { "\($0)" } ?? "nothing") idleAfter=\(idle)")
         }
-
-        if rows.count >= 2 {
-            let a = rows[0].0, b = rows[rows.count - 1].0
-            for fraction in [0.12, 0.88] as [CGFloat] {
-                guard let start = projectRegion(a).map(grab) else { continue }
-                await scenario("project onto the last row (\(fraction))", source: .item(.project(a)), from: start, to: {
-                    projectRegion(b).map { CGPoint(x: $0.visual.midX, y: $0.visual.minY + $0.visual.height * fraction) }
-                })
-            }
-            if let start = projectRegion(a).map(grab) {
-                await scenario("project, Escape cancels", source: .item(.project(a)), from: start, escapeBeforeRelease: true, to: {
-                    projectRegion(b).map { CGPoint(x: $0.visual.midX, y: $0.visual.minY + 3) }
-                })
-                await scenario("project released outside the list", source: .item(.project(a)), from: start, to: { nil })
-            }
-        } else {
-            report.append("CHECK fewer than two project rows; project drags skipped")
-        }
-        report.append("selftest failures=\(failures)")
     }
 
     private static func findTable(from surface: NSView) -> NSTableView? {

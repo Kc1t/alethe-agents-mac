@@ -33,14 +33,15 @@ struct PluginInstallWebView: View {
                     TextEditor(text: $manifest).font(metrics.monoFont(size: 11)).scrollContentBackground(.hidden)
                         .padding(.horizontal, metrics.size(12)).padding(.vertical, metrics.size(10))
                         .frame(height: metrics.size(104)).background(theme[.bgSunken])
-                        .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.border], lineWidth: metrics.size(1)))
+                        .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.border],
+                            lineWidth: metrics.size(1)))
                         .accessibilityLabel(Text("settings.web.reference.prefs.pluginsManifestLabel"))
                         .accessibilityIdentifier("plugins.local.manifest")
                     HStack {
                         Spacer()
                         Button("settings.web.reference.prefs.pluginsInstallButton") {
                             let data = Data(manifest.utf8)
-                            Task { await model.perform { try await $0.install(manifest: data) }; if !model.error { manifest = "" } }
+                            Task { await model.install(manifest: data); if !model.error { manifest = "" } }
                         }.disabled(model.busy || manifest.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         .accessibilityIdentifier("plugins.local.install")
                     }
@@ -58,7 +59,7 @@ struct PluginInstallWebView: View {
         panel.allowedContentTypes = [.json, .zip]
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
-            Task { @MainActor in await model.perform { try await $0.importFile(url) } }
+            Task { @MainActor in await model.importFile(url) }
         }
     }
 }

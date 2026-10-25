@@ -75,12 +75,11 @@ struct DataSettingsSection: View {
                 Text("settings.data.folder.help")
             }
             if let status {
-                switch status {
-                case .message(let text):
+                if case .message(let text) = status {
                     Text(verbatim: text)
                         .foregroundStyle(theme[.textSecondary])
                         .accessibilityIdentifier("settings.data.status")
-                case .failure(let text):
+                } else if case .failure(let text) = status {
                     Text(verbatim: text)
                         .foregroundStyle(theme[.statusStopped])
                         .textSelection(.enabled)
@@ -95,22 +94,27 @@ struct DataSettingsSection: View {
         .task {
             guard !performedInitialAction else { return }
             performedInitialAction = true
-            switch initialAction {
-            case .manage: break
-            case .exportBackup: export()
-            case .importBackup: chooseImport()
-            case .reset: confirmReset = true
-            case .erase: confirmErase = true
+            if case .manage = initialAction {
+            } else if case .exportBackup = initialAction {
+                export()
+            } else if case .importBackup = initialAction {
+                chooseImport()
+            } else if case .reset = initialAction {
+                confirmReset = true
+            } else if case .erase = initialAction {
+                confirmErase = true
             }
         }
-        .webConfirm(isPresented: $confirmImport, message: staged.map(importSummary) ?? "", title: String(localized: "settings.data.import.confirm"),
+        .webConfirm(isPresented: $confirmImport, message: staged.map(importSummary) ?? "",
+            title: String(localized: "settings.data.import.confirm"),
                     confirmTitle: String(localized: "settings.data.import.action"), destructive: true) {
             if let pending = staged {
                 importStarted = true
                 perform { try await environment.importStaged(pending) }
             }
         }
-        .confirmationDialog(Text("settings.data.import.confirm"), isPresented: Binding(get: { !metrics.isWebInterface && confirmImport }, set: { confirmImport = $0 })) {
+        .confirmationDialog(Text("settings.data.import.confirm"), isPresented: Binding(get: {
+            !metrics.isWebInterface && confirmImport }, set: { confirmImport = $0 })) {
             if let pending = staged {
                 Button("settings.data.import.action", role: .destructive) {
                     importStarted = true
@@ -128,10 +132,12 @@ struct DataSettingsSection: View {
         }
         .webConfirm(isPresented: $confirmReset,
                     message: String(format: String(localized: "settings.data.reset.message"), environment.activeProfileName),
-                    title: String(localized: "settings.data.reset.confirm"), confirmTitle: String(localized: "settings.data.reset"), destructive: true) {
+                    title: String(localized: "settings.data.reset.confirm"),
+                        confirmTitle: String(localized: "settings.data.reset"), destructive: true) {
             perform { try await environment.resetProfileData() }
         }
-        .confirmationDialog(Text("settings.data.reset.confirm"), isPresented: Binding(get: { !metrics.isWebInterface && confirmReset }, set: { confirmReset = $0 })) {
+        .confirmationDialog(Text("settings.data.reset.confirm"), isPresented: Binding(get: {
+            !metrics.isWebInterface && confirmReset }, set: { confirmReset = $0 })) {
             Button("settings.data.reset", role: .destructive) {
                 perform { try await environment.resetProfileData() }
             }
@@ -139,11 +145,13 @@ struct DataSettingsSection: View {
         } message: {
             Text(verbatim: String(format: String(localized: "settings.data.reset.message"), environment.activeProfileName))
         }
-        .webConfirm(isPresented: $confirmErase, message: String(localized: "settings.data.erase.message"), title: String(localized: "settings.data.erase.confirm"),
+        .webConfirm(isPresented: $confirmErase, message: String(localized: "settings.data.erase.message"),
+            title: String(localized: "settings.data.erase.confirm"),
                     confirmTitle: String(localized: "settings.data.erase"), destructive: true) {
             perform { try await environment.eraseAllData() }
         }
-        .confirmationDialog(Text("settings.data.erase.confirm"), isPresented: Binding(get: { !metrics.isWebInterface && confirmErase }, set: { confirmErase = $0 })) {
+        .confirmationDialog(Text("settings.data.erase.confirm"), isPresented: Binding(get: {
+            !metrics.isWebInterface && confirmErase }, set: { confirmErase = $0 })) {
             Button("settings.data.erase", role: .destructive) {
                 perform { try await environment.eraseAllData() }
             }

@@ -37,18 +37,28 @@ struct ToolbarSettings: View {
 
 extension ToolbarItemKind {
     var title: LocalizedStringKey {
-        switch self {
-        case .home: "settings.toolbar.home"
-        case .usageClaude: "settings.toolbar.usageClaude"
-        case .usageCodex: "settings.toolbar.usageCodex"
-        case .usageAntigravity: "settings.toolbar.usageAntigravity"
-        case .aiUsage: "settings.toolbar.aiUsage"
-        case .notifications: "settings.toolbar.notifications"
-        case .memory: "settings.toolbar.memory"
-        case .profile: "settings.toolbar.profile"
-        case .remote: "settings.toolbar.remote"
-        case .router9: "settings.toolbar.router9"
-        case .sync: "settings.toolbar.sync"
+        if case .home = self {
+            return "settings.toolbar.home"
+        } else if case .usageClaude = self {
+            return "settings.toolbar.usageClaude"
+        } else if case .usageCodex = self {
+            return "settings.toolbar.usageCodex"
+        } else if case .usageAntigravity = self {
+            return "settings.toolbar.usageAntigravity"
+        } else if case .aiUsage = self {
+            return "settings.toolbar.aiUsage"
+        } else if case .notifications = self {
+            return "settings.toolbar.notifications"
+        } else if case .memory = self {
+            return "settings.toolbar.memory"
+        } else if case .profile = self {
+            return "settings.toolbar.profile"
+        } else if case .remote = self {
+            return "settings.toolbar.remote"
+        } else if case .router9 = self {
+            return "settings.toolbar.router9"
+        } else {
+            return "settings.toolbar.sync"
         }
     }
 }

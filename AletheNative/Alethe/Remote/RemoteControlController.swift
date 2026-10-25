@@ -137,18 +137,17 @@ final class RemoteControlController {
 
     private func handle(_ event: RemoteEvent) {
         guard let notifier = environment?.notifier else { return }
-        switch event {
-        case .message(let message):
+        if case .message(let message) = event {
             let tab = TabID(rawValue: message.terminalID)
             let known = environment?.workspace?.document.paneHolding(tab) != nil
             notifier.post(title: String(format: String(localized: "remote.notify.message"), message.deviceName),
                           body: message.preview, tab: known ? tab : nil)
-        case .startFailed:
+        } else if case .startFailed = event {
             isEnabled = false
             notifier.post(title: String(localized: "remote.notify.startFailed.title"),
                           body: String(localized: "remote.notify.startFailed.body"))
             refresh()
-        case .autoDisabled:
+        } else if case .autoDisabled = event {
             isEnabled = false
             notifier.post(title: String(localized: "remote.notify.autoDisabled.title"),
                           body: String(localized: "remote.notify.autoDisabled.body"))
@@ -189,11 +188,10 @@ final class RemoteControlController {
             },
             observe: { handler in
                 let id = relay.observe { event in
-                    switch event {
-                    case .data(let tab, let data):
+                    if case .data(let tab, let data) = event {
                         guard shared.contains(tab.rawValue) else { return }
                         handler(.data(terminalID: tab.rawValue, bytes: data))
-                    case .exit(let tab, let reason):
+                    } else if case .exit(let tab, let reason) = event {
                         guard shared.contains(tab.rawValue) else { return }
                         handler(.exit(terminalID: tab.rawValue, reason: reason))
                     }

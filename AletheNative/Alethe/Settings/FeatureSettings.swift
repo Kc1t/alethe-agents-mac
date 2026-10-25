@@ -96,16 +96,15 @@ private struct FeatureOptions: View {
     let feature: Feature
 
     var body: some View {
-        switch feature {
-        case .aiMemory:
+        if case .aiMemory = feature {
             AiMemoryOptions()
-        case .graphify:
+        } else if case .graphify = feature {
             GraphifyOptions()
-        case .playwright:
+        } else if case .playwright = feature {
             PlaywrightOptions()
-        case .gsdSync:
+        } else if case .gsdSync = feature {
             GSDSyncOptions()
-        case .browser, .mcp, .orchestrator, .prs:
+        } else if feature == .browser || feature == .mcp || feature == .orchestrator || feature == .prs {
             EmptyView()
         }
     }
@@ -244,28 +243,42 @@ private struct GSDSyncOptions: View {
 
 extension Feature {
     var title: LocalizedStringKey {
-        switch self {
-        case .browser: "features.browser.title"
-        case .graphify: "features.graphify.title"
-        case .mcp: "features.mcp.title"
-        case .playwright: "features.playwright.title"
-        case .orchestrator: "features.orchestrator.title"
-        case .gsdSync: "features.gsdSync.title"
-        case .aiMemory: "features.aiMemory.title"
-        case .prs: "features.prs.title"
+        if case .browser = self {
+            return "features.browser.title"
+        } else if case .graphify = self {
+            return "features.graphify.title"
+        } else if case .mcp = self {
+            return "features.mcp.title"
+        } else if case .playwright = self {
+            return "features.playwright.title"
+        } else if case .orchestrator = self {
+            return "features.orchestrator.title"
+        } else if case .gsdSync = self {
+            return "features.gsdSync.title"
+        } else if case .aiMemory = self {
+            return "features.aiMemory.title"
+        } else {
+            return "features.prs.title"
         }
     }
 
     var detail: LocalizedStringKey {
-        switch self {
-        case .browser: "features.browser.detail"
-        case .graphify: "features.graphify.detail"
-        case .mcp: "features.mcp.detail"
-        case .playwright: "features.playwright.detail"
-        case .orchestrator: "features.orchestrator.detail"
-        case .gsdSync: "features.gsdSync.detail"
-        case .aiMemory: "features.aiMemory.detail"
-        case .prs: "features.prs.detail"
+        if case .browser = self {
+            return "features.browser.detail"
+        } else if case .graphify = self {
+            return "features.graphify.detail"
+        } else if case .mcp = self {
+            return "features.mcp.detail"
+        } else if case .playwright = self {
+            return "features.playwright.detail"
+        } else if case .orchestrator = self {
+            return "features.orchestrator.detail"
+        } else if case .gsdSync = self {
+            return "features.gsdSync.detail"
+        } else if case .aiMemory = self {
+            return "features.aiMemory.detail"
+        } else {
+            return "features.prs.detail"
         }
     }
 }

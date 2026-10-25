@@ -54,66 +54,71 @@ struct CommandLineToolSection: View {
         .webConfirm(isPresented: isConfirming, message: confirming.map(cliMessage) ?? "",
                     title: confirming.map(title), confirmTitle: confirming.map(cliConfirmTitle),
                     destructive: confirming != .install) {
-            switch confirming {
-            case .install, .replace: Task { await tool.install() }
-            case .uninstall: Task { await tool.uninstall() }
-            case nil: break
+            if confirming == .install || confirming == .replace {
+                Task { await tool.install() }
+            } else if case .uninstall = confirming {
+                Task { await tool.uninstall() }
+            } else if case nil = confirming {
             }
         }
         .confirmationDialog(Text(verbatim: confirming.map(title) ?? ""),
                             isPresented: Binding(get: { !metrics.isWebInterface && confirming != nil },
                                                  set: { if !$0 { confirming = nil } }),
                             titleVisibility: .visible, presenting: confirming) { action in
-            switch action {
-            case .install:
-                Button("settings.cli.install") { Task { await tool.install() } }
-            case .replace:
-                Button("settings.cli.replace", role: .destructive) { Task { await tool.install() } }
-            case .uninstall:
-                Button("settings.cli.uninstall", role: .destructive) { Task { await tool.uninstall() } }
+            if case .install = action {
+                return Button("settings.cli.install") { Task { await tool.install() } }
+            } else if case .replace = action {
+                return Button("settings.cli.replace", role: .destructive) { Task { await tool.install() } }
+            } else {
+                return Button("settings.cli.uninstall", role: .destructive) { Task { await tool.uninstall() } }
             }
         } message: { action in
-            switch action {
-            case .install: Text("settings.cli.install.message")
-            case .replace: Text("settings.cli.replace.message")
-            case .uninstall: Text("settings.cli.uninstall.message")
+            if case .install = action {
+                return Text("settings.cli.install.message")
+            } else if case .replace = action {
+                return Text("settings.cli.replace.message")
+            } else {
+                return Text("settings.cli.uninstall.message")
             }
         }
     }
 
     private func cliMessage(_ action: CommandLineTool.Action) -> String {
-        switch action {
-        case .install: String(localized: "settings.cli.install.message")
-        case .replace: String(localized: "settings.cli.replace.message")
-        case .uninstall: String(localized: "settings.cli.uninstall.message")
+        if case .install = action {
+            return String(localized: "settings.cli.install.message")
+        } else if case .replace = action {
+            return String(localized: "settings.cli.replace.message")
+        } else {
+            return String(localized: "settings.cli.uninstall.message")
         }
     }
 
     private func cliConfirmTitle(_ action: CommandLineTool.Action) -> String {
-        switch action {
-        case .install: String(localized: "settings.cli.install")
-        case .replace: String(localized: "settings.cli.replace")
-        case .uninstall: String(localized: "settings.cli.uninstall")
+        if case .install = action {
+            return String(localized: "settings.cli.install")
+        } else if case .replace = action {
+            return String(localized: "settings.cli.replace")
+        } else {
+            return String(localized: "settings.cli.uninstall")
         }
     }
 
     @ViewBuilder private var buttons: some View {
-        switch tool.status?.state {
-        case .missing:
+        if case .missing = tool.status?.state {
             Button("settings.cli.install") { confirming = .install }
                 .accessibilityIdentifier("settings.cli.install")
-        case .stale:
+        } else if case .stale = tool.status?.state {
             Button("settings.cli.reinstall") { confirming = .install }
                 .accessibilityIdentifier("settings.cli.install")
             Button("settings.cli.uninstall") { confirming = .uninstall }
                 .accessibilityIdentifier("settings.cli.uninstall")
-        case .foreign:
+        } else if case .foreign = tool.status?.state {
             Button("settings.cli.replace") { confirming = .replace }
                 .accessibilityIdentifier("settings.cli.install")
-        case .current:
+        } else if case .current = tool.status?.state {
             Button("settings.cli.uninstall") { confirming = .uninstall }
                 .accessibilityIdentifier("settings.cli.uninstall")
-        case nil:
+        } else if case nil = tool.status?.state {
             EmptyView()
         }
     }
@@ -121,19 +126,25 @@ struct CommandLineToolSection: View {
     private var statusText: Text {
         guard let status = tool.status else { return Text("settings.cli.status.checking") }
         let path = status.file.path
-        return switch status.state {
-        case .missing: Text("settings.cli.status.missing")
-        case .current: Text(verbatim: String(format: String(localized: "settings.cli.status.current"), path))
-        case .stale: Text(verbatim: String(format: String(localized: "settings.cli.status.stale"), path))
-        case .foreign: Text(verbatim: String(format: String(localized: "settings.cli.status.foreign"), path))
+        if case .missing = status.state {
+            return Text("settings.cli.status.missing")
+        } else if case .current = status.state {
+            return Text(verbatim: String(format: String(localized: "settings.cli.status.current"), path))
+        } else if case .stale = status.state {
+            return Text(verbatim: String(format: String(localized: "settings.cli.status.stale"), path))
+        } else {
+            return Text(verbatim: String(format: String(localized: "settings.cli.status.foreign"), path))
         }
     }
 
     private func title(_ action: CommandLineTool.Action) -> String {
-        let key: String.LocalizationValue = switch action {
-        case .install: "settings.cli.install.confirm"
-        case .replace: "settings.cli.replace.confirm"
-        case .uninstall: "settings.cli.uninstall.confirm"
+        let key: String.LocalizationValue
+        if case .install = action {
+            key = "settings.cli.install.confirm"
+        } else if case .replace = action {
+            key = "settings.cli.replace.confirm"
+        } else {
+            key = "settings.cli.uninstall.confirm"
         }
         let place = action == .install ? tool.directory.path : CLIShim.location(in: tool.directory).path
         return String(format: String(localized: key), place)

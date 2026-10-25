@@ -84,10 +84,12 @@ struct SidebarWebDrop: ViewModifier {
             guard let view = entry.view, let hit = local(view) else { continue }
             let top: CGFloat
             let bottom: CGFloat
-            switch entry.target {
-            case .project: (top, bottom) = (6 * entry.unit, 0)
-            case .groupHeader: (top, bottom) = (max(0, hit.height - 26 * entry.unit), 2 * entry.unit)
-            default: (top, bottom) = (0, 0)
+            if case .project = entry.target {
+                (top, bottom) = (6 * entry.unit, 0)
+            } else if case .groupHeader = entry.target {
+                (top, bottom) = (max(0, hit.height - 26 * entry.unit), 2 * entry.unit)
+            } else {
+                (top, bottom) = (0, 0)
             }
             result.append(SidebarDropRegion(
                 target: entry.target, hit: hit,
@@ -257,7 +259,8 @@ struct SidebarWebDropSurface: ViewModifier {
                     if SidebarDragSelfTest.enabled {
                         Task {
                             await SidebarDragSelfTest.run(state: state, geometry: store, document: document,
-                                                          restore: { state.configure(geometry: store, document: document, perform: perform) })
+                                                          restore: { state.configure(geometry: store,
+                                                              document: document, perform: perform) })
                         }
                     }
                     #endif
@@ -319,10 +322,11 @@ private struct SidebarFileDropDelegate: DropDelegate {
 extension SidebarActions {
     func webDrop(_ action: SidebarDropPlan.Action) {
         workspace.update(undoManager: undoManager, actionName: String(localized: "undo.move")) { doc in
-            switch action {
-            case .place(let item, let container, let before): doc.place(item, in: container, before: before)
-            case .movePane(let id, let project): doc.moveWebPane(id, to: project)
-            case .addFolders: break
+            if case .place(let item, let container, let before) = action {
+                doc.place(item, in: container, before: before)
+            } else if case .movePane(let id, let project) = action {
+                doc.moveWebPane(id, to: project)
+            } else if case .addFolders = action {
             }
         }
     }

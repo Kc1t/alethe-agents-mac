@@ -15,7 +15,8 @@ struct WebSettingsView: View {
     @State private var profileHovering = false
     @State private var closeHovering = false
 
-    private enum Category: String, Hashable { case account, organization, appearance, remote, features, plugins, terminal, integrations, orchestration, multiagent, about }
+    private enum Category: String, Hashable { case account, organization, appearance, remote, features, plugins,
+        terminal, integrations, orchestration, multiagent, about }
     private struct Destination: Identifiable {
         let id: Category
         let title: LocalizedStringKey
@@ -26,25 +27,35 @@ struct WebSettingsView: View {
 
     private var destinations: [Destination] {
         [
-            .init(id: .account, title: "settings.web.reference.prefs.categoryAccount", detail: "settings.web.reference.prefs.categoryAccountDesc",
+            .init(id: .account, title: "settings.web.reference.prefs.categoryAccount",
+                detail: "settings.web.reference.prefs.categoryAccountDesc",
                   symbol: "person", search: String(localized: "settings.web.reference.prefs.categoryAccount")),
-            .init(id: .organization, title: "settings.web.reference.prefs.categoryOrganization", detail: "settings.web.reference.prefs.categoryOrganizationDesc",
+            .init(id: .organization, title: "settings.web.reference.prefs.categoryOrganization",
+                detail: "settings.web.reference.prefs.categoryOrganizationDesc",
                   symbol: "archivebox", search: String(localized: "settings.web.reference.prefs.categoryOrganization")),
-            .init(id: .appearance, title: "settings.web.reference.prefs.categoryAppearance", detail: "settings.web.reference.prefs.categoryAppearanceDesc",
+            .init(id: .appearance, title: "settings.web.reference.prefs.categoryAppearance",
+                detail: "settings.web.reference.prefs.categoryAppearanceDesc",
                   symbol: "paintpalette", search: String(localized: "settings.web.reference.prefs.categoryAppearance")),
-            .init(id: .remote, title: "settings.web.reference.prefs.categoryRemoteControl", detail: "settings.web.reference.prefs.categoryRemoteControlDesc",
+            .init(id: .remote, title: "settings.web.reference.prefs.categoryRemoteControl",
+                detail: "settings.web.reference.prefs.categoryRemoteControlDesc",
                   symbol: "checkmark.shield", search: String(localized: "settings.web.reference.prefs.categoryRemoteControl")),
             .init(id: .features, title: "settings.web.reference.prefs.features", detail: "settings.web.reference.prefs.featuresDesc",
                   symbol: "square.grid.2x2", search: String(localized: "settings.web.reference.prefs.features")),
-            .init(id: .plugins, title: "settings.web.reference.prefs.categoryPlugins", detail: "settings.web.reference.prefs.categoryPluginsDesc",
+            .init(id: .plugins, title: "settings.web.reference.prefs.categoryPlugins",
+                detail: "settings.web.reference.prefs.categoryPluginsDesc",
                   symbol: "puzzlepiece.extension", search: String(localized: "settings.web.reference.prefs.categoryPlugins")),
-            .init(id: .terminal, title: "settings.web.reference.prefs.categoryTerminal", detail: "settings.web.reference.prefs.categoryTerminalDesc",
+            .init(id: .terminal, title: "settings.web.reference.prefs.categoryTerminal",
+                detail: "settings.web.reference.prefs.categoryTerminalDesc",
                   symbol: "terminal", search: String(localized: "settings.web.reference.prefs.categoryTerminal")),
-            .init(id: .integrations, title: "settings.web.reference.prefs.categoryIntegrations", detail: "settings.web.reference.prefs.categoryIntegrationsDesc",
+            .init(id: .integrations, title: "settings.web.reference.prefs.categoryIntegrations",
+                detail: "settings.web.reference.prefs.categoryIntegrationsDesc",
                   symbol: "powerplug", search: String(localized: "settings.web.reference.prefs.categoryIntegrations")),
-            .init(id: .orchestration, title: "settings.web.reference.prefs.categoryOrchestration", detail: "settings.web.reference.prefs.categoryOrchestrationDesc",
-                  symbol: "point.3.connected.trianglepath.dotted", search: String(localized: "settings.web.reference.prefs.categoryOrchestration")),
-            .init(id: .multiagent, title: "settings.web.reference.prefs.categoryMultiagent", detail: "settings.web.reference.prefs.categoryMultiagentDesc",
+            .init(id: .orchestration, title: "settings.web.reference.prefs.categoryOrchestration",
+                detail: "settings.web.reference.prefs.categoryOrchestrationDesc",
+                  symbol: "point.3.connected.trianglepath.dotted",
+                      search: String(localized: "settings.web.reference.prefs.categoryOrchestration")),
+            .init(id: .multiagent, title: "settings.web.reference.prefs.categoryMultiagent",
+                detail: "settings.web.reference.prefs.categoryMultiagentDesc",
                   symbol: "waveform.path.ecg", search: String(localized: "settings.web.reference.prefs.categoryMultiagent")),
             .init(id: .about, title: "settings.web.reference.prefs.categoryAbout", detail: "settings.web.reference.prefs.categoryAboutDesc",
                   symbol: "info.circle", search: String(localized: "settings.web.reference.prefs.categoryAbout")),
@@ -56,15 +67,22 @@ struct WebSettingsView: View {
     }
 
     private func selectRequestedTab() {
-        switch environment.settingsTab {
-        case .profiles, .general: selection = .account
-        case .appearance, .toolbar: selection = .appearance
-        case .agents, .resources: selection = .terminal
-        case .features: selection = .features
-        case .plugins: selection = .plugins
-        case .integrations: selection = .integrations
-        case .remote: selection = .remote
-        case .multiagent: selection = .multiagent
+        if environment.settingsTab == .profiles || environment.settingsTab == .general {
+            selection = .account
+        } else if environment.settingsTab == .appearance || environment.settingsTab == .toolbar {
+            selection = .appearance
+        } else if environment.settingsTab == .agents || environment.settingsTab == .resources {
+            selection = .terminal
+        } else if case .features = environment.settingsTab {
+            selection = .features
+        } else if case .plugins = environment.settingsTab {
+            selection = .plugins
+        } else if case .integrations = environment.settingsTab {
+            selection = .integrations
+        } else if case .remote = environment.settingsTab {
+            selection = .remote
+        } else if case .multiagent = environment.settingsTab {
+            selection = .multiagent
         }
     }
 
@@ -142,32 +160,7 @@ struct WebSettingsView: View {
     private func sidebar(narrow: Bool) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Button {
-                    selection = .account
-                } label: {
-                    HStack(spacing: metrics.size(10)) {
-                        avatar
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: metrics.size(narrow ? 34 : 40), height: metrics.size(narrow ? 34 : 40))
-                            .clipShape(Circle())
-                            .overlay(Circle().strokeBorder(theme[.borderStrong], lineWidth: metrics.size(1)))
-                            .accessibilityHidden(true)
-                        VStack(alignment: .leading, spacing: metrics.size(2)) {
-                            Text(verbatim: environment.webDisplayName)
-                                .font(metrics.font(size: 13, weight: .bold))
-                                .lineLimit(1)
-                            Text("settings.web.reference.prefs.editProfile")
-                                .font(metrics.font(size: 11))
-                                .foregroundStyle(theme[.fgMuted])
-                        }
-                        Spacer(minLength: 0)
-                        if !narrow { Image(systemName: "chevron.right").webProfileSized(14).font(metrics.font(size: 14)) }
-                    }
-                    .padding(metrics.size(8))
-                }
-                .buttonStyle(.plain)
-                .background(theme[.panelHover].opacity(profileHovering ? 1 : 0), in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
-                .onHover { profileHovering = $0 }
+                profileButton(narrow: narrow)
                 HStack(spacing: metrics.size(8)) {
                     Image(systemName: "magnifyingglass").webProfileSized(15).font(metrics.font(size: 15))
                     TextField("settings.web.search", text: $query)
@@ -189,45 +182,81 @@ struct WebSettingsView: View {
                     .foregroundStyle(theme[.fgFaint])
                     .padding(.horizontal, metrics.size(9))
                     .padding(.bottom, metrics.size(6))
-                ForEach(destinations) { destination in
-                    Button {
-                        selection = destination.id
-                        query = ""
-                        searchTarget = ""
-                    } label: {
-                        HStack(spacing: metrics.size(10)) {
-                            Image(systemName: destination.symbol).webProfileSized(16)
-                                .font(metrics.font(size: 16))
-                                .frame(width: metrics.size(16))
-                            VStack(alignment: .leading, spacing: metrics.size(2)) {
-                                Text(destination.title).font(metrics.font(size: 12, weight: .semibold))
-                                Text(destination.detail)
-                                    .font(metrics.font(size: 9))
-                                    .foregroundStyle(theme[destination.id == selection ? .fgMuted : .fgFaint])
-                                    .lineLimit(1)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .padding(.horizontal, metrics.size(10))
-                        .padding(.vertical, metrics.size(8))
-                        .frame(minHeight: metrics.size(48))
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("settings.web.category.\(destination.id.rawValue)")
-                    .foregroundStyle(theme[destination.id == selection || hovering == destination.id ? .fg : .fgMuted])
-                    .background(theme[destination.id == selection ? .bgSunken : .panelHover].opacity(destination.id == selection || hovering == destination.id ? 1 : 0), in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
-                    .onHover { hovering = $0 ? destination.id : nil }
-                    .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md))
-                        .strokeBorder(theme[.borderStrong].opacity(destination.id == selection ? 1 : 0), lineWidth: metrics.size(1)))
-                    .padding(.bottom, metrics.size(3))
-                }
+                destinationButtons
+
 
             }
             .buttonStyle(.plain)
             .font(metrics.font(size: 12))
             .padding(.horizontal, metrics.size(narrow ? 10 : 14))
             .padding(.vertical, metrics.size(18))
+        }
+    }
+
+    private func profileButton(narrow: Bool) -> some View {
+        Button {
+            selection = .account
+        } label: {
+            HStack(spacing: metrics.size(10)) {
+                avatar
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: metrics.size(narrow ? 34 : 40), height: metrics.size(narrow ? 34 : 40))
+                    .clipShape(Circle())
+                    .overlay(Circle().strokeBorder(theme[.borderStrong], lineWidth: metrics.size(1)))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: metrics.size(2)) {
+                    Text(verbatim: environment.webDisplayName)
+                        .font(metrics.font(size: 13, weight: .bold))
+                        .lineLimit(1)
+                    Text("settings.web.reference.prefs.editProfile")
+                        .font(metrics.font(size: 11))
+                        .foregroundStyle(theme[.fgMuted])
+                }
+                Spacer(minLength: 0)
+                if !narrow { Image(systemName: "chevron.right").webProfileSized(14).font(metrics.font(size: 14)) }
+            }
+            .padding(metrics.size(8))
+        }
+        .buttonStyle(.plain)
+        .background(theme[.panelHover].opacity(profileHovering ? 1 : 0), in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
+        .onHover { profileHovering = $0 }
+    }
+
+    private var destinationButtons: some View {
+        ForEach(destinations) { destination in
+            Button {
+                selection = destination.id
+                query = ""
+                searchTarget = ""
+            } label: {
+                HStack(spacing: metrics.size(10)) {
+                    Image(systemName: destination.symbol).webProfileSized(16)
+                        .font(metrics.font(size: 16))
+                        .frame(width: metrics.size(16))
+                    VStack(alignment: .leading, spacing: metrics.size(2)) {
+                        Text(destination.title).font(metrics.font(size: 12, weight: .semibold))
+                        Text(destination.detail)
+                            .font(metrics.font(size: 9))
+                            .foregroundStyle(theme[destination.id == selection ? .fgMuted : .fgFaint])
+                            .lineLimit(1)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.horizontal, metrics.size(10))
+                .padding(.vertical, metrics.size(8))
+                .frame(minHeight: metrics.size(48))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("settings.web.category.\(destination.id.rawValue)")
+            .foregroundStyle(theme[destination.id == selection || hovering == destination.id ? .fg : .fgMuted])
+            .background(theme[destination.id == selection ? .bgSunken
+                : .panelHover].opacity(destination.id == selection || hovering == destination.id ? 1 : 0),
+                in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
+            .onHover { hovering = $0 ? destination.id : nil }
+            .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md))
+                .strokeBorder(theme[.borderStrong].opacity(destination.id == selection ? 1 : 0), lineWidth: metrics.size(1)))
+            .padding(.bottom, metrics.size(3))
         }
     }
 
@@ -257,7 +286,8 @@ struct WebSettingsView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(metrics.size(12))
                         .background(theme[.bgSunken], in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
-                        .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.border], lineWidth: metrics.size(1)))
+                        .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.border],
+                            lineWidth: metrics.size(1)))
                     }.buttonStyle(.plain)
                 }
             }.padding(metrics.size(24))
@@ -265,18 +295,28 @@ struct WebSettingsView: View {
     }
 
     @ViewBuilder private var page: some View {
-        switch selection {
-        case .account: WebAccountSettings()
-        case .organization: WebOrganizationSettings()
-        case .appearance: AppearanceSettings()
-        case .remote: RemoteSettings()
-        case .features: FeatureSettings()
-        case .plugins: PluginSettings()
-        case .terminal: WebTerminalSettings()
-        case .integrations: IntegrationsSettings()
-        case .orchestration: OrchestrationSettings()
-        case .multiagent: MultiagentSettings()
-        case .about: WebAboutSettings()
+        if case .account = selection {
+            WebAccountSettings()
+        } else if case .organization = selection {
+            WebOrganizationSettings()
+        } else if case .appearance = selection {
+            AppearanceSettings()
+        } else if case .remote = selection {
+            RemoteSettings()
+        } else if case .features = selection {
+            FeatureSettings()
+        } else if case .plugins = selection {
+            PluginSettings()
+        } else if case .terminal = selection {
+            WebTerminalSettings()
+        } else if case .integrations = selection {
+            IntegrationsSettings()
+        } else if case .orchestration = selection {
+            OrchestrationSettings()
+        } else if case .multiagent = selection {
+            MultiagentSettings()
+        } else if case .about = selection {
+            WebAboutSettings()
         }
     }
 }

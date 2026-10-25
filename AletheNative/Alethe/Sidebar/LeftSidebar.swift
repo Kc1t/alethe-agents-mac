@@ -22,7 +22,8 @@ struct LeftSidebar: View {
     }
 
     private var effectiveTab: String {
-        (metrics.isWebInterface && selectedTab == "git") || selectedTab == "files" || pluginTabs.contains(where: { $0.id == selectedTab }) ? selectedTab : "projects"
+        (metrics.isWebInterface && selectedTab == "git") || selectedTab == "files" || pluginTabs.contains(where: {
+            $0.id == selectedTab }) ? selectedTab : "projects"
     }
 
     @ViewBuilder var body: some View {

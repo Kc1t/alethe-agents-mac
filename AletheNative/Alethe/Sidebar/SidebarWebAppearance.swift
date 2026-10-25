@@ -3,9 +3,9 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-private extension EnvironmentValues {
-    @Entry var sidebarGroupDepth = 0
-    @Entry var sidebarFirstRootGroup = false
+extension EnvironmentValues {
+    @Entry fileprivate var sidebarGroupDepth = 0
+    @Entry fileprivate var sidebarFirstRootGroup = false
 }
 
 struct SidebarListAppearance: ViewModifier {
@@ -170,13 +170,16 @@ struct SidebarWebRow: ViewModifier {
                                         in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
                     }
                 }
-                .padding(.top, metrics.size(kind == .group ? ((first || (metrics.style == .normal && inheritedFirstRootGroup)) ? 12 : 22) : kind == .project ? 6 : 0))
+                .padding(.top,
+                    metrics.size(kind == .group ? ((first || (metrics.style == .normal && inheritedFirstRootGroup))
+                        ? 12 : 22) : kind == .project ? 6 : 0))
                 .padding(.bottom, metrics.size(kind == .group ? 2 : 0))
                 .overlay(alignment: .leading) {
                     ForEach(0..<depth, id: \.self) { level in
                         Rectangle().fill(theme[.border].opacity(0.55))
                             .frame(width: metrics.size(1))
-                            .offset(x: -metrics.size((metrics.style == .clean ? 8 : 7) + CGFloat(level) * (metrics.style == .clean ? 11 : 10)))
+                            .offset(x: -metrics.size((metrics.style == .clean ? 8
+                                : 7) + CGFloat(level) * (metrics.style == .clean ? 11 : 10)))
                     }
                 }
                 .listRowInsets(EdgeInsets(top: 0, leading: metrics.size(8 + CGFloat(depth) * (metrics.style == .clean ? 11 : 10)),

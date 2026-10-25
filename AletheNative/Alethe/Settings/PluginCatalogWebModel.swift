@@ -60,6 +60,22 @@ final class PluginCatalogWebModel {
         do { try await operation(registry); await rescan() } catch { self.error = true }
     }
 
+    func install(_ entry: WebCatalogEntry) async {
+        await perform { try await $0.install(entry) }
+    }
+
+    func install(manifest: Data) async {
+        await perform { try await $0.install(manifest: manifest) }
+    }
+
+    func importFile(_ url: URL) async {
+        await perform { try await $0.importFile(url) }
+    }
+
+    func uninstall(_ id: String) async {
+        await perform { try await $0.uninstall(id) }
+    }
+
     func rows(_ host: PluginHost?) -> [Row] {
         var result: [String: Row] = [:]
         for entry in catalog {

@@ -68,7 +68,8 @@ struct SidebarWebProfile: View {
         .accessibilityIdentifier("leftSidebar.profile")
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { rowWidth = $0 }
         .webTitleBarPopover(isPresented: Binding(get: { metrics.isWebInterface && showingMenu },
-                                                set: { showingMenu = $0 }), width: max(1, rowWidth / metrics.scale - (metrics.style == .clean ? 12 : 16)), trailing: false) {
+                                                set: { showingMenu = $0 }), width: max(1,
+                                                    rowWidth / metrics.scale - (metrics.style == .clean ? 12 : 16)), trailing: false) {
             webMenu.modifier(SidebarProfilePopoverMotion())
         }
         .popover(isPresented: Binding(get: { !metrics.isWebInterface && showingMenu },

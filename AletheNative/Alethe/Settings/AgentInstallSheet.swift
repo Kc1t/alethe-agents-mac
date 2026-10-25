@@ -24,10 +24,12 @@ struct AgentInstallSheet: View {
     private var entry: AgentInstallCatalog.Entry? { AgentInstallCatalog.entries[agent.kind] }
 
     private var methods: [InstallMethod] {
-        switch mode {
-        case .install: AgentInstallCatalog.methods(for: agent.kind, toolchain: toolchain)
-        case .update: AgentInstallCatalog.methods(for: agent.kind, toolchain: toolchain).filter { $0.kind == .npm }
-        case .uninstall: AgentInstallCatalog.uninstallMethods(for: agent.kind, toolchain: toolchain)
+        if case .install = mode {
+            return AgentInstallCatalog.methods(for: agent.kind, toolchain: toolchain)
+        } else if case .update = mode {
+            return AgentInstallCatalog.methods(for: agent.kind, toolchain: toolchain).filter { $0.kind == .npm }
+        } else {
+            return AgentInstallCatalog.uninstallMethods(for: agent.kind, toolchain: toolchain)
         }
     }
 
@@ -46,7 +48,8 @@ struct AgentInstallSheet: View {
     }
 
     private var webBody: some View {
-        ModalsM2WebModal(title: Text(verbatim: String(format: String(localized: mode.title), agent.displayName)), close: closeWeb, width: 480) {
+        ModalsM2WebModal(title: Text(verbatim: String(format: String(localized: mode.title), agent.displayName)),
+            close: closeWeb, width: 480) {
             VStack(alignment: .leading, spacing: metrics.size(10)) {
                 if toolchain == nil {
                     Text("modalsM2.install.probing").font(metrics.font(size: 13))
@@ -117,19 +120,18 @@ struct AgentInstallSheet: View {
 
     @ViewBuilder
     private var webResult: some View {
-        switch installer.status {
-        case .succeeded:
+        if case .succeeded = installer.status {
             Text(verbatim: String(format: String(localized: mode.success), agent.displayName))
                 .font(metrics.font(size: 13)).foregroundStyle(theme[.statusWorking])
                 .accessibilityIdentifier("agentInstall.succeeded")
-        case .failed:
+        } else if case .failed = installer.status {
             Group {
                 if mode == .install { Text("agentInstall.web.failed") }
                 else { Text(verbatim: String(format: String(localized: "agentInstall.failed"), agent.displayName)) }
             }
             .font(metrics.font(size: 13)).foregroundStyle(theme[.statusOffline])
             .accessibilityIdentifier("agentInstall.failed")
-        case .running, .idle:
+        } else if installer.status == .running || installer.status == .idle {
             EmptyView()
         }
     }
@@ -248,18 +250,19 @@ struct AgentInstallSheet: View {
 
     @ViewBuilder
     private var result: some View {
-        switch installer.status {
-        case .succeeded:
-            Label { Text(String(format: String(localized: mode.success), agent.displayName)) } icon: { Image(systemName: "checkmark.circle.fill").webProfileSized(14) }
+        if case .succeeded = installer.status {
+            Label { Text(String(format: String(localized: mode.success), agent.displayName)) } icon: {
+                Image(systemName: "checkmark.circle.fill").webProfileSized(14) }
                 .foregroundStyle(theme[.statusActive])
                 .accessibilityIdentifier("agentInstall.succeeded")
-        case .failed:
-            Label { Text(String(format: String(localized: "agentInstall.failed"), agent.displayName)) } icon: { Image(systemName: "exclamationmark.triangle.fill").webProfileSized(14) }
+        } else if case .failed = installer.status {
+            Label { Text(String(format: String(localized: "agentInstall.failed"), agent.displayName)) } icon: {
+                Image(systemName: "exclamationmark.triangle.fill").webProfileSized(14) }
                 .foregroundStyle(theme[.statusStopped])
                 .accessibilityIdentifier("agentInstall.failed")
-        case .running:
+        } else if case .running = installer.status {
             ProgressView().controlSize(.small)
-        case .idle:
+        } else if case .idle = installer.status {
             EmptyView()
         }
     }
@@ -306,44 +309,54 @@ private struct AgentInstallMethodRow: View {
 
 extension AgentInstallSheet.Mode {
     var busyAction: LocalizedStringKey {
-        switch self {
-        case .install: "agentInstall.web.installing"
-        case .update: "agentInstall.web.updating"
-        case .uninstall: "agentInstall.web.uninstalling"
+        if case .install = self {
+            return "agentInstall.web.installing"
+        } else if case .update = self {
+            return "agentInstall.web.updating"
+        } else {
+            return "agentInstall.web.uninstalling"
         }
     }
 
     var title: String.LocalizationValue {
-        switch self {
-        case .install: "agentInstall.install.title"
-        case .update: "agentInstall.update.title"
-        case .uninstall: "agentInstall.uninstall.title"
+        if case .install = self {
+            return "agentInstall.install.title"
+        } else if case .update = self {
+            return "agentInstall.update.title"
+        } else {
+            return "agentInstall.uninstall.title"
         }
     }
 
     var action: LocalizedStringKey {
-        switch self {
-        case .install: "agentInstall.install"
-        case .update: "agentInstall.update"
-        case .uninstall: "agentInstall.uninstall"
+        if case .install = self {
+            return "agentInstall.install"
+        } else if case .update = self {
+            return "agentInstall.update"
+        } else {
+            return "agentInstall.uninstall"
         }
     }
 
     var success: String.LocalizationValue {
-        switch self {
-        case .install: "agentInstall.install.succeeded"
-        case .update: "agentInstall.update.succeeded"
-        case .uninstall: "agentInstall.uninstall.succeeded"
+        if case .install = self {
+            return "agentInstall.install.succeeded"
+        } else if case .update = self {
+            return "agentInstall.update.succeeded"
+        } else {
+            return "agentInstall.uninstall.succeeded"
         }
     }
 }
 
 extension InstallMethod.Kind {
     var title: LocalizedStringKey {
-        switch self {
-        case .native: "agentInstall.method.native"
-        case .brew: "agentInstall.method.brew"
-        case .npm: "agentInstall.method.npm"
+        if case .native = self {
+            return "agentInstall.method.native"
+        } else if case .brew = self {
+            return "agentInstall.method.brew"
+        } else {
+            return "agentInstall.method.npm"
         }
     }
 }

@@ -67,13 +67,23 @@ struct SidebarNativeRelease: Hashable, Sendable {
     }
 
     private struct Release: Decodable, Sendable {
-        let tag_name: String
-        let html_url: URL
+        let tagName: String
+        let htmlURL: URL
         let draft: Bool
         let prerelease: Bool
         let assets: [Asset]
         let body: String?
-        let published_at: String?
+        let publishedAt: String?
+
+        private enum CodingKeys: String, CodingKey {
+            case tagName = "tag_name"
+            case htmlURL = "html_url"
+            case draft
+            case prerelease
+            case assets
+            case body
+            case publishedAt = "published_at"
+        }
     }
     private struct Asset: Decodable, Sendable { let name: String }
 
@@ -104,11 +114,11 @@ struct SidebarNativeRelease: Hashable, Sendable {
             return releases.compactMap { entry -> (Self, [Int])? in
                 guard !entry.draft, !entry.prerelease,
                       entry.assets.contains(where: { $0.name.hasSuffix(".dmg") }),
-                      entry.html_url.scheme == "https", entry.html_url.host == "github.com",
-                      entry.html_url.path.hasPrefix("/HayatoG/alethe-agents/releases/"),
-                      let version = versionParts(entry.tag_name) else { return nil }
-                let date = entry.published_at.flatMap { try? Date($0, strategy: .iso8601) }
-                return (Self(version: entry.tag_name, page: entry.html_url, notes: entry.body ?? "", published: date), version)
+                      entry.htmlURL.scheme == "https", entry.htmlURL.host == "github.com",
+                      entry.htmlURL.path.hasPrefix("/HayatoG/alethe-agents/releases/"),
+                      let version = versionParts(entry.tagName) else { return nil }
+                let date = entry.publishedAt.flatMap { try? Date($0, strategy: .iso8601) }
+                return (Self(version: entry.tagName, page: entry.htmlURL, notes: entry.body ?? "", published: date), version)
             }
         } catch { return [] }
     }

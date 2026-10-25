@@ -57,7 +57,7 @@ struct PluginMarketplaceWebView: View {
         .confirmationDialog("plugins.web.removeTitle", isPresented: Binding(get: { removal != nil }, set: { if !$0 { removal = nil } })) {
             Button("settings.web.reference.market.uninstall", role: .destructive) {
                 if let row = removal {
-                    Task { await model.perform { try await $0.uninstall(row.id) }; selected = nil }
+                    Task { await model.uninstall(row.id); selected = nil }
                 }
                 removal = nil
             }
@@ -78,9 +78,11 @@ struct PluginMarketplaceWebView: View {
                 .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.border], lineWidth: metrics.size(1)))
             Spacer(minLength: 0)
             WebDropdown(selection: $updated, options: [true, false], appearance: .marketSort,
-                searchText: { String(localized: $0 ? "settings.web.reference.market.sortUpdated" : "settings.web.reference.market.sortName") }) {
+                searchText: {
+                    String(localized: $0 ? "settings.web.reference.market.sortUpdated" : "settings.web.reference.market.sortName") }) {
                 Text($0 ? "settings.web.reference.market.sortUpdated" : "settings.web.reference.market.sortName")
-            }.frame(width: metrics.size(160)).accessibilityLabel(Text("settings.web.reference.market.sort")).font(metrics.font(size: 11)).fixedSize()
+            }.frame(width: metrics.size(160)).accessibilityLabel(Text("settings.web.reference.market.sort"))
+                .font(metrics.font(size: 11)).fixedSize()
             Button { dismiss() } label: {
                 Image(systemName: "xmark").font(metrics.font(size: 16)).frame(width: metrics.size(30), height: metrics.size(30))
             }.buttonStyle(.plain).accessibilityLabel(Text("plugins.web.close"))
@@ -92,18 +94,23 @@ struct PluginMarketplaceWebView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: metrics.size(2)) {
                 tab(Text("settings.web.reference.market.browse"), active: !installedOnly) { installedOnly = false; selected = nil }
-                tab(Text("settings.web.reference.market.installed"), active: installedOnly, count: rows.filter(\.installed).count) { installedOnly = true; selected = nil }
+                tab(Text("settings.web.reference.market.installed"), active: installedOnly,
+                    count: rows.filter(\.installed).count) { installedOnly = true; selected = nil }
                 railLabel("settings.web.reference.market.filterCapabilities")
                 ForEach(Array(Set(scoped.flatMap(\.capabilities))).sorted(), id: \.self) { capability in
                     facet(Text(verbatim: capability), active: capabilities.contains(capability)) { toggle(capability, in: &capabilities) }
                 }
                 if installedOnly {
                     railLabel("settings.web.reference.market.filterSource")
-                    facet(Text("settings.web.reference.market.sourceBundled"), active: sources.contains("bundled")) { toggle("bundled", in: &sources) }
-                    facet(Text("settings.web.reference.market.sourceLocal"), active: sources.contains("local")) { toggle("local", in: &sources) }
+                    facet(Text("settings.web.reference.market.sourceBundled"), active: sources.contains("bundled")) {
+                        toggle("bundled", in: &sources) }
+                    facet(Text("settings.web.reference.market.sourceLocal"), active: sources.contains("local")) {
+                        toggle("local", in: &sources) }
                     railLabel("settings.web.reference.market.filterState")
-                    facet(Text("settings.web.reference.market.stateEnabled"), active: enabled == true) { enabled = enabled == true ? nil : true }
-                    facet(Text("settings.web.reference.market.stateDisabled"), active: enabled == false) { enabled = enabled == false ? nil : false }
+                    facet(Text("settings.web.reference.market.stateEnabled"), active: enabled == true) {
+                        enabled = enabled == true ? nil : true }
+                    facet(Text("settings.web.reference.market.stateDisabled"), active: enabled == false) {
+                        enabled = enabled == false ? nil : false }
                 }
                 Button("settings.web.reference.market.clear") { query = ""; capabilities = []; sources = []; enabled = nil }
                     .padding(.top, metrics.size(14))
@@ -119,13 +126,16 @@ struct PluginMarketplaceWebView: View {
             }.padding(.vertical, metrics.size(8)).padding(.horizontal, metrics.size(10))
                 .foregroundStyle(theme[active ? .fg : .fgMuted])
                 .background(theme[.bgSunken].opacity(active ? 1 : 0), in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
-                .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.borderStrong].opacity(active ? 1 : 0), lineWidth: metrics.size(1)))
+                .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md))
+                    .strokeBorder(theme[.borderStrong].opacity(active ? 1 : 0), lineWidth: metrics.size(1)))
         }.buttonStyle(.plain)
     }
-    private func toggle(_ value: String, in set: inout Set<String>) { if set.contains(value) { set.remove(value) } else { set.insert(value) } }
+    private func toggle(_ value: String, in set: inout Set<String>) { if set.contains(value) {
+        set.remove(value) } else { set.insert(value) } }
     private func railLabel(_ key: LocalizedStringKey) -> some View {
         Text(key).font(metrics.font(size: 9, weight: 700)).textCase(.uppercase).tracking(metrics.size(0.9))
-            .foregroundStyle(theme[.fgFaint]).padding(.top, metrics.size(16)).padding(.bottom, metrics.size(6)).padding(.leading, metrics.size(10))
+            .foregroundStyle(theme[.fgFaint]).padding(.top, metrics.size(16)).padding(.bottom, metrics.size(6))
+                .padding(.leading, metrics.size(10))
     }
     private func facet(_ title: Text, active: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -162,10 +172,12 @@ struct PluginMarketplaceWebView: View {
                                             Text(verbatim: row.name).font(metrics.font(size: 13, weight: 600)).foregroundStyle(theme[.fg])
                                             Text(verbatim: row.version).font(metrics.font(size: 10)).foregroundStyle(theme[.fgFaint])
                                         }
-                                        Text(verbatim: row.description).font(metrics.font(size: 11)).foregroundStyle(theme[.fgMuted]).lineLimit(1)
+                                        Text(verbatim: row.description).font(metrics.font(size: 11))
+                                            .foregroundStyle(theme[.fgMuted]).lineLimit(1)
                                     }.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
                                 }.buttonStyle(.plain)
-                                if row.installed { Text("settings.web.reference.market.installedMark").font(metrics.font(size: 11)).foregroundStyle(theme[.statusActive]) }
+                                if row.installed { Text("settings.web.reference.market.installedMark")
+                                    .font(metrics.font(size: 11)).foregroundStyle(theme[.statusActive]) }
                                 else { Text("plugins.web.unavailable").font(metrics.font(size: 11)).foregroundStyle(theme[.fgFaint]) }
                             }.padding(.horizontal, metrics.size(10)).frame(height: metrics.size(68))
                                 .modifier(PluginMarketWebRowHover())
@@ -192,7 +204,8 @@ struct PluginMarketplaceWebView: View {
                 }.font(metrics.font(size: 11)).foregroundStyle(theme[.fgFaint])
                 Text(verbatim: row.description).font(metrics.font(size: 12)).foregroundStyle(theme[.fgMuted])
                 Text("settings.web.reference.market.detailCapabilities").font(metrics.font(size: 9, weight: 700)).textCase(.uppercase)
-                ForEach(row.capabilities, id: \.self) { Text(verbatim: $0).font(metrics.monoFont(size: 11)).foregroundStyle(theme[.fgMuted]) }
+                ForEach(row.capabilities, id: \.self) { Text(verbatim: $0).font(metrics.monoFont(size: 11))
+                    .foregroundStyle(theme[.fgMuted]) }
                 if !row.native {
                     Text("plugins.web.unavailable").font(metrics.font(size: 12))
                     Text("plugins.web.registrationHelp").font(metrics.font(size: 11)).foregroundStyle(theme[.fgFaint])
@@ -200,11 +213,14 @@ struct PluginMarketplaceWebView: View {
                 HStack(spacing: metrics.size(8)) {
                     if row.native {
                         Button(row.enabled ? "settings.web.reference.market.disable" : "settings.web.reference.market.enable") {
-                            Task { do { try await environment.plugins?.setEnabled(!row.enabled, for: row.id) } catch { model.error = true } }
+                            Task { do { try await environment.plugins?.setEnabled(!row.enabled, for: row.id) } catch {
+                                model.error = true } }
                         }
                     } else if let entry = row.catalog, entry.package != nil {
-                        Button(row.update ? "settings.web.reference.prefs.pluginsCatalogUpdate" : row.installed ? "settings.web.reference.prefs.pluginsCatalogReinstall" : "plugins.web.register") {
-                            Task { await model.perform { try await $0.install(entry) } }
+                        Button(row.update ? "settings.web.reference.prefs.pluginsCatalogUpdate" : row.installed
+                            ? "settings.web.reference.prefs.pluginsCatalogReinstall" : "plugins.web.register") {
+
+                            Task { await model.install(entry) }
                         }.disabled(model.busy)
                     }
                     if let page = row.catalog?.downloadUrl, let url = URL(string: page), url.scheme == "https" {

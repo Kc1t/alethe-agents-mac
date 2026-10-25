@@ -60,7 +60,8 @@ struct TerminalInspector: View {
                     .padding(.top, metrics.size(8))
             }
             LazyVGrid(columns: [GridItem(.flexible(), spacing: metrics.size(5)), GridItem(.flexible())], spacing: metrics.size(5)) {
-                action(focused ? "focusMode.exit" : "pane.web.focusMode", symbol: focused ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right") {
+                action(focused ? "focusMode.exit" : "pane.web.focusMode",
+                    symbol: focused ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right") {
                     environment.focusModePaneID = focused ? nil : pane.id
                 }
                 action("terminalInspector.reveal", symbol: "terminal", perform: reveal)
@@ -69,17 +70,20 @@ struct TerminalInspector: View {
                     action("pane.web.openInVscode", symbol: "chevron.left.forwardslash.chevron.right") {
                         OpenInActions.vsCode(path, launchers: environment.launchers)
                     }
-                    action("pane.web.restart", symbol: "arrow.clockwise", disabled: tab == nil || pane.isDisabled || tab.map { environment.terminals.states[$0.id] != .running } == true) {
+                    action("pane.web.restart", symbol: "arrow.clockwise",
+                        disabled: tab == nil || pane.isDisabled || tab.map { environment.terminals.states[$0.id] != .running } == true) {
                         if let tab { environment.terminals.restart(tab, in: project, environment: environment) }
                     }
                     action(pane.isDisabled ? "pane.web.reactivate" : "pane.web.disable", symbol: pane.isDisabled ? "eye" : "eye.slash") {
                         workspace.update { $0.setDisabled(pane.id, !pane.isDisabled) }
                     }
-                    action(pane.isLaneVisible ? "pane.web.hideTabsLane" : "pane.web.showTabsLane", symbol: "sidebar.left", disabled: pane.tabs.count > 1) {
+                    action(pane.isLaneVisible ? "pane.web.hideTabsLane" : "pane.web.showTabsLane",
+                        symbol: "sidebar.left", disabled: pane.tabs.count > 1) {
                         workspace.update { $0.setLaneVisible(!pane.isLaneVisible, for: pane.id) }
                     }
                     if let tab, ["claude", "codex", "opencode"].contains(tab.agent) {
-                        action("menu.history.conversations", symbol: "clock.arrow.circlepath") { environment.editorRequest = .conversations(project.id) }
+                        action("menu.history.conversations", symbol: "clock.arrow.circlepath") {
+                            environment.editorRequest = .conversations(project.id) }
                     }
                     action("pane.web.killTerminal", symbol: "power", danger: true) {
                         for tab in pane.tabs { environment.terminals.view(for: tab.id)?.terminate() }
@@ -91,7 +95,8 @@ struct TerminalInspector: View {
                             if let url = WebAddress.normalize(address) { NSWorkspace.shared.open(url) }
                         }
                     } else if let file = pane.content.filePath {
-                        action("pane.web.openInExplorer", symbol: "folder") { OpenInActions.revealInFinder((file as NSString).deletingLastPathComponent) }
+                        action("pane.web.openInExplorer", symbol: "folder") {
+                            OpenInActions.revealInFinder((file as NSString).deletingLastPathComponent) }
                     }
                     action("pane.web.deleteTerminal", symbol: "trash", danger: true) { closePane() }
                 }
@@ -114,7 +119,8 @@ struct TerminalInspector: View {
                         HStack(spacing: metrics.size(5)) {
                             Text(verbatim: tab.agent.uppercased()).font(metrics.font(size: 9, weight: .bold))
                                 .foregroundStyle(theme[.fgFaint]).frame(width: metrics.size(52), alignment: .leading).lineLimit(1)
-                            Text(verbatim: environment.terminals.displayName(of: tab)).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                            Text(verbatim: environment.terminals.displayName(of: tab)).lineLimit(1)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             Circle().fill(theme[.statusWorking].opacity(environment.terminals.unread.contains(tab.id) ? 1 : 0))
                                 .frame(width: metrics.size(6), height: metrics.size(6))
                         }
@@ -196,7 +202,8 @@ private struct InspectorButtonBody: View {
             .foregroundStyle(theme[hovering && danger ? .statusOffline : hovering || selected ? .fg : .fgMuted])
             .background(theme[hovering || selected ? .panelHover : .bg].opacity(border || hovering || selected ? 1 : 0))
             .clipShape(RoundedRectangle(cornerRadius: metrics.radius(.sm)))
-            .overlay { if border { RoundedRectangle(cornerRadius: metrics.radius(.sm)).stroke(theme[hovering ? .borderStrong : .border], lineWidth: metrics.size(1)) } }
+            .overlay { if border { RoundedRectangle(cornerRadius: metrics.radius(.sm))
+                .stroke(theme[hovering ? .borderStrong : .border], lineWidth: metrics.size(1)) } }
             .opacity(enabled ? 1 : 0.38)
             .onHover { hovering = $0 }
     }

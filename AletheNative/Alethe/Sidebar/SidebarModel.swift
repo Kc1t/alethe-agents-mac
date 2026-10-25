@@ -106,12 +106,10 @@ struct SidebarActions {
 
     func drop(_ dropped: SidebarDrag.Dropped, onGroup target: GroupID) {
         workspace.update(undoManager: undoManager, actionName: String(localized: "undo.move")) { doc in
-            switch dropped {
-            case .project(let project):
+            if case .project(let project) = dropped {
                 doc.moveProject(project, to: .group(target), at: Int.max)
-            case .pane:
-                break
-            case .group(let group):
+            } else if case .pane = dropped {
+            } else if case .group(let group) = dropped {
                 doc.moveGroup(group, toParent: target, at: Int.max)
             }
         }
@@ -119,12 +117,10 @@ struct SidebarActions {
 
     func insert(_ dropped: SidebarDrag.Dropped, into location: ProjectLocation, at index: Int) {
         workspace.update(undoManager: undoManager, actionName: String(localized: "undo.move")) { doc in
-            switch dropped {
-            case .project(let project):
+            if case .project(let project) = dropped {
                 doc.moveProject(project, to: location, at: index)
-            case .pane:
-                break
-            case .group(let group):
+            } else if case .pane = dropped {
+            } else if case .group(let group) = dropped {
                 if case .group(let parent) = location { doc.moveGroup(group, toParent: parent, at: Int.max) }
             }
         }
@@ -301,16 +297,13 @@ struct SidebarActions {
             func show(_ id: ProjectID) {
                 if adding { doc.open(id) } else { doc.openInTab(id) }
             }
-            switch item {
-            case .project(let id):
+            if case .project(let id) = item {
                 show(id)
-            case .tab(let tabID):
+            } else if case .tab(let tabID) = item {
                 if let project = doc.paneHolding(tabID)?.project {
                     show(project.id)
                     doc.activateTab(tabID)
                 }
-            case .group, .none:
-                break
             }
         }
     }

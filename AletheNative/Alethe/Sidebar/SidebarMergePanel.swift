@@ -197,11 +197,14 @@ struct SidebarMergePanel: View {
     }
 
     private func stageTitle(_ stage: MergeCenterStage) -> LocalizedStringKey {
-        switch stage {
-        case .analyze: "merge.stage.analyze"
-        case .prepare: "merge.stage.prepare"
-        case .validate: "merge.stage.validate"
-        case .finish: "merge.stage.finish"
+        if case .analyze = stage {
+            return "merge.stage.analyze"
+        } else if case .prepare = stage {
+            return "merge.stage.prepare"
+        } else if case .validate = stage {
+            return "merge.stage.validate"
+        } else {
+            return "merge.stage.finish"
         }
     }
 }

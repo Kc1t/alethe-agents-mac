@@ -8,7 +8,8 @@ struct WebVisualStyleGrid: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: metrics.size(10)), GridItem(.flexible(), spacing: metrics.size(10))], spacing: metrics.size(10)) {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: metrics.size(10)), GridItem(.flexible(),
+            spacing: metrics.size(10))], spacing: metrics.size(10)) {
             ForEach(VisualStyle.allCases, id: \.self) { style in
                 Button {
                     environment.preferences?.update { $0.visualStyle = style == .normal ? nil : style.rawValue }
@@ -23,7 +24,8 @@ struct WebVisualStyleGrid: View {
                     }
                     .padding(metrics.size(10))
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(theme[environment.visualStyle == style ? .accentFaint : .bgSunken], in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
+                    .background(theme[environment.visualStyle == style ? .accentFaint : .bgSunken],
+                        in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
                     .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md))
                         .strokeBorder(theme[environment.visualStyle == style ? .accent : .border], lineWidth: metrics.size(1)))
                 }
@@ -43,7 +45,8 @@ struct WebVisualStyleGrid: View {
                     ForEach(0..<3) { _ in
                         RoundedRectangle(cornerRadius: metrics.size(style == .normal ? 6 : 0))
                             .fill(theme[.panel])
-                            .overlay(RoundedRectangle(cornerRadius: metrics.size(style == .normal ? 6 : 0)).strokeBorder(theme[.border], lineWidth: metrics.size(1)))
+                            .overlay(RoundedRectangle(cornerRadius: metrics.size(style == .normal ? 6 : 0))
+                                .strokeBorder(theme[.border], lineWidth: metrics.size(1)))
                             .frame(height: metrics.size(15))
                     }
                     Spacer(minLength: 0)
@@ -56,7 +59,8 @@ struct WebVisualStyleGrid: View {
                     ForEach(0..<2) { _ in
                         RoundedRectangle(cornerRadius: metrics.size(style == .normal ? 6 : 0))
                             .fill(theme[.panel])
-                            .overlay(RoundedRectangle(cornerRadius: metrics.size(style == .normal ? 6 : 0)).strokeBorder(theme[.border], lineWidth: metrics.size(1)))
+                            .overlay(RoundedRectangle(cornerRadius: metrics.size(style == .normal ? 6 : 0))
+                                .strokeBorder(theme[.border], lineWidth: metrics.size(1)))
                     }
                 }
                 .padding(metrics.size(6))

@@ -42,7 +42,8 @@ struct CustomAgentIcon: View {
            let data = try? Data(contentsOf: url) { return "data:image/x-icon;base64," + data.base64EncodedString() }
         return nil
     }
-    private var token: ThemeToken { AgentTokens.accent(for: (definition.accentToken ?? "--agent-shell").replacingOccurrences(of: "--agent-", with: "")) }
+    private var token: ThemeToken { AgentTokens.accent(for: (definition.accentToken ?? "--agent-shell")
+        .replacingOccurrences(of: "--agent-", with: "")) }
     var body: some View {
         Group {
             if let source {
@@ -71,7 +72,8 @@ struct CustomAgentsSection: View {
     var body: some View {
         Section {
             VStack(alignment: .leading, spacing: metrics.size(8)) {
-                if agents.isEmpty, draft == nil { customLabel("customAgentsEmpty").font(metrics.font(size: 11)).foregroundStyle(theme[.fgFaint]) }
+                if agents.isEmpty, draft == nil { customLabel("customAgentsEmpty").font(metrics.font(size: 11))
+                    .foregroundStyle(theme[.fgFaint]) }
                 ForEach(agents) { agent in row(agent) }
                 if draft != nil { editor }
                 else {
@@ -117,7 +119,8 @@ struct CustomAgentsSection: View {
                 Text(verbatim: agent.cliCommand).font(metrics.monoFont(size: 10)).foregroundStyle(theme[.fgMuted]).lineLimit(1)
             }.frame(maxWidth: .infinity, alignment: .leading)
             Toggle(isOn: enabled(agent.id)) { Text(verbatim: agent.label) }.labelsHidden().toggleStyle(.checkbox)
-                .disabled(isEnabled(agent.id) && environment.agentRegistry.enabledKinds(environment.preferences?.document.enabledAgents).filter { $0 != .shell }.count <= 1)
+                .disabled(isEnabled(agent.id) && environment.agentRegistry.enabledKinds(environment.preferences?.document.enabledAgents)
+                    .filter { $0 != .shell }.count <= 1)
             Button {
                 draft = agent; editing = agent.id; mode = agent.iconSpec?.kind ?? "preset"; picked = nil; error = nil
             } label: { customLabel("customAgentEdit") }.buttonStyle(AletheCustomAgentButtonStyle(compact: true))
@@ -136,9 +139,11 @@ struct CustomAgentsSection: View {
             HStack(spacing: metrics.size(10)) {
                 VStack(alignment: .leading, spacing: metrics.size(4)) {
                     customLabel("customAgentAccent").font(metrics.font(size: 11)).foregroundStyle(theme[.fgMuted])
-                    InterfaceSelect(selection: optional(\.accentToken), options: CustomAgentDefinition.accents, appearance: .customAgent) { Text(verbatim: $0) }
+                    InterfaceSelect(selection: optional(\.accentToken), options: CustomAgentDefinition.accents,
+                        appearance: .customAgent) { Text(verbatim: $0) }
                 }
-                if let draft { CustomAgentIcon(definition: draft, previewFile: mode == "file" ? picked : nil).frame(width: metrics.size(36), height: metrics.size(36)) }
+                if let draft { CustomAgentIcon(definition: draft, previewFile: mode == "file" ? picked : nil)
+                    .frame(width: metrics.size(36), height: metrics.size(36)) }
             }
             VStack(alignment: .leading, spacing: metrics.size(6)) {
                 customLabel("customAgentIconMode").font(metrics.font(size: 11))
@@ -150,16 +155,19 @@ struct CustomAgentsSection: View {
                     } label: {
                         HStack(spacing: metrics.size(8)) {
                             Image(systemName: mode == option ? "largecircle.fill.circle" : "circle").font(metrics.font(size: 16))
-                            customLabel(option == "preset" ? "customAgentIconPreset" : option == "file" ? "customAgentIconFile" : "customAgentIconUrl")
+                            customLabel(option == "preset" ? "customAgentIconPreset" : option == "file"
+                                ? "customAgentIconFile" : "customAgentIconUrl")
                         }.font(metrics.font(size: 12))
                     }.buttonStyle(.plain)
                 }
             }.padding(.horizontal, metrics.size(12)).padding(.vertical, metrics.size(10)).modifier(CustomAgentPanel())
             if mode == "preset" {
-                InterfaceSelect(selection: Binding { draft?.iconSpec?.key ?? "bot" } set: { draft?.iconSpec = .init(kind: "preset", key: $0) },
+                InterfaceSelect(selection: Binding { draft?.iconSpec?.key ?? "bot" } set: {
+                    draft?.iconSpec = .init(kind: "preset", key: $0) },
                              options: CustomAgentDefinition.icons, appearance: .customAgent) { Text(verbatim: $0) }
             } else if mode == "url" {
-                field("customAgentIcon", text: Binding { draft?.iconSpec?.href ?? "" } set: { draft?.iconSpec = .init(kind: "url", href: $0) })
+                field("customAgentIcon", text: Binding { draft?.iconSpec?.href ?? "" } set: {
+                    draft?.iconSpec = .init(kind: "url", href: $0) })
                 hint("customAgentIconUrlHint")
             } else {
                 Button { chooseIcon() } label: { customLabel("customAgentIconPick") }
@@ -167,7 +175,8 @@ struct CustomAgentsSection: View {
                 else if editing != nil { hint("customAgentIconFileKept") }
                 hint("customAgentIconFileHint")
             }
-            if let error { customLabel("customAgentError" + error.prefix(1).uppercased() + error.dropFirst()).font(metrics.font(size: 11)).foregroundStyle(theme[.statusWaiting]) }
+            if let error { customLabel("customAgentError" + error.prefix(1).uppercased() + error.dropFirst())
+                .font(metrics.font(size: 11)).foregroundStyle(theme[.statusWaiting]) }
             HStack(spacing: metrics.size(8)) {
                 Button(action: save) { customLabel("customAgentSave") }.buttonStyle(AletheCustomAgentButtonStyle(primary: true))
                 Button { draft = nil; picked = nil } label: { customLabel("customAgentCancel") }.buttonStyle(AletheCustomAgentButtonStyle())
@@ -190,7 +199,8 @@ struct CustomAgentsSection: View {
     private func isEnabled(_ id: String) -> Bool { environment.preferences?.document.enabledAgents?.contains(id) ?? true }
     private func enabled(_ id: String) -> Binding<Bool> {
         Binding { isEnabled(id) } set: { on in
-            environment.preferences?.update { $0.enabledAgents = environment.agentRegistry.enabled($0.enabledAgents, setting: .init(rawValue: id), on: on) }
+            environment.preferences?.update { $0.enabledAgents = environment.agentRegistry.enabled($0.enabledAgents,
+                setting: .init(rawValue: id), on: on) }
         }
     }
     private func chooseIcon() {

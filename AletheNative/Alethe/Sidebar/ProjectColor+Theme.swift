@@ -4,32 +4,50 @@ import SwiftUI
 
 extension ProjectColor {
     var token: ThemeToken {
-        switch self {
-        case .orange: .projectOrange
-        case .pink: .projectPink
-        case .purple: .projectPurple
-        case .blue: .projectBlue
-        case .teal: .projectTeal
-        case .green: .projectGreen
-        case .yellow: .projectYellow
-        case .red: .projectRed
-        case .gray: .projectGray
-        case .black: .projectBlack
+        if case .orange = self {
+            return .projectOrange
+        } else if case .pink = self {
+            return .projectPink
+        } else if case .purple = self {
+            return .projectPurple
+        } else if case .blue = self {
+            return .projectBlue
+        } else if case .teal = self {
+            return .projectTeal
+        } else if case .green = self {
+            return .projectGreen
+        } else if case .yellow = self {
+            return .projectYellow
+        } else if case .red = self {
+            return .projectRed
+        } else if case .gray = self {
+            return .projectGray
+        } else {
+            return .projectBlack
         }
     }
 
     var localizedName: LocalizedStringKey {
-        switch self {
-        case .orange: "color.orange"
-        case .pink: "color.pink"
-        case .purple: "color.purple"
-        case .blue: "color.blue"
-        case .teal: "color.teal"
-        case .green: "color.green"
-        case .yellow: "color.yellow"
-        case .red: "color.red"
-        case .gray: "color.gray"
-        case .black: "color.black"
+        if case .orange = self {
+            return "color.orange"
+        } else if case .pink = self {
+            return "color.pink"
+        } else if case .purple = self {
+            return "color.purple"
+        } else if case .blue = self {
+            return "color.blue"
+        } else if case .teal = self {
+            return "color.teal"
+        } else if case .green = self {
+            return "color.green"
+        } else if case .yellow = self {
+            return "color.yellow"
+        } else if case .red = self {
+            return "color.red"
+        } else if case .gray = self {
+            return "color.gray"
+        } else {
+            return "color.black"
         }
     }
 

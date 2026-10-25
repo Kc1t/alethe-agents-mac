@@ -70,11 +70,12 @@ struct PluginSettings: View {
                     message: String(localized: "settings.web.reference.market.uninstallWarning"),
                     title: String(localized: "plugins.web.removeTitle"),
                     confirmTitle: String(localized: "settings.web.reference.market.uninstall"), destructive: true) {
-            if let id = uninstallID { Task { await webModel.perform { try await $0.uninstall(id) } } }
+            if let id = uninstallID { Task { await webModel.uninstall(id) } }
         }
-        .confirmationDialog("plugins.web.removeTitle", isPresented: Binding(get: { !metrics.isWebInterface && uninstallID != nil }, set: { if !$0 { uninstallID = nil } })) {
+        .confirmationDialog("plugins.web.removeTitle", isPresented: Binding(get: {
+            !metrics.isWebInterface && uninstallID != nil }, set: { if !$0 { uninstallID = nil } })) {
             Button("settings.web.reference.market.uninstall", role: .destructive) {
-                if let id = uninstallID { Task { await webModel.perform { try await $0.uninstall(id) } } }
+                if let id = uninstallID { Task { await webModel.uninstall(id) } }
                 uninstallID = nil
             }
         } message: { Text("settings.web.reference.market.uninstallWarning") }
@@ -158,13 +159,18 @@ private struct PluginRow: View {
 
 extension PluginCapability {
     var localizedName: String {
-        switch self {
-        case .git: String(localized: "settings.plugins.capability.git")
-        case .filesystemRead: String(localized: "settings.plugins.capability.filesystemRead")
-        case .filesystemWrite: String(localized: "settings.plugins.capability.filesystemWrite")
-        case .terminalInput: String(localized: "settings.plugins.capability.terminalInput")
-        case .network: String(localized: "settings.plugins.capability.network")
-        case .storage: String(localized: "settings.plugins.capability.storage")
+        if case .git = self {
+            return String(localized: "settings.plugins.capability.git")
+        } else if case .filesystemRead = self {
+            return String(localized: "settings.plugins.capability.filesystemRead")
+        } else if case .filesystemWrite = self {
+            return String(localized: "settings.plugins.capability.filesystemWrite")
+        } else if case .terminalInput = self {
+            return String(localized: "settings.plugins.capability.terminalInput")
+        } else if case .network = self {
+            return String(localized: "settings.plugins.capability.network")
+        } else {
+            return String(localized: "settings.plugins.capability.storage")
         }
     }
 }

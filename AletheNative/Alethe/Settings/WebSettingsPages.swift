@@ -171,7 +171,8 @@ struct WebOrganizationSettings: View {
                     profile: environment.profileID, enabled: false)
             }
         }
-        .alert("settings.organization.deleteGroup", isPresented: Binding(get: { !metrics.isWebInterface && deleting != nil }, set: { if !$0 { deleting = nil } })) {
+        .alert("settings.organization.deleteGroup", isPresented: Binding(get: {
+            !metrics.isWebInterface && deleting != nil }, set: { if !$0 { deleting = nil } })) {
             Button("settings.organization.deleteGroup", role: .destructive) {
                 if let group = deleting {
                     environment.workspace?.update { $0.deleteGroup(group.id) }
@@ -279,21 +280,20 @@ struct WebAboutSettings: View {
             } header: { Text("settings.web.reference.prefs.aboutVersionTitle") }
               footer: { Text("settings.web.reference.prefs.aboutVersionDesc") }
             Section {
-                switch updates.phase {
-                case .checking:
+                if case .checking = updates.phase {
                     WebBusyIndicator()
                     Text("settings.updates.checking")
-                case .downloading:
+                } else if case .downloading = updates.phase {
                     WebBusyIndicator()
                     Text("settings.updates.downloading")
-                case .available:
+                } else if case .available = updates.phase {
                     Text(verbatim: updates.version).font(metrics.font(size: 12, weight: .semibold))
                     if !updates.notes.isEmpty { Text(verbatim: updates.notes).textSelection(.enabled) }
                     Button("settings.updates.download") { Task { await updates.download() } }
-                case .ready:
+                } else if case .ready = updates.phase {
                     Button("settings.updates.openInstaller") { updates.openInstaller() }
                     Text("settings.updates.manualInstall").font(metrics.font(size: 11))
-                case .idle, .current, .failed:
+                } else if updates.phase == .idle || updates.phase == .current || updates.phase == .failed {
                     Button("settings.web.reference.prefs.aboutCheckUpdates") { Task { await updates.check() } }
                     if updates.phase == .current { Text("settings.updates.current") }
                     if !updates.error.isEmpty { Text(verbatim: updates.error).textSelection(.enabled) }

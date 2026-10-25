@@ -112,10 +112,12 @@ struct GeneralSettings: View {
             DataSettingsSection()
         }
         .formStyle(.grouped)
-        .webConfirm(isPresented: $confirmClear, message: String(localized: "settings.general.clearActivity.confirm"), confirmTitle: String(localized: "settings.general.clearActivity"), destructive: true) {
+        .webConfirm(isPresented: $confirmClear, message: String(localized: "settings.general.clearActivity.confirm"),
+            confirmTitle: String(localized: "settings.general.clearActivity"), destructive: true) {
             environment.activity.clear()
         }
-        .confirmationDialog(Text("settings.general.clearActivity.confirm"), isPresented: Binding(get: { !metrics.isWebInterface && confirmClear }, set: { confirmClear = $0 })) {
+        .confirmationDialog(Text("settings.general.clearActivity.confirm"), isPresented: Binding(get: {
+            !metrics.isWebInterface && confirmClear }, set: { confirmClear = $0 })) {
             Button("settings.general.clearActivity", role: .destructive) { environment.activity.clear() }
         }
     }

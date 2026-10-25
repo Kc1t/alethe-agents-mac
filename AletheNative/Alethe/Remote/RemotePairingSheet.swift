@@ -132,36 +132,7 @@ struct RemotePairingSheet: View {
     @ViewBuilder
     private func pairing(_ info: RemoteInfo?) -> some View {
         HStack(alignment: .top, spacing: metrics.space(.xl)) {
-            VStack(spacing: metrics.space(.m)) {
-                if let info, info.pairingOpen, let url = info.pairingURL,
-                   let image = RemotePairingQR.shared.image(for: url) {
-                    Image(decorative: image, scale: 1)
-                        .interpolation(.none)
-                        .resizable()
-                        .frame(width: metrics.size(CGFloat(RemotePairingQR.minimumSide)),
-                               height: metrics.size(CGFloat(RemotePairingQR.minimumSide)))
-                        .clipShape(RoundedRectangle(cornerRadius: metrics.radius(.sm)))
-                        .accessibilityElement()
-                        .accessibilityLabel(Text("remote.pairing.qr"))
-                        .accessibilityIdentifier("remote.pairing.qr")
-                    Text(String(format: String(localized: "remote.pairing.countdown"), info.pairingExpiresIn))
-                        .font(metrics.font(.footnote).monospacedDigit())
-                        .foregroundStyle(theme[.textSecondary])
-                        .accessibilityIdentifier("remote.pairing.countdown")
-                } else {
-                    Text("remote.pairing.closedHint")
-                        .font(metrics.font(.footnote))
-                        .foregroundStyle(theme[.textSecondary])
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityIdentifier("remote.pairing.closed")
-                    Button("remote.pairing.reopen") { remote.openPairing() }
-                        .buttonStyle(.borderedProminent)
-                        .accessibilityIdentifier("remote.pairing.reopen")
-                }
-            }
-            .frame(width: metrics.size(CGFloat(RemotePairingQR.minimumSide)),
-                   height: metrics.size(CGFloat(RemotePairingQR.minimumSide) + 28))
+            pairingCode(info)
             VStack(alignment: .leading, spacing: metrics.space(.l)) {
                 VStack(alignment: .leading, spacing: metrics.space(.xxs)) {
                     Text("remote.pairing.connected")
@@ -204,6 +175,39 @@ struct RemotePairingSheet: View {
         }
         .padding(metrics.space(.l))
         .background(theme[.bgSunken], in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
+    }
+
+    private func pairingCode(_ info: RemoteInfo?) -> some View {
+        VStack(spacing: metrics.space(.m)) {
+            if let info, info.pairingOpen, let url = info.pairingURL,
+               let image = RemotePairingQR.shared.image(for: url) {
+                Image(decorative: image, scale: 1)
+                    .interpolation(.none)
+                    .resizable()
+                    .frame(width: metrics.size(CGFloat(RemotePairingQR.minimumSide)),
+                           height: metrics.size(CGFloat(RemotePairingQR.minimumSide)))
+                    .clipShape(RoundedRectangle(cornerRadius: metrics.radius(.sm)))
+                    .accessibilityElement()
+                    .accessibilityLabel(Text("remote.pairing.qr"))
+                    .accessibilityIdentifier("remote.pairing.qr")
+                Text(String(format: String(localized: "remote.pairing.countdown"), info.pairingExpiresIn))
+                    .font(metrics.font(.footnote).monospacedDigit())
+                    .foregroundStyle(theme[.textSecondary])
+                    .accessibilityIdentifier("remote.pairing.countdown")
+            } else {
+                Text("remote.pairing.closedHint")
+                    .font(metrics.font(.footnote))
+                    .foregroundStyle(theme[.textSecondary])
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("remote.pairing.closed")
+                Button("remote.pairing.reopen") { remote.openPairing() }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("remote.pairing.reopen")
+            }
+        }
+        .frame(width: metrics.size(CGFloat(RemotePairingQR.minimumSide)),
+               height: metrics.size(CGFloat(RemotePairingQR.minimumSide) + 28))
     }
 
     private func devices(_ info: RemoteInfo?) -> some View {

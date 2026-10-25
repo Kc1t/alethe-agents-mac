@@ -30,9 +30,10 @@ enum WebProjectTransfer {
             let location = workspace.document.location(of: project) ?? .ungrouped
             workspace.update(undoManager: undoManager, actionName: String(localized: "undo.importProjectSettings")) { document in
                 document.projects.append(snapshot)
-                switch location {
-                case .ungrouped: document.ungroupedProjectIDs.append(snapshot.id)
-                case .group(let id): document.updateGroup(id) { $0.projectIDs.append(snapshot.id) }
+                if case .ungrouped = location {
+                    document.ungroupedProjectIDs.append(snapshot.id)
+                } else if case .group(let id) = location {
+                    document.updateGroup(id) { $0.projectIDs.append(snapshot.id) }
                 }
             }
         } catch { inform("projectSettings.import.failed", message: String(localized: "projectSettings.import.invalid")) }

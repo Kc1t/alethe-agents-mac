@@ -13,15 +13,28 @@ final class SettingsUpdateController {
     private var installer: URL?
 
     private struct Release: Decodable, Sendable {
-        let tag_name: String
+        let tagName: String
         let body: String?
         let draft: Bool
         let prerelease: Bool
         let assets: [Asset]
+
+        private enum CodingKeys: String, CodingKey {
+            case tagName = "tag_name"
+            case body
+            case draft
+            case prerelease
+            case assets
+        }
     }
     private struct Asset: Decodable, Sendable {
         let name: String
-        let browser_download_url: URL
+        let browserDownloadURL: URL
+
+        private enum CodingKeys: String, CodingKey {
+            case name
+            case browserDownloadURL = "browser_download_url"
+        }
     }
     private enum UpdateError: LocalizedError {
         case response
@@ -43,17 +56,18 @@ final class SettingsUpdateController {
             let installed = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.0.0"
             guard let current = Self.parts(installed) else { throw UpdateError.response }
             let candidates = releases.filter {
-                !$0.draft && !$0.prerelease && Self.parts($0.tag_name).map { current.lexicographicallyPrecedes($0) } == true
+                !$0.draft && !$0.prerelease && Self.parts($0.tagName).map { current.lexicographicallyPrecedes($0) } == true
                     && $0.assets.contains { $0.name.hasSuffix(".dmg") }
             }
-            guard let latest = candidates.max(by: { (Self.parts($0.tag_name) ?? []).lexicographicallyPrecedes(Self.parts($1.tag_name) ?? []) }),
-                  let download = latest.assets.first(where: { $0.name.hasSuffix(".dmg") })?.browser_download_url,
+            guard let latest = candidates.max(by: { (Self.parts($0.tagName) ?? [])
+                .lexicographicallyPrecedes(Self.parts($1.tagName) ?? []) }),
+                  let download = latest.assets.first(where: { $0.name.hasSuffix(".dmg") })?.browserDownloadURL,
                   Self.trusted(download) else {
                 phase = .current
                 return
             }
             asset = download
-            version = latest.tag_name
+            version = latest.tagName
             notes = latest.body ?? ""
             phase = .available
         } catch {

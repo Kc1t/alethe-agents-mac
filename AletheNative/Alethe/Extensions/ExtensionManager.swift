@@ -178,9 +178,10 @@ final class ExtensionManager {
     func setEnabled(_ enabled: Bool, for id: String) {
         guard let manifest = entries.first(where: { $0.id == id })?.manifest else { return }
         if enabled {
-            switch state.requestEnable(manifest) {
-            case .enabled: save()
-            case .needsConsent(let capabilities):
+            let enableResult = state.requestEnable(manifest)
+            if case .enabled = enableResult {
+                save()
+            } else if case .needsConsent(let capabilities) = enableResult {
                 pendingConsent = ConsentRequest(manifest: manifest, capabilities: capabilities)
             }
         } else {

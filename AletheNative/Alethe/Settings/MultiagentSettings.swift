@@ -61,7 +61,8 @@ struct MultiagentSettings: View {
                 if metrics.isWebInterface {
                     WebDropdown(selection: $model.projectID,
                                  options: [String?.none] + projects.map { Optional($0.id.rawValue) }) { id in
-                        Text(verbatim: id.flatMap { id in projects.first { $0.id.rawValue == id }?.name } ?? String(localized: "settings.multiagent.project.none"))
+                        Text(verbatim: id.flatMap { id in projects.first {
+                            $0.id.rawValue == id }?.name } ?? String(localized: "settings.multiagent.project.none"))
                     }
                     .accessibilityLabel(Text("settings.multiagent.project"))
                     .accessibilityIdentifier("multiagent.project")
@@ -112,7 +113,8 @@ struct MultiagentSettings: View {
             if model.metrics.isEmpty {
                 note("settings.multiagent.metrics.empty", id: "multiagent.metrics.empty")
             } else {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: metrics.isWebInterface ? metrics.size(140) : 140), spacing: metrics.space(.m))],
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: metrics.isWebInterface ? metrics.size(140) : 140),
+                    spacing: metrics.space(.m))],
                           alignment: .leading, spacing: metrics.space(.m)) {
                     ForEach(model.metrics) { metric in
                         VStack(alignment: .leading, spacing: metrics.space(.xxs)) {
@@ -226,52 +228,6 @@ struct MultiagentSettings: View {
     }
 }
 
-private struct TaskRow: View {
-    let task: SchedulerTask
-    let index: Int
-    let titles: [String: String]
-    let onCancel: () -> Void
-    @Environment(\.theme) private var theme
-    @Environment(\.metrics) private var metrics
-
-    var body: some View {
-        HStack(alignment: .top, spacing: metrics.space(.m)) {
-            VStack(alignment: .leading, spacing: metrics.space(.xxs)) {
-                HStack(spacing: metrics.space(.s)) {
-                    Text(verbatim: task.title)
-                        .lineLimit(2)
-                    Spacer(minLength: 0)
-                    Text(task.status.label)
-                        .font(metrics.isWebInterface ? metrics.font(size: 10).weight(.semibold) : .caption.weight(.semibold))
-                        .foregroundStyle(task.status.color(theme))
-                        .id(task.status)
-                        .accessibilityIdentifier("multiagent.task.\(index).status")
-                }
-                if !task.dependencies.isEmpty {
-                    Text(verbatim: format("settings.multiagent.dependsOn",
-                                          task.dependencies.map { titles[$0] ?? $0 }.formatted(.list(type: .and))))
-                        .font(metrics.isWebInterface ? metrics.font(size: 10) : .caption)
-                        .foregroundStyle(theme[.textSecondary])
-                }
-                if let agent = task.assignedAgentID {
-                    Text(verbatim: format("settings.multiagent.assignedTo", agent))
-                        .font(metrics.isWebInterface ? metrics.monoFont(size: 10, weight: .regular) : .caption.monospaced())
-                        .foregroundStyle(theme[.textTertiary])
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .textSelection(.enabled)
-                }
-            }
-            if task.status == .running {
-                Button("settings.multiagent.cancel", action: onCancel)
-                    .accessibilityIdentifier("multiagent.task.\(index).cancel")
-                .settingsRowSurface(.standalone)
-            }
-        }
-        .accessibilityIdentifier("multiagent.task.\(index)")
-    }
-}
-
 private struct TraceRow: View {
     let event: BusEvent
     let onFilter: () -> Void
@@ -346,24 +302,34 @@ private struct AuditRow: View {
 
 extension SchedulerTaskStatus {
     var label: LocalizedStringKey {
-        switch self {
-        case .pending: "settings.multiagent.status.pending"
-        case .ready: "settings.multiagent.status.ready"
-        case .running: "settings.multiagent.status.running"
-        case .completed: "settings.multiagent.status.completed"
-        case .failed: "settings.multiagent.status.failed"
-        case .blocked: "settings.multiagent.status.blocked"
+        if case .pending = self {
+            return "settings.multiagent.status.pending"
+        } else if case .ready = self {
+            return "settings.multiagent.status.ready"
+        } else if case .running = self {
+            return "settings.multiagent.status.running"
+        } else if case .completed = self {
+            return "settings.multiagent.status.completed"
+        } else if case .failed = self {
+            return "settings.multiagent.status.failed"
+        } else {
+            return "settings.multiagent.status.blocked"
         }
     }
 
     func color(_ theme: Theme) -> Color {
-        switch self {
-        case .pending: theme[.statusIdle]
-        case .ready: theme[.statusWaiting]
-        case .running: theme[.statusWorking]
-        case .completed: theme[.statusActive]
-        case .failed: theme[.statusStopped]
-        case .blocked: theme[.statusDisabled]
+        if case .pending = self {
+            return theme[.statusIdle]
+        } else if case .ready = self {
+            return theme[.statusWaiting]
+        } else if case .running = self {
+            return theme[.statusWorking]
+        } else if case .completed = self {
+            return theme[.statusActive]
+        } else if case .failed = self {
+            return theme[.statusStopped]
+        } else {
+            return theme[.statusDisabled]
         }
     }
 }

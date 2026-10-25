@@ -106,14 +106,13 @@ private struct ExtensionRow: View {
 
     @ViewBuilder
     private var status: some View {
-        switch entry.status {
-        case .loading:
+        if case .loading = entry.status {
             Text("extensions.loading").foregroundStyle(theme[.textSecondary])
-        case .ready:
+        } else if case .ready = entry.status {
             if let manifest = entry.manifest, manager.state.enabled.contains(manifest.id), !manager.isActive(entry) {
                 Text("extensions.reviewNeeded").foregroundStyle(theme[.statusWaiting])
             }
-        case .failed(let error):
+        } else if case .failed(let error) = entry.status {
             Label {
                 Text(verbatim: error)
             } icon: {
@@ -122,7 +121,7 @@ private struct ExtensionRow: View {
             .font(.callout)
             .foregroundStyle(theme[.statusStopped])
             .textSelection(.enabled)
-        case .stopped:
+        } else if case .stopped = entry.status {
             HStack {
                 Text("extensions.stopped.title").foregroundStyle(theme[.statusStopped])
                 Button("extensions.stopped.reload") { manager.reload(entry.id) }
@@ -148,7 +147,8 @@ struct ExtensionConsentSheet: View {
     var body: some View {
         Group {
             if metrics.isWebInterface {
-                ModalsM2WebModal(title: Text(verbatim: String(format: String(localized: "extensions.consent.title"), request.manifest.name)),
+                ModalsM2WebModal(title: Text(verbatim: String(format: String(localized: "extensions.consent.title"),
+                    request.manifest.name)),
                                  close: { resolve(false) }) {
                     VStack(alignment: .leading, spacing: metrics.size(14)) {
                         Label("extensions.consent.message", systemImage: "exclamationmark.shield")

@@ -38,10 +38,12 @@ struct RemoteToolbarItem: View {
     }
 
     static func label(_ count: Int) -> String {
-        switch count {
-        case 0: String(localized: "remote.pill.idle")
-        case 1: String(localized: "remote.pill.oneDevice")
-        default: String(format: String(localized: "remote.pill.devices"), count)
+        if case 0 = count {
+            return String(localized: "remote.pill.idle")
+        } else if case 1 = count {
+            return String(localized: "remote.pill.oneDevice")
+        } else {
+            return String(format: String(localized: "remote.pill.devices"), count)
         }
     }
 }
