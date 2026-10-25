@@ -41,7 +41,8 @@ struct ColorSwatchPicker: View {
                     Image(systemName: "slash.circle").foregroundStyle(theme[.textTertiary])
                 }
             }
-            .frame(width: metrics.size(metrics.isWebInterface ? webSwatchSize : 18), height: metrics.size(metrics.isWebInterface ? webSwatchSize : 18))
+            .frame(width: metrics.size(metrics.isWebInterface ? webSwatchSize : 18),
+                height: metrics.size(metrics.isWebInterface ? webSwatchSize : 18))
             .overlay(Circle().strokeBorder(theme[metrics.isWebInterface ? .fg : .focusRing],
                                           lineWidth: isSelected ? (metrics.isWebInterface ? metrics.size(2) : 2) : 0))
             .padding(metrics.isWebInterface ? 0 : 2)

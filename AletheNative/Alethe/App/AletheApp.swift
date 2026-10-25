@@ -84,7 +84,8 @@ private struct FileCommands: Commands {
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
             Button("menu.file.newProject") { environment.editorRequest = .newProject(.ungrouped) }
-                .keyboardShortcut(environment.metrics.isWebInterface ? "p" : "n", modifiers: environment.metrics.isWebInterface ? [.command, .shift] : .command)
+                .keyboardShortcut(environment.metrics.isWebInterface ? "p" : "n",
+                    modifiers: environment.metrics.isWebInterface ? [.command, .shift] : .command)
                 .disabled(environment.workspace == nil)
             Button("menu.file.newGroup") { environment.editorRequest = .newGroup(parent: nil) }
                 .keyboardShortcut(environment.metrics.isWebInterface ? "g" : "n", modifiers: [.command, .shift])
@@ -228,10 +229,12 @@ private struct HistoryCommands: Commands {
                 .disabled(environment.workspace == nil)
             Divider()
             Button("menu.view.back") { environment.workspace?.update { $0.navigateHistory(-1) } }
-                .keyboardShortcut(environment.metrics.isWebInterface ? .leftArrow : "[", modifiers: environment.metrics.isWebInterface ? .option : .command)
+                .keyboardShortcut(environment.metrics.isWebInterface ? .leftArrow : "[",
+                    modifiers: environment.metrics.isWebInterface ? .option : .command)
                 .disabled(document?.canGoBack != true)
             Button("menu.view.forward") { environment.workspace?.update { $0.navigateHistory(1) } }
-                .keyboardShortcut(environment.metrics.isWebInterface ? .rightArrow : "]", modifiers: environment.metrics.isWebInterface ? .option : .command)
+                .keyboardShortcut(environment.metrics.isWebInterface ? .rightArrow : "]",
+                    modifiers: environment.metrics.isWebInterface ? .option : .command)
                 .disabled(document?.canGoForward != true)
             Button("menu.history.conversations") { environment.editorRequest = .conversations(nil) }
                 .keyboardShortcut("y", modifiers: .command)

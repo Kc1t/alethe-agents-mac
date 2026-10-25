@@ -47,43 +47,57 @@ private struct SpikeScript {
             let parts = line.split(separator: " ", maxSplits: 1).map(String.init)
             guard let command = parts.first, !command.hasPrefix("#") else { continue }
             let argument = parts.count > 1 ? parts[1] : ""
-            switch command {
-            case "wait":
-                try? await Task.sleep(for: .milliseconds(Int(argument) ?? 0))
-            case "type":
-                for character in argument { sendCharacter(character) }
-            case "key":
-                let words = argument.split(separator: " ").map(String.init)
-                if let name = words.first { sendKey(name, modifiers: Set(words.dropFirst())) }
-            case "dead":
-                let words = argument.split(separator: " ").map(String.init)
-                if let name = words.first, let character = name.first, let code = Self.keyCodes[character] {
-                    post(code: code, characters: "", ignoring: String(character),
-                         flags: words.contains("shift") ? .shift : [])
-                }
-            case "ime-mark":
-                pane.terminalView.setMarkedText(argument, selectedRange: NSRange(location: argument.utf16.count, length: 0),
-                                                replacementRange: NSRange(location: NSNotFound, length: 0))
-            case "ime-commit":
-                pane.terminalView.insertText(argument, replacementRange: NSRange(location: NSNotFound, length: 0))
-            case "search":
-                pane.updateSearch(argument)
-            case "search-next":
-                pane.searchNext()
-            case "search-end":
-                pane.closeSearch()
-            case "dump":
-                try? (pane.viewportText() ?? "").write(toFile: argument, atomically: true, encoding: .utf8)
-            case "latency":
-                let words = argument.split(separator: " ").map(String.init)
-                await measureLatency(count: Int(words[0]) ?? 50, path: words[1])
-            case "quit":
-                NSApp.terminate(nil)
-            default:
-                continue
+            let keyboardHandled = await executeKeyboard(command, argument: argument)
+            if !keyboardHandled {
+                guard await executePaneCommand(command, argument: argument) else { continue }
             }
             try? await Task.sleep(for: .milliseconds(30))
         }
+    }
+
+    private func executeKeyboard(_ command: String, argument: String) async -> Bool {
+        if case "wait" = command {
+            try? await Task.sleep(for: .milliseconds(Int(argument) ?? 0))
+        } else if case "type" = command {
+            for character in argument { sendCharacter(character) }
+        } else if case "key" = command {
+            let words = argument.split(separator: " ").map(String.init)
+            if let name = words.first { sendKey(name, modifiers: Set(words.dropFirst())) }
+        } else if case "dead" = command {
+            let words = argument.split(separator: " ").map(String.init)
+            if let name = words.first, let character = name.first, let code = Self.keyCodes[character] {
+                post(code: code, characters: "", ignoring: String(character),
+                     flags: words.contains("shift") ? .shift : [])
+            }
+        } else {
+            return false
+        }
+        return true
+    }
+
+    private func executePaneCommand(_ command: String, argument: String) async -> Bool {
+        if case "ime-mark" = command {
+            pane.terminalView.setMarkedText(argument, selectedRange: NSRange(location: argument.utf16.count, length: 0),
+                                            replacementRange: NSRange(location: NSNotFound, length: 0))
+        } else if case "ime-commit" = command {
+            pane.terminalView.insertText(argument, replacementRange: NSRange(location: NSNotFound, length: 0))
+        } else if case "search" = command {
+            pane.updateSearch(argument)
+        } else if case "search-next" = command {
+            pane.searchNext()
+        } else if case "search-end" = command {
+            pane.closeSearch()
+        } else if case "dump" = command {
+            try? (pane.viewportText() ?? "").write(toFile: argument, atomically: true, encoding: .utf8)
+        } else if case "latency" = command {
+            let words = argument.split(separator: " ").map(String.init)
+            await measureLatency(count: Int(words[0]) ?? 50, path: words[1])
+        } else if case "quit" = command {
+            NSApp.terminate(nil)
+        } else {
+            return false
+        }
+        return true
     }
 
     private static let keyCodes: [Character: UInt16] = {
@@ -112,7 +126,8 @@ private struct SpikeScript {
     private func sendCharacter(_ character: Character) {
         let lower = Character(character.lowercased())
         let code = Self.keyCodes[lower] ?? Self.keyCodes[character] ?? 0
-        let needsShift = character.isUppercase || (Self.keyCodes[character] != nil && !"abcdefghijklmnopqrstuvwxyz0123456789=-][';\\,/.` ".contains(character))
+        let needsShift = character.isUppercase ||
+            (Self.keyCodes[character] != nil && !"abcdefghijklmnopqrstuvwxyz0123456789=-][';\\,/.` ".contains(character))
         post(code: code, characters: String(character), ignoring: String(lower), flags: needsShift ? .shift : [])
     }
 
@@ -165,9 +180,9 @@ private struct SpikeScript {
         pane.tap.remove(outputID)
         func stats(_ values: [Double]) -> String {
             let sorted = values.sorted()
-            guard !sorted.isEmpty else { return "n=0" }
+            guard let maximum = sorted.last else { return "n=0" }
             let p = { (q: Double) in sorted[min(sorted.count - 1, Int(Double(sorted.count) * q))] }
-            return String(format: "n=%d median=%.2fms p95=%.2fms max=%.2fms", sorted.count, p(0.5), p(0.95), sorted.last!)
+            return String(format: "n=%d median=%.2fms p95=%.2fms max=%.2fms", sorted.count, p(0.5), p(0.95), maximum)
         }
         let report = "key->pty-write: \(stats(toInput))\nkey->echo: \(stats(toEcho))\n"
         try? report.write(toFile: path, atomically: true, encoding: .utf8)

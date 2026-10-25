@@ -66,12 +66,10 @@ struct AddContentSheet: View {
 
     static func options(for features: Features) -> [Option] {
         options.filter { option in
-            switch option.kind {
-            case .web: features.isOn(.browser)
-            case .graphify: features.isOn(.graphify)
-            case .orchestrator: features.isOn(.orchestrator)
-            default: true
-            }
+            if case .web = option.kind { return features.isOn(.browser) }
+            if case .graphify = option.kind { return features.isOn(.graphify) }
+            if case .orchestrator = option.kind { return features.isOn(.orchestrator) }
+            return true
         }
     }
 
@@ -243,7 +241,8 @@ struct AddBrowserSheet: View {
                     }
                 }
                 field("browser.resourceMode") {
-                    WebDropdown(selection: $resourceMode, options: WebResourceMode.allCases, accessibilityID: "newTerminal.rowSelect", appearance: .input) { Text(verbatim: resourceLabel($0)) }
+                    WebDropdown(selection: $resourceMode, options: WebResourceMode.allCases,
+                        accessibilityID: "newTerminal.rowSelect", appearance: .input) { Text(verbatim: resourceLabel($0)) }
                         .accessibilityLabel(Text("browser.resourceMode"))
                         .accessibilityIdentifier("browser.add.resourceMode")
                     resourceDescription.font(metrics.font(size: 11)).foregroundStyle(theme[.fgMuted])
@@ -292,19 +291,15 @@ struct AddBrowserSheet: View {
     }
 
     private var resourceDescription: Text {
-        switch resourceMode {
-        case .appFirst: Text("browser.resourceModeDescription.appFirst")
-        case .balanced: Text("browser.resourceModeDescription.balanced")
-        case .keepAlive: Text("browser.resourceModeDescription.keepAlive")
-        }
+        if case .appFirst = resourceMode { return Text("browser.resourceModeDescription.appFirst") }
+        if case .balanced = resourceMode { return Text("browser.resourceModeDescription.balanced") }
+        return Text("browser.resourceModeDescription.keepAlive")
     }
 
     private func resourceLabel(_ mode: WebResourceMode) -> String {
-        switch mode {
-        case .appFirst: String(localized: "browser.resourceModeAppFirst")
-        case .balanced: String(localized: "browser.resourceModeBalanced")
-        case .keepAlive: String(localized: "browser.resourceModeKeepAlive")
-        }
+        if case .appFirst = mode { return String(localized: "browser.resourceModeAppFirst") }
+        if case .balanced = mode { return String(localized: "browser.resourceModeBalanced") }
+        return String(localized: "browser.resourceModeKeepAlive")
     }
 
     private func field<Content: View>(_ title: LocalizedStringKey, @ViewBuilder content: () -> Content) -> some View {

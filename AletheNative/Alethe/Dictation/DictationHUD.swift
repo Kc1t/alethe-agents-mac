@@ -43,12 +43,12 @@ struct DictationHUD: View {
 
     @ViewBuilder
     private func content(_ dictation: DictationController) -> some View {
-        switch dictation.machine.phase {
-        case .failed(let failure):
+        if case .failed(let failure) = dictation.machine.phase {
             Text(message(failure)).font(metrics.font(.body))
             if failure == .microphoneDenied {
                 Button("dictation.openSettings") {
-                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")!)
+                    let settings = "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone"
+                    if let url = URL(string: settings) { NSWorkspace.shared.open(url) }
                     dictation.dismissFailure()
                 }
                 .accessibilityIdentifier("dictation.openSettings")
@@ -61,24 +61,23 @@ struct DictationHUD: View {
                 .buttonStyle(.borderless)
                 .accessibilityLabel(Text("dictation.dismiss"))
                 .accessibilityIdentifier("dictation.dismiss")
-        case .starting:
+        } else if case .starting = dictation.machine.phase {
             Text(dictation.downloadingModel ? "dictation.downloading" : "dictation.starting")
                 .font(metrics.font(.body)).foregroundStyle(theme[.textSecondary])
-        default:
+        } else {
             Text(dictation.liveText.isEmpty ? String(localized: "dictation.listening") : dictation.liveText)
                 .font(metrics.font(.body))
                 .foregroundStyle(dictation.liveText.isEmpty ? theme[.textSecondary] : theme[.textPrimary])
                 .lineLimit(2)
                 .truncationMode(.head)
-            Text(metrics.isWebInterface ? "dictation.webHint" : "dictation.hint").font(metrics.font(.caption)).foregroundStyle(theme[.textTertiary])
+            Text(metrics.isWebInterface ? "dictation.webHint" : "dictation.hint").font(metrics.font(.caption))
+                .foregroundStyle(theme[.textTertiary])
         }
     }
 
     private func message(_ failure: DictationMachine.Failure) -> LocalizedStringKey {
-        switch failure {
-        case .microphoneDenied: "dictation.denied"
-        case .languageUnsupported: "dictation.language"
-        case .unavailable: "dictation.unavailable"
-        }
+        if case .microphoneDenied = failure { return "dictation.denied" }
+        if case .languageUnsupported = failure { return "dictation.language" }
+        return "dictation.unavailable"
     }
 }

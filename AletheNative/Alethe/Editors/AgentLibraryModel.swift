@@ -34,10 +34,8 @@ final class AgentLibraryModel {
     }
 
     var scope: AgentLibraryScope {
-        switch scopeChoice {
-        case .project: .project(projectFolder)
-        case .user: .user(home: home)
-        }
+        if case .project = scopeChoice { return .project(projectFolder) }
+        return .user(home: home)
     }
 
     func installed(_ name: String) -> InstalledAgent? {
@@ -125,8 +123,7 @@ final class AgentLibraryModel {
         work = Task {
             let result = await Task.detached { Result { try action(store, scope) } }.value
             running = false
-            switch result {
-            case .success(let change):
+            if case .success(let change) = result {
                 if !change.isEmpty {
                     restartHint = true
                     if undoable { lastChange = (change, scope) }
@@ -134,7 +131,7 @@ final class AgentLibraryModel {
                 note = change.skipped.isEmpty
                     ? done
                     : String(format: String(localized: "agentLibrary.skipped.note"), done, change.skipped.joined(separator: ", "))
-            case .failure(let failure):
+            } else if case .failure(let failure) = result {
                 if let failure = failure as? AgentLibraryError {
                     if onError?(failure) != true { error = Self.describe(failure) }
                 } else {
@@ -146,16 +143,21 @@ final class AgentLibraryModel {
     }
 
     static func describe(_ error: AgentLibraryError) -> String {
-        switch error {
-        case .invalidName(let name):
-            String(format: String(localized: "agentLibrary.error.invalidName"), name)
-        case .conflict(let name), .notAlethe(let name):
-            String(format: String(localized: "agentLibrary.error.notAlethe"), name)
-        case .file(.changedSinceRead(let url)):
-            String(format: String(localized: "agentLibrary.error.changed"), url.lastPathComponent)
-        case .file(.unreadable(let url, let reason)), .file(.backupFailed(let url, let reason)),
-             .file(.writeFailed(let url, let reason)):
-            String(format: String(localized: "agentLibrary.error.file"), url.lastPathComponent, reason)
+        if case .invalidName(let name) = error { return String(format: String(localized: "agentLibrary.error.invalidName"), name) }
+        if case .conflict(let name) = error { return String(format: String(localized: "agentLibrary.error.notAlethe"), name) }
+        if case .notAlethe(let name) = error { return String(format: String(localized: "agentLibrary.error.notAlethe"), name) }
+        if case .file(.changedSinceRead(let url)) = error {
+            return String(format: String(localized: "agentLibrary.error.changed"), url.lastPathComponent)
         }
+        if case .file(.unreadable(let url, let reason)) = error {
+            return String(format: String(localized: "agentLibrary.error.file"), url.lastPathComponent, reason)
+        }
+        if case .file(.backupFailed(let url, let reason)) = error {
+            return String(format: String(localized: "agentLibrary.error.file"), url.lastPathComponent, reason)
+        }
+        if case .file(.writeFailed(let url, let reason)) = error {
+            return String(format: String(localized: "agentLibrary.error.file"), url.lastPathComponent, reason)
+        }
+        preconditionFailure("Unreachable case")
     }
 }

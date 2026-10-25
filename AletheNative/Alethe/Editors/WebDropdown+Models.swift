@@ -25,7 +25,8 @@ struct WebModelDropdown: View {
             searchText: { $0 }, customValue: { $0 },
             customOptionLabel: { String(localized: "dropdown.model.custom").replacingOccurrences(of: "{model}", with: $0) },
             displayValue: loading ? String(localized: "dropdown.model.loading") : nil,
-            placeholder: cleanModels.first ?? String(localized: "dropdown.model.select").replacingOccurrences(of: "{provider}", with: provider)) {
+            placeholder: cleanModels.first ?? String(localized: "dropdown.model.select")
+                .replacingOccurrences(of: "{provider}", with: provider)) {
                 if $0.isEmpty { Text("newTerminal.model.defaultItem") } else { Text(verbatim: $0) }
             }
     }

@@ -137,24 +137,24 @@ struct FindJumpSheet: View {
     }
 
     private func describe(_ item: Item) -> Info {
-        switch item {
-        case .terminal(let id):
+        if case .terminal(let id) = item {
             guard let (project, pane) = document.paneHolding(id), let tab = pane.tabs.first(where: { $0.id == id }) else {
                 return Info(symbol: "terminal", title: id.rawValue)
             }
             return Info(symbol: tab.agent == "shell" ? "terminal" : "sparkles", tint: AgentTokens.accent(for: tab.agent),
                         title: tab.title ?? AgentLabels.name(for: tab.agent), subtitle: project.name,
                         detail: tab.workingDirectory ?? project.folder)
-        case .project(let id):
+        } else if case .project(let id) = item {
             let project = document.project(id)
             return Info(symbol: "folder", tint: project?.color.token, title: project?.name ?? id.rawValue,
                         subtitle: String(localized: "findJump.project"), detail: project?.folder)
-        case .plugin(let id):
+        } else if case .plugin(let id) = item {
             return describePlugin(id)
-        case .command(let command):
+        } else if case .command(let command) = item {
             return Info(symbol: command.symbol, title: String(localized: command.title),
                         subtitle: String(localized: "findJump.command"), detail: command.shortcut)
         }
+        preconditionFailure("Unreachable item")
     }
 
     private func describePlugin(_ id: String) -> Info {
@@ -170,19 +170,18 @@ struct FindJumpSheet: View {
 
     private func jump(_ item: Item) {
         dismiss()
-        switch item {
-        case .terminal(let id):
+        if case .terminal(let id) = item {
             workspace.update { doc in
                 guard let project = doc.paneHolding(id)?.project else { return }
                 doc.openInTab(project.id)
                 doc.activateTab(id)
             }
-        case .project(let id):
+        } else if case .project(let id) = item {
             workspace.update { $0.openInTab(id) }
-        case .plugin(let id):
+        } else if case .plugin(let id) = item {
             guard let command = pluginCommands.first(where: { $0.id == id }) else { return }
             DispatchQueue.main.async { command.perform() }
-        case .command(let command):
+        } else if case .command(let command) = item {
             DispatchQueue.main.async { command.run(environment: environment, undoManager: undoManager) }
         }
     }
@@ -193,92 +192,97 @@ enum JumpCommand: String, CaseIterable, Hashable {
     case layoutAuto, layoutSpotlight, layoutSidebar, layoutGrid, designGrid, importTauri, settings, conversations
 
     var title: String.LocalizationValue {
-        switch self {
-        case .newTerminal: "menu.file.newTerminal"
-        case .newProject: "menu.file.newProject"
-        case .newGroup: "menu.file.newGroup"
-        case .addContent: "menu.file.addContent"
-        case .reopenTab: "menu.history.reopenTab"
-        case .flatWorkspace: "menu.view.flat"
-        case .focusPane: "focusMode.enter"
-        case .layoutAuto: "findJump.layout.auto"
-        case .layoutSpotlight: "findJump.layout.spotlight"
-        case .layoutSidebar: "findJump.layout.sidebar"
-        case .layoutGrid: "findJump.layout.grid"
-        case .designGrid: "workspace.layout.design"
-        case .importTauri: "menu.file.importTauri"
-        case .settings: "findJump.settings"
-        case .conversations: "menu.history.conversations"
-        }
+        if case .newTerminal = self { return "menu.file.newTerminal" }
+        if case .newProject = self { return "menu.file.newProject" }
+        if case .newGroup = self { return "menu.file.newGroup" }
+        if case .addContent = self { return "menu.file.addContent" }
+        if case .reopenTab = self { return "menu.history.reopenTab" }
+        if case .flatWorkspace = self { return "menu.view.flat" }
+        if case .focusPane = self { return "focusMode.enter" }
+        if case .layoutAuto = self { return "findJump.layout.auto" }
+        if case .layoutSpotlight = self { return "findJump.layout.spotlight" }
+        if case .layoutSidebar = self { return "findJump.layout.sidebar" }
+        if case .layoutGrid = self { return "findJump.layout.grid" }
+        if case .designGrid = self { return "workspace.layout.design" }
+        if case .importTauri = self { return "menu.file.importTauri" }
+        if case .settings = self { return "findJump.settings" }
+        return "menu.history.conversations"
     }
 
     var symbol: String {
-        switch self {
-        case .newTerminal: "plus.rectangle"
-        case .newProject: "folder.badge.plus"
-        case .newGroup: "folder"
-        case .addContent: "doc.badge.plus"
-        case .reopenTab: "arrow.uturn.backward"
-        case .flatWorkspace: "rectangle.grid.1x2"
-        case .focusPane: "scope"
-        case .layoutAuto: PaneLayoutMode.auto.symbol
-        case .layoutSpotlight: PaneLayoutMode.spotlight.symbol
-        case .layoutSidebar: PaneLayoutMode.sidebar.symbol
-        case .layoutGrid, .designGrid: PaneLayoutMode.grid.symbol
-        case .importTauri: "square.and.arrow.down"
-        case .settings: "gearshape"
-        case .conversations: "clock.arrow.circlepath"
-        }
+        if case .newTerminal = self { return "plus.rectangle" }
+        if case .newProject = self { return "folder.badge.plus" }
+        if case .newGroup = self { return "folder" }
+        if case .addContent = self { return "doc.badge.plus" }
+        if case .reopenTab = self { return "arrow.uturn.backward" }
+        if case .flatWorkspace = self { return "rectangle.grid.1x2" }
+        if case .focusPane = self { return "scope" }
+        if case .layoutAuto = self { return PaneLayoutMode.auto.symbol }
+        if case .layoutSpotlight = self { return PaneLayoutMode.spotlight.symbol }
+        if case .layoutSidebar = self { return PaneLayoutMode.sidebar.symbol }
+        if case .layoutGrid = self { return PaneLayoutMode.grid.symbol }
+        if case .designGrid = self { return PaneLayoutMode.grid.symbol }
+        if case .importTauri = self { return "square.and.arrow.down" }
+        if case .settings = self { return "gearshape" }
+        return "clock.arrow.circlepath"
     }
 
     var shortcut: String? {
-        switch self {
-        case .newTerminal: "⌘T"
-        case .newProject: "⌘N"
-        case .newGroup: "⇧⌘N"
-        case .addContent: "⇧⌘A"
-        case .reopenTab: "⇧⌘T"
-        case .focusPane: "⇧⌘F"
-        case .settings: "⌘,"
-        case .conversations: "⌘Y"
-        default: nil
-        }
+        if case .newTerminal = self { return "⌘T" }
+        if case .newProject = self { return "⌘N" }
+        if case .newGroup = self { return "⇧⌘N" }
+        if case .addContent = self { return "⇧⌘A" }
+        if case .reopenTab = self { return "⇧⌘T" }
+        if case .focusPane = self { return "⇧⌘F" }
+        if case .settings = self { return "⌘," }
+        if case .conversations = self { return "⌘Y" }
+        return nil
     }
 
     @MainActor func isAvailable(_ document: WorkspaceDocument) -> Bool {
-        switch self {
-        case .newTerminal, .addContent: !document.projects.isEmpty
-        case .reopenTab: !document.workspace.closedTabs.isEmpty
-        case .focusPane: document.workspace.focusedPaneID != nil
-        case .layoutAuto, .layoutSpotlight, .layoutSidebar, .layoutGrid, .designGrid:
-            document.workspace.selectedProjectID.flatMap(document.project) != nil
-        default: true
-        }
+        if case .newTerminal = self { return !document.projects.isEmpty }
+        if case .addContent = self { return !document.projects.isEmpty }
+        if case .reopenTab = self { return !document.workspace.closedTabs.isEmpty }
+        if case .focusPane = self { return document.workspace.focusedPaneID != nil }
+        if case .layoutAuto = self { return document.workspace.selectedProjectID.flatMap(document.project) != nil }
+        if case .layoutSpotlight = self { return document.workspace.selectedProjectID.flatMap(document.project) != nil }
+        if case .layoutSidebar = self { return document.workspace.selectedProjectID.flatMap(document.project) != nil }
+        if case .layoutGrid = self { return document.workspace.selectedProjectID.flatMap(document.project) != nil }
+        if case .designGrid = self { return document.workspace.selectedProjectID.flatMap(document.project) != nil }
+        return true
     }
+
+    private static let layoutModes: [Self: PaneLayoutMode] = [
+        .layoutAuto: .auto, .layoutSpotlight: .spotlight, .layoutSidebar: .sidebar, .layoutGrid: .grid
+    ]
 
     @MainActor func run(environment: AppEnvironment, undoManager: UndoManager?) {
         let workspace = environment.workspace
         let selected = workspace?.document.workspace.selectedProjectID
-        switch self {
-        case .newTerminal: environment.editorRequest = .newTerminal(nil)
-        case .newProject: environment.editorRequest = .newProject(.ungrouped)
-        case .newGroup: environment.editorRequest = .newGroup(parent: nil)
-        case .addContent: environment.editorRequest = .addContent(nil)
-        case .reopenTab: workspace?.update { $0.reopenClosedWorkspaceTab() }
-        case .flatWorkspace: workspace?.update { $0.workspace.flat.toggle() }
-        case .focusPane: environment.focusModePaneID = workspace?.document.workspace.focusedPaneID
-        case .layoutAuto, .layoutSpotlight, .layoutSidebar, .layoutGrid:
-            let mode: PaneLayoutMode = switch self {
-            case .layoutSpotlight: .spotlight
-            case .layoutSidebar: .sidebar
-            case .layoutGrid: .grid
-            default: .auto
-            }
+        if case .newTerminal = self {
+            environment.editorRequest = .newTerminal(nil)
+        } else if case .newProject = self {
+            environment.editorRequest = .newProject(.ungrouped)
+        } else if case .newGroup = self {
+            environment.editorRequest = .newGroup(parent: nil)
+        } else if case .addContent = self {
+            environment.editorRequest = .addContent(nil)
+        } else if case .reopenTab = self {
+            workspace?.update { $0.reopenClosedWorkspaceTab() }
+        } else if case .flatWorkspace = self {
+            workspace?.update { $0.workspace.flat.toggle() }
+        } else if case .focusPane = self {
+            environment.focusModePaneID = workspace?.document.workspace.focusedPaneID
+        } else if let mode = Self.layoutModes[self] {
             if let selected { workspace?.update { $0.setLayoutMode(mode, for: selected) } }
-        case .designGrid: if let selected { environment.editorRequest = .layoutDesigner(.project(selected)) }
-        case .importTauri: environment.editorRequest = .importTauri
-        case .settings: NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        case .conversations: environment.editorRequest = .conversations(nil)
+        } else if case .designGrid = self {
+            if let selected { environment.editorRequest = .layoutDesigner(.project(selected)) }
+        } else if case .importTauri = self {
+            environment.editorRequest = .importTauri
+        } else if case .settings = self {
+            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        } else {
+            environment.editorRequest = .conversations(nil)
         }
     }
 }

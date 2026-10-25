@@ -12,7 +12,8 @@ struct InterfaceSelect<Value: Hashable, Label: View>: View {
 
     var body: some View {
         if metrics.isWebInterface {
-            WebDropdown(selection: $selection, options: options, appearance: appearance, searchText: searchText, optionDisabled: optionDisabled, label: label)
+            WebDropdown(selection: $selection, options: options, appearance: appearance, searchText: searchText,
+                optionDisabled: optionDisabled, label: label)
         } else {
             AletheSelect(selection: $selection, options: options, label: label)
         }

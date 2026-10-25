@@ -74,6 +74,6 @@ private struct AppKitButton: NSViewRepresentable {
     func updateNSView(_ view: NSButton, context: Context) {}
 }
 
-private extension Double {
-    var nonZero: Double? { self == 0 ? nil : self }
+extension Double {
+    fileprivate var nonZero: Double? { self == 0 ? nil : self }
 }

@@ -72,6 +72,13 @@ struct WebShortcutEvents: NSViewRepresentable {
                 environment.terminals.restart(tab, in: project, environment: environment)
                 return true
             }
+            return cyclePane(event, editable: editable, terminalFocused: terminalFocused,
+                             workspace: workspace, environment: environment)
+        }
+
+        private func cyclePane(_ event: NSEvent, editable: Bool, terminalFocused: Bool,
+                               workspace: WorkspaceModel, environment: AppEnvironment) -> Bool {
+            let flags = event.modifierFlags.intersection([.command, .control, .option, .shift])
             let direction: Int
             if flags == .control, event.keyCode == 116 { direction = -1 }
             else if flags == .control, event.keyCode == 121 { direction = 1 }

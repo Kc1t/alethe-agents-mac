@@ -108,11 +108,14 @@ struct ImageInputField: View {
         importTask = Task {
             let result = await Task.detached(priority: .userInitiated) { Result(catching: operation) }.value
             guard !Task.isCancelled, value == previous else { return }
-            switch result {
-            case .success(let source): value = source
-            case .failure(ProjectImageInput.ValidationError.tooLarge): error = "image.tooLarge"
-            case .failure(ProjectImageInput.ValidationError.mustBeImage): error = "image.mustBeImage"
-            case .failure: error = "image.readFailed"
+            if case .success(let source) = result {
+                value = source
+            } else if case .failure(ProjectImageInput.ValidationError.tooLarge) = result {
+                error = "image.tooLarge"
+            } else if case .failure(ProjectImageInput.ValidationError.mustBeImage) = result {
+                error = "image.mustBeImage"
+            } else {
+                error = "image.readFailed"
             }
         }
     }

@@ -13,8 +13,11 @@ extension DictationEngine {
             throw StartError.unavailable
         }
         var devices = [AudioDeviceID](repeating: 0, count: Int(size) / MemoryLayout<AudioDeviceID>.size)
-        let status = devices.withUnsafeMutableBytes {
-            AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, $0.baseAddress!)
+        let status = try devices.withUnsafeMutableBytes { buffer in
+            guard let addressPointer = buffer.baseAddress else { throw StartError.unavailable }
+            return AudioObjectGetPropertyData(
+                AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, addressPointer
+            )
         }
         guard status == noErr else { throw StartError.unavailable }
         for device in devices {

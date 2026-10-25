@@ -16,7 +16,7 @@ struct WebDropdownPortal: NSViewRepresentable {
     func makeNSView(context: Context) -> WebDropdownAnchor { WebDropdownAnchor() }
     func updateNSView(_ view: WebDropdownAnchor, context: Context) {
         view.dismiss = dismiss
-        view.present(open: open, content: content, height: height, metrics: metrics, minimumWidth: minimumWidth, maximumWidth: maximumWidth, gap: gap, rowSelect: rowSelect)
+        view.present(self)
     }
     static func dismantleNSView(_ view: WebDropdownAnchor, coordinator: ()) { view.close() }
 }
@@ -46,7 +46,15 @@ final class WebDropdownAnchor: NSView {
 
     @objc private func viewportChanged(_ notification: Notification) { positionMenu() }
 
-    func present(open: Bool, content: AnyView, height: CGFloat, metrics: Metrics, minimumWidth: CGFloat, maximumWidth: CGFloat, gap: CGFloat, rowSelect: Bool) {
+    func present(_ presentation: WebDropdownPortal) {
+        let open = presentation.open
+        let content = presentation.content
+        let height = presentation.height
+        let metrics = presentation.metrics
+        let minimumWidth = presentation.minimumWidth
+        let maximumWidth = presentation.maximumWidth
+        let gap = presentation.gap
+        let rowSelect = presentation.rowSelect
         guard open else { close(); return }
         guard let container = window?.contentView else { return }
         requestedHeight = height

@@ -35,25 +35,19 @@ struct LayoutDesignerSheet: View {
     }
     private var ids: [String] { project?.visiblePanes.map(\.id.rawValue) ?? children.map(\.id.rawValue) }
     private var currentLayout: CustomGrid? {
-        switch scope {
-        case .project: project?.effectiveGrid
-        case .group: group?.gridLayout
-        case .workspace: environment.preferences?.document.workspaceGridLayout
-        }
+        if case .project = scope { return project?.effectiveGrid }
+        if case .group = scope { return group?.gridLayout }
+        return environment.preferences?.document.workspaceGridLayout
     }
     private var history: [CustomGridHistoryEntry] {
-        switch scope {
-        case .project: project?.activeArrangement.gridLayoutHistory ?? []
-        case .group: group?.gridLayoutHistory ?? []
-        case .workspace: environment.preferences?.document.workspaceGridLayoutHistory ?? []
-        }
+        if case .project = scope { return project?.activeArrangement.gridLayoutHistory ?? [] }
+        if case .group = scope { return group?.gridLayoutHistory ?? [] }
+        return environment.preferences?.document.workspaceGridLayoutHistory ?? []
     }
     private var title: String {
-        switch scope {
-        case .project: String(format: String(localized: "layoutDesigner.title"), project?.name ?? "")
-        case .group: String(format: String(localized: "layoutDesigner.web.groupTitle"), group?.name ?? "")
-        case .workspace: String(localized: "layoutDesigner.web.workspaceTitle")
-        }
+        if case .project = scope { return String(format: String(localized: "layoutDesigner.title"), project?.name ?? "") }
+        if case .group = scope { return String(format: String(localized: "layoutDesigner.web.groupTitle"), group?.name ?? "") }
+        return String(localized: "layoutDesigner.web.workspaceTitle")
     }
 
     var body: some View {
@@ -414,16 +408,15 @@ struct LayoutDesignerSheet: View {
         var recent = history
         if recent.first?.layout != clean { recent.insert(CustomGridHistoryEntry(layout: clean), at: 0) }
         recent = Array(recent.prefix(WorkspaceDocument.maxGridLayoutHistory))
-        switch scope {
-        case .project(let id):
+        if case .project(let id) = scope {
             workspace.update(undoManager: undoManager, actionName: String(localized: "undo.layout")) {
                 $0.setGridLayout(clean, for: id, recordHistory: true)
             }
-        case .group(let id):
+        } else if case .group(let id) = scope {
             workspace.update(undoManager: undoManager, actionName: String(localized: "undo.layout")) {
                 $0.updateGroup(id) { $0.layoutMode = .grid; $0.gridLayout = clean; $0.gridLayoutHistory = recent }
             }
-        case .workspace:
+        } else {
             environment.preferences?.update { $0.workspaceGridLayout = clean; $0.workspaceGridLayoutHistory = recent }
         }
         dismiss()
@@ -432,23 +425,19 @@ struct LayoutDesignerSheet: View {
 
 extension CustomGrid.Edge {
     var alignment: Alignment {
-        switch self {
-        case .left: .leading
-        case .right: .trailing
-        case .top: .top
-        case .bottom: .bottom
-        }
+        if case .left = self { return .leading }
+        if case .right = self { return .trailing }
+        if case .top = self { return .top }
+        return .bottom
     }
 }
 
 extension CustomGridPreset {
     var title: LocalizedStringKey {
-        switch self {
-        case .balanced: "layoutDesigner.preset.balanced"
-        case .columns: "layoutDesigner.preset.columns"
-        case .rows: "layoutDesigner.preset.rows"
-        case .focusLeft: "layoutDesigner.preset.focusLeft"
-        case .focusTop: "layoutDesigner.preset.focusTop"
-        }
+        if case .balanced = self { return "layoutDesigner.preset.balanced" }
+        if case .columns = self { return "layoutDesigner.preset.columns" }
+        if case .rows = self { return "layoutDesigner.preset.rows" }
+        if case .focusLeft = self { return "layoutDesigner.preset.focusLeft" }
+        return "layoutDesigner.preset.focusTop"
     }
 }

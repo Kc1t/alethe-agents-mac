@@ -21,7 +21,12 @@ extension TestSeeds {
 }
 
 final class GistSyncStub: URLProtocol {
-    static let apiBase = URL(string: "https://github-stub.invalid")!
+    static let apiBase: URL = {
+        guard let url = URL(string: "https://github-stub.invalid") else {
+            preconditionFailure("Invalid stub endpoint")
+        }
+        return url
+    }()
     static let validToken = "ghp_uitest"
     private static let gists = Mutex<[String: [String: String]]>([:])
 
@@ -31,8 +36,11 @@ final class GistSyncStub: URLProtocol {
 
     override func startLoading() {
         let (status, body) = respond()
-        let response = HTTPURLResponse(url: request.url ?? Self.apiBase, statusCode: status, httpVersion: "HTTP/1.1",
-                                       headerFields: ["Content-Type": "application/json"])!
+        guard let response = HTTPURLResponse(url: request.url ?? Self.apiBase, statusCode: status, httpVersion: "HTTP/1.1",
+                                       headerFields: ["Content-Type": "application/json"]) else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+            return
+        }
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: (try? JSONSerialization.data(withJSONObject: body)) ?? Data())
         client?.urlProtocolDidFinishLoading(self)
@@ -43,26 +51,25 @@ final class GistSyncStub: URLProtocol {
             return (401, ["message": "Bad credentials"])
         }
         let parts = (request.url?.path() ?? "").split(separator: "/").map(String.init)
-        switch (request.httpMethod ?? "GET", parts.count) {
-        case ("GET", 1) where parts[0] == "user":
+        let method = request.httpMethod ?? "GET"
+        if method == "GET", parts.count == 1, parts[0] == "user" {
             return (200, ["login": "octo-uitest"])
-        case ("POST", 1) where parts[0] == "gists":
+        } else if method == "POST", parts.count == 1, parts[0] == "gists" {
             let id = "stub\(UUID().uuidString.prefix(8).lowercased())"
             Self.gists.withLock { $0[id] = files() }
             return (201, ["id": id])
-        case ("PATCH", 2) where parts[0] == "gists":
+        } else if method == "PATCH", parts.count == 2, parts[0] == "gists" {
             let found = Self.gists.withLock { gists -> Bool in
                 guard gists[parts[1]] != nil else { return false }
                 gists[parts[1]]?.merge(files()) { $1 }
                 return true
             }
             return found ? (200, ["id": parts[1]]) : (404, ["message": "Not Found"])
-        case ("GET", 2) where parts[0] == "gists":
+        } else if method == "GET", parts.count == 2, parts[0] == "gists" {
             guard let files = Self.gists.withLock({ $0[parts[1]] }) else { return (404, ["message": "Not Found"]) }
             return (200, ["id": parts[1], "files": files.mapValues { ["content": $0, "truncated": false] }])
-        default:
-            return (404, ["message": "Not Found"])
         }
+        return (404, ["message": "Not Found"])
     }
 
     private func files() -> [String: String] {

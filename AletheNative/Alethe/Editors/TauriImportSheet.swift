@@ -55,7 +55,8 @@ struct TauriImportSheet: View {
             } else {
                 Section {
                     if profiles.count > 1 {
-                        WebDropdown(selection: $profileID, options: profiles.map { Optional($0.id) }, accessibilityID: "newTerminal.rowSelect") { id in
+                        WebDropdown(selection: $profileID, options: profiles.map { Optional($0.id) },
+                            accessibilityID: "newTerminal.rowSelect") { id in
                             Text(verbatim: profiles.first { Optional($0.id) == id }?.name ?? "")
                         }.accessibilityLabel(Text("import.profile"))
                         .accessibilityIdentifier("import.profile")
@@ -66,19 +67,18 @@ struct TauriImportSheet: View {
                     }
                     .accessibilityIdentifier("import.preferences")
                 }
-                switch preview {
-                case .success(let report) where report.isEmpty:
+                if case .success(let report)? = preview, report.isEmpty {
                     Text("import.nothingNew")
                         .foregroundStyle(theme[.fgMuted])
                         .accessibilityIdentifier("import.nothingNew")
                     skipped(report)
-                case .success(let report):
+                } else if case .success(let report)? = preview {
                     summary(report, title: "import.preview")
-                case .failure(let failure):
+                } else if case .failure(let failure)? = preview {
                     Text(verbatim: message(for: failure))
                         .foregroundStyle(theme[.fgMuted])
                         .accessibilityIdentifier("import.failure")
-                case nil:
+                } else {
                     EmptyView()
                 }
             }
@@ -136,19 +136,18 @@ struct TauriImportSheet: View {
                     }
                     .accessibilityIdentifier("import.preferences")
                 }
-                switch preview {
-                case .success(let report) where report.isEmpty:
+                if case .success(let report)? = preview, report.isEmpty {
                     Text("import.nothingNew")
                         .foregroundStyle(.secondary)
                         .accessibilityIdentifier("import.nothingNew")
                     skipped(report)
-                case .success(let report):
+                } else if case .success(let report)? = preview {
                     summary(report, title: "import.preview")
-                case .failure(let failure):
+                } else if case .failure(let failure)? = preview {
                     Text(verbatim: message(for: failure))
                         .foregroundStyle(.secondary)
                         .accessibilityIdentifier("import.failure")
-                case nil:
+                } else {
                     EmptyView()
                 }
             }
@@ -222,32 +221,31 @@ struct TauriImportSheet: View {
     }
 
     private func reason(for skip: TauriImport.Skip) -> String {
-        switch skip {
-        case .projectWithoutFolder(let project): format("import.skip.noFolder", project)
-        case .projectAlreadyAdded(let project): format("import.skip.alreadyAdded", project)
-        case .projectArchived(let project): format("import.skip.archived", project)
-        case .paneKind(let project, let kind): format("import.skip.paneKind", project, kind)
-        case .agent(let project, let agent): format("import.skip.agent", project, AgentLabels.name(for: agent))
-        }
+        if case .projectWithoutFolder(let project) = skip { return format("import.skip.noFolder", project) }
+        if case .projectAlreadyAdded(let project) = skip { return format("import.skip.alreadyAdded", project) }
+        if case .projectArchived(let project) = skip { return format("import.skip.archived", project) }
+        if case .paneKind(let project, let kind) = skip { return format("import.skip.paneKind", project, kind) }
+        if case .agent(let project, let agent) = skip { return format("import.skip.agent", project, AgentLabels.name(for: agent)) }
+        preconditionFailure("Unreachable case")
+    }
+
+    private func preferenceName(_ preference: TauriImport.Preference) -> String {
+        if case .theme = preference { return String(localized: "import.pref.theme") }
+        if case .interfaceSize = preference { return String(localized: "import.pref.interfaceSize") }
+        if case .enabledAgents = preference { return String(localized: "import.pref.agents") }
+        if case .alwaysUnrestricted = preference { return String(localized: "import.pref.unrestricted") }
+        if case .cliPaths = preference { return String(localized: "import.pref.cliPaths") }
+        if case .features = preference { return String(localized: "import.pref.features") }
+        if case .appIcon = preference { return String(localized: "import.pref.appIcon") }
+        if case .toolbar = preference { return String(localized: "import.pref.toolbar") }
+        if case .mcp = preference { return String(localized: "import.pref.mcp") }
+        if case .integrations = preference { return String(localized: "import.pref.integrations") }
+        if case .router9 = preference { return String(localized: "import.pref.router9") }
+        return String(localized: "import.pref.remote")
     }
 
     private func preferenceNames(_ report: TauriImport.Report) -> [String] {
-        var names = TauriImport.Preference.allCases.filter(report.preferences.contains).map { preference in
-            switch preference {
-            case .theme: String(localized: "import.pref.theme")
-            case .interfaceSize: String(localized: "import.pref.interfaceSize")
-            case .enabledAgents: String(localized: "import.pref.agents")
-            case .alwaysUnrestricted: String(localized: "import.pref.unrestricted")
-            case .cliPaths: String(localized: "import.pref.cliPaths")
-            case .features: String(localized: "import.pref.features")
-            case .appIcon: String(localized: "import.pref.appIcon")
-            case .toolbar: String(localized: "import.pref.toolbar")
-            case .mcp: String(localized: "import.pref.mcp")
-            case .integrations: String(localized: "import.pref.integrations")
-            case .router9: String(localized: "import.pref.router9")
-            case .remote: String(localized: "import.pref.remote")
-            }
-        }
+        var names = TauriImport.Preference.allCases.filter(report.preferences.contains).map(preferenceName)
         if report.language != nil { names.append(String(localized: "import.pref.language")) }
         if report.secrets.contains(.spotifyClientSecret) || report.secrets.contains(.spotifyTokens) {
             names.append(String(localized: "import.pref.spotify"))
@@ -262,12 +260,11 @@ struct TauriImportSheet: View {
     }
 
     private func message(for failure: TauriImport.Failure) -> String {
-        switch failure {
-        case .unreadable: String(localized: "import.failure.unreadable")
-        case .unsupportedVersion(let version?) where version > TauriImport.supportedVersions.upperBound:
-            format("import.failure.newer", version)
-        case .unsupportedVersion: String(localized: "import.failure.older")
+        if case .unreadable = failure { return String(localized: "import.failure.unreadable") }
+        if case .unsupportedVersion(let version?) = failure, version > TauriImport.supportedVersions.upperBound {
+            return format("import.failure.newer", version)
         }
+        return String(localized: "import.failure.older")
     }
 
     private var context: TauriImport.Context {

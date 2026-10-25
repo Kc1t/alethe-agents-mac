@@ -79,7 +79,8 @@ struct NewTerminalRowSelect<Selection: Hashable, Icon: View>: View {
         .background {
             WebDropdownPortal(open: open && enabled, height: dropdownHeight, metrics: metrics,
                 minimumWidth: 0, maximumWidth: .infinity, gap: 6, rowSelect: true,
-                content: AnyView(dropdown.environment(\.metrics, metrics).environment(\.theme, theme).environment(\.locale, locale).environment(\.colorScheme, colorScheme)),
+                content: AnyView(dropdown.environment(\.metrics, metrics).environment(\.theme, theme)
+                    .environment(\.locale, locale).environment(\.colorScheme, colorScheme)),
                 dismiss: { restoreFocus in open = false; if restoreFocus { focused = true } })
         }
         .animation(metrics.reducesMotion ? nil : .easeOut(duration: 0.12), value: open)
@@ -136,7 +137,8 @@ struct NewTerminalRowSelect<Selection: Hashable, Icon: View>: View {
             .background(theme[.bgElevated], in: RoundedRectangle(cornerRadius: metrics.size(metrics.style == .clean ? 4 : 14)))
             .overlay(RoundedRectangle(cornerRadius: metrics.size(metrics.style == .clean ? 4 : 14))
                 .strokeBorder(theme[metrics.style == .clean ? .border : .borderStrong], lineWidth: metrics.size(1)))
-            .shadow(color: theme.shadow(.lg).color.color.opacity(metrics.style == .clean ? 0 : 1), radius: metrics.size(16), y: metrics.size(8))
+            .shadow(color: theme.shadow(.lg).color.color.opacity(metrics.style == .clean ? 0 : 1),
+                radius: metrics.size(16), y: metrics.size(8))
             .onAppear { proxy.scrollTo(active) }
             .onChange(of: active) { _, index in proxy.scrollTo(index) }
         }

@@ -12,139 +12,36 @@ struct ProjectEditor: View {
     let initialLocation: ProjectLocation
     var initialFolder: String? = nil
     var closeOverlay: (() -> Void)? = nil
-    @Environment(\.dismiss) private var dismiss
-    @FocusState private var focused: Bool
+    @Environment(\.dismiss) var dismiss
+    @FocusState var focused: Bool
     @FocusState private var webPathFocused: Bool
-    @Environment(\.metrics) private var metrics
-    @Environment(\.theme) private var theme
-    @Environment(AppEnvironment.self) private var environment
+    @Environment(\.metrics) var metrics
+    @Environment(\.theme) var theme
+    @Environment(AppEnvironment.self) var environment
 
     enum Source: Hashable { case folder, clone }
 
-    @State private var source: Source = .folder
-    @State private var cloneURL = ""
-    @State private var iconUrl = ""
-    @State private var name = ""
-    @State private var folder = ""
-    @State private var color: ProjectColor? = .blue
-    @State private var location: ProjectLocation = .ungrouped
-    @State private var nameEdited = false
-    @State private var autoWorktree = false
-    @State private var worktreeMode: ProjectWorktreeMode = .gitWorktree
+    @State var source: Source = .folder
+    @State var cloneURL = ""
+    @State var iconUrl = ""
+    @State var name = ""
+    @State var folder = ""
+    @State var color: ProjectColor? = .blue
+    @State var location: ProjectLocation = .ungrouped
+    @State var nameEdited = false
+    @State var autoWorktree = false
+    @State var worktreeMode: ProjectWorktreeMode = .gitWorktree
     @State private var restored: ProjectMarker?
-    @State private var model = ProjectEditorModel()
+    @State var model = ProjectEditorModel()
 
-    private var isCloning: Bool { editing == nil && source == .clone }
+    var isCloning: Bool { editing == nil && source == .clone }
     @State private var advanced = ProjectAdvancedDraft()
-    @State private var graphifyEnabled = false
+    @State var graphifyEnabled = false
 
     var body: some View {
         Group {
             if metrics.isWebInterface { webBody } else { nativeBody }
         }
-    }
-
-    private var nativeBody: some View {
-        Form {
-            if editing == nil {
-                Picker(selection: $source) {
-                    Text("editor.project.source.folder").tag(Source.folder)
-                    Text("editor.project.source.clone").tag(Source.clone)
-                } label: { Text("editor.project.source") }
-                    .pickerStyle(.segmented)
-                    .disabled(model.cloning)
-                    .accessibilityIdentifier("editor.project.source")
-            }
-            if isCloning {
-                TextField(text: $cloneURL, prompt: Text(verbatim: "https://github.com/owner/repository")) {
-                    Text("editor.project.cloneURL")
-                }
-                .accessibilityIdentifier("editor.project.cloneURL")
-                .disabled(model.cloning)
-                .onChange(of: cloneURL) { _, value in
-                    if !nameEdited { name = GitCloneURL.folderName(for: GitCloneURL.normalize(value)) }
-                }
-            }
-            TextField(text: $folder, prompt: Text(verbatim: isCloning ? "~/Alethe" : "~/Projects/app")) {
-                Text(isCloning ? "editor.project.cloneInto" : "editor.project.folder")
-            }
-                .accessibilityIdentifier("editor.project.folder")
-                .focused($focused)
-                .disabled(model.cloning)
-                .onChange(of: folder) { _, value in
-                    if !nameEdited, editing == nil, !isCloning { name = URL(filePath: expanded(value)).lastPathComponent }
-                }
-            HStack {
-                Spacer()
-                Button("editor.project.chooseFolder") { chooseFolder() }
-                    .disabled(model.cloning)
-            }
-            if !isCloning { folderDetails }
-            TextField(text: Binding { name } set: { name = $0; nameEdited = true }) { Text("editor.project.name") }
-                .accessibilityIdentifier("editor.project.name")
-            ImageInputField(value: $iconUrl, name: name, color: color)
-            LabeledContent("editor.color") { ColorSwatchPicker(selection: $color) }
-            Picker(selection: $location) {
-                Text("sidebar.ungrouped").tag(ProjectLocation.ungrouped)
-                ForEach(workspace.document.groups) { group in
-                    Text(verbatim: group.name).tag(ProjectLocation.group(group.id))
-                }
-            } label: { Text("editor.project.group") }
-            Section {
-                Toggle(isOn: $autoWorktree) {
-                    Text("editor.project.autoWorktree")
-                    Text("editor.project.autoWorktree.detail").font(metrics.font(.footnote))
-                }
-                .accessibilityIdentifier("editor.project.autoWorktree")
-                Picker(selection: $worktreeMode) {
-                    Text("newTerminal.worktree.mode.gitWorktree").tag(ProjectWorktreeMode.gitWorktree)
-                    Text("newTerminal.worktree.mode.localCopy").tag(ProjectWorktreeMode.localCopy)
-                } label: { Text("newTerminal.worktree.mode") }
-                    .accessibilityIdentifier("editor.project.worktreeMode")
-            } header: { Text("editor.project.worktrees") }
-            if isCloning { cloneStatus }
-            if environment.features.isOn(.graphify) {
-                Toggle(isOn: $graphifyEnabled) {
-                    Text("editor.project.graphify")
-                    Text("editor.project.graphify.detail").font(metrics.font(.footnote))
-                }
-                .accessibilityIdentifier("editor.project.graphify")
-            }
-            if let problem, !model.cloning {
-                Text(problem)
-                    .foregroundStyle(theme[.textSecondary])
-                    .font(metrics.font(.footnote))
-                    .accessibilityIdentifier("editor.problem")
-            }
-        }
-        .formStyle(.grouped)
-        .frame(width: metrics.size(460))
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("editor.cancel") {
-                    if model.cloning { model.cancelClone() } else { dismiss() }
-                }
-                .accessibilityIdentifier("editor.cancel")
-            }
-            ToolbarItem(placement: .confirmationAction) {
-                Button(confirmTitle) { save() }
-                    .disabled(problem != nil || model.cloning)
-                    .accessibilityIdentifier("editor.confirm")
-            }
-        }
-        .interactiveDismissDisabled(model.cloning)
-        .navigationTitle(Text(editing == nil ? "editor.project.newTitle" : "editor.project.editTitle"))
-        .task(id: isCloning ? "" : expanded(folder)) {
-            await model.inspect(isCloning ? "" : expanded(folder))
-        }
-        .onAppear {
-            focused = true
-            loadInitial()
-        }
-    }
-
-    private func close() {
-        if metrics.isWebInterface, let closeOverlay { closeOverlay() } else { dismiss() }
     }
 
     private var webBody: some View {
@@ -241,13 +138,13 @@ struct ProjectEditor: View {
         save()
     }
 
-    private var confirmTitle: LocalizedStringKey {
+    var confirmTitle: LocalizedStringKey {
         if editing != nil { return "editor.save" }
         return isCloning ? "editor.project.clone" : "editor.project.create"
     }
 
     @ViewBuilder
-    private var folderDetails: some View {
+    var folderDetails: some View {
         if let inspection = model.inspection, model.inspectedFolder == expanded(folder) {
             if editing == nil, let marker = inspection.marker, restored != marker {
                 HStack {
@@ -287,7 +184,7 @@ struct ProjectEditor: View {
     }
 
     @ViewBuilder
-    private var cloneStatus: some View {
+    var cloneStatus: some View {
         if model.cloning {
             VStack(alignment: .leading, spacing: metrics.space(.xs)) {
                 if let percent = model.cloneProgress?.percent {
@@ -310,7 +207,7 @@ struct ProjectEditor: View {
         }
     }
 
-    private var problem: LocalizedStringKey? {
+    var problem: LocalizedStringKey? {
         if isCloning { return cloneProblem }
         let path = expanded(folder)
         var isDirectory: ObjCBool = false
@@ -348,11 +245,11 @@ struct ProjectEditor: View {
         GitCloneURL.target(requested: expanded(folder), url: normalizedCloneURL)
     }
 
-    private func expanded(_ path: String) -> String {
+    func expanded(_ path: String) -> String {
         (path.trimmingCharacters(in: .whitespaces) as NSString).expandingTildeInPath
     }
 
-    private func loadInitial() {
+    func loadInitial() {
         location = initialLocation
         if editing == nil, let initialFolder { folder = initialFolder }
         guard let editing, let project = workspace.document.project(editing) else { return }
@@ -368,7 +265,7 @@ struct ProjectEditor: View {
         nameEdited = true
     }
 
-    private func chooseFolder() {
+    func chooseFolder() {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
@@ -387,7 +284,7 @@ struct ProjectEditor: View {
         worktreeMode = marker.worktreeMode ?? .gitWorktree
     }
 
-    private func save() {
+    func save() {
         if isCloning {
             let url = normalizedCloneURL
             model.clone(url, into: cloneTarget) { cloned in
@@ -418,8 +315,10 @@ struct ProjectEditor: View {
             if metrics.isWebInterface {
                 let watch = advanced.gsdWatcher
                 Task {
-                    if watch { try? await environment.multiagent.follow(projectID: editing.rawValue, folder: URL(filePath: path), by: .projectPreference) }
-                    else { await environment.multiagent.unfollow(projectID: editing.rawValue, folder: URL(filePath: path), by: .projectPreference) }
+                    if watch { try? await environment.multiagent.follow(projectID: editing.rawValue,
+                        folder: URL(filePath: path), by: .projectPreference) }
+                    else { await environment.multiagent.unfollow(projectID: editing.rawValue,
+                        folder: URL(filePath: path), by: .projectPreference) }
                 }
             }
             close()
@@ -466,12 +365,10 @@ struct ProjectEditor: View {
 
 enum ProjectStackLabel {
     static func key(_ stack: ProjectStack) -> LocalizedStringKey {
-        switch stack {
-        case .web: "stack.web"
-        case .cli: "stack.cli"
-        case .desktop: "stack.desktop"
-        case .fullstack: "stack.fullstack"
-        case .unknown: "stack.unknown"
-        }
+        if case .web = stack { return "stack.web" }
+        if case .cli = stack { return "stack.cli" }
+        if case .desktop = stack { return "stack.desktop" }
+        if case .fullstack = stack { return "stack.fullstack" }
+        return "stack.unknown"
     }
 }

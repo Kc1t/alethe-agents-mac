@@ -94,9 +94,13 @@ struct WebDropdown<Value: Hashable, Label: View>: View {
         .buttonStyle(.plain)
         .accessibilityIdentifier(accessibilityID)
         .foregroundStyle(theme[appearance.raw || open || hovering || focused ? .fg : .fgMuted])
-        .background(theme[appearance.raw && hovering ? .panelHover : appearance.background].opacity(trigger == nil ? 1 : 0), in: RoundedRectangle(cornerRadius: radius))
+        .background(theme[appearance.raw && hovering ? .panelHover : appearance.background].opacity(trigger == nil ? 1 : 0),
+            in: RoundedRectangle(cornerRadius: radius))
         .overlay(RoundedRectangle(cornerRadius: radius)
-            .strokeBorder(theme[open ? (metrics.style == .clean ? .borderStrong : .accent) : focused ? .accent : hovering ? (appearance.raw ? .borderStrong : .accent) : .border].opacity(trigger == nil ? 1 : 0), lineWidth: metrics.size(1)))
+            .strokeBorder(theme[
+                open ? (metrics.style == .clean ? .borderStrong : .accent) : focused ? .accent
+                    : hovering ? (appearance.raw ? .borderStrong : .accent) : .border
+            ].opacity(trigger == nil ? 1 : 0), lineWidth: metrics.size(1)))
         .opacity(isDisabled || !enabled ? 0.55 : 1)
         .disabled(isDisabled)
         .focused($focused)
@@ -108,7 +112,8 @@ struct WebDropdown<Value: Hashable, Label: View>: View {
             return .handled
         }
         .onKeyPress(.home) { guard open else { return .ignored }; active = enabledIndex(from: 0, direction: 1); return .handled }
-        .onKeyPress(.end) { guard open else { return .ignored }; active = enabledIndex(from: choices.count - 1, direction: -1); return .handled }
+        .onKeyPress(.end) { guard open else { return .ignored }; active = enabledIndex(from: choices.count - 1,
+            direction: -1); return .handled }
         .onKeyPress(.return) {
             if open { if !searchable { chooseActive() } } else { show() }
             return .handled
@@ -126,8 +131,10 @@ struct WebDropdown<Value: Hashable, Label: View>: View {
         }
         .background {
             WebDropdownPortal(open: open && enabled && !isDisabled, height: menuHeight, metrics: metrics,
-                minimumWidth: menuStyle.minimumWidth, maximumWidth: menuStyle.maximumWidth, gap: menuStyle == .standard || menuStyle == .todo ? 5 : 6,
-                content: AnyView(menu.environment(\.metrics, metrics).environment(\.theme, theme).environment(\.locale, locale).environment(\.colorScheme, colorScheme)),
+                minimumWidth: menuStyle.minimumWidth, maximumWidth: menuStyle.maximumWidth,
+                    gap: menuStyle == .standard || menuStyle == .todo ? 5 : 6,
+                content: AnyView(menu.environment(\.metrics, metrics).environment(\.theme, theme)
+                    .environment(\.locale, locale).environment(\.colorScheme, colorScheme)),
                 dismiss: { restoreFocus in open = false; if restoreFocus { focused = true } })
         }
         .onDisappear { open = false }
@@ -183,9 +190,11 @@ struct WebDropdown<Value: Hashable, Label: View>: View {
             }
             .padding(metrics.size(menuStyle.padding))
             .frame(maxHeight: .infinity)
-            .background(theme[.bgElevated], in: RoundedRectangle(cornerRadius: metrics.style == .clean ? metrics.size(4) : metrics.radius(.md)))
+            .background(theme[.bgElevated],
+                in: RoundedRectangle(cornerRadius: metrics.style == .clean ? metrics.size(4) : metrics.radius(.md)))
             .overlay(RoundedRectangle(cornerRadius: metrics.style == .clean ? metrics.size(4) : metrics.radius(.md))
-                .strokeBorder(theme[metrics.style == .clean || menuStyle == .homeAgent ? .border : .borderStrong], lineWidth: metrics.size(1)))
+                .strokeBorder(theme[metrics.style == .clean || menuStyle == .homeAgent ? .border : .borderStrong],
+                    lineWidth: metrics.size(1)))
             .shadow(color: (menuStyle.isHome ? theme.shadow(.md).color.color : theme[.bg].opacity(0.6))
                         .opacity(metrics.style == .clean ? 0 : 1),
                     radius: metrics.size(menuStyle.isHome ? theme.shadow(.md).blur / 2 : 15),
@@ -237,7 +246,12 @@ struct WebDropdown<Value: Hashable, Label: View>: View {
                     }
                 }
                 .padding(.top, index == visibleOptions.count && custom != nil ? metrics.size(3) : 0)
-                .foregroundStyle(theme[index == visibleOptions.count && custom != nil ? .accent : selected ? (metrics.style == .clean || menuStyle == .homeMode || menuStyle == .homeAgent ? .fg : .accent) : active == index ? .fg : .fgMuted])
+                .foregroundStyle(theme[
+                    index == visibleOptions.count && custom != nil ? .accent
+                        : selected ? (metrics.style == .clean || menuStyle == .homeMode
+                            || menuStyle == .homeAgent ? .fg : .accent)
+                        : active == index ? .fg : .fgMuted
+                ])
                 .background(theme[.panelHover].opacity(selected || active == index ? 1 : 0),
                             in: RoundedRectangle(cornerRadius: menuStyle == .standard ? metrics.size(4) : metrics.radius(.sm)))
                 .contentShape(Rectangle())

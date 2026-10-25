@@ -63,7 +63,8 @@ extension TestSeeds {
         #!/bin/sh
         # A stub `codex app-server` for the P6-15 UI tests. printf '%s' keeps the diff's JSON escapes.
         n=0
-        diff='{"method":"turn/diff/updated","params":{"diff":"diff --git a/notes.txt b/notes.txt\n--- a/notes.txt\n+++ b/notes.txt\n@@ -1,2 +1,2 @@\n alpha\n-beta\n+beta two\n"}}'
+        diff='{"method":"turn/diff/updated","params":{"diff":"diff --git a/notes.txt b/notes.txt\n--- a/notes.\#
+        txt\n+++ b/notes.txt\n@@ -1,2 +1,2 @@\n alpha\n-beta\n+beta two\n"}}'
         while IFS= read -r line; do
           text=$(printf '%s' "$line" | sed -n 's/.*"text":"\([^"]*\)".*/\1/p')
           case "$line" in
@@ -77,7 +78,8 @@ extension TestSeeds {
               printf '{"method":"turn/started","params":{"turn":{"id":"turn-%s"}}}\n' "$n"
               case "$text" in
                 *ask*)
-                  printf '{"id":77,"method":"item/commandExecution/requestApproval","params":{"command":"touch notes.txt","cwd":"/private/tmp","reason":"needs a scratch file"}}\n' ;;
+                  printf '{"id":77,"method":"item/commandExecution/requestApproval","params":{"command":"touch\#
+         notes.txt","cwd":"/private/tmp","reason":"needs a scratch file"}}\n' ;;
                 *hold*)
                   printf '{"method":"item/agentMessage/delta","params":{"delta":"holding"}}\n' ;;
                 *)

@@ -187,23 +187,7 @@ final class AppEnvironment {
         }
         Self.removeOrphanScrollback(in: locations.scrollback(profile), keeping: tabs)
         Handoff.pruneOld(in: locations.handoffs(profile))
-        let plugins = PluginHost(plugins: Self.builtinPlugins, dataRoot: locations.profileDirectory(profile),
-                                 services: Self.pluginServices)
-        TodosPlugin.onNewTodo = { [weak self] in
-            guard let self else { return }
-            self.showTodos()
-            self.newTodoRequest += 1
-        }
-        GitControlPlugin.onOpen = { [weak self] in
-            self?.openPluginSheet(GitControlPlugin.sheetID, project: nil)
-        }
-        await plugins.load()
-        self.plugins = plugins
-        let extensions = ExtensionManager(profileDirectory: locations.profileDirectory(profile))
-        self.extensions = extensions
-        plugins.events.attach(multiagent.bus)
-        extensions.events.attach(multiagent.bus)
-        Task { await extensions.start() }
+        await loadPlugins(locations: locations, profile: profile)
         #if DEBUG
         if let seed = UserDefaults.standard.string(forKey: "AletheUITestSeed"), loadedWorkspace.document.projects.isEmpty {
             loadedWorkspace.update { TestSeeds.apply(seed, to: &$0) }
@@ -224,19 +208,25 @@ final class AppEnvironment {
         await terminals.hooks.start(terminals: terminals)
         self.profiles = profiles
         self.workspace = loadedWorkspace
+        await finishLoading(workspace: loadedWorkspace, preferences: loadedPreferences, history: loadedHistory,
+                            locations: locations, profile: profile)
+    }
+
+    private func finishLoading(workspace: WorkspaceModel, preferences: PreferencesModel,
+                               history: PromptHistoryModel, locations: DataLocations, profile: ProfileID) async {
         if interfaceStyle == .web {
-            for project in loadedWorkspace.document.projects where project.gsdWatcherEnabled == true {
+            for project in workspace.document.projects where project.gsdWatcherEnabled == true {
                 try? await multiagent.follow(projectID: project.id.rawValue, folder: URL(filePath: project.folder), by: .projectPreference)
             }
         }
-        self.preferences = loadedPreferences
-        await orchestrator.applySettings(loadedPreferences.document.orchestration ?? .init())
-        await orchestrator.applyWorkerRules(interfaceStyle == .web ? loadedPreferences.document.workerRuleSets : [])
+        self.preferences = preferences
+        await orchestrator.applySettings(preferences.document.orchestration ?? .init())
+        await orchestrator.applyWorkerRules(interfaceStyle == .web ? preferences.document.workerRuleSets : [])
         aiMemory.start(environment: self)
         gsdSync.start(environment: self, profileDirectory: locations.profileDirectory(profile))
-        mcp = makeMcpModel(profileDirectory: locations.profileDirectory(profile), preferences: loadedPreferences)
+        mcp = makeMcpModel(profileDirectory: locations.profileDirectory(profile), preferences: preferences)
         followAppIcon()
-        self.promptHistory = loadedHistory
+        self.promptHistory = history
         resources.start(environment: self)
         usage.start(environment: self)
         activity.start(environment: self, file: locations.activityStats(profile))
@@ -264,6 +254,26 @@ final class AppEnvironment {
                 self?.systemReducesMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
             }
         }
+    }
+
+    private func loadPlugins(locations: DataLocations, profile: ProfileID) async {
+        let plugins = PluginHost(plugins: Self.builtinPlugins, dataRoot: locations.profileDirectory(profile),
+                                 services: Self.pluginServices)
+        TodosPlugin.onNewTodo = { [weak self] in
+            guard let self else { return }
+            self.showTodos()
+            self.newTodoRequest += 1
+        }
+        GitControlPlugin.onOpen = { [weak self] in
+            self?.openPluginSheet(GitControlPlugin.sheetID, project: nil)
+        }
+        await plugins.load()
+        self.plugins = plugins
+        let extensions = ExtensionManager(profileDirectory: locations.profileDirectory(profile))
+        self.extensions = extensions
+        plugins.events.attach(multiagent.bus)
+        extensions.events.attach(multiagent.bus)
+        Task { await extensions.start() }
     }
 
     func openFolder(_ url: URL) {

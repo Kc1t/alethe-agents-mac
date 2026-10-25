@@ -58,11 +58,10 @@ extension AppEnvironment {
         await saveDocuments()
         let name = activeProfileName
         try await Task.detached {
-            switch operation {
-            case .eraseAll:
+            if case .eraseAll = operation {
                 try ProfileBackup.safetyBackup(of: locations.root, label: "all-data", into: locations.safetyBackups,
                                                profileName: nil, skipping: DataMaintenance.maintenanceEntries(locations))
-            case .importProfile, .resetProfile:
+            } else {
                 try ProfileBackup.safetyBackup(of: locations.profileDirectory(profileID), label: "profile-\(profileID.rawValue)",
                                                into: locations.safetyBackups, profileName: name)
             }
@@ -74,14 +73,13 @@ extension AppEnvironment {
 
 extension BackupError {
     var localizedMessage: String {
-        switch self {
-        case .targetInsideSource: String(localized: "settings.data.error.insideProfile")
-        case .unreadableArchive: String(localized: "settings.data.error.unreadable")
-        case .unsafeEntry(let name): String(format: String(localized: "settings.data.error.unsafe"), name)
-        case .notAProfileBackup: String(localized: "settings.data.error.notBackup")
-        case .tauriBackup: String(localized: "settings.data.error.tauri")
-        case .newerFormat: String(localized: "settings.data.error.newer")
-        case .archiveFailed(let message): String(format: String(localized: "settings.data.error.archive"), message)
-        }
+        if case .targetInsideSource = self { return String(localized: "settings.data.error.insideProfile") }
+        if case .unreadableArchive = self { return String(localized: "settings.data.error.unreadable") }
+        if case .unsafeEntry(let name) = self { return String(format: String(localized: "settings.data.error.unsafe"), name) }
+        if case .notAProfileBackup = self { return String(localized: "settings.data.error.notBackup") }
+        if case .tauriBackup = self { return String(localized: "settings.data.error.tauri") }
+        if case .newerFormat = self { return String(localized: "settings.data.error.newer") }
+        if case .archiveFailed(let message) = self { return String(format: String(localized: "settings.data.error.archive"), message) }
+        preconditionFailure("Unreachable case")
     }
 }

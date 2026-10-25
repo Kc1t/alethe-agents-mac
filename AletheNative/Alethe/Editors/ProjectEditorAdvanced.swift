@@ -75,7 +75,8 @@ struct ProjectEditorAdvanced: View {
                             environment.agentRegistry.descriptor(for: .init(rawValue: value))?.displayName ?? value
                         }
                     } else {
-                        AletheSelect(selection: $draft.provider, options: environment.agentRegistry.descriptors.filter { !$0.isShell }.map { $0.kind.rawValue }) { value in
+                        AletheSelect(selection: $draft.provider,
+                            options: environment.agentRegistry.descriptors.filter { !$0.isShell }.map { $0.kind.rawValue }) { value in
                             Text(verbatim: environment.agentRegistry.descriptor(for: .init(rawValue: value))?.displayName ?? value)
                         }
                     }

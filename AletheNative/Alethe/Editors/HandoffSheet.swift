@@ -169,11 +169,11 @@ struct HandoffSheet: View {
         unrestricted = source.tab.unrestricted || (environment.preferences?.document.alwaysStartUnrestricted ?? false)
         let kind = AgentKind(rawValue: source.tab.agent), session = source.tab.sessionID
         let cwd = source.tab.workingDirectory ?? source.project.folder
-        switch await Task.detached(operation: { Handoff.prepare(source: kind, target: target, sessionID: session, cwd: cwd) }).value {
-        case .success(let prepared):
+        let result = await Task.detached(operation: { Handoff.prepare(source: kind, target: target, sessionID: session, cwd: cwd) }).value
+        if case .success(let prepared) = result {
             draft = prepared
             content = prepared.content
-        case .failure(let reason):
+        } else if case .failure(let reason) = result {
             failure = reason
         }
     }
@@ -201,11 +201,10 @@ struct HandoffSheet: View {
 
 extension Handoff.Failure {
     var message: LocalizedStringKey {
-        switch self {
-        case .unsupported, .sameAgent: "handoff.unsupported"
-        case .noFolder: "handoff.noFolder"
-        case .noSession: "handoff.noSession"
-        case .noUserMessages: "handoff.noUserMessages"
-        }
+        if case .unsupported = self { return "handoff.unsupported" }
+        if case .sameAgent = self { return "handoff.unsupported" }
+        if case .noFolder = self { return "handoff.noFolder" }
+        if case .noSession = self { return "handoff.noSession" }
+        return "handoff.noUserMessages"
     }
 }

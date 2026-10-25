@@ -43,52 +43,22 @@ struct AgentLibrarySheet: View {
     }
 
     private func webContent(_ model: AgentLibraryModel) -> some View {
-        ModalsM2WebModal(title: Text("agentLibrary.title"), close: { if let closeOverlay { closeOverlay() } else { dismiss() } }, width: 660) {
-            VStack(alignment: .leading, spacing: metrics.size(14)) {
-                Text("agentLibrary.subtitle").font(metrics.font(size: 12)).foregroundStyle(theme[.fgMuted])
-                ModalsM2Segments(selection: Binding(get: { model.scopeChoice }, set: { model.select($0) }),
-                                 options: [(.project, "agentLibrary.scope.project"), (.user, "agentLibrary.scope.user")])
-                    .disabled(model.running).accessibilityIdentifier("agentLibrary.scope")
-                Text(verbatim: model.scope.agentsDirectory.path).font(metrics.monoFont(size: 10.5))
-                    .foregroundStyle(theme[.fgFaint]).lineLimit(1).truncationMode(.middle).textSelection(.enabled)
-                    .accessibilityIdentifier("agentLibrary.path")
-                if model.loading { ProgressView().frame(maxWidth: .infinity) } else {
-                    VStack(alignment: .leading, spacing: metrics.size(8)) {
-                        Text("agentLibrary.section.library").font(metrics.font(size: 10, weight: .semibold)).textCase(.uppercase)
-                            .foregroundStyle(theme[.fgFaint]).tracking(metrics.size(0.6))
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: metrics.size(240)), spacing: metrics.size(8))], spacing: metrics.size(8)) {
-                            ForEach(AgentLibraryCatalog.templates) { template in
-                                webTemplate(template, model)
-                            }
-                        }
-                    }.accessibilityIdentifier("agentLibrary.list")
-                    Toggle(isOn: Binding(get: { model.economyOn }, set: { model.setEconomy($0) })) {
-                        VStack(alignment: .leading, spacing: metrics.size(3)) {
-                            Text("agentLibrary.economy.toggle").font(metrics.font(size: 12.5, weight: .medium))
-                            Text("agentLibrary.economy.detail").font(metrics.font(size: 11.5)).foregroundStyle(theme[.fgMuted])
-                        }
-                    }.disabled(model.running).accessibilityIdentifier("agentLibrary.economy")
-                    ForEach(EconomyAgents.templates) { template in webTemplate(template, model) }
-                    ForEach(model.otherAgents) { agent in otherRow(agent, model) }
-                }
-                if let error = model.error {
-                    Text(verbatim: error).foregroundStyle(theme[.statusStopped]).accessibilityIdentifier("agentLibrary.error")
-                }
-                if let note = model.note {
-                    Text(verbatim: note).foregroundStyle(theme[.fgMuted]).accessibilityIdentifier("agentLibrary.note")
-                }
-                if model.restartHint { Text("agentLibrary.restartHint").foregroundStyle(theme[.fgFaint]) }
-            }
+        ModalsM2WebModal(title: Text("agentLibrary.title"),
+            close: { if let closeOverlay { closeOverlay() } else { dismiss() } }, width: 660) {
+            webLibrary(model)
         } footer: {
             Button("agentLibrary.undo") { model.undo() }.disabled(model.lastChange == nil || model.running)
                 .accessibilityIdentifier("agentLibrary.undo")
             Button("agentLibrary.refresh") { Task { await model.refresh() } }.disabled(model.running)
             Spacer()
-            Button("agentInstall.done") { if let closeOverlay { closeOverlay() } else { dismiss() } }.accessibilityIdentifier("agentLibrary.close")
+            Button("agentInstall.done") { if let closeOverlay { closeOverlay() } else { dismiss() } }
+                .accessibilityIdentifier("agentLibrary.close")
         }
         .webConfirm(isPresented: Binding(
             get: { model.pendingOverwrite != nil }, set: { if !$0 { model.pendingOverwrite = nil } }),
-                    message: model.pendingOverwrite.map { String(format: String(localized: "agentLibrary.overwrite.message"), $0.fileName) } ?? "",
+                    message: model.pendingOverwrite.map {
+                        String(format: String(localized: "agentLibrary.overwrite.message"), $0.fileName)
+                    } ?? "",
                     title: String(localized: "agentLibrary.overwrite.title"),
                     confirmTitle: String(localized: "agentLibrary.overwrite.confirm"), destructive: true) {
             if let template = model.pendingOverwrite { model.install(template, overwriteForeign: true) }
@@ -113,6 +83,45 @@ struct AgentLibrarySheet: View {
             Button("agentLibrary.remove", role: .destructive) { model.remove(agent, force: true) }
         } message: { agent in
             Text(String(format: String(localized: "agentLibrary.removeForeign.message"), "\(agent.name).md"))
+        }
+    }
+
+    private func webLibrary(_ model: AgentLibraryModel) -> some View {
+        VStack(alignment: .leading, spacing: metrics.size(14)) {
+            Text("agentLibrary.subtitle").font(metrics.font(size: 12)).foregroundStyle(theme[.fgMuted])
+            ModalsM2Segments(selection: Binding(get: { model.scopeChoice }, set: { model.select($0) }),
+                             options: [(.project, "agentLibrary.scope.project"), (.user, "agentLibrary.scope.user")])
+                .disabled(model.running).accessibilityIdentifier("agentLibrary.scope")
+            Text(verbatim: model.scope.agentsDirectory.path).font(metrics.monoFont(size: 10.5))
+                .foregroundStyle(theme[.fgFaint]).lineLimit(1).truncationMode(.middle).textSelection(.enabled)
+                .accessibilityIdentifier("agentLibrary.path")
+            if model.loading { ProgressView().frame(maxWidth: .infinity) } else {
+                VStack(alignment: .leading, spacing: metrics.size(8)) {
+                    Text("agentLibrary.section.library").font(metrics.font(size: 10, weight: .semibold)).textCase(.uppercase)
+                        .foregroundStyle(theme[.fgFaint]).tracking(metrics.size(0.6))
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: metrics.size(240)), spacing: metrics.size(8))],
+                        spacing: metrics.size(8)) {
+                        ForEach(AgentLibraryCatalog.templates) { template in
+                            webTemplate(template, model)
+                        }
+                    }
+                }.accessibilityIdentifier("agentLibrary.list")
+                Toggle(isOn: Binding(get: { model.economyOn }, set: { model.setEconomy($0) })) {
+                    VStack(alignment: .leading, spacing: metrics.size(3)) {
+                        Text("agentLibrary.economy.toggle").font(metrics.font(size: 12.5, weight: .medium))
+                        Text("agentLibrary.economy.detail").font(metrics.font(size: 11.5)).foregroundStyle(theme[.fgMuted])
+                    }
+                }.disabled(model.running).accessibilityIdentifier("agentLibrary.economy")
+                ForEach(EconomyAgents.templates) { template in webTemplate(template, model) }
+                ForEach(model.otherAgents) { agent in otherRow(agent, model) }
+            }
+            if let error = model.error {
+                Text(verbatim: error).foregroundStyle(theme[.statusStopped]).accessibilityIdentifier("agentLibrary.error")
+            }
+            if let note = model.note {
+                Text(verbatim: note).foregroundStyle(theme[.fgMuted]).accessibilityIdentifier("agentLibrary.note")
+            }
+            if model.restartHint { Text("agentLibrary.restartHint").foregroundStyle(theme[.fgFaint]) }
         }
     }
 
@@ -340,11 +349,9 @@ private struct CostBadge: View {
     @Environment(\.metrics) private var metrics
 
     private var tokens: (text: ThemeToken, fill: ThemeToken) {
-        switch cost {
-        case .cheap: (.statusWorking, .statusWorkingSoft)
-        case .medium: (.statusWaiting, .statusWaitingSoft)
-        case .expensive: (.statusStopped, .statusStoppedSoft)
-        }
+        if case .cheap = cost { return (.statusWorking, .statusWorkingSoft) }
+        if case .medium = cost { return (.statusWaiting, .statusWaitingSoft) }
+        return (.statusStopped, .statusStoppedSoft)
     }
 
     var body: some View {
@@ -359,39 +366,33 @@ private struct CostBadge: View {
 
 extension AgentCategory {
     var title: LocalizedStringKey {
-        switch self {
-        case .orchestration: LocalizedStringKey("agentLibrary.category.orchestration")
-        case .frontend: LocalizedStringKey("agentLibrary.category.frontend")
-        case .backend: LocalizedStringKey("agentLibrary.category.backend")
-        case .qa: LocalizedStringKey("agentLibrary.category.qa")
-        case .docs: LocalizedStringKey("agentLibrary.category.docs")
-        case .economy: LocalizedStringKey("agentLibrary.category.economy")
-        }
+        if case .orchestration = self { return LocalizedStringKey("agentLibrary.category.orchestration") }
+        if case .frontend = self { return LocalizedStringKey("agentLibrary.category.frontend") }
+        if case .backend = self { return LocalizedStringKey("agentLibrary.category.backend") }
+        if case .qa = self { return LocalizedStringKey("agentLibrary.category.qa") }
+        if case .docs = self { return LocalizedStringKey("agentLibrary.category.docs") }
+        return LocalizedStringKey("agentLibrary.category.economy")
     }
 }
 
 extension AgentCost {
     var title: LocalizedStringKey {
-        switch self {
-        case .cheap: LocalizedStringKey("agentLibrary.cost.cheap")
-        case .medium: LocalizedStringKey("agentLibrary.cost.medium")
-        case .expensive: LocalizedStringKey("agentLibrary.cost.expensive")
-        }
+        if case .cheap = self { return LocalizedStringKey("agentLibrary.cost.cheap") }
+        if case .medium = self { return LocalizedStringKey("agentLibrary.cost.medium") }
+        return LocalizedStringKey("agentLibrary.cost.expensive")
     }
 }
 
 extension AgentTemplate {
     var summaryKey: LocalizedStringKey {
-        switch name {
-        case "orchestrator": LocalizedStringKey("agentLibrary.summary.orchestrator")
-        case "frontend-dev": LocalizedStringKey("agentLibrary.summary.frontendDev")
-        case "backend-dev": LocalizedStringKey("agentLibrary.summary.backendDev")
-        case "qa-reviewer": LocalizedStringKey("agentLibrary.summary.qaReviewer")
-        case "docs-writer": LocalizedStringKey("agentLibrary.summary.docsWriter")
-        case "haiku-summarizer": LocalizedStringKey("agentLibrary.summary.haikuSummarizer")
-        case "haiku-mechanic": LocalizedStringKey("agentLibrary.summary.haikuMechanic")
-        case "codex-executor": LocalizedStringKey("agentLibrary.summary.codexExecutor")
-        default: LocalizedStringKey(stringLiteral: summary)
-        }
+        if case "orchestrator" = name { return LocalizedStringKey("agentLibrary.summary.orchestrator") }
+        if case "frontend-dev" = name { return LocalizedStringKey("agentLibrary.summary.frontendDev") }
+        if case "backend-dev" = name { return LocalizedStringKey("agentLibrary.summary.backendDev") }
+        if case "qa-reviewer" = name { return LocalizedStringKey("agentLibrary.summary.qaReviewer") }
+        if case "docs-writer" = name { return LocalizedStringKey("agentLibrary.summary.docsWriter") }
+        if case "haiku-summarizer" = name { return LocalizedStringKey("agentLibrary.summary.haikuSummarizer") }
+        if case "haiku-mechanic" = name { return LocalizedStringKey("agentLibrary.summary.haikuMechanic") }
+        if case "codex-executor" = name { return LocalizedStringKey("agentLibrary.summary.codexExecutor") }
+        return LocalizedStringKey(stringLiteral: summary)
     }
 }

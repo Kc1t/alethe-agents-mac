@@ -32,7 +32,8 @@ final class DictationController {
         guard monitor == nil else { return }
         self.environment = environment
         jev.start(environment: environment)
-        deactivation = NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
+        deactivation = NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification,
+            object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard self?.environment?.interfaceStyle == .web else { return }
                 self?.cancelSession()
@@ -46,57 +47,7 @@ final class DictationController {
 
     private func handle(_ event: NSEvent) -> Bool {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting([.capsLock, .numericPad, .function])
-        if environment?.interfaceStyle == .web {
-            if event.type == .flagsChanged, heldWebKey == 14,
-               !flags.contains(.command) && !flags.contains(.control) {
-                heldWebKey = nil
-                if machine.phase == .starting || machine.phase == .listening { apply(machine.toggle()) }
-                return false
-            }
-            if event.type == .keyUp, heldWebKey == event.keyCode {
-                heldWebKey = nil
-                if machine.phase == .starting || machine.phase == .listening { apply(machine.toggle()) }
-                return true
-            }
-            if event.type == .keyDown, !event.isARepeat,
-               event.keyCode == 49, flags == [.command, .shift] || flags == [.control, .shift] {
-                if jev.open { cancelSession() }
-                else {
-                    if machine.isActive { apply(machine.escape()) }
-                    voiceCommand = false
-                    jev.open = true
-                    jev.message = ""
-                }
-                return true
-            }
-            if jev.open, event.type == .keyDown, !event.isARepeat, event.keyCode == 53 { cancelSession(); return true }
-            if jev.open, event.type == .keyDown, !event.isARepeat, event.keyCode == 36, jev.pendingID != nil {
-                jev.confirm(); return true
-            }
-            if jev.open, event.keyCode == 101 {
-                guard settings.enabled else { return false }
-                if event.type == .keyDown, !event.isARepeat, !machine.isActive {
-                    voiceCommand = true
-                    jev.heard = ""
-                    jev.message = ""
-                    jev.listening = true
-                    heldWebKey = event.keyCode
-                    apply(machine.toggle())
-                }
-                return true
-            }
-            if event.keyCode == 14, flags == [.command] || flags == [.control] {
-                guard settings.enabled, !jev.open else { return false }
-                if event.type == .keyDown, !event.isARepeat {
-                    voiceCommand = false
-                    if settings.hold { heldWebKey = event.keyCode }
-                    apply(machine.toggle())
-                }
-                return true
-            }
-            if event.type == .flagsChanged { return false }
-            if !settings.enabled { return false }
-        }
+        if environment?.interfaceStyle == .web, let handled = handleWeb(event, flags: flags) { return handled }
         guard event.type != .flagsChanged else { return false }
         if event.type == .keyDown, event.keyCode == 53, machine.isActive || machine.phase != .idle {
             apply(machine.escape())
@@ -109,6 +60,64 @@ final class DictationController {
             apply(machine.keyUp(at: event.timestamp))
         }
         return true
+    }
+
+    private func handleWeb(_ event: NSEvent, flags: NSEvent.ModifierFlags) -> Bool? {
+        if event.type == .flagsChanged, heldWebKey == 14,
+           !flags.contains(.command) && !flags.contains(.control) {
+            heldWebKey = nil
+            if machine.phase == .starting || machine.phase == .listening { apply(machine.toggle()) }
+            return false
+        }
+        if event.type == .keyUp, heldWebKey == event.keyCode {
+            heldWebKey = nil
+            if machine.phase == .starting || machine.phase == .listening { apply(machine.toggle()) }
+            return true
+        }
+        if let handled = handleWebCommand(event, flags: flags) { return handled }
+        if event.type == .flagsChanged { return false }
+        if !settings.enabled { return false }
+        return nil
+    }
+
+    private func handleWebCommand(_ event: NSEvent, flags: NSEvent.ModifierFlags) -> Bool? {
+        if event.type == .keyDown, !event.isARepeat,
+           event.keyCode == 49, flags == [.command, .shift] || flags == [.control, .shift] {
+            if jev.open { cancelSession() }
+            else {
+                if machine.isActive { apply(machine.escape()) }
+                voiceCommand = false
+                jev.open = true
+                jev.message = ""
+            }
+            return true
+        }
+        if jev.open, event.type == .keyDown, !event.isARepeat, event.keyCode == 53 { cancelSession(); return true }
+        if jev.open, event.type == .keyDown, !event.isARepeat, event.keyCode == 36, jev.pendingID != nil {
+            jev.confirm(); return true
+        }
+        if jev.open, event.keyCode == 101 {
+            guard settings.enabled else { return false }
+            if event.type == .keyDown, !event.isARepeat, !machine.isActive {
+                voiceCommand = true
+                jev.heard = ""
+                jev.message = ""
+                jev.listening = true
+                heldWebKey = event.keyCode
+                apply(machine.toggle())
+            }
+            return true
+        }
+        if event.keyCode == 14, flags == [.command] || flags == [.control] {
+            guard settings.enabled, !jev.open else { return false }
+            if event.type == .keyDown, !event.isARepeat {
+                voiceCommand = false
+                if settings.hold { heldWebKey = event.keyCode }
+                apply(machine.toggle())
+            }
+            return true
+        }
+        return nil
     }
 
     func toggle() {
@@ -138,11 +147,12 @@ final class DictationController {
     func dismissFailure() { _ = machine.escape() }
 
     private func apply(_ effect: DictationMachine.Effect) {
-        switch effect {
-        case .none: break
-        case .start: Task { await begin() }
-        case .stop: Task { await end() }
-        case .cancel:
+        if case .none = effect { return }
+        if case .start = effect {
+            Task { await begin() }
+        } else if case .stop = effect {
+            Task { await end() }
+        } else {
             generation += 1
             ready = false
             target = nil
@@ -191,10 +201,10 @@ final class DictationController {
             guard self.engine === engine else { return await engine.cancel() }
             downloadingModel = false
             ready = true
-            switch machine.phase {
-            case .starting: machine.started()
-            case .finishing: await end()
-            default: break
+            if case .starting = machine.phase {
+                machine.started()
+            } else if case .finishing = machine.phase {
+                await end()
             }
         } catch {
             guard self.engine === engine else { return }
@@ -252,10 +262,10 @@ final class DictationController {
         guard !text.isEmpty else { return }
         if let last = lastInserted.last, !last.isWhitespace { text = " " + text }
         lastInserted = text
-        switch target {
-        case .terminal(let view)?: view.type(text)
-        case .text(let client)?: client.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
-        case nil: break
+        if case .terminal(let view)? = target {
+            view.type(text)
+        } else if case .text(let client)? = target {
+            client.insertText(text, replacementRange: NSRange(location: NSNotFound, length: 0))
         }
     }
 
@@ -276,10 +286,9 @@ final class DictationController {
     }
 
     private static func microphoneAllowed() async -> Bool {
-        switch AVCaptureDevice.authorizationStatus(for: .audio) {
-        case .authorized: true
-        case .notDetermined: await AVCaptureDevice.requestAccess(for: .audio)
-        default: false
-        }
+        let status = AVCaptureDevice.authorizationStatus(for: .audio)
+        if case .authorized = status { return true }
+        if case .notDetermined = status { return await AVCaptureDevice.requestAccess(for: .audio) }
+        return false
     }
 }

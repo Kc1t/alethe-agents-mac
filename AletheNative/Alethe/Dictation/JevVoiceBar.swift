@@ -18,7 +18,8 @@ struct JevVoiceBar: View {
                         .foregroundStyle(theme[jev.pendingID == nil ? .statusWaiting : .accent])
                     if environment.dictation.machine.phase == .failed(.microphoneDenied) {
                         Button("dictation.openSettings") {
-                            NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")!)
+                            let settings = "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone"
+                            if let url = URL(string: settings) { NSWorkspace.shared.open(url) }
                             environment.dictation.cancelSession()
                         }
                         .buttonStyle(AletheButtonStyle())

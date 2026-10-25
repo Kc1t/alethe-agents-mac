@@ -93,15 +93,11 @@ final class ProjectEditorModel {
     }
 
     static func describe(_ error: Error) -> String {
-        switch error {
-        case GitCloneError.invalidURL:
-            String(localized: "editor.problem.cloneURL")
-        case GitCloneError.targetExists(let path):
-            String(format: String(localized: "editor.clone.targetExists"), path)
-        case GitError.gitMissing:
-            String(localized: "editor.clone.gitMissing")
-        default:
-            NewTerminalSheet.describe(error)
+        if case GitCloneError.invalidURL = error { return String(localized: "editor.problem.cloneURL") }
+        if case GitCloneError.targetExists(let path) = error {
+            return String(format: String(localized: "editor.clone.targetExists"), path)
         }
+        if case GitError.gitMissing = error { return String(localized: "editor.clone.gitMissing") }
+        return NewTerminalSheet.describe(error)
     }
 }

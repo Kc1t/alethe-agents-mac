@@ -61,7 +61,8 @@ struct DiagnosticsSheet: View {
                     Text(verbatim: String(format: String(localized: "diagnostics.all"), diagnostics.recent.count))
                 }.tint(theme[errorsOnly ? .fgMuted : .accent])
                 Button { errorsOnly = true } label: {
-                    Text(verbatim: String(format: String(localized: "diagnostics.errors"), diagnostics.recent.filter { $0.level != .warning }.count))
+                    Text(verbatim: String(format: String(localized: "diagnostics.errors"),
+                        diagnostics.recent.filter { $0.level != .warning }.count))
                 }.tint(theme[errorsOnly ? .accent : .fgMuted])
                 Button(action: copyReport) {
                     Label(copied ? "diagnostics.copied" : "diagnostics.copy", systemImage: "doc.on.doc")

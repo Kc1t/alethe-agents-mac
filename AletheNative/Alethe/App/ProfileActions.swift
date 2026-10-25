@@ -107,13 +107,11 @@ extension AppEnvironment {
 
 extension ProfileError {
     var localizedMessage: String {
-        switch self {
-        case .nameRequired: String(localized: "profiles.error.nameRequired")
-        case .nameExists: String(localized: "profiles.error.nameExists")
-        case .notFound: String(localized: "profiles.error.notFound")
-        case .activeProfile: String(localized: "profiles.error.activeProfile")
-        case .lastProfile: String(localized: "profiles.error.lastProfile")
-        }
+        if case .nameRequired = self { return String(localized: "profiles.error.nameRequired") }
+        if case .nameExists = self { return String(localized: "profiles.error.nameExists") }
+        if case .notFound = self { return String(localized: "profiles.error.notFound") }
+        if case .activeProfile = self { return String(localized: "profiles.error.activeProfile") }
+        return String(localized: "profiles.error.lastProfile")
     }
 }
 

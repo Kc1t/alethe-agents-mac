@@ -33,7 +33,8 @@ struct ConversationsSheet: View {
     @State private var costLoading = false
 
     private var project: Project? {
-        initialProject.flatMap(workspace.document.project) ?? workspace.document.workspace.selectedProjectID.flatMap(workspace.document.project)
+        initialProject.flatMap(workspace.document.project) ??
+            workspace.document.workspace.selectedProjectID.flatMap(workspace.document.project)
             ?? workspace.document.projects.first
     }
 

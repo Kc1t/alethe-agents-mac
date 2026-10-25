@@ -5,168 +5,25 @@ import Foundation
 
 enum TestSeeds {
     static func apply(_ name: String, to doc: inout WorkspaceDocument) {
-        switch name {
-        case "sidebar":
-            let work = doc.addGroup(name: "Work", color: .purple)
-            let clients = doc.addGroup(name: "Clients", parent: work)
-            doc.addProject(name: "alpha", folder: "/private/tmp", color: .orange, in: .group(work))
-            doc.addProject(name: "beta", folder: "/private/tmp", color: .blue, in: .group(work))
-            doc.addProject(name: "client-site", folder: "/private/tmp", color: .teal, in: .group(clients))
-            doc.addProject(name: "scratch", folder: "/private/tmp", color: .pink)
-        case "cliOpen":
-            let root = UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp"
-            for name in ["api", "web"] {
-                let folder = URL(filePath: root).appending(path: name)
-                try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-                doc.addProject(name: name, folder: folder.path, color: .teal)
-            }
-        case "terminals":
-            let project = doc.addProject(name: "scratch", folder: "/private/tmp", color: .pink)
-            doc.addPane(to: project, tab: PaneTab(agent: "claude"))
-        case "panes":
-            let api = doc.addProject(name: "api", folder: "/private/tmp", color: .orange)
-            let web = doc.addProject(name: "web", folder: "/private/tmp", color: .teal)
-            for title in ["one", "two", "three"] { doc.addPane(to: api, tab: PaneTab(agent: "shell", title: title)) }
-            doc.addPane(to: web, tab: PaneTab(agent: "shell", title: "four"))
-        case "grid":
-            let api = doc.addProject(name: "api", folder: "/private/tmp", color: .orange)
-            let panes = ["one", "two", "three"].compactMap { doc.addPane(to: api, tab: PaneTab(agent: "shell", title: $0)) }
-            doc.setGridLayout(.auto(panes.map(\.rawValue)), for: api)
-        case "subtabs":
-            let project = doc.addProject(name: "scratch", folder: "/private/tmp", color: .pink)
-            let pane = doc.addPane(to: project, tab: PaneTab(agent: "shell", title: "one"))
-            if let pane { doc.addTab(PaneTab(agent: "shell", title: "two"), to: pane) }
-        case "markdown":
-            let root = UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp"
-            let file = URL(filePath: root).appending(path: "README.md")
-            try? FileManager.default.createDirectory(atPath: root, withIntermediateDirectories: true)
-            try? Data("# Seeded\n\n- [x] done\n\n| a | b |\n|---|---|\n| 1 | 2 |\n".utf8).write(to: file)
-            let project = doc.addProject(name: "docs", folder: root, color: .teal)
-            doc.addPane(to: project, content: .markdown(path: file.path))
-        case "media":
-            let root = UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp"
-            let file = URL(filePath: root).appending(path: "shot.png")
-            try? FileManager.default.createDirectory(atPath: root, withIntermediateDirectories: true)
-            if let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 64, pixelsHigh: 64, bitsPerSample: 8,
-                                          samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-                                          colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) {
-                try? rep.representation(using: .png, properties: [:])?.write(to: file)
-            }
-            let project = doc.addProject(name: "media", folder: root, color: .orange)
-            doc.addPane(to: project, content: .image(path: file.path))
-        case "diff":
-            let repo = seedRepository()
-            let project = doc.addProject(name: "repo", folder: repo.path, color: .green)
-            doc.addPane(to: project, content: .diff(path: nil, staged: false))
-        case "git":
-            let repo = seedRepository()
-            try? Data("draft\n".utf8).write(to: repo.appending(path: "draft.txt"))
-            _ = doc.addProject(name: "repo", folder: repo.path, color: .green)
-        case "worktrees":
-            let root = UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp"
-            let repo = URL(filePath: root).appending(path: "wtrepo")
-            try? FileManager.default.createDirectory(at: repo, withIntermediateDirectories: true)
-            try? Data("seed\n".utf8).write(to: repo.appending(path: "README.md"))
-            let worktree = repo.appending(path: ".alethe/worktrees/seed").path
-            for arguments in [["init", "-q"], ["add", "."], ["commit", "-q", "-m", "seed"],
-                              ["worktree", "add", "-q", "-b", "alethe/agent-seed", worktree, "HEAD"],
-                              ["worktree", "lock", "--reason", "seeded", worktree]] {
-                let git = Process()
-                git.executableURL = URL(filePath: "/usr/bin/git")
-                git.arguments = ["-C", repo.path, "-c", "user.name=seed", "-c", "user.email=seed@local",
-                                 "-c", "commit.gpgsign=false"] + arguments
-                try? git.run()
-                git.waitUntilExit()
-            }
-            _ = doc.addProject(name: "wtrepo", folder: repo.path, color: .green)
-        case "clone":
-            let repo = seedRepository()
-            let bare = repo.deletingLastPathComponent().appending(path: "origin.git")
-            let git = Process()
-            git.executableURL = URL(filePath: "/usr/bin/git")
-            git.arguments = ["clone", "-q", "--bare", "--", repo.path, bare.path]
-            try? git.run()
-            git.waitUntilExit()
-            _ = doc.addProject(name: "repo", folder: repo.path, color: .green)
-        case "agentLibrary":
-            let root = UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp"
-            let folder = URL(filePath: root).appending(path: "agentsproj")
-            let agents = folder.appending(path: ".claude/agents")
-            try? FileManager.default.createDirectory(at: agents, withIntermediateDirectories: true)
-            try? Data("---\nname: mine\ndescription: My own agent.\n---\n".utf8).write(to: agents.appending(path: "mine.md"))
-            _ = doc.addProject(name: "agentsproj", folder: folder.path, color: .purple)
-        case "web":
-            let project = doc.addProject(name: "site", folder: "/private/tmp", color: .blue)
-            doc.addPane(to: project, content: .web(url: "http://127.0.0.1:9/", options: WebPaneOptions()))
-        case "graphify":
-            let root = UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp"
-            let repo = URL(filePath: root).appending(path: "graphrepo")
-            let graph = #"{"nodes":[{"id":"alpha","label":"alpha","source_file":"README.md","community":0},{"id":"beta","label":"beta","community":0},{"id":"delta","label":"delta","community":1},{"id":"epsilon","label":"epsilon","community":1}],"edges":[{"source":"alpha","target":"beta"},{"source":"beta","target":"delta"},{"source":"delta","target":"epsilon"}]}"#
-            let older = #"{"nodes":[{"id":"alpha"},{"id":"beta"}],"edges":[{"source":"alpha","target":"beta"}]}"#
-            for folder in [".git", "graphify-out", ".alethe/graph-snapshots"] {
-                try? FileManager.default.createDirectory(at: repo.appending(path: folder), withIntermediateDirectories: true)
-            }
-            try? Data("# Graph\n".utf8).write(to: repo.appending(path: "README.md"))
-            try? Data(graph.utf8).write(to: repo.appending(path: "graphify-out/graph.json"))
-            try? Data(older.utf8).write(to: repo.appending(path: ".alethe/graph-snapshots/1750000000000.json"))
-            _ = doc.addProject(name: "graphrepo", folder: repo.path, color: .purple)
-        case "orchestrator":
-            doc.addProject(name: "scratch", folder: "/private/tmp", color: .pink)
-        case "orchestratorBoard", "orchestratorLarge":
-            let folder = seedOrchestratorJobs(large: name == "orchestratorLarge")
-            let project = doc.addProject(name: "board", folder: folder.path, color: .purple)
-            if let pane = doc.addPane(to: project, tab: PaneTab(id: TabID(rawValue: "tab-lead"), agent: "claude", title: "lead")) {
-                doc.setDisabled(pane, true)
-            }
-            doc.addPane(to: project, content: .orchestrator)
-            doc.workspace.selectedProjectID = project
-        case orchestratorWorker:
-            seedOrchestratorWorker(into: &doc)
-        case "orchestratorApply":
-            let folder = seedApplyRepository()
-            let project = doc.addProject(name: "applyrepo", folder: folder.path, color: .purple)
-            if let pane = doc.addPane(to: project, tab: PaneTab(id: TabID(rawValue: "tab-lead"), agent: "claude", title: "lead")) {
-                doc.setDisabled(pane, true)
-            }
-            doc.addPane(to: project, content: .orchestrator)
-            doc.workspace.selectedProjectID = project
-        case "skills":
-            seedSkills()
-        case "gsdSync":
-            let repo = seedPlanningRepository()
-            let project = doc.addProject(name: "gsdproj", folder: repo.path, color: .purple)
-            if let pane = doc.addPane(to: project, tab: PaneTab(agent: "opencode")) { doc.setDisabled(pane, true) }
-            doc.workspace.selectedProjectID = project
-        case "mcp":
-            seedMcp()
-        case "multiagent", "multiagentLive":
-            let repo = seedSchedulerRepository()
-            doc.addProject(name: "agentrepo", folder: repo.path, color: .purple)
-            if name == "multiagentLive" { touchPlanningPeriodically(in: repo) }
-        case "prompt":
-            let folder = UserDefaults.standard.string(forKey: "AletheUITestFolder") ?? "/private/tmp"
-            let project = doc.addProject(name: "prompted", folder: folder, color: .purple)
-            doc.addPane(to: project, tab: PaneTab(agent: "claude", initialPrompt: "/help"))
-        default:
-            seedRemote(name, into: &doc)
-            seedDiscord(name, into: &doc)
-            seedSpotify(name, into: &doc)
-            seedGistSync(name, into: &doc)
-            seedRouter9(name, into: &doc)
-        }
+        if let seed = workspaceFixtures[name] { seed(name, &doc); return }
+        seedRemote(name, into: &doc)
+        seedDiscord(name, into: &doc)
+        seedSpotify(name, into: &doc)
+        seedGistSync(name, into: &doc)
+        seedRouter9(name, into: &doc)
     }
 
     static func apply(_ name: String, to preferences: inout PreferencesDocument) {
         if let style = UserDefaults.standard.string(forKey: "AletheUITestVisualStyle") { preferences.visualStyle = style }
         if let theme = UserDefaults.standard.string(forKey: "AletheUITestTheme") { preferences.themeID = theme }
-        switch name {
-        case "gsdSync":
+        if case "gsdSync" = name {
             preferences.features.set(.gsdSync, on: true)
-        case orchestratorWorker:
+        } else if case orchestratorWorker = name {
             seedOrchestratorWorker(into: &preferences)
-        case "orchestrator", "orchestratorBoard", "orchestratorLarge", "orchestratorApply", "multiagent", "multiagentLive":
+        } else if ["orchestrator", "orchestratorBoard", "orchestratorLarge", "orchestratorApply",
+                   "multiagent", "multiagentLive"].contains(name) {
             preferences.features.set(.orchestrator, on: true)
-        default:
+        } else {
             seedRemote(name, into: &preferences)
             seedDiscord(name, into: &preferences)
             seedSpotify(name, into: &preferences)
@@ -184,7 +41,7 @@ enum TestSeeds {
         seedRouter9(name, environment: environment)
     }
 
-    private static func seedOrchestratorJobs(large: Bool) -> URL {
+    static func seedOrchestratorJobs(large: Bool) -> URL {
         let root = URL(filePath: UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp")
         let folder = root.appending(path: "boardrepo")
         let profile = root.appending(path: "profiles/default")
@@ -235,7 +92,7 @@ enum TestSeeds {
         return folder
     }
 
-    private static func seedApplyRepository() -> URL {
+    static func seedApplyRepository() -> URL {
         let root = URL(filePath: UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp")
         let repo = root.appending(path: "applyrepo")
         let profile = root.appending(path: "profiles/default")
@@ -270,7 +127,7 @@ enum TestSeeds {
         return repo
     }
 
-    private static func seedPlanningRepository() -> URL {
+    static func seedPlanningRepository() -> URL {
         let root = UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp"
         let repo = URL(filePath: root).appending(path: "gsdrepo")
         let planning = repo.appending(path: ".planning")
@@ -291,7 +148,7 @@ enum TestSeeds {
         return repo
     }
 
-    private static func seedSchedulerRepository() -> URL {
+    static func seedSchedulerRepository() -> URL {
         let root = UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp"
         let repo = URL(filePath: root).appending(path: "agentrepo")
         let planning = repo.appending(path: ".planning")
@@ -311,7 +168,7 @@ enum TestSeeds {
         return repo
     }
 
-    private static func touchPlanningPeriodically(in repo: URL) {
+    static func touchPlanningPeriodically(in repo: URL) {
         let notes = repo.appending(path: ".planning/notes.md")
         Task.detached(priority: .utility) {
             for tick in 0..<100 {
@@ -328,7 +185,7 @@ enum TestSeeds {
         }
     }
 
-    private static func seedSkills() {
+    static func seedSkills() {
         guard let home = UserDefaults.standard.string(forKey: "AletheIntegrationsHome") else { return }
         let root = URL(filePath: home, directoryHint: .isDirectory)
         func skill(_ path: String, _ text: String) -> URL {
@@ -340,13 +197,14 @@ enum TestSeeds {
         let brand = skill(".agents/skills/brand", "---\nname: brand\ndescription: Brand system\n---\n\n# Brand\n\nUse the palette.\n")
         try? FileManager.default.createDirectory(at: root.appending(path: ".claude/skills"), withIntermediateDirectories: true)
         try? FileManager.default.createSymbolicLink(at: root.appending(path: ".claude/skills/brand"), withDestinationURL: brand)
-        let motion = skill(".claude/skills/motion", "---\nname: motion\ndescription: >\n  Creates motion\n  graphics\n---\n\n# Motion guide\n")
+        let motion = skill(".claude/skills/motion", "---\nname: motion\ndescription: >\n"
+            + "  Creates motion\n  graphics\n---\n\n# Motion guide\n")
         try? FileManager.default.createDirectory(at: motion.appending(path: "references"), withIntermediateDirectories: true)
         try? Data("notes".utf8).write(to: motion.appending(path: "references/timing.md"))
         _ = skill(".codex/skills/.system/imagegen", "---\ndescription: Generates images\n---\n\n# Images\n")
     }
 
-    private static func seedMcp() {
+    static func seedMcp() {
         guard let home = UserDefaults.standard.string(forKey: "AletheIntegrationsHome") else { return }
         let root = URL(filePath: home, directoryHint: .isDirectory)
         func write(_ path: String, _ text: String) {
@@ -365,7 +223,7 @@ enum TestSeeds {
         }
     }
 
-    private static func seedRepository() -> URL {
+    static func seedRepository() -> URL {
         let root = UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp"
         let repo = URL(filePath: root).appending(path: "repo")
         try? FileManager.default.createDirectory(at: repo, withIntermediateDirectories: true)

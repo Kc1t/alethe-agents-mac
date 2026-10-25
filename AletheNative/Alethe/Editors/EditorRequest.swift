@@ -37,42 +37,40 @@ enum EditorRequest: Identifiable, Hashable {
     case updateAvailable(SidebarNativeRelease)
 
     var id: String {
-        switch self {
-        case .newProject(_, let folder): "newProject:\(folder ?? "")"
-        case .editProject(let id): "editProject:\(id)"
-        case .newGroup: "newGroup"
-        case .editGroup(let id): "editGroup:\(id)"
-        case .newTerminal: "newTerminal"
-        case .newSubTab(let id): "newSubTab:\(id)"
-        case .addContent: "addContent"
-        case .addBrowser: "addBrowser"
-        case .previewLink(let target): "previewLink:\(target)"
-        case .importTauri: "importTauri"
-        case .layoutDesigner(let id): "layoutDesigner:\(id)"
-        case .findJump: "findJump"
-        case .conversations: "conversations"
-        case .sessionCost(let tab): "sessionCost:\(tab)"
-        case .handoff(let tab): "handoff:\(tab)"
-        case .aiUsage: "aiUsage"
-        case .pluginSheet(let viewID, _): "pluginSheet:\(viewID)"
-        case .mergeCenter: "mergeCenter"
-        case .worktrees: "worktrees"
-        case .branchTesting: "branchTesting"
-        case .agentLibrary: "agentLibrary"
-        case .diagnostics: "diagnostics"
-        case .dataManagement(let action): "dataManagement:\(action.rawValue)"
-        case .crashNotice: "crashNotice"
-        case .skills: "skills"
-        case .gsdSyncActivity(let target): "gsdSyncActivity:\(target.sessionID)"
-        case .onboarding: "onboarding"
-        case .welcome: "welcome"
-        case .mcpManager: "mcpManager"
-        case .mcpIntro: "mcpIntro"
-        case .remotePairing: "remotePairing"
-        case .gistSync: "gistSync"
-        case .themePicker: "themePicker"
-        case .updateAvailable: "updateAvailable"
-        }
+        if case .newProject(_, let folder) = self { return "newProject:\(folder ?? "")" }
+        if case .editProject(let id) = self { return "editProject:\(id)" }
+        if case .newGroup = self { return "newGroup" }
+        if case .editGroup(let id) = self { return "editGroup:\(id)" }
+        if case .newTerminal = self { return "newTerminal" }
+        if case .newSubTab(let id) = self { return "newSubTab:\(id)" }
+        if case .addContent = self { return "addContent" }
+        if case .addBrowser = self { return "addBrowser" }
+        if case .previewLink(let target) = self { return "previewLink:\(target)" }
+        if case .importTauri = self { return "importTauri" }
+        if case .layoutDesigner(let id) = self { return "layoutDesigner:\(id)" }
+        if case .findJump = self { return "findJump" }
+        if case .conversations = self { return "conversations" }
+        if case .sessionCost(let tab) = self { return "sessionCost:\(tab)" }
+        if case .handoff(let tab) = self { return "handoff:\(tab)" }
+        if case .aiUsage = self { return "aiUsage" }
+        if case .pluginSheet(let viewID, _) = self { return "pluginSheet:\(viewID)" }
+        if case .mergeCenter = self { return "mergeCenter" }
+        if case .worktrees = self { return "worktrees" }
+        if case .branchTesting = self { return "branchTesting" }
+        if case .agentLibrary = self { return "agentLibrary" }
+        if case .diagnostics = self { return "diagnostics" }
+        if case .dataManagement(let action) = self { return "dataManagement:\(action.rawValue)" }
+        if case .crashNotice = self { return "crashNotice" }
+        if case .skills = self { return "skills" }
+        if case .gsdSyncActivity(let target) = self { return "gsdSyncActivity:\(target.sessionID)" }
+        if case .onboarding = self { return "onboarding" }
+        if case .welcome = self { return "welcome" }
+        if case .mcpManager = self { return "mcpManager" }
+        if case .mcpIntro = self { return "mcpIntro" }
+        if case .remotePairing = self { return "remotePairing" }
+        if case .gistSync = self { return "gistSync" }
+        if case .themePicker = self { return "themePicker" }
+        return "updateAvailable"
     }
 }
 
