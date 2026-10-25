@@ -79,7 +79,6 @@ import Testing
     }
 }
 
-/// Spotlight and Sidebar (P2-18, upstream `SpotlightLayout` / `SidebarLayout`).
 @Suite struct PaneLayoutModeTests {
     let rect = CGRect(x: 0, y: 0, width: 410, height: 310)
 

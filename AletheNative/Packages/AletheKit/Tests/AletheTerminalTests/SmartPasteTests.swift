@@ -4,7 +4,6 @@ import Testing
 @testable import AletheTerminal
 
 @Suite struct SmartPasteTests {
-    /// Port of `terminalInput.test.ts`'s clipboard newline regression.
     @Test func clipboardNewlinesBecomePTYCarriageReturns() {
         #expect(SmartPaste.normalizeText("one\r\ntwo\nthree\r") == "one\rtwo\rthree\r")
         #expect(SmartPaste.normalizeText("ação 🚀\r\n\r\nend") == "ação 🚀\r\rend")
@@ -17,7 +16,6 @@ import Testing
         return board
     }
 
-    /// 1×1 PNG and the same pixel as TIFF.
     private func image(_ type: NSBitmapImageRep.FileType) -> Data {
         let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 1, pixelsHigh: 1, bitsPerSample: 8,
                                    samplesPerPixel: 4, hasAlpha: true, isPlanar: false,

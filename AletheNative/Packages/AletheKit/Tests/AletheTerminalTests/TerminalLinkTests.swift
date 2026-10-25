@@ -3,7 +3,6 @@ import Testing
 @testable import AletheTerminal
 
 @Suite struct TerminalLinkTests {
-    /// Port of `terminalLinks.test.ts`'s bare deployment domains and escaped spaces.
     @Test func webTargetsNormalizeDomainsAndLocalhost() {
         func web(_ text: String) -> TerminalLink {
             TerminalLink.resolveWeb(text, cwd: "/repo", home: "/Users/me", fileKind: kind)
@@ -16,11 +15,9 @@ import Testing
         #expect(web("user@example.com") == .none)
         #expect(web(#"/repo/my\ file.md"#) == .file(path: "/repo/my file.md", line: nil))
         #expect(web("src/main.swift:42:7") == .file(path: "/repo/src/main.swift", line: 42))
-        // The macOS profile continues to treat bare domains as paths.
         #expect(resolve("example.com") == .none)
     }
 
-    /// /repo is a directory holding README.md and src/main.swift.
     private func kind(_ path: String) -> Bool? {
         switch path {
         case "/repo", "/repo/src", "/Users/me": true

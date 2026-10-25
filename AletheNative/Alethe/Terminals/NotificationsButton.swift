@@ -2,8 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// Toolbar bell with the recent notifications (upstream notifications list): a count of the ones not
-/// seen yet; clicking an entry jumps to its tab.
 struct NotificationsButton: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme
@@ -38,7 +36,6 @@ struct NotificationsButton: View {
     }
 }
 
-/// The recent notifications, newest first; also shown on Home (P3-15).
 struct NotificationList: View {
     var isHome = false
     var onDismiss: (() -> Void)?

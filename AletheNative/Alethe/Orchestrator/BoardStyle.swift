@@ -2,14 +2,10 @@ import AletheDesign
 import AletheOrchestrator
 import SwiftUI
 
-/// Sizes on the board canvas: the UI scale times the board's own zoom, so a node's text, padding
-/// and width grow together and the layout's canvas units stay valid at every zoom. Nothing on the
-/// canvas uses `scaleEffect` (the zoom rule): each node is laid out at its zoomed size.
 struct BoardUnits {
     let metrics: Metrics
     let zoom: CGFloat
 
-    /// Screen points per canvas unit.
     var unit: CGFloat { metrics.scale * zoom }
 
     func space(_ space: Metrics.Space) -> CGFloat { space.rawValue * unit }
@@ -19,7 +15,6 @@ struct BoardUnits {
 }
 
 extension RunLane {
-    /// Upstream `data-lane` colors.
     var token: ThemeToken {
         switch self {
         case .running: .statusWorking
@@ -40,7 +35,6 @@ extension RunLane {
         }
     }
 
-    /// Why a lane needs the person, for the ones that do.
     var explanation: LocalizedStringKey? {
         switch self {
         case .blocked: "orchestrator.blockedTitle"
@@ -66,7 +60,6 @@ extension JobStatus {
 }
 
 extension RunAttention {
-    /// `3 failed`, `1 waiting on you`…
     var text: String {
         let key: String.LocalizationValue = switch lane {
         case .blocked: "orchestrator.runBlocked"
@@ -77,7 +70,6 @@ extension RunAttention {
     }
 }
 
-/// A lane's dot: filled, or a ring for interrupted work (upstream `.dot`).
 struct BoardLaneDot: View {
     let lane: RunLane
     let size: CGFloat
@@ -96,7 +88,6 @@ struct BoardLaneDot: View {
     }
 }
 
-/// The agent a planner or worker runs on: its accent dot, or a chip glyph for none.
 struct BoardAgentGlyph: View {
     let agent: String?
     let size: CGFloat
@@ -121,11 +112,9 @@ struct BoardAgentGlyph: View {
     }
 }
 
-/// A small tinted label (context share, tokens, cost, worktree, diff).
 struct BoardChip: View {
     let text: String
     var symbol: String?
-    /// Already localized.
     var help: String?
     let units: BoardUnits
     @Environment(\.theme) private var theme

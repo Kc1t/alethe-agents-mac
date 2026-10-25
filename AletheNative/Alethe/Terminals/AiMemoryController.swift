@@ -5,16 +5,12 @@ import AletheTerminal
 import Foundation
 import Observation
 
-/// ai-memory (P5-18, upstream `ai_memory.rs`): detects the CLI and its server, and while the aiMemory
-/// feature is on adds `ai-memory mcp` to Claude Code, Codex and OpenCode launches through P5-4.
 @Observable
 @MainActor
 final class AiMemoryController {
-    /// `cliPaths` key of the command override (a path chosen in Settings › Features › AI Memory).
     static let overrideKey = "ai-memory"
     static let providerID = "ai-memory"
 
-    /// The last detection; nil until one finished.
     private(set) var status: AiMemoryStatus?
     private(set) var isDetecting = false
     @ObservationIgnored private weak var environment: AppEnvironment?
@@ -25,7 +21,6 @@ final class AiMemoryController {
 
     func start(environment: AppEnvironment) {
         self.environment = environment
-        // Terminal persistence is independent of whether the optional MCP server is enabled.
         persistence?.cancel()
         persistence = Task { [weak self] in
             while !Task.isCancelled {
@@ -65,7 +60,6 @@ final class AiMemoryController {
                 return otherItem.agent == item.agent
                     && SessionPaths.normalize(otherItem.workingDirectory ?? otherProject.folder) == SessionPaths.normalize(cwd)
             }
-            // Modification times cannot attribute a CLI-side switch to one of two live panes.
             guard siblings.isEmpty else { sessionWatches.removeValue(forKey: tab); continue }
             let pid = view.processID
             guard pid > 0 else { continue }
@@ -105,12 +99,10 @@ final class AiMemoryController {
 
     var override: String? { environment?.preferences?.document.cliPaths?[Self.overrideKey] }
 
-    /// The CLI to run: the override when it is an executable, else `ai-memory` found on disk.
     var executable: String? {
         environment?.launchers.resolve(AiMemory.defaultCommand, override: override)
     }
 
-    /// Detects again (cancels one in flight); runs off the main thread with a timeout.
     func refresh() {
         detection?.cancel()
         let executable = executable

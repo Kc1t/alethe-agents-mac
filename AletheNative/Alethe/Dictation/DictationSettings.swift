@@ -4,7 +4,6 @@ import Observation
 import Speech
 import SwiftUI
 
-/// Local preferences do not change the shared workspace schema.
 @Observable @MainActor
 final class DictationSettings {
     var enabled = UserDefaults.standard.object(forKey: "dictation.enabled") as? Bool ?? false {

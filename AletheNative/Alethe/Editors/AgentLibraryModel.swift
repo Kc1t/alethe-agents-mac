@@ -2,8 +2,6 @@ import AletheFoundation
 import AletheIntegrations
 import Foundation
 
-/// State of the Agent Library sheet (P5-16): the agents of one scope, the economy toggle and the
-/// last change for Undo. Disk work runs off the main thread; every failure lands in `error`.
 @MainActor @Observable
 final class AgentLibraryModel {
     enum ScopeChoice: String, CaseIterable, Identifiable {
@@ -21,15 +19,10 @@ final class AgentLibraryModel {
     private(set) var loading = true
     private(set) var running = false
     private(set) var error: String? { didSet { if error != oldValue { AppLog.shown(error, .integrations) } } }
-    /// Outcome of the last action.
     private(set) var note: String?
-    /// Claude Code reads `.claude/agents` when a session starts.
     private(set) var restartHint = false
-    /// The last change, undoable while its files are untouched.
     private(set) var lastChange: (change: AgentLibraryChange, scope: AgentLibraryScope)?
-    /// A library agent whose name is taken by a file Alethe did not write: overwrite asks first.
     var pendingOverwrite: AgentTemplate?
-    /// An agent without the Alethe marker the user asked to remove: asks first.
     var pendingForeignRemoval: InstalledAgent?
 
     @ObservationIgnored private var work: Task<Void, Never>?
@@ -51,7 +44,6 @@ final class AgentLibraryModel {
         installed.first { $0.name == name }
     }
 
-    /// Agents in the folder that are neither library nor economy templates.
     var otherAgents: [InstalledAgent] {
         let known = Set((AgentLibraryCatalog.templates + EconomyAgents.templates).map(\.name))
         return installed.filter { !known.contains($0.name) }
@@ -87,7 +79,6 @@ final class AgentLibraryModel {
         }
     }
 
-    /// Alethe's files go at once (with Undo); any other file asks first.
     func remove(_ agent: InstalledAgent, force: Bool = false) {
         guard agent.fromAlethe || force else {
             pendingForeignRemoval = agent

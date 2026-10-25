@@ -4,11 +4,6 @@ import AletheModel
 import AletheTerminal
 import AppKit
 
-/// Opens a ⌘-clicked terminal link (upstream `XTermView` link actions): Markdown, images and videos in
-/// a pane of the project (focusing one that already shows the file), other files in their default
-/// app, folders in Finder, pages in the default browser, or in a web pane with ⌥ held (browser
-/// feature on). ⇧⌘-click shows every action in a menu (upstream's link actions menu), including a
-/// quick preview.
 extension AppEnvironment {
     func openTerminalLink(_ raw: String, from terminal: TerminalPaneView, tab: PaneTab, project: Project) {
         let cwd = terminal.reportedDirectory ?? tab.workingDirectory ?? project.folder
@@ -44,7 +39,6 @@ extension AppEnvironment {
         }
     }
 
-    /// Shows `content` in the project: focuses a pane already showing it, or adds one (undoable).
     func open(_ content: PaneContent, in project: ProjectID, actionName: String = String(localized: "undo.openLink")) {
         guard let workspace else { return }
         if let existing = workspace.document.project(project)?.panes.first(where: { $0.content == content }) {
@@ -60,7 +54,6 @@ extension AppEnvironment {
     }
 }
 
-/// ⇧⌘-click on a terminal link: every way to open it, at the mouse.
 @MainActor
 private final class LinkActionsMenu: NSObject {
     private let environment: AppEnvironment
@@ -111,7 +104,6 @@ private final class LinkActionsMenu: NSObject {
             NSPasteboard.general.setString(raw, forType: .string)
         }
         let point = view.window.map { view.convert($0.mouseLocationOutsideOfEventStream, from: nil) } ?? .zero
-        // Menu items hold their target weakly: keep this object until the chosen action has run.
         Self.open = self
         menu.popUp(positioning: nil, at: point, in: view)
         DispatchQueue.main.async { if Self.open === self { Self.open = nil } }

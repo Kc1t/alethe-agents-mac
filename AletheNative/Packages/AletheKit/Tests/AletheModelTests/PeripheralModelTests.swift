@@ -3,8 +3,6 @@ import Foundation
 import Testing
 @testable import AletheModel
 
-/// The Phase 7 model (P7-1): preferences, pane and tab fields, toolbar items and the gist sync
-/// status, all decoding from files written before they existed.
 @Suite struct PeripheralModelTests {
     @Test func preferencesWithoutTheNewKeysDecodeToDefaults() throws {
         let json = #"{"schemaVersion":2,"themeID":"nord","uiScale":1,"alwaysStartUnrestricted":false}"#

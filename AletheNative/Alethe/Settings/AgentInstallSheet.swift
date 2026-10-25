@@ -2,8 +2,6 @@ import AletheAgents
 import AletheDesign
 import SwiftUI
 
-/// Install, update or uninstall one agent CLI (upstream `AgentInstallModal`): pick a method (only
-/// those this Mac can run, each showing its exact command), run it, follow the log, see the result.
 struct AgentInstallSheet: View {
     enum Mode: Hashable, Identifiable {
         case install, update, uninstall
@@ -20,7 +18,6 @@ struct AgentInstallSheet: View {
     @Environment(\.theme) private var theme
     @State private var toolchain: InstallToolchain?
     @State private var selection: InstallMethod.ID?
-    /// The current run is the Node.js toolchain install, not the agent's own.
     @State private var startedNode = false
 
     private var installer: AgentInstaller { environment.installer }
@@ -48,7 +45,6 @@ struct AgentInstallSheet: View {
         .accessibilityIdentifier("agentInstall")
     }
 
-    /// AgentInstallModal.tsx + agentActions.module.css.
     private var webBody: some View {
         ModalsM2WebModal(title: Text(verbatim: String(format: String(localized: mode.title), agent.displayName)), close: closeWeb, width: 480) {
             VStack(alignment: .leading, spacing: metrics.size(10)) {
@@ -101,7 +97,6 @@ struct AgentInstallSheet: View {
                 .accessibilityIdentifier("agentInstall.run")
             }
         }
-        // The web closes the install modal as soon as the install lands.
         .onChange(of: installer.status) { _, status in
             if status == .succeeded, isThisRun, !startedNode, mode == .install { closeWeb() }
         }
@@ -276,7 +271,6 @@ struct AgentInstallSheet: View {
     }
 }
 
-/// agentActions.module.css `.method` / `.methodActive`: radio row with the exact command.
 private struct AgentInstallMethodRow: View {
     let method: InstallMethod
     let selected: Bool

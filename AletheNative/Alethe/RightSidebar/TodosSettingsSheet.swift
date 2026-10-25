@@ -5,10 +5,6 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Todos settings: the template folder with Open, Import and Export of
-/// `alethe-todo.template.jsonc`, and reset to the default list.
-/// Changes apply as they are made. Template files are read and written by the Todos plugin through
-/// its filesystem capability.
 struct TodosSettingsSheet: View {
     let store: TodoStore
     @Environment(\.theme) private var theme
@@ -34,8 +30,6 @@ struct TodosSettingsSheet: View {
         if metrics.isWebInterface { webBody } else { nativeBody }
     }
 
-    /// TodoSettingsModal.tsx: draft folder, Cancel/Save footer, reference-list reset.
-    /// The Pomodoro minutes the web form still carries do not exist natively.
     private var webBody: some View {
         GitWebModal(close: dismiss) {
             Text("todos.settings.web.title")
@@ -62,7 +56,6 @@ struct TodosSettingsSheet: View {
                     Button("todos.settings.web.resetDefault") { confirming = .reset }
                         .accessibilityIdentifier("todos.settings.reset")
                 }
-                // Native extras beyond the web form: the template file helpers.
                 ProjectGroupWebField(title: "todos.settings.template") {
                     VStack(alignment: .leading, spacing: metrics.size(6)) {
                         if let url = store.templateURL {
@@ -167,9 +160,6 @@ struct TodosSettingsSheet: View {
         }
     }
 
-    // MARK: Actions
-
-    /// Saves the folder and, like upstream, creates the template there when missing.
     private func savePath() async {
         let trimmed = path.trimmingCharacters(in: .whitespacesAndNewlines)
         store.updateSettings { $0.storagePath = trimmed }
@@ -205,11 +195,10 @@ struct TodosSettingsSheet: View {
         case .reset:
             store.resetToDefaults()
             message = String(localized: "todos.settings.resetDone")
-            if metrics.isWebInterface { dismiss() }  // web resetDefault closes the modal
+            if metrics.isWebInterface { dismiss() }
         }
     }
 
-    /// Web `save`: create the template in the chosen folder, store the path, then close.
     private func saveAndClose() async {
         await savePath()
         if error == nil { dismiss() }
@@ -220,7 +209,6 @@ struct TodosSettingsSheet: View {
         if error == nil { dismiss() }
     }
 
-    /// Runs a template operation through the active plugin; shows its message or error.
     private func run(_ operation: (TodosPlugin) async throws -> String?) async {
         guard let plugin = TodosPlugin.activePlugin else {
             error = String(localized: "todos.disabled")
@@ -237,8 +225,6 @@ struct TodosSettingsSheet: View {
             self.error = String(format: String(localized: "todos.settings.templateError"), error.localizedDescription)
         }
     }
-
-    // MARK: Confirmation (asked once per action)
 
     private var confirmingBinding: Binding<Bool> {
         Binding { confirming != nil } set: { if !$0 { confirming = nil } }

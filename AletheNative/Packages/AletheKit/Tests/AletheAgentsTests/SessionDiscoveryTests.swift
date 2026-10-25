@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheAgents
 
-/// A throwaway home directory holding fixture transcripts.
 private struct FixtureHome: ~Copyable {
     let path = FileManager.default.temporaryDirectory.appending(path: "alethe-sessions-\(UUID().uuidString)").path
 
@@ -86,7 +85,6 @@ private struct FixtureHome: ~Copyable {
     }
 }
 
-/// Ports of upstream `sessionDiscovery.test.ts`.
 @Suite struct SessionClaimsTests {
     private func session(_ id: String, _ seconds: TimeInterval) -> SessionSnapshot {
         SessionSnapshot(id: id, modifiedAt: Date(timeIntervalSince1970: seconds))

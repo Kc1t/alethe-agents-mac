@@ -2,7 +2,6 @@ import AletheDesign
 import AppKit
 import SwiftUI
 
-// src/App.module.css: panel layout and sidebar content transform.
 extension Motion {
     static func webShellCurve(duration: Double, reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : .timingCurve(0.16, 1, 0.3, 1, duration: duration)
@@ -13,7 +12,6 @@ extension Motion {
     }
 }
 
-/// Keep sidebar state and its full content width while the outer layout collapses.
 struct WebShellPanel<Content: View>: View {
     let visible: Bool
     let width: CGFloat
@@ -29,7 +27,6 @@ struct WebShellPanel<Content: View>: View {
             .background(theme[.bg])
             .opacity(visible ? 1 : 0)
             .animation(Motion.webShellEase(duration: 0.22, reduceMotion: metrics.reducesMotion), value: visible)
-            // This scale is the CSS collapse transform, independent of interface zoom.
             .scaleEffect(visible ? 1 : 0.985)
             .offset(x: visible ? 0 : metrics.size(trailing ? 16 : -16))
             .animation(Motion.webShellCurve(duration: 0.28, reduceMotion: metrics.reducesMotion), value: visible)
@@ -40,7 +37,6 @@ struct WebShellPanel<Content: View>: View {
     }
 }
 
-/// A one-point divider with the web's 19-point hit region and centered hover grip.
 struct WebShellSeparator: View {
     @Binding var width: Double
     let limits: ClosedRange<Double>

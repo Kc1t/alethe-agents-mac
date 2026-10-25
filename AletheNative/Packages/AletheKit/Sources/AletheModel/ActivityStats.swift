@@ -1,7 +1,5 @@
 import Foundation
 
-/// One tick of the activity tracker (upstream `ActivitySample`): how long, whether Alethe was in
-/// front and the user was active, what they had in front, and what every agent was doing.
 public struct ActivitySample: Hashable, Sendable {
     public struct Agent: Hashable, Sendable {
         public var agent: String
@@ -17,7 +15,6 @@ public struct ActivitySample: Hashable, Sendable {
         }
     }
 
-    /// Local day, `yyyy-MM-dd`.
     public var date: String
     public var durationMS: UInt64
     public var appFocused: Bool
@@ -43,13 +40,9 @@ public struct TimeTotals: Codable, Hashable, Sendable {
     public var appFocusedMs: UInt64 = 0
     public var userActiveMs: UInt64 = 0
     public var userIdleMs: UInt64 = 0
-    /// Wall-clock time with at least one agent working.
     public var agentWallMs: UInt64 = 0
-    /// Agent time added up (two agents for a minute count two).
     public var agentSumMs: UInt64 = 0
-    /// Agent work the user was not looking at.
     public var agentBackgroundMs: UInt64 = 0
-    /// Time with two or more agents working.
     public var parallelMs: UInt64 = 0
     public var peakConcurrent: UInt32 = 0
 
@@ -106,7 +99,6 @@ public struct ProjectTotals: Codable, Hashable, Sendable {
     }
 }
 
-/// A day's totals, and a summary over several days (upstream `DayStats` / `ActivitySummary`).
 public struct ActivityTotals: Codable, Hashable, Sendable {
     public var totals = TimeTotals()
     public var agents: [String: AgentTotals] = [:]
@@ -120,7 +112,6 @@ public struct ActivityTotals: Codable, Hashable, Sendable {
         for (key, value) in other.projects { projects[key, default: ProjectTotals()].add(value) }
     }
 
-    /// Adds one sample (upstream `apply_sample`); a sample never counts more than 15 s.
     public mutating func apply(_ sample: ActivitySample) {
         let duration = min(sample.durationMS, ActivityStats.maximumSampleMS)
         guard duration > 0 else { return }
@@ -170,7 +161,6 @@ public struct ActivityTotals: Codable, Hashable, Sendable {
     }
 }
 
-/// `activity-stats.json` (upstream `ActivityStatsFile`, version 1): totals per local day.
 public struct ActivityStats: Codable, Hashable, Sendable {
     public static let maximumSampleMS: UInt64 = 15_000
     public static let unassigned = "__unassigned__"
@@ -186,7 +176,6 @@ public struct ActivityStats: Codable, Hashable, Sendable {
         }
     }
 
-    /// Totals over `dates` (every day when empty).
     public func summary(dates: [String] = []) -> ActivityTotals {
         let filter = Set(dates)
         var summary = ActivityTotals()
@@ -194,20 +183,15 @@ public struct ActivityStats: Codable, Hashable, Sendable {
         return summary
     }
 
-    /// `yyyy-MM-dd` in the current calendar and time zone.
     public static func day(_ date: Date, calendar: Calendar = .current) -> String {
         let parts = calendar.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
     }
 
-    /// The last `count` days ending today, oldest first.
     public static func lastDays(_ count: Int, until now: Date = Date(), calendar: Calendar = .current) -> [String] {
         (0..<max(count, 0)).reversed().compactMap { calendar.date(byAdding: .day, value: -$0, to: now) }.map { day($0, calendar: calendar) }
     }
 
-    // MARK: - File
-
-    /// Reads the file; a missing one is empty, an unknown version is an error (left untouched).
     public static func load(from url: URL) throws -> ActivityStats {
         guard let data = try? Data(contentsOf: url) else { return ActivityStats() }
         let stats = try JSONDecoder().decode(ActivityStats.self, from: data)
@@ -220,7 +204,6 @@ public struct ActivityStats: Codable, Hashable, Sendable {
         try JSONEncoder().encode(self).write(to: url, options: .atomic)
     }
 
-    /// Adds samples to the file (read, add, atomic write).
     public static func append(_ samples: [ActivitySample], to url: URL) throws {
         guard !samples.isEmpty else { return }
         var stats = try load(from: url)

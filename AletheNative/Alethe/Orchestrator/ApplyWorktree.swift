@@ -5,17 +5,13 @@ import AletheOrchestrator
 import Foundation
 import Observation
 
-/// Where one worker's apply stands, as its detail on the board shows it.
 enum ApplyWorktreePhase: Equatable {
     case idle
-    /// Reading what the apply would change.
     case previewing
-    /// Waiting for the one confirmation, with what will change.
     case confirming(WorktreeApplyPreview)
     case running(WorktreeApplyStep)
     case applied(target: String)
     case nothingToApply
-    /// Conflicts or a stopped merge: continued in the Merge Center on this environment.
     case handedOff(environmentID: String)
     case failed(String)
 
@@ -27,10 +23,6 @@ enum ApplyWorktreePhase: Equatable {
     }
 }
 
-/// Applying finished workers' worktrees into their project's branch (P6-16; upstream
-/// `OrchestratorPane` `applyWorktree`). One per app: applies outlive the board pane that started
-/// them, and a job stays marked applied for the rest of the session (upstream's `applied` set). Git
-/// runs off the main actor through `WorktreeApply`; cancel works until the merge step.
 @Observable
 @MainActor
 final class ApplyWorktreeCenter {
@@ -43,7 +35,6 @@ final class ApplyWorktreeCenter {
 
     func phase(_ job: String) -> ApplyWorktreePhase { phases[job] ?? .idle }
 
-    /// Reads what applying `job` would change, then waits for the confirmation.
     func review(_ job: JobSnapshot) {
         guard let path = job.worktree, !phase(job.id).isBusy else { return }
         if case .applied = phase(job.id) { return }
@@ -61,8 +52,6 @@ final class ApplyWorktreeCenter {
         }
     }
 
-    /// The confirmation: commits, analyzes, prepares and finalizes. A conflict or a stopped merge
-    /// calls `openMergeCenter` with the prepared environment.
     func confirm(_ job: String, projectID: String?, bus: EventBus?, openMergeCenter: @escaping @MainActor @Sendable (String) -> Void) {
         guard case .confirming(let preview) = phase(job) else { return }
         let apply = WorktreeApply(operations: operations)
@@ -88,7 +77,6 @@ final class ApplyWorktreeCenter {
         }
     }
 
-    /// Closes the confirmation, or stops a running apply before its merge step.
     func cancel(_ job: String) {
         switch phase(job) {
         case .previewing, .confirming:
@@ -101,15 +89,12 @@ final class ApplyWorktreeCenter {
         }
     }
 
-    /// Clears a finished note (failure, nothing to apply, hand-off) so the action shows again.
     func dismiss(_ job: String) {
         switch phase(job) {
         case .failed, .nothingToApply, .handedOff: phases[job] = nil
         default: break
         }
     }
-
-    // MARK: Private
 
     private func start(_ job: String, _ phase: ApplyWorktreePhase, _ body: @escaping @MainActor @Sendable (Int) async -> Void) {
         stop(job)
@@ -171,7 +156,6 @@ final class ApplyWorktreeCenter {
         }
     }
 
-    /// The Merge Center's events for the steps this apply took (P6-19).
     private static func publish(_ result: WorktreeApplyResult, preview: WorktreeApplyPreview, projectID: String?,
                                 to events: EventOutbox) {
         if let analysis = result.analysis {

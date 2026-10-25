@@ -4,6 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 Scripts/check-strings.py
 Scripts/check-divergences.py  # Mac-only / Mac-different registry (AletheNative/DIVERGENCES.md)
+Scripts/lint.sh
 Vendor/ghostty/build.sh  # no-op once built
 swift test --package-path Packages/AletheKit --scratch-path build/AletheKit
 Scripts/build.sh Debug

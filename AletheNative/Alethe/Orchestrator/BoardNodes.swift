@@ -4,8 +4,6 @@ import AletheOrchestrator
 import ImageIO
 import SwiftUI
 
-/// The node cards on the board canvas (upstream `PlannerNode`, `RunNode`, `WorkerNode`,
-/// `MediaCardNode`). Every size goes through `BoardUnits`, so the cards zoom with the canvas.
 private struct BoardCard<Content: View>: View {
     let units: BoardUnits
     var fill: ThemeToken = .bgElevated
@@ -26,7 +24,6 @@ private struct BoardCard<Content: View>: View {
     }
 }
 
-/// A small upper-case label over a card's title (upstream `plannerKind`, `runKind`).
 private struct Eyebrow: View {
     let text: LocalizedStringKey
     let units: BoardUnits
@@ -44,7 +41,6 @@ private struct Eyebrow: View {
 
 struct BoardPlannerNode: View {
     let group: PlannerGroup
-    /// The tab this planner ran in is closed.
     let isGone: Bool
     let units: BoardUnits
     let onReveal: () -> Void
@@ -263,9 +259,6 @@ struct BoardWorkerNode: View {
     }
 }
 
-/// The selected worker's detail (upstream `WorkerNode`'s `detail`): its plan, its last report or
-/// the live reply's tail, the routing note, the media the report points at, and the actions P6-15
-/// and P6-16 add.
 struct BoardWorkerDetail: View {
     let job: JobSnapshot
     let units: BoardUnits
@@ -329,7 +322,6 @@ struct BoardWorkerDetail: View {
                     }
                 }
             }
-            // Worker actions (P6-15) and applying its worktree (P6-16) plug in here.
             OrchestrationShortcuts(job: job, project: project)
             OrchestratorWorkerActions(job: job, project: project, board: board, units: units)
             OrchestratorApplyAction(job: job, project: project, board: board, units: units)
@@ -351,7 +343,6 @@ struct BoardWorkerDetail: View {
             .foregroundStyle(theme[.textTertiary])
     }
 
-    /// Why this worker runs on its agent, when one side was running out as it spawned.
     private var routingNote: String? {
         guard let object = job.routing?.objectValue else { return nil }
         let verdict = object["verdict"]?.stringValue ?? ""
@@ -359,7 +350,6 @@ struct BoardWorkerDetail: View {
                                  window: object["window"]?.stringValue ?? "", used: object["used"]?.doubleValue ?? 0)
     }
 
-    /// Inline Markdown only: a report is a worker's prose, not a document.
     static func markdown(_ text: String) -> AttributedString {
         (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
             ?? AttributedString(text)
@@ -367,7 +357,6 @@ struct BoardWorkerDetail: View {
 }
 
 enum BoardText {
-    /// `chosen · codex 5h 92%` (upstream `routingChosen`/`routingIgnored`).
     static func routing(verdict: String, agent: String, window: String, used: Double) -> String {
         let key: String.LocalizationValue = verdict == "ignored" ? "orchestrator.routingIgnored" : "orchestrator.routingChosen"
         let percent = used == used.rounded() ? String(Int(used)) : String(used)
@@ -375,7 +364,6 @@ enum BoardText {
     }
 }
 
-/// A worker's promoted image in its own card below it (upstream `MediaCardNode`).
 struct BoardMediaNode: View {
     let jobID: String
     let item: MediaItem
@@ -435,7 +423,6 @@ struct BoardMediaNode: View {
     }
 }
 
-/// A local image decoded off the main thread at card size.
 struct BoardThumbnail: @unchecked Sendable {
     let image: CGImage
 

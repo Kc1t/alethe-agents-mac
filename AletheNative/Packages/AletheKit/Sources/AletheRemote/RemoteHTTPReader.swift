@@ -1,6 +1,5 @@
 import Foundation
 
-/// Why the transport refused a request before routing it (answered 400, as upstream).
 public enum RemoteRequestError: Error, Equatable, Sendable {
     case headersTooLarge
     case bodyTooLarge
@@ -8,9 +7,6 @@ public enum RemoteRequestError: Error, Equatable, Sendable {
     case malformed
 }
 
-/// HTTP/1.1 request parsing within `RemoteLimits` (upstream `http.rs` `read_request`,
-/// `find_headers_end`, `header_value`, `bearer_token`). Pure: the transport feeds it the bytes it
-/// receives, chunk by chunk.
 public struct RemoteHTTPReader: Sendable {
     public enum Outcome: Equatable, Sendable {
         case needMore
@@ -25,11 +21,9 @@ public struct RemoteHTTPReader: Sendable {
 
     public init() {}
 
-    /// Adds received bytes and reports whether the request is complete.
     public mutating func append(_ chunk: Data) -> Outcome {
         raw.append(chunk)
         if headersEnd == nil {
-            // Resume the search a few bytes back so a separator split across chunks is found.
             let start = max(0, searchedUpTo - 3)
             guard let end = Self.findHeadersEnd(raw, from: start) else {
                 searchedUpTo = raw.count
@@ -44,7 +38,6 @@ public struct RemoteHTTPReader: Sendable {
         return bodyOutcome()
     }
 
-    /// The peer closed its side before the request completed.
     public func finish() -> Outcome {
         .failed(.closedEarly)
     }
@@ -62,9 +55,6 @@ public struct RemoteHTTPReader: Sendable {
         return .complete(head: head, body: Data(raw[bodyStart..<(bodyStart + contentLength)]))
     }
 
-    // MARK: Upstream helpers
-
-    /// The offset of the `\r\n\r\n` that ends the headers, or `nil`.
     public static func findHeadersEnd(_ raw: Data, from start: Int = 0) -> Int? {
         let bytes = [UInt8](raw)
         guard bytes.count >= 4 else { return nil }
@@ -78,7 +68,6 @@ public struct RemoteHTTPReader: Sendable {
         return nil
     }
 
-    /// The first value of header `name` (case-insensitive), trimmed.
     public static func headerValue(_ head: String, _ name: String) -> String? {
         for line in head.components(separatedBy: "\r\n").dropFirst() {
             guard let colon = line.firstIndex(of: ":") else { continue }
@@ -90,7 +79,6 @@ public struct RemoteHTTPReader: Sendable {
         return nil
     }
 
-    /// The `Authorization: Bearer …` token, or `""`.
     public static func bearerToken(_ head: String) -> String {
         guard let value = headerValue(head, "authorization") else { return "" }
         for prefix in ["Bearer ", "bearer "] where value.hasPrefix(prefix) {
@@ -99,8 +87,6 @@ public struct RemoteHTTPReader: Sendable {
         return ""
     }
 
-    /// A request from its head and body: method and target from the request line (target `/` when
-    /// missing), every header by name.
     public static func request(head: String, body: Data, peerAddress: String) -> RemoteRequest? {
         var lines = head.components(separatedBy: "\r\n")
         guard !lines.isEmpty else { return nil }
@@ -115,7 +101,6 @@ public struct RemoteHTTPReader: Sendable {
                 line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
             ))
         }
-        // `RemoteRequest` keeps the first occurrence of each name, as `headerValue` does.
         var byName: [String: String] = [:]
         for (name, value) in headers where byName[name.lowercased()] == nil {
             byName[name.lowercased()] = value

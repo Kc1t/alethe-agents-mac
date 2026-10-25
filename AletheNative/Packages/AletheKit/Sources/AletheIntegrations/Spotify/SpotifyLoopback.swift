@@ -2,8 +2,6 @@ import AletheAgents
 import Foundation
 import Network
 
-/// The page the browser shows after the redirect: it only tells the user to go back to the app.
-/// Text is supplied by the app so it can be localized.
 public struct SpotifyCallbackPages: Sendable {
     public var successTitle: String
     public var successMessage: String
@@ -36,20 +34,14 @@ public struct SpotifyCallbackPages: Sendable {
     }
 }
 
-/// Upstream `wait_for_oauth_callback`'s request handling, without the socket.
 public enum SpotifyCallback {
     public enum Outcome: Equatable, Sendable {
-        /// Not the callback (favicon and the like): 404, keep waiting.
         case notFound
-        /// Not a request the callback answers: 400, keep waiting.
         case invalid
         case code(String)
-        /// The login ends with this error.
         case failure(SpotifyError)
     }
 
-    /// `target` is the request line's path and query. The `state` is checked before anything else
-    /// the callback carries is believed.
     public static func evaluate(method: String, target: String, expectedState: String) -> Outcome {
         guard target.hasPrefix("/"),
               let components = URLComponents(string: "http://127.0.0.1:\(Spotify.callbackPort)\(target)"),
@@ -64,8 +56,6 @@ public enum SpotifyCallback {
     }
 }
 
-/// A one-shot listener on `127.0.0.1:<port>` (never a wildcard) that returns the first valid
-/// callback's `code`. Ends on the callback, the timeout, a listener failure or task cancellation.
 final class SpotifyLoopbackListener: @unchecked Sendable {
     private let port: UInt16
     private let expectedState: String
@@ -86,8 +76,6 @@ final class SpotifyLoopbackListener: @unchecked Sendable {
         self.pages = pages
     }
 
-    /// Binds, calls `ready` once listening (the caller opens the browser then; false aborts), and
-    /// waits for the callback.
     func run(ready: @escaping @Sendable () async -> Bool) async throws(SpotifyError) -> String {
         do {
             return try await withTaskCancellationHandler {

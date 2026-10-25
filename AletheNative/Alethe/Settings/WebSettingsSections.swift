@@ -1,7 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// The Preferences content inset is 34px, falling to 24px below the 900px breakpoint.
 struct SettingsPageForm<Content: View>: View {
     @Environment(\.metrics) private var metrics
     @Environment(\.theme) private var theme

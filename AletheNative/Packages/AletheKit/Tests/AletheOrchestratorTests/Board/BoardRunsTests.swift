@@ -3,8 +3,6 @@ import Testing
 import AletheIntegrations
 @testable import AletheOrchestrator
 
-// Ported from upstream `src/lib/orchestratorRuns.test.ts` (25 cases).
-
 @Suite struct AggregateAgentSpendTests {
     @Test func groupsReportedSessionSpendByWorkerProvider() {
         let spend = AgentSpend.aggregate([

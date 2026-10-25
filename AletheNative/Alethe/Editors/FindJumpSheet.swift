@@ -4,8 +4,6 @@ import AlethePluginKit
 import AppKit
 import SwiftUI
 
-/// Find/Jump (⌘K; upstream `FindJumpModal`): one field that finds terminals, projects and commands,
-/// ranked by fuzzy match. ↑/↓ move, ↩ jumps, Esc closes.
 struct FindJumpSheet: View {
     let workspace: WorkspaceModel
     let undoManager: UndoManager?
@@ -23,7 +21,6 @@ struct FindJumpSheet: View {
         case terminal(TabID)
         case project(ProjectID)
         case command(JumpCommand)
-        /// A plugin `commandContributions` entry placed in Find/Jump (upstream `FindJumpModal`).
         case plugin(String)
     }
 
@@ -62,7 +59,6 @@ struct FindJumpSheet: View {
             Divider()
             ScrollViewReader { proxy in
                 ScrollView {
-                    // Not lazy: at most 50 rows, and every row stays reachable by accessibility.
                     VStack(spacing: metrics.space(.xxs)) {
                         if results.isEmpty {
                             Text("findJump.nothing")
@@ -96,8 +92,6 @@ struct FindJumpSheet: View {
         cursor = min(max(cursor + delta, 0), count - 1)
         return .handled
     }
-
-    // MARK: - Rows
 
     private func row(_ item: Item, selected: Bool) -> some View {
         let info = describe(item)
@@ -174,8 +168,6 @@ struct FindJumpSheet: View {
         return [info.title, info.subtitle, info.detail].compactMap { $0 }
     }
 
-    // MARK: - Jumping
-
     private func jump(_ item: Item) {
         dismiss()
         switch item {
@@ -191,13 +183,11 @@ struct FindJumpSheet: View {
             guard let command = pluginCommands.first(where: { $0.id == id }) else { return }
             DispatchQueue.main.async { command.perform() }
         case .command(let command):
-            // After the sheet is gone, so a command that opens another sheet can.
             DispatchQueue.main.async { command.run(environment: environment, undoManager: undoManager) }
         }
     }
 }
 
-/// Commands Find/Jump can run (upstream plugin `commandContributions`; native built-ins).
 enum JumpCommand: String, CaseIterable, Hashable {
     case newTerminal, newProject, newGroup, addContent, reopenTab, flatWorkspace, focusPane
     case layoutAuto, layoutSpotlight, layoutSidebar, layoutGrid, designGrid, importTauri, settings, conversations

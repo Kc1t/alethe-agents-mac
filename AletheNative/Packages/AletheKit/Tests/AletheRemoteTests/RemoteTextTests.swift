@@ -3,7 +3,6 @@ import Foundation
 import Testing
 @testable import AletheRemote
 
-/// Upstream `remote/util.rs` tests.
 struct RemoteUtilGoldenTests {
     @Test func percentEncodedQueryValuesAreDecoded() {
         #expect(RemoteText.percentDecode("a%2Fb+c") == "a/b c")

@@ -3,8 +3,6 @@ import AletheDesign
 import Observation
 import SwiftUI
 
-/// The web app asks with `window.confirm` / `window.prompt`; the macOS port shows the same two
-/// questions in the themed modal chrome instead of an AppKit alert. One queue serves every caller.
 @MainActor
 @Observable
 final class WebDialogCenter {
@@ -19,11 +17,8 @@ final class WebDialogCenter {
         let confirmTitle: String
         let cancelTitle: String
         let destructive: Bool
-        /// A second, destructive way to accept (for example "close panes" next to "keep panes").
         let alternateTitle: String?
-        /// Non-nil makes this a prompt, pre-filled with the value.
         let promptDefault: String?
-        /// A bespoke modal body (for example the grid modal) instead of a message and two buttons.
         var custom: ((_ finish: @escaping (Outcome) -> Void) -> AnyView)?
         var width: CGFloat = 420
         var pending: Outcome = .cancelled
@@ -48,10 +43,8 @@ final class WebDialogCenter {
     }
 
     private(set) var queue: [Request] = []
-    /// Windows that installed `webDialogLayer()`; without one the question falls back to NSAlert.
     var layers = 0
     var isWeb = false
-    /// True when a question will use the themed dialog rather than an AppKit alert.
     var themed: Bool { isWeb && layers > 0 }
 
     func confirm(_ message: String, title: String? = nil, confirmTitle: String? = nil,
@@ -63,7 +56,6 @@ final class WebDialogCenter {
         return false
     }
 
-    /// Three-way question: `nil` cancelled, `false` confirmed, `true` alternate.
     func choose(_ message: String, title: String? = nil, confirmTitle: String, alternateTitle: String?) async -> Bool? {
         switch await ask(message: message, title: title, confirmTitle: confirmTitle, cancelTitle: nil,
                          destructive: false, alternateTitle: alternateTitle, promptDefault: nil) {
@@ -73,8 +65,6 @@ final class WebDialogCenter {
         }
     }
 
-    /// Shows `content` in the themed overlay; `finish` closes it with an outcome. Falls back to a
-    /// cancelled outcome when no themed layer exists.
     func present<Content: View>(width: CGFloat,
                                 @ViewBuilder content: @escaping (_ finish: @escaping (Outcome) -> Void) -> Content) async -> Outcome {
         guard themed else { return .cancelled }
@@ -121,7 +111,6 @@ final class WebDialogCenter {
         }
     }
 
-    /// Only reached from windows with no themed layer (for example the Settings window).
     private static func systemAlert(_ message: String, _ title: String?, _ ok: String, _ cancel: String,
                                     _ destructive: Bool, _ alternate: String?, _ promptDefault: String?) -> Outcome {
         let alert = NSAlert()
@@ -146,7 +135,6 @@ final class WebDialogCenter {
     }
 }
 
-/// `Modal.module.css` chrome around a confirm/prompt question.
 private struct WebDialogContent: View {
     let request: WebDialogCenter.Request
     let close: () -> Void
@@ -229,11 +217,8 @@ private struct WebDialogLayer: ViewModifier {
 }
 
 extension View {
-    /// Install once per window, above every other modal layer.
     func webDialogLayer() -> some View { modifier(WebDialogLayer()) }
 
-    /// Web interface only: asks `message` in the themed dialog when `isPresented` turns true and
-    /// runs `perform` on confirmation. The `.mac` path keeps its own confirmation dialog.
     func webConfirm(isPresented: Binding<Bool>, message: @autoclosure @escaping () -> String,
                     title: @autoclosure @escaping () -> String? = nil, confirmTitle: String? = nil,
                     destructive: Bool = false, perform: @escaping () -> Void) -> some View {
@@ -241,7 +226,6 @@ extension View {
                                     confirmTitle: confirmTitle, destructive: destructive, perform: perform))
     }
 
-    /// Web interface only: the `window.prompt` counterpart of `webConfirm`.
     func webPrompt(isPresented: Binding<Bool>, message: @autoclosure @escaping () -> String,
                    initial: @autoclosure @escaping () -> String = "", confirmTitle: String? = nil,
                    perform: @escaping (String) -> Void) -> some View {

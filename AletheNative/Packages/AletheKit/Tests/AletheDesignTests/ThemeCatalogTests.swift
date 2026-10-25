@@ -15,7 +15,6 @@ import Testing
         #expect(theme.validationErrors.isEmpty, "\(id): \(theme.validationErrors)")
     }
 
-    /// The converted token set includes the Kimi, Grok and Codewhale colors from `origin/main`.
     @Test func tokenSetMatchesUpstreamConversion() {
         #expect(ThemeToken.allCases.count == 77)
     }
@@ -30,7 +29,6 @@ import Testing
         #expect(light == ["elite-original", "elite-blush", "light", "min-light"])
     }
 
-    /// Primary text must stay readable on the app background in every theme (WCAG AA, 4.5:1).
     @Test(arguments: ThemeCatalog.builtinOrder)
     func primaryTextContrast(id: String) throws {
         let theme = try #require(ThemeCatalog.builtin.theme(id: id))

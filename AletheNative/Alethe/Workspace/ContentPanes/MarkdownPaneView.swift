@@ -4,8 +4,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// A Markdown pane (upstream `MarkdownPane`): the file rendered, reloaded when it changes on disk,
-/// with refresh, copy source and edit / save / cancel added to the shared file-pane header.
 struct MarkdownPaneView: View {
     let file: MarkdownFile
     let isFocused: Bool
@@ -25,8 +23,6 @@ struct MarkdownPaneView: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("markdown.pane")
     }
-
-    // MARK: - Header actions
 
     @ViewBuilder
     private var actions: some View {
@@ -61,12 +57,10 @@ struct MarkdownPaneView: View {
     }
 }
 
-/// Shared file rendering and editing, used by panes and the Markdown inspector.
 struct MarkdownFileContent: View {
     let file: MarkdownFile
     @Environment(\.theme) private var theme
     @Environment(\.metrics) private var metrics
-    // MARK: - Content
 
     @ViewBuilder
     var body: some View {

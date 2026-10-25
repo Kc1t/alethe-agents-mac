@@ -47,7 +47,6 @@ import Testing
     }
 }
 
-/// New Terminal Like Last (P3-4).
 @Suite struct TerminalCreationTests {
     @Test func repeatsTheRecordedTab() {
         let creation = TerminalCreation(agent: "codex", folder: "/tmp/x", unrestricted: true, extraArguments: ["--model", "o3"])
@@ -62,7 +61,6 @@ import Testing
     }
 }
 
-/// Profile index operations and profile folders (P5-9).
 @Suite struct ProfileOperationsTests {
     private let defaultName = "Default"
 
@@ -83,7 +81,6 @@ import Testing
         #expect(index.profile(work)?.lastUsedAt != nil)
         #expect(throws: ProfileError.nameRequired) { try index.createProfile(named: "  ", defaultName: defaultName) }
         #expect(throws: ProfileError.nameExists) { try index.createProfile(named: "work", defaultName: defaultName) }
-        // The unnamed default profile holds its localized name.
         #expect(throws: ProfileError.nameExists) { try index.createProfile(named: "DEFAULT", defaultName: defaultName) }
         #expect(index.profiles.count == 2)
     }
@@ -117,7 +114,6 @@ import Testing
     @Test func lastProfileIsRefusedEvenWhenStale() throws {
         var index = ProfileIndexDocument.initial
         index.activeProfileID = ProfileID(rawValue: "gone")
-        // A stale active id falls back to the only profile, which stays.
         #expect(throws: ProfileError.activeProfile) { try index.removeProfile(ProfileIndexDocument.defaultProfileID) }
     }
 

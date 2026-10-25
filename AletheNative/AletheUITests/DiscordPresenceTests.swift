@@ -1,7 +1,5 @@
 import XCTest
 
-/// Settings › Integrations › Discord (P7-13): the Rich Presence toggle and its persistence. Test
-/// launches use a silent client, so nothing reaches a running Discord.
 @MainActor
 final class DiscordPresenceTests: XCTestCase {
     override func setUp() async throws {

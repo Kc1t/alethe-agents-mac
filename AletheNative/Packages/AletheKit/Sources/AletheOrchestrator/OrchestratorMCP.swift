@@ -1,13 +1,10 @@
 import Foundation
 import AletheIntegrations
 
-/// Runs the `alethe_*` tools. The core implements it; the transport only frames requests and answers.
 public protocol OrchestratorToolHandler: Sendable {
-    /// The tool's result object. A thrown error becomes an `isError` result for the planner.
     func callTool(name: String, arguments: OrderedJSONObject, planner: String?) async throws -> OrderedJSON
 }
 
-/// A tool refusal worded for the planner (upstream's `Err(String)`).
 public struct OrchestratorToolError: Error, Hashable, Sendable, CustomStringConvertible {
     public var message: String
 
@@ -18,14 +15,10 @@ public struct OrchestratorToolError: Error, Hashable, Sendable, CustomStringConv
     public var description: String { message }
 }
 
-/// The MCP surface over any byte transport (the app's loopback `/mcp` and the stdio helper):
-/// upstream `handle_mcp_body` and `tools()`.
 public enum OrchestratorMCP {
     public static let serverName = "alethe"
-    /// Echoed when the client does not name a protocol version.
     public static let defaultProtocolVersion = "2025-06-18"
 
-    /// The nine tool schemas, verbatim from upstream (`Resources/orchestrator-tools.json`).
     public static let tools: OrderedJSON = {
         guard let url = resourceBundle.url(forResource: "orchestrator-tools", withExtension: "json"),
               let data = try? Data(contentsOf: url),
@@ -37,9 +30,6 @@ public enum OrchestratorMCP {
         return tools
     }()
 
-    /// The target's resources. The stdio helper runs from the app's `Contents/Helpers/`, where
-    /// `Bundle.module` (which traps when it finds nothing) would not look: the app keeps the
-    /// resource bundle in `Contents/Resources/`, so that is tried first.
     static var resourceBundle: Bundle {
         let name = "AletheKit_AletheOrchestrator.bundle"
         if let executable = Bundle.main.executableURL?.resolvingSymlinksInPath().deletingLastPathComponent() {
@@ -50,8 +40,6 @@ public enum OrchestratorMCP {
         return Bundle.module
     }
 
-    /// Answers one JSON-RPC message. Returns nil when there is nothing to send back: a
-    /// notification (no id) or a body that is not JSON.
     public static func handle(
         body: String,
         planner: String?,

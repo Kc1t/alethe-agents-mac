@@ -3,7 +3,6 @@ import Foundation
 import Testing
 @testable import AletheTerminal
 
-// Spawns real processes: a rare intermittent hang must fail the test, not stall the run.
 @Suite(.timeLimit(.minutes(1))) struct ShellIntegrationTests {
     private let resources = URL(filePath: "/res")
     private func launch(_ executable: String, _ arguments: [String], env: [String: String] = [:]) -> PTYLaunch {
@@ -59,8 +58,6 @@ import Testing
         #expect(ShellIntegration.apply(to: launch("/bin/zsh", ["-zsh"]), resources: nil).environment.isEmpty)
     }
 
-    /// The bundled zsh integration really marks prompts: an interactive zsh started as the app does
-    /// prints OSC 133 A before its first prompt and D after a command.
     @Test func interactiveZshEmitsPromptMarks() async throws {
         let home = FileManager.default.temporaryDirectory.appending(path: "alethe-zsh-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)

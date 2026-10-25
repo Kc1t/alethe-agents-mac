@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheModel
 
-/// Sub-tabs of a pane (upstream `createSubTab` / `closeSubTab` / `setActiveTab` / `setLaneVisible`).
 @Suite struct SubTabOperationsTests {
     private func sample(tabs count: Int) -> (WorkspaceDocument, ProjectID, PaneID, [TabID]) {
         var doc = WorkspaceDocument()

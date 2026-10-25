@@ -1,5 +1,3 @@
-/// Semantic color tokens. Converted once from the Tauri app's `theme.css` (P0-3);
-/// this file is now the source of truth.
 public enum ThemeToken: String, CaseIterable, Codable, Sendable {
     case accent
     case accentBgSoft

@@ -1,6 +1,5 @@
 import XCTest
 
-/// Container controls (P2-16): collapse and expand, show a project alone, show a pane alone.
 @MainActor
 final class ContainerControlsTests: XCTestCase {
     override func setUp() async throws {

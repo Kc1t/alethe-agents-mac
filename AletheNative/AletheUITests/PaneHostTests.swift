@@ -16,7 +16,6 @@ final class PaneHostTests: XCTestCase {
         return app
     }
 
-    /// Auto layout: two panes side by side, the odd third spanning the row below.
     func testAutoLayoutPlacesPanes() {
         let app = launch()
         let one = element(app, "pane.header.one").frame
@@ -46,7 +45,4 @@ final class PaneHostTests: XCTestCase {
         XCTAssertTrue(web.waitForExistence(timeout: 5))
         app.terminate()
     }
-
-    // Split resizing and header drag-to-reorder need real mouse events (XCUITest's synthesized
-    // drags never reach AppKit's mouseDragged): see Scripts/smoke/pane-drag.sh.
 }

@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// NormalProjectSidebar.module.css quickNavItem: 6×8 padding and a small hover radius.
 public struct AletheSidebarSearchStyle: ButtonStyle {
     public init() {}
 

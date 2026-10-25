@@ -3,13 +3,11 @@ import CryptoKit
 import Foundation
 import ImageIO
 
-/// Immutable decoded pixels can cross from the decoding actor to the UI.
 public final class ProjectCoverPixels: @unchecked Sendable {
     public let image: CGImage
     init(_ image: CGImage) { self.image = image }
 }
 
-/// Shared by sidebar rows, editor previews, Home cards and tabs. Originals remain untouched.
 public actor ProjectCoverCache {
     public static let shared = ProjectCoverCache()
     private let cache = NSCache<NSString, ProjectCoverPixels>()
@@ -23,7 +21,6 @@ public actor ProjectCoverCache {
     public func image(source: String, pixelSize: Int) async -> ProjectCoverPixels? {
         guard !source.isEmpty else { return nil }
         let pixels = max(1, min(pixelSize, 1024))
-        // Avoid retaining multi-megabyte data URLs as cache keys for tiny thumbnails.
         let digest = SHA256.hash(data: Data(source.utf8))
         let key = "\(pixels):\(digest)"
         if let cached = cache.object(forKey: key as NSString) { return cached }
@@ -67,7 +64,6 @@ public actor ProjectCoverCache {
            ] as CFDictionary) {
             return ProjectCoverPixels(image)
         }
-        // AppKit also understands vector formats such as SVG. Rasterize only at the requested size.
         guard let image = NSImage(data: data), image.size.width > 0, image.size.height > 0 else { return nil }
         let ratio = min(CGFloat(pixels) / image.size.width, CGFloat(pixels) / image.size.height)
         let width = max(1, Int(ceil(image.size.width * ratio)))

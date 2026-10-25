@@ -1,6 +1,5 @@
 import XCTest
 
-/// Notifications list in the toolbar (P3-11).
 @MainActor
 final class NotificationsTests: XCTestCase {
     func testBellShowsTheList() {

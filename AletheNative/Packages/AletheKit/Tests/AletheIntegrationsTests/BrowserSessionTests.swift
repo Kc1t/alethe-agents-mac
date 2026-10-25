@@ -11,7 +11,6 @@ struct PlaywrightMcpTests {
     }
 
     @Test func sharedModeWithoutABrowserFallsBackToPlaywrightsDefault() {
-        // Starting an agent must never start a browser just to fill in --cdp-endpoint.
         let arguments = PlaywrightMcp.arguments(mode: .shared, dedicatedHeadless: true, sharedEndpoint: nil)
         #expect(arguments == ["-y", "@playwright/mcp@latest"])
     }
@@ -79,21 +78,17 @@ struct PlaywrightMcpTests {
         #expect(BrowserLaunch.isStale(executable: chrome, arguments: own, profileDirectory: profile))
         let helper = "/Applications/Google Chrome.app/Contents/Frameworks/x/Google Chrome Helper (Renderer)"
         #expect(BrowserLaunch.isStale(executable: helper, arguments: own, profileDirectory: profile))
-        // The user's own browser, or another profile.
         #expect(!BrowserLaunch.isStale(executable: chrome, arguments: ["Google Chrome"], profileDirectory: profile))
         #expect(!BrowserLaunch.isStale(executable: chrome, arguments: ["Google Chrome", "--user-data-dir=\(profile.path)-other"],
                                        profileDirectory: profile))
     }
 
     @Test func staleMatchingNeverReachesAShellOrAnAgent() {
-        // They can carry the profile path in their command line; killing one would take a terminal
-        // (or the app) down with it.
         let mention = ["x", "--user-data-dir=\(profile.path)"]
         for innocent in ["/bin/zsh", "/bin/bash", "/usr/local/bin/node", "/opt/homebrew/bin/claude",
                          "/Applications/Alethe.app/Contents/MacOS/Alethe", "/usr/bin/vim", "/usr/bin/grep"] {
             #expect(!BrowserLaunch.isStale(executable: innocent, arguments: mention, profileDirectory: profile))
         }
-        // argv[0] alone never counts.
         #expect(!BrowserLaunch.isStale(executable: "/Applications/Chromium.app/Contents/MacOS/Chromium",
                                        arguments: ["--user-data-dir=\(profile.path)"], profileDirectory: profile))
     }
@@ -151,7 +146,6 @@ struct PlaywrightMcpTests {
     }
 }
 
-/// P: start to ready with a real browser (skipped when none is installed); the browser is stopped.
 final class BrowserSessionPerformanceTests: XCTestCase {
     func testStartToReady() throws {
         guard (try? BrowserLaunch.resolve(explicit: nil)) != nil else { throw XCTSkip("No Chromium-family browser installed") }

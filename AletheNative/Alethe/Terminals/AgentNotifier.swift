@@ -4,14 +4,10 @@ import AppKit
 import Observation
 import UserNotifications
 
-/// Agent notifications (upstream `notifications.ts`, `notifyAgentDone`): when an agent finishes or
-/// needs an answer and its tab is not in front, an entry joins the in-app list; when Alethe itself is
-/// in the background, macOS shows a notification too. Clicking either jumps to the tab.
 @Observable
 @MainActor
 final class AgentNotifier: NSObject, UNUserNotificationCenterDelegate {
     private(set) var log = NotificationLog()
-    /// Ephemeral in-app banners (upstream `uiStore.toasts`): the newest four.
     private(set) var toasts: [InAppToast] = []
     static let maximumToasts = 4
     @ObservationIgnored private weak var environment: AppEnvironment?
@@ -42,8 +38,6 @@ final class AgentNotifier: NSObject, UNUserNotificationCenterDelegate {
         if !NSApp.isActive { Task { await deliver(entry) } }
     }
 
-    /// Any other notification (a limit reset, a remote device's message): the list, and macOS when
-    /// Alethe is in the background. With `tab`, clicking it jumps there.
     func post(title: String, body: String, agent: String? = nil, tab: TabID? = nil,
               actions: [InAppToast.Action] = [], silent: Bool = false) {
         let entry = AppNotification(title: title, body: body, tab: tab, agent: agent)
@@ -74,7 +68,6 @@ final class AgentNotifier: NSObject, UNUserNotificationCenterDelegate {
         try? await center.add(UNNotificationRequest(identifier: entry.id.uuidString, content: content, trigger: nil))
     }
 
-    /// Shows a notification's tab: its project's tab, the tab in its pane, focused.
     func open(_ tab: TabID) {
         environment?.workspace?.update { doc in
             guard let project = doc.paneHolding(tab)?.project else { return }
@@ -95,7 +88,6 @@ final class AgentNotifier: NSObject, UNUserNotificationCenterDelegate {
 
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                             willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-        // In front, the in-app list already has it.
         []
     }
 }

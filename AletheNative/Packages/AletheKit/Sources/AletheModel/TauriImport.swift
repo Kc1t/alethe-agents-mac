@@ -1,34 +1,19 @@
 import AletheFoundation
 import Foundation
 
-/// One-shot, read-only import of the Tauri app's `projects.json` (ADR-4): groups, projects, their
-/// terminal panes and the core preferences. The Tauri files are never written.
-///
-/// Every version from 2 to 9 is read: the fields imported here (group tree, project, terminal and
-/// sub-tab basics, theme/zoom/language/agents) kept their shape across upstream migrations v2 → v9
-/// (`projectsStore.migrations.ts`), which only added fields this importer ignores.
 public enum TauriImport {
     public static let supportedVersions = 2...9
 
     public enum Failure: Error, Equatable, Sendable {
-        /// Not a readable JSON object.
         case unreadable
-        /// A schema this importer does not know (nil: no version field).
         case unsupportedVersion(Int?)
     }
 
-    /// Something left out of the import, and why.
     public enum Skip: Hashable, Sendable {
-        /// Neither a default folder nor a terminal working directory to use as its folder.
         case projectWithoutFolder(project: String)
-        /// A project for the same folder is already in the workspace.
         case projectAlreadyAdded(project: String)
-        /// Hidden in the Tauri app; the native app has no archive yet.
         case projectArchived(project: String)
-        /// A pane that is not a terminal or an orchestrator board (markdown, web, file, diff…), not
-        /// imported yet.
         case paneKind(project: String, kind: String)
-        /// A tab whose agent the native app does not run (yet).
         case agent(project: String, agent: String)
     }
 
@@ -38,15 +23,9 @@ public enum TauriImport {
         public var panes = 0
         public var tabs = 0
         public var skipped: [Skip] = []
-        /// Preferences that were changed.
         public var preferences: Set<Preference> = []
-        /// The Tauri app's interface language (`en`, `pt-BR`); app-wide, so the caller applies it.
         public var language: String?
-        /// Secrets found (names only; the values come from `secrets(in:companions:context:)`), which
-        /// the caller writes to the Keychain.
         public var secrets: Set<KeychainItem> = []
-        /// The gist sync status from `github_sync.json`, without its token; the caller merges it into
-        /// the profile's `github_sync.json`.
         public var gistSync: GistSyncState?
 
         public init() {}
@@ -58,13 +37,11 @@ public enum TauriImport {
 
     public enum Preference: String, Hashable, Sendable, CaseIterable {
         case theme, interfaceSize, enabledAgents, alwaysUnrestricted, cliPaths, features, appIcon, toolbar, mcp
-        /// Spotify's client ID and Discord Rich Presence.
         case integrations
         case router9
         case remote
     }
 
-    /// Secret values to write to the Keychain. Never logged: `description` names the items only.
     public struct Secrets: Sendable, CustomStringConvertible {
         public var values: [KeychainItem: Data] = [:]
 
@@ -73,8 +50,6 @@ public enum TauriImport {
         public var description: String { "Secrets(\(values.keys.map(\.rawValue).sorted()))" }
     }
 
-    /// The files upstream keeps beside `projects.json` in a profile folder that the import also reads:
-    /// `spotify_tokens.json` and `github_sync.json`. Both hold plaintext tokens.
     public struct Companions: Sendable {
         public static let spotifyTokensFileName = "spotify_tokens.json"
         public static let githubSyncFileName = "github_sync.json"
@@ -85,7 +60,6 @@ public enum TauriImport {
 
         public init() {}
 
-        /// Parses the files' contents; missing or unreadable ones are ignored.
         public init(spotifyTokens: Data?, githubSync: Data?) {
             if let data = spotifyTokens, let raw = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let access = raw["access_token"] as? String, let refresh = raw["refresh_token"] as? String,
@@ -99,13 +73,10 @@ public enum TauriImport {
                     .nilIfEmpty
                 let login = (raw["login"] as? String)?.nilIfEmpty
                 let gist = (raw["gist_id"] as? String)?.nilIfEmpty
-                // The Tauri app's push and pull times describe its own gist, not the one this app
-                // creates, so they are not carried over.
                 if login != nil || gist != nil { gistSync = GistSyncState(login: login, tauriGistID: gist) }
             }
         }
 
-        /// Reads the files beside `projectsFile`. Blocking: callers run it off the main thread.
         public static func beside(_ projectsFile: URL) -> Companions {
             let folder = projectsFile.deletingLastPathComponent()
             return Companions(spotifyTokens: try? Data(contentsOf: folder.appending(path: spotifyTokensFileName)),
@@ -113,8 +84,6 @@ public enum TauriImport {
         }
     }
 
-    /// What the importer needs to know about the native app, injected to keep this module free of
-    /// the agent and design modules (and the file system).
     public struct Context: Sendable {
         public var agents: Set<String>
         public var themes: Set<String>
@@ -130,9 +99,6 @@ public enum TauriImport {
         }
     }
 
-    // MARK: - Reading
-
-    /// A parsed `projects.json`.
     public struct File: @unchecked Sendable {
         public let version: Int
         let root: [String: Any]
@@ -156,12 +122,6 @@ public enum TauriImport {
         var cliPaths: [String: Any] { root["cliPaths"] as? [String: Any] ?? [:] }
     }
 
-    // MARK: - Applying
-
-    /// Adds the file's groups and projects to `workspace` and its preferences to `preferences`.
-    /// Pure: run it on copies for a preview, on the live documents to import.
-    /// Secrets and the gist sync status come with the preferences; their values are read separately
-    /// through `secrets(in:companions:context:)`.
     @discardableResult
     public static func apply(_ file: File, companions: Companions = Companions(), to workspace: inout WorkspaceDocument,
                              preferences: inout PreferencesDocument, context: Context) -> Report {
@@ -177,9 +137,6 @@ public enum TauriImport {
         return report
     }
 
-    /// The plaintext secrets of the Tauri profile (upstream `spotifyClientSecret`, `router9.apiKey`,
-    /// `spotify_tokens.json`, `github_sync.json`'s token), for the Keychain. Empty values are skipped;
-    /// nothing when preferences are not imported.
     public static func secrets(in file: File, companions: Companions, context: Context) -> Secrets {
         var secrets = Secrets()
         guard context.includePreferences else { return secrets }
@@ -198,8 +155,6 @@ public enum TauriImport {
         return secrets
     }
 
-    /// Recreates the group tree, parents first, in the file's sibling order. A group with the same
-    /// name under the same parent is reused, so importing twice does not duplicate the tree.
     private static func importGroups(_ file: File, into workspace: inout WorkspaceDocument,
                                      report: inout Report) -> [String: GroupID] {
         let groups = file.groups.filter { $0["archived"] as? Bool != true }
@@ -227,7 +182,6 @@ public enum TauriImport {
                 }
                 return true
             }
-            // A parent cycle: the rest become top-level groups on the next pass.
             if pending.count == before {
                 pending = pending.map { var group = $0; group["parentGroupId"] = nil; return group }
             }
@@ -238,7 +192,6 @@ public enum TauriImport {
     private static func importProjects(_ file: File, into workspace: inout WorkspaceDocument, groupIDs: [String: GroupID],
                                        context: Context, report: inout Report) {
         let existingFolders = Set(workspace.projects.map { normalizedFolder($0.folder) })
-        // Sidebar order: each group's `projectIds`, then `ungroupedOrder`, then anything unreferenced.
         var location: [String: String?] = [:]
         var order: [String] = []
         for group in file.groups {
@@ -342,8 +295,6 @@ public enum TauriImport {
                                    layoutMode: (raw["layoutMode"] as? String).flatMap(PaneLayoutMode.init(rawValue:)).flatMap { $0 == .auto ? nil : $0 },
                                    gridLayout: raw["gridLayout"].flatMap(decodeGrid))
             }
-            // Upstream mirrors the active named grid into the project's own layout fields; the
-            // main grid keeps them only when no named grid is active.
             let activeNamed = (project["activeGridId"] as? String).flatMap { id in named.first { $0.id.rawValue == id } }
             if !named.isEmpty {
                 let known = Set(named.map(\.id))
@@ -363,8 +314,6 @@ public enum TauriImport {
         }
     }
 
-    /// An orchestrator board (upstream `createOrchestratorPane`): no tabs, so only its id and grid
-    /// are kept. Its stack membership is imported with the project's paneGroups.
     static func orchestratorPane(from terminal: [String: Any]) -> Pane {
         let id = (terminal["id"] as? String).flatMap { $0.isEmpty ? nil : PaneID(rawValue: $0) } ?? .make()
         var pane = Pane(id: id, content: .orchestrator)
@@ -411,13 +360,8 @@ public enum TauriImport {
         }
     }
 
-    // MARK: - Orchestrator history
-
-    /// Upstream `orchestrator_store_path`: the job history beside `projects.json` in a profile.
     public static let orchestratorJobsFileName = "orchestrator-jobs.json"
 
-    /// Copies the Tauri profile's orchestrator job history into `profileDirectory` when that profile
-    /// has none yet; an existing history is never replaced. True when a file was copied.
     @discardableResult
     public static func copyOrchestratorJobs(from projectsFile: URL, into profileDirectory: URL,
                                             fileManager: FileManager = .default) -> Bool {
@@ -433,7 +377,6 @@ public enum TauriImport {
         }
     }
 
-    /// A terminal's tabs the native app can run; nil when none is left.
     static func pane(from terminal: [String: Any], folder: String, project: String, context: Context,
                              report: inout Report) -> Pane? {
         var tabs: [PaneTab] = []
@@ -459,7 +402,6 @@ public enum TauriImport {
             tabs.append(created)
         }
         guard !tabs.isEmpty else { return nil }
-        // The terminal's id is kept, so its cell in an imported custom grid still finds it.
         let id = (terminal["id"] as? String).flatMap { $0.isEmpty ? nil : PaneID(rawValue: $0) } ?? .make()
         var pane = Pane(id: id, tabs: tabs, activeTabID: activeTab)
         pane.gridID = (terminal["gridId"] as? String).flatMap { $0.isEmpty || $0 == "default" ? nil : ProjectGridID(rawValue: $0) }
@@ -467,8 +409,6 @@ public enum TauriImport {
         return pane
     }
 
-    /// Upstream's v8 migration, which it applies on every load: an explicit `remoteShared` wins, else
-    /// the terminal is shared unless the older opt-out `remoteExcluded` is set.
     static func isRemoteShared(_ terminal: [String: Any]) -> Bool {
         (terminal["remoteShared"] as? Bool) ?? (terminal["remoteExcluded"] as? Bool != true)
     }
@@ -498,7 +438,6 @@ public enum TauriImport {
             }
         }
         if let enabled = raw["enabledAgents"] as? [String: Any] {
-            // Agents the file does not mention stay enabled, as upstream defaults them.
             let known = context.agents.union((preferences.customAgents ?? []).map(\.id))
             let kinds = known.sorted().filter { (enabled[$0] as? Bool) ?? true }
             let value: [String]? = kinds.count == known.count ? nil : kinds
@@ -511,7 +450,6 @@ public enum TauriImport {
             preferences.alwaysStartUnrestricted = unrestricted
             report.preferences.insert(.alwaysUnrestricted)
         }
-        // Only paths that exist on this Mac: a file copied from Windows holds `C:\…` launchers.
         var paths = preferences.cliPaths ?? [:]
         for (agent, value) in file.cliPaths {
             guard context.agents.contains(agent), let path = value as? String, isAbsolute(path),
@@ -520,7 +458,6 @@ public enum TauriImport {
             report.preferences.insert(.cliPaths)
         }
         if report.preferences.contains(.cliPaths) { preferences.cliPaths = paths }
-        // Upstream's map as stored; keys this version does not know (legacy `git`, `todos`) are skipped.
         if let stored = raw["enabledFeatures"] as? [String: Any] {
             var features = preferences.features
             for feature in Feature.allCases {
@@ -559,9 +496,6 @@ public enum TauriImport {
         if let language = raw["language"] as? String, !language.isEmpty { report.language = language }
     }
 
-    /// Spotify's client ID, Discord, 9router and remote control (upstream `normalizePreferences`).
-    /// Their secrets are left to `secrets(in:companions:context:)`; `remoteEnabled` is session-scoped
-    /// upstream and never imported.
     private static func importPeripherals(_ raw: [String: Any], into preferences: inout PreferencesDocument,
                                           report: inout Report) {
         if let id = (raw["spotifyClientId"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty,
@@ -597,9 +531,6 @@ public enum TauriImport {
         }
     }
 
-    // MARK: - Mapping helpers
-
-    /// The project folder: its default working directory, else its first terminal's or tab's.
     static func folder(of project: [String: Any], terminals: [[String: Any]]) -> String? {
         var candidates: [String?] = [project["defaultCwd"] as? String]
         for terminal in terminals where (terminal["kind"] as? String ?? "terminal") == "terminal" {
@@ -621,8 +552,6 @@ public enum TauriImport {
         (trimmedFolder(path) as NSString).resolvingSymlinksInPath
     }
 
-    /// The Tauri app stores any hex color (`#6ea8ff`, from its palette or a picker); the native app
-    /// has ten named accents, so the nearest hue wins. Grays and near-blacks keep their tone.
     static func projectColor(_ value: Any?) -> ProjectColor? {
         guard let raw = (value as? String)?.trimmingCharacters(in: .whitespaces).lowercased(), !raw.isEmpty else {
             return nil
@@ -655,16 +584,12 @@ public enum TauriImport {
         }
     }
 
-    /// Upstream grids key cells by terminal id, which the import keeps as the pane id.
     private static func decodeGrid(_ raw: Any) -> CustomGrid? {
         guard JSONSerialization.isValidJSONObject(raw), let data = try? JSONSerialization.data(withJSONObject: raw) else { return nil }
         return try? JSONDecoder().decode(CustomGrid.self, from: data)
     }
 }
 
-// MARK: - Locating the Tauri app's data
-
-/// A profile of the Tauri app on this Mac.
 public struct TauriProfile: Hashable, Sendable, Identifiable {
     public var id: String
     public var name: String
@@ -680,14 +605,11 @@ public struct TauriProfile: Hashable, Sendable, Identifiable {
 }
 
 public enum TauriDataLocation {
-    /// `app_local_data_dir()` of the Tauri app (`com.kc1t.alethe`) on macOS.
     public static func defaultRoot(fileManager: FileManager = .default) -> URL? {
         fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
             .appending(path: "com.kc1t.alethe", directoryHint: .isDirectory)
     }
 
-    /// Profiles that have a `projects.json`, the active one first. Upstream: `profiles.json`
-    /// (`{ version, active_profile_id, profiles: [{ id, name }] }`) and `profiles/<id>/projects.json`.
     public static func profiles(root: URL, fileManager: FileManager = .default) -> [TauriProfile] {
         var entries: [(id: String, name: String?)] = []
         var active: String?
@@ -698,7 +620,6 @@ public enum TauriDataLocation {
                 if let id = profile["id"] as? String { entries.append((id, profile["name"] as? String)) }
             }
         }
-        // Profile folders missing from the index (or no index at all) still count.
         let folders = (try? fileManager.contentsOfDirectory(atPath: root.appending(path: "profiles").path)) ?? []
         for folder in folders.sorted() where !entries.contains(where: { $0.id == folder }) {
             entries.append((folder, nil))

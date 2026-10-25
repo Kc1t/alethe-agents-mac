@@ -1,6 +1,5 @@
 import XCTest
 
-/// Terminal find bar (P2-4): ⌘F, live count, next/previous, Esc; hit targets at three zoom levels.
 @MainActor
 final class TerminalSearchTests: XCTestCase {
     override func setUp() async throws {
@@ -11,8 +10,6 @@ final class TerminalSearchTests: XCTestCase {
         app.descendants(matching: .any)[identifier].firstMatch
     }
 
-    /// A shell with "alpha" printed: the command line and its output hold it four times.
-    /// (Test text avoids lowercase "c": XCUITest drops it on the owner's keyboard layout.)
     private func shellWithOutput(_ app: XCUIApplication) -> XCUIElement {
         let project = element(app, "sidebar.project.scratch")
         XCTAssertTrue(project.waitForExistence(timeout: 5))
@@ -50,7 +47,6 @@ final class TerminalSearchTests: XCTestCase {
         app.terminate()
     }
 
-    /// HT: the bar's buttons are clicked where they are drawn at 90 %, 100 % and 120 %.
     func testFindBarControlsReceiveClicksAtThreeZoomLevels() {
         for (label, keys) in [("90 %", ["-"]), ("100 %", []), ("120 %", ["+", "+"])] {
             let (app, _) = launchAlethe(arguments: ["-AletheUITestSeed", "sidebar"])

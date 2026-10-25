@@ -1,15 +1,10 @@
 import Foundation
 
-/// The interface language. macOS picks an app's localization at launch from its `AppleLanguages`
-/// default — the same key System Settings › Language & Region › Applications writes — so a change
-/// applies on the next launch.
 public enum AppLanguage: String, CaseIterable, Sendable {
-    /// Follow the system's preferred languages.
     case system
     case english = "en"
     case portugueseBrazil = "pt-BR"
 
-    /// The language's own name; not translated, so it is recognizable from any interface language.
     public var nativeName: String? {
         switch self {
         case .system: nil
@@ -19,8 +14,6 @@ public enum AppLanguage: String, CaseIterable, Sendable {
     }
 }
 
-/// Reads and writes the app's own `AppleLanguages` (its persistent domain, not the argument or
-/// global domains, which a launch argument or the system would otherwise report).
 public struct LanguageSetting: Sendable {
     public static let key = "AppleLanguages"
     public let domain: String
@@ -45,8 +38,6 @@ public struct LanguageSetting: Sendable {
         defaults.setPersistentDomain(values, forName: domain)
     }
 
-    /// Launch arguments for a relaunch that should pick up the stored language: drops
-    /// `-AppleLanguages` / `-AppleLocale` overrides (and their values), keeps everything else.
     public static func relaunchArguments(_ arguments: [String]) -> [String] {
         var kept: [String] = []
         var index = arguments.startIndex

@@ -6,7 +6,6 @@ extension Notification.Name {
     static let aletheCustomizeTitleBar = Notification.Name("alethe.customizeTitleBar")
 }
 
-/// TopbarSettingsModal.tsx: seven 42-point rows, provider artwork and trailing checked squares.
 struct WebTitleBarCustomization: View {
     let close: () -> Void
 
@@ -15,7 +14,6 @@ struct WebTitleBarCustomization: View {
     }
 }
 
-/// The modal's body, shared by the title-bar overlay and Settings › Appearance › Customize topbar.
 struct WebTitleBarCustomizationContent: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics
@@ -92,7 +90,6 @@ private struct WebTitleBarCustomizationRow: View {
     }
 }
 
-/// TopbarSettingsModal as opened from Settings: the same chrome and rows as the title-bar overlay.
 struct WebSettingsToolbarModal: View {
     @Environment(\.modalsM2Close) private var closeOverlay
 

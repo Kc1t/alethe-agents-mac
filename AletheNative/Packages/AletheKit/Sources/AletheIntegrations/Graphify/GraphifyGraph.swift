@@ -1,12 +1,10 @@
 import Foundation
 
-/// A node of a Graphify graph, normalized from the field names Graphify versions use.
 public struct GraphNode: Hashable, Sendable, Identifiable {
     public var id: String
     public var label: String
     public var kind: String?
     public var group: String?
-    /// The file the node comes from, when the graph records it (P5-23 opens it in a pane).
     public var sourceFile: String?
 
     public init(id: String, label: String, kind: String? = nil, group: String? = nil, sourceFile: String? = nil) {
@@ -31,12 +29,9 @@ public struct GraphEdge: Hashable, Sendable, Identifiable {
         self.label = label
     }
 
-    /// How the diff identifies an edge (upstream `id_sets`): its endpoints, not its id.
     public var diffKey: String { GraphIDSets.edgeKey(source, target) }
 }
 
-/// `graphify-out/graph.json` ready to lay out (upstream `GraphData`). Past `limit` nodes the rest is
-/// dropped with the edges touching it; the counts stay the file's totals.
 public struct GraphData: Hashable, Sendable {
     public var nodes: [GraphNode]
     public var edges: [GraphEdge]
@@ -52,11 +47,8 @@ public struct GraphData: Hashable, Sendable {
         self.truncated = truncated
     }
 
-    /// Upstream `MAX_VIZ_NODES`.
     public static let visualizationLimit = 3000
 
-    /// Upstream `graphify_read_graph`: nodes need an id (string or number); edges read `edges` or
-    /// NetworkX's `links` and keep only those between kept nodes.
     public static func parse(_ data: Data, limit: Int = visualizationLimit) throws -> GraphData {
         let root = try GraphJSON.object(data)
         let nodeValues = root["nodes"] as? [Any] ?? []
@@ -92,7 +84,6 @@ public struct GraphData: Hashable, Sendable {
     }
 }
 
-/// The node ids and edge keys of a graph file, for diffs (upstream `id_sets`; nothing truncated).
 public struct GraphIDSets: Hashable, Sendable {
     public var nodes: Set<String>
     public var edges: Set<String>
@@ -119,8 +110,6 @@ public struct GraphIDSets: Hashable, Sendable {
     }
 }
 
-/// What changed from a base graph to a compared one (upstream `GraphDiff`), with the ids so the view
-/// can highlight them.
 public struct GraphDiff: Hashable, Sendable {
     public var addedNodes: Set<String>
     public var removedNodes: Set<String>
@@ -142,11 +131,8 @@ public struct GraphDiff: Hashable, Sendable {
 }
 
 public enum GraphifyError: Error, Equatable, Sendable {
-    /// No `graphify-out/graph.json` (upstream `graph_not_found`).
     case graphNotFound
-    /// The file is not a JSON object (upstream `invalid_graph_json`).
     case invalidGraph
-    /// Not a numeric snapshot id: never turned into a path (upstream `invalid_snapshot_id`).
     case invalidSnapshotID
     case snapshotNotFound
 }
@@ -163,7 +149,6 @@ private enum GraphJSON {
         (root["edges"] as? [Any]) ?? (root["links"] as? [Any]) ?? []
     }
 
-    /// Strings and numbers are ids (upstream `value_to_id`); booleans are not.
     static func id(_ value: Any?) -> String? {
         switch value {
         case let string as String: return string
@@ -172,8 +157,6 @@ private enum GraphJSON {
         }
     }
 
-    /// Upstream `first_str`: the first key holding a string. With `numbers`, a number counts too:
-    /// Graphify writes `community` as one, and upstream then lost the grouping.
     static func firstString(_ object: [String: Any], _ keys: [String], numbers: Bool = false) -> String? {
         for key in keys {
             if let string = object[key] as? String { return string }

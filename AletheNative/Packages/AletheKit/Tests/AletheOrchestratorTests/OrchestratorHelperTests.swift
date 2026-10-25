@@ -4,11 +4,7 @@ import AletheAgents
 import AletheIntegrations
 @testable import AletheOrchestrator
 
-/// The `alethe-orchestrator-mcp` helper (P6-10): bridge framing, the stdio loop, the standalone
-/// setup and handshake, Codex planner wiring, and the built binary against a stub endpoint.
 @Suite(.timeLimit(.minutes(1))) struct OrchestratorHelperTests {
-    // MARK: Bridge
-
     private actor Posts {
         var bodies: [String] = []
         func add(_ body: Data) { bodies.append(String(decoding: body, as: UTF8.self)) }
@@ -80,8 +76,6 @@ import AletheIntegrations
         #expect(request.value(forHTTPHeaderField: "Content-Type") == "application/json")
     }
 
-    // MARK: Bridge file
-
     @Test func theBridgeFileIsPrivateAndRoundTrips() throws {
         let folder = FileManager.default.temporaryDirectory.appending(path: "alethe-bridge-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -115,8 +109,6 @@ import AletheIntegrations
             == "/Apps/Alethe.app/Contents/Helpers/alethe-orchestrator-mcp")
         #expect(OrchestratorPlannerLaunch.bridgeFileName(tab: "a/b c") == "orchestrator-bridge-a_b_c.json")
     }
-
-    // MARK: Stdio loop
 
     private func serve(_ input: String, handle: @escaping @Sendable (String) async -> String?) async -> [String] {
         let stdin = Pipe(), stdout = Pipe()
@@ -153,8 +145,6 @@ import AletheIntegrations
         }
         #expect(output == ["fast", "slow", ""])
     }
-
-    // MARK: Standalone
 
     @Test func standaloneFindsCodexAndReadsTheWorkerLimit() throws {
         let folder = FileManager.default.temporaryDirectory.appending(path: "alethe-standalone-\(UUID().uuidString)")
@@ -196,11 +186,8 @@ import AletheIntegrations
         #expect(tools.count == 14)
     }
 
-    // MARK: The built helper
-
     private final class Marker {}
 
-    /// Next to the test bundle in SwiftPM's products folder.
     private func builtHelper() throws -> URL {
         let url = Bundle(for: Marker.self).bundleURL.deletingLastPathComponent().appending(path: OrchestratorPlannerLaunch.helperName)
         try #require(FileManager.default.isExecutableFile(atPath: url.path), "build the package first: \(url.path)")
@@ -212,8 +199,6 @@ import AletheIntegrations
         func add(_ planner: String?) { seen.append(planner) }
     }
 
-    /// Runs the helper, writes `lines` to it, reads `expected` answer lines, then closes its stdin.
-    /// A watchdog ends the process so a broken helper fails the test instead of hanging it.
     private func run(_ helper: URL, arguments: [String], environment: [String: String]? = nil,
                      lines: [String], expected: Int) async throws -> (answers: [String], status: Int32) {
         let process = Process()
@@ -279,13 +264,11 @@ import AletheIntegrations
         #expect(seen.count == 3 && Set(seen) == ["tab1"])
         await core.shutdown()
 
-        // A wrong token gets an error answer, not silence.
         try OrchestratorBridgeFile(endpoint: endpoint, token: "wrong", planner: "tab1").write(to: file)
         let refused = try await run(helper, arguments: ["--bridge", file.path],
                                     lines: [#"{"jsonrpc":"2.0","id":9,"method":"ping"}"#], expected: 1)
         #expect(refused.answers.count == 1 && refused.answers[0].contains(#""error""#))
 
-        // A file others can read is not used.
         try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: file.path)
         let exposed = try await run(helper, arguments: ["--bridge", file.path], lines: [], expected: 0)
         #expect(exposed.status == 66)

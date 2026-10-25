@@ -3,7 +3,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// TitleBar/index.tsx usageWidget: live provider windows on hover, details on click.
 struct WebTitleBarUsagePill: View {
     let provider: AgentKind
     @Environment(AppEnvironment.self) private var environment
@@ -64,7 +63,6 @@ struct WebTitleBarUsagePill: View {
     }
 
     private func headline(_ usage: ProviderUsage) -> UsageWindow? {
-        // Claude's web pill shows the five-hour window; Codex falls back to its weekly window.
         provider == .antigravity ? usage.peak : usage.windows.first
     }
 

@@ -2,7 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// The standard Settings window (⌘,).
 struct SettingsView: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics
@@ -40,7 +39,6 @@ struct SettingsView: View {
             Tab("settings.plugins.tab", systemImage: "puzzlepiece.extension", value: SettingsTab.plugins) {
                 PluginSettings()
             }
-            // Grouped: the builder takes ten children at most.
             Group {
                 Tab("settings.integrations.tab", systemImage: "link", value: SettingsTab.integrations) {
                     IntegrationsSettings()
@@ -58,7 +56,6 @@ struct SettingsView: View {
                 ProfileSettings()
             }
         }
-        // Wide enough for every tab in the toolbar, none in its overflow menu.
         .frame(width: metrics.size(720) / metrics.scale)
         .scenePadding()
         .onChange(of: environment.features.isOn(.orchestrator)) { _, isOn in
@@ -67,7 +64,6 @@ struct SettingsView: View {
     }
 }
 
-/// The Settings pane shown; Home's setup steps open a given one.
 enum SettingsTab: Hashable {
     case general, appearance, toolbar, agents, resources, features, plugins, integrations, remote, multiagent, profiles
 }

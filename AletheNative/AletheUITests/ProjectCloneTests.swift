@@ -1,7 +1,5 @@
 import XCTest
 
-/// New Project › Clone from GitHub against a local bare repository, and the folder details
-/// (repository, stack) of the project editor (P5-5).
 @MainActor
 final class ProjectCloneTests: XCTestCase {
     override func setUp() async throws {
@@ -42,7 +40,6 @@ final class ProjectCloneTests: XCTestCase {
         let folder = element(app, "editor.project.folder")
         XCTAssertTrue(folder.waitForExistence(timeout: 5))
         folder.click()
-        // The data root holds the seeded repositories but is not one itself.
         paste(root.path, into: app)
         let initialize = element(app, "editor.project.initGit")
         XCTAssertTrue(initialize.waitForExistence(timeout: 5))

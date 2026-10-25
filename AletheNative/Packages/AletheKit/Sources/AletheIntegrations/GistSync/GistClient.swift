@@ -1,33 +1,19 @@
 import Foundation
 
-/// What a gist sync can fail with (upstream `github_sync.rs` error strings).
 public enum GistSyncError: Error, Equatable, Sendable {
-    /// `empty_token`.
     case emptyToken
-    /// `invalid_token`: GitHub answered 401.
     case invalidToken
-    /// `not_connected`: no token in the Keychain.
     case notConnected
-    /// `nothing_to_sync`: the profile has none of the synced files.
     case nothingToSync
-    /// `no_remote`: no gist id, or the gist is gone.
     case noRemote
-    /// `remote_missing_projects`: the gist holds neither `workspace.json` nor upstream's `projects.json`.
     case remoteMissingWorkspace
-    /// The gist or one of its files is not what the app wrote; nothing was changed.
     case malformedGist
-    /// A pulled file does not decode (its name); nothing was changed.
     case invalidRemoteFile(String)
-    /// A pulled file was written by a newer Alethe; nothing was changed.
     case newerFormat
-    /// `github returned <status>`.
     case http(Int)
-    /// The request did not complete (`URLError` code).
     case transport(Int)
 }
 
-/// The GitHub REST calls gist sync makes (upstream `auth`, `create_gist`, `gist_file_content`). The
-/// token only ever goes to `apiBase` and GitHub's own hosts, and is never logged.
 struct GistClient: Sendable {
     static let userAgent = "Alethe"
     static let apiVersion = "2022-11-28"
@@ -36,7 +22,6 @@ struct GistClient: Sendable {
     let apiBase: URL
     let token: String
 
-    /// A file of a fetched gist: inline content, or a `raw_url` when GitHub truncated it (> 1 MB).
     struct RemoteFile: Sendable {
         var content: String?
         var truncated: Bool
@@ -81,7 +66,6 @@ struct GistClient: Sendable {
         guard (200..<300).contains(status) else { throw GistSyncError.http(status) }
     }
 
-    /// `GET /user`: the token's login (nil when GitHub leaves it out).
     func login() async throws -> String? {
         let (data, status) = try await send(request(endpoint("user")))
         try Self.check(status)
@@ -97,7 +81,6 @@ struct GistClient: Sendable {
         return try JSONSerialization.data(withJSONObject: body, options: [.sortedKeys])
     }
 
-    /// `POST /gists`: the new gist's id.
     func create(_ payload: Data) async throws -> String {
         let (data, status) = try await send(request(endpoint("gists"), method: "POST", body: payload))
         try Self.check(status)
@@ -105,8 +88,6 @@ struct GistClient: Sendable {
         return id
     }
 
-    /// `PATCH /gists/{id}`, creating a new gist when that one is gone (404) or refuses the edit (422).
-    /// Returns the id written to.
     func update(_ id: String, with payload: Data) async throws -> String {
         let (_, status) = try await send(request(endpoint("gists/\(id)"), method: "PATCH", body: payload))
         if status == 404 || status == 422 { return try await create(payload) }
@@ -114,7 +95,6 @@ struct GistClient: Sendable {
         return id
     }
 
-    /// `GET /gists/{id}`: its files by name.
     func files(of id: String) async throws -> [String: RemoteFile] {
         let (data, status) = try await send(request(endpoint("gists/\(id)")))
         if status == 404 { throw GistSyncError.noRemote }
@@ -129,7 +109,6 @@ struct GistClient: Sendable {
         return result
     }
 
-    /// A file's full text (upstream `gist_file_content`): inline, or read from `raw_url` when truncated.
     func content(of file: RemoteFile) async throws -> String? {
         guard file.truncated else { return file.content }
         guard let raw = file.rawURL else { return nil }
@@ -139,7 +118,6 @@ struct GistClient: Sendable {
         return String(decoding: data, as: UTF8.self)
     }
 
-    /// Hosts the token may be sent to: the API host itself and GitHub's gist content hosts over HTTPS.
     func isTrusted(_ url: URL) -> Bool {
         guard let host = url.host()?.lowercased() else { return false }
         if host == apiBase.host()?.lowercased(), url.scheme == apiBase.scheme { return true }

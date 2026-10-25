@@ -1,7 +1,6 @@
 import Foundation
 
 extension WorkspaceDocument {
-    /// Legacy entries are profile-qualified. Explicit model flags win, including a later restore.
     public mutating func migrateProjectVisibility(hidden: Set<String>, archived: Set<String>, profile: ProfileID?) {
         let prefix = (profile?.rawValue ?? "default") + ":"
         for index in projects.indices {

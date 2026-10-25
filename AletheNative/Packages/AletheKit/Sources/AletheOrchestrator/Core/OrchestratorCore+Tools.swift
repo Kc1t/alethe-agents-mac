@@ -1,19 +1,14 @@
 import Foundation
 import AletheIntegrations
 
-/// What one `alethe_delegate` call asks for.
 public struct DelegateRequest: Hashable, Sendable {
     public var tasks: [String]
-    /// Not validated here: an unconfigured agent fails its job later, through the normal delivery path.
     public var agent: String
     public var cwd: String
     public var label: String?
-    /// nil runs without a budget.
     public var timeoutMs: UInt64?
-    /// Codex workers stop and ask before reaching outside their workspace (P6-7).
     public var askForApproval: Bool
     public var webSearch: Bool
-    /// One git worktree per job, made before the batch is accepted (P6-7).
     public var isolate: Bool
     public var rulesName: String?
     public var model: String?
@@ -43,8 +38,6 @@ public struct DelegateRequest: Hashable, Sendable {
         self.model = model; self.effort = effort; self.readOnly = readOnly
     }
 
-    /// The tool's arguments, as upstream reads them: `cwd` falls back to the process's folder,
-    /// `timeoutSeconds` 0 means no budget, the label is trimmed and dropped when empty.
     public init(arguments: OrderedJSONObject) throws(OrchestratorToolError) {
         let tasks = arguments["tasks"]?.arrayValue?.compactMap(\.stringValue) ?? []
         guard !tasks.isEmpty else { throw OrchestratorToolError("tasks must contain at least one instruction") }
@@ -72,7 +65,6 @@ extension OrchestratorCore: OrchestratorToolHandler {
         try await withFitness(dispatchTool(name: name, arguments: arguments, planner: planner), tool: name, arguments: arguments)
     }
 
-    /// The tools this core answers (upstream `dispatch_tool`).
     func dispatchTool(name: String, arguments: OrderedJSONObject, planner: String?) async throws(OrchestratorToolError) -> OrderedJSON {
         switch name {
         case "alethe_delegate":
@@ -107,12 +99,6 @@ extension OrchestratorCore: OrchestratorToolHandler {
         arguments["jobIds"]?.arrayValue?.compactMap(\.stringValue) ?? []
     }
 
-    // MARK: alethe_delegate
-
-    /// Queues one job per task as one run and starts as many as the limit allows. Returns the
-    /// tool's answer; the workers run on in the background. Ids are reserved first; worktrees
-    /// (`isolate`) are made outside the actor's isolation, and the batch is accepted whole or not
-    /// at all.
     public func delegate(_ request: DelegateRequest, planner: String?) async throws(OrchestratorToolError) -> OrderedJSON {
         guard !isShutDown else { throw OrchestratorToolError("the orchestrator is shutting down") }
         guard !request.tasks.isEmpty else { throw OrchestratorToolError("tasks must contain at least one instruction") }
@@ -168,10 +154,6 @@ extension OrchestratorCore: OrchestratorToolHandler {
         ]
     }
 
-    // MARK: alethe_check
-
-    /// Collects the deliveries. With `wait`, first waits until every worker settled (or, without
-    /// `untilAllSettled`, until the first delivery), at most `timeoutMs` (capped at 600 s).
     public func check(wait: Bool, untilAllSettled: Bool = true, timeoutMs: UInt64 = OrchestratorLimits.defaultCheckWaitMs) async -> OrderedJSON {
         if wait {
             let clock = ContinuousClock()
@@ -194,10 +176,6 @@ extension OrchestratorCore: OrchestratorToolHandler {
 
     var isBusy: Bool { !slots.isEmpty || !queue.isEmpty }
 
-    // MARK: alethe_cancel / alethe_release
-
-    /// Stops each job that has not settled: the running turn is interrupted, the worker ended and
-    /// the job settled as cancelled (announced like any other outcome). Returns the ids cancelled.
     @discardableResult
     public func cancel(_ jobIDs: [String]) -> [String] {
         var cancelled: [String] = []
@@ -205,8 +183,6 @@ extension OrchestratorCore: OrchestratorToolHandler {
             guard var job = jobs[jobID], !job.settled else { continue }
             if workers[jobID] != nil {
                 if job.agent == WorkerAgent.claude {
-                    // `cancel_queued` also clears the CLI's own queue, so nothing it holds starts a
-                    // turn between the abort and the teardown.
                     let interrupt = ClaudeWorkerProtocol.cancel(&job)
                     jobs[jobID] = job
                     writeToWorker(jobID, interrupt)
@@ -221,8 +197,6 @@ extension OrchestratorCore: OrchestratorToolHandler {
         return cancelled
     }
 
-    /// Lets go of each job that is not running a turn: its worker process ends, its record stays.
-    /// Returns the ids released.
     @discardableResult
     public func release(_ jobIDs: [String]) -> [String] {
         var released: [String] = []

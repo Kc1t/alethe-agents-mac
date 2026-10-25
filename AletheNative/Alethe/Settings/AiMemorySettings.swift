@@ -3,8 +3,6 @@ import AletheIntegrations
 import AppKit
 import SwiftUI
 
-/// Settings › Features › AI Memory (P5-18): the CLI found (or chosen), its version, whether its
-/// server answers, and a link to its documentation.
 struct AiMemoryOptions: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme

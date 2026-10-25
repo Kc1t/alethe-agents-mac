@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheModel
 
-/// `.alethe/project.json` read and written in upstream's shape (P5-5).
 struct ProjectMarkerTests {
     static let agents: Set<String> = ["claude", "codex", "opencode", "shell"]
 

@@ -1,6 +1,5 @@
 import XCTest
 
-/// Settings › Features (P5-3): turning a feature off hides its surfaces.
 @MainActor
 final class FeatureTogglesTests: XCTestCase {
     override func setUp() async throws {
@@ -12,7 +11,6 @@ final class FeatureTogglesTests: XCTestCase {
     }
 
     func testTurningPullRequestsOffHidesTheTab() {
-        // The right sidebar open from launch, whatever the real defaults say.
         let (app, root) = launchAlethe(arguments: ["-main.rightSidebarVisible", "YES"])
         XCTAssertTrue(element(app, "workspace.empty").waitForExistence(timeout: 5))
         let tabs = element(app, "rightSidebar.tabs")

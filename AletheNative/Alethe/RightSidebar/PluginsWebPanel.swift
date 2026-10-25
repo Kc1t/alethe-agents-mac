@@ -2,7 +2,6 @@ import AletheDesign
 import AlethePluginKit
 import SwiftUI
 
-/// Catalog cards mirror PluginsSidebar; native execution remains gated by the existing hosts.
 struct PluginsWebPanel: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics

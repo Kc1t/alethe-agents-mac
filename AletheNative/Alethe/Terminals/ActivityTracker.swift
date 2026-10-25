@@ -3,10 +3,6 @@ import AletheModel
 import AppKit
 import Observation
 
-/// Time analytics (upstream `activityTracker.ts` + `activity_stats.rs`): every 5 s a sample of whether
-/// Alethe is in front, whether the user is active (input in the last 5 minutes) and what each agent
-/// terminal is doing; every 30 s (and when Alethe goes to the background or quits) the samples are
-/// added to `activity-stats.json` in the profile.
 @Observable
 @MainActor
 final class ActivityTracker {
@@ -14,7 +10,6 @@ final class ActivityTracker {
     static let flushInterval: TimeInterval = 30
     static let idleAfter: TimeInterval = 5 * 60
 
-    /// Bumped after every write, so Home reloads its summaries.
     private(set) var revision = 0
     @ObservationIgnored private weak var environment: AppEnvironment?
     @ObservationIgnored private var store: ActivityStore?
@@ -66,7 +61,6 @@ final class ActivityTracker {
         if now.timeIntervalSince(lastFlush) >= Self.flushInterval { flushNow() }
     }
 
-    /// Writes the pending samples; a failed write keeps the last 360 for the next one.
     func flushNow() {
         guard let store, !pending.isEmpty else { return }
         let batch = pending
@@ -81,7 +75,6 @@ final class ActivityTracker {
         }
     }
 
-    /// Before quitting: the last sample, written before the app exits.
     func finish() async {
         sample()
         guard let store, !pending.isEmpty else { return }
@@ -90,7 +83,6 @@ final class ActivityTracker {
         _ = await store.append(batch)
     }
 
-    /// A summary that includes what has not been written yet (upstream flushes before reading).
     func currentSummary(dates: [String]) async -> ActivityTotals {
         sample()
         var summary = await store?.summary(dates: dates) ?? ActivityTotals()
@@ -105,7 +97,6 @@ final class ActivityTracker {
         await store?.summary(dates: dates) ?? ActivityTotals()
     }
 
-    /// Per-day totals for `dates`, in order (Home's activity graph).
     func days(_ dates: [String]) async -> [(date: String, totals: ActivityTotals)] {
         let stats = await store?.stats() ?? ActivityStats()
         return dates.map { ($0, stats.days[$0] ?? ActivityTotals()) }
@@ -120,7 +111,6 @@ final class ActivityTracker {
     }
 }
 
-/// The file, read and written off the main thread one change at a time.
 actor ActivityStore {
     let url: URL
 

@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheModel
 
-/// Feature toggles (P5-3): upstream `normalizeEnabledFeatures` defaults and the stored map.
 @Suite struct FeaturesTests {
     @Test func defaultsMatchUpstream() {
         let on = Feature.allCases.filter(Features.defaults.isOn)

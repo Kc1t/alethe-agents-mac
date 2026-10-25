@@ -51,7 +51,6 @@ private let allServices = PluginServices(
 
     @Test func declaredButMissingServiceIsReported() async {
         let context = makeContext([.git, .filesystemWrite])
-        // Declaring a capability does not imply another one.
         await #expect(throws: PluginError.undeclaredCapability(.filesystemRead, pluginID: "test.context")) {
             try await context.readFile(at: URL(filePath: "/tmp/x"))
         }

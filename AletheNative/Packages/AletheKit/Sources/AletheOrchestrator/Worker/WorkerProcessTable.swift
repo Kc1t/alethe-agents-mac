@@ -1,8 +1,6 @@
 import Darwin
 import Foundation
 
-/// When a process started, to the microsecond: with the pid it names one process instance, so a
-/// reused pid never passes for a recorded worker.
 public struct ProcessStartTime: Hashable, Sendable, Codable {
     public var seconds: Int64
     public var microseconds: Int32
@@ -13,12 +11,10 @@ public struct ProcessStartTime: Hashable, Sendable, Codable {
     }
 }
 
-/// What the kernel says about a live process (`sysctl`, `proc_pidpath`; no private API, no `ps`).
 public struct LiveProcess: Hashable, Sendable {
     public var pid: pid_t
     public var groupID: pid_t
     public var startTime: ProcessStartTime
-    /// The image the process runs now; nil when it cannot be read.
     public var executable: String?
 
     public init(pid: pid_t, groupID: pid_t, startTime: ProcessStartTime, executable: String?) {
@@ -51,7 +47,6 @@ enum WorkerProcessTable {
         return String(decoding: buffer.prefix(Int(length)).map { UInt8(bitPattern: $0) }, as: UTF8.self)
     }
 
-    /// Parent of every process of this user.
     static func parents() -> [pid_t: pid_t] {
         var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_UID, Int32(bitPattern: getuid())]
         var size = 0
@@ -66,7 +61,6 @@ enum WorkerProcessTable {
         return parents
     }
 
-    /// `root` and every descendant, parents before children.
     static func descendants(of root: pid_t, parents: [pid_t: pid_t]) -> [pid_t] {
         var children: [pid_t: [pid_t]] = [:]
         for (pid, parent) in parents where pid != parent { children[parent, default: []].append(pid) }
@@ -82,9 +76,6 @@ enum WorkerProcessTable {
         return result
     }
 
-    /// SIGKILL to the leader's descendants (children first, a child that left the group included),
-    /// then the whole group. `leaderAlive` false: the leader's pid may already be reused, so only its
-    /// group, still held by any survivor, is signalled.
     static func killTree(leader: pid_t, leaderAlive: Bool) {
         let tree = descendants(of: leader, parents: parents())
         for member in tree.reversed() where member != leader || leaderAlive {
@@ -93,7 +84,6 @@ enum WorkerProcessTable {
         Darwin.kill(-leader, SIGKILL)
     }
 
-    /// The kernel's boot time: a record from an earlier boot names pids that mean nothing now.
     static func bootTime() -> ProcessStartTime? {
         var boot = timeval()
         var size = MemoryLayout<timeval>.stride

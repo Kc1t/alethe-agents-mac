@@ -1,10 +1,5 @@
 import XCTest
 
-/// P4-19: the sample third-party ExtensionKit extension (`Samples/AletheSampleExtension`, built by
-/// build-for-testing through a target dependency) is discovered, asks for consent on first enable,
-/// renders its sidebar tab from its own process, and a crash in it leaves Alethe running with a
-/// "stopped" state and Reload. The app registers the sample with LaunchServices at launch
-/// (`-AletheRegisterExtensionApp`); the system may still ask to approve it once (Manage Extensions).
 @MainActor
 final class ExtensionKitTests: XCTestCase {
     private static let sampleID = "com.kc1t.alethe.sample.sidebar"
@@ -17,8 +12,6 @@ final class ExtensionKitTests: XCTestCase {
         app.descendants(matching: .any)[identifier].firstMatch
     }
 
-    /// `<Products>/Debug/AletheUITests-Runner.app/Contents/PlugIns/AletheUITests.xctest` → the
-    /// sample app next to the runner.
     private var sampleAppPath: String {
         var url = Bundle(for: Self.self).bundleURL
         for _ in 0..<4 { url.deleteLastPathComponent() }
@@ -31,7 +24,6 @@ final class ExtensionKitTests: XCTestCase {
         return app
     }
 
-    /// Opens Settings › Plugins and waits until the sample's manifest has been read over XPC.
     private func openSampleRow(_ app: XCUIApplication) -> XCUIElement {
         app.typeKey(",", modifierFlags: .command)
         app.toolbars.buttons["Plugins"].firstMatch.click()
@@ -59,7 +51,6 @@ final class ExtensionKitTests: XCTestCase {
         element(app, "extensions.consent.allow").click()
         XCTAssertTrue(eventually { (toggle.value as? Int) == 1 })
 
-        // Off and on again: consent is remembered, no prompt.
         toggle.click()
         XCTAssertTrue(eventually { (toggle.value as? Int) == 0 })
         toggle.click()
@@ -85,7 +76,6 @@ final class ExtensionKitTests: XCTestCase {
         XCTAssertTrue(element(app, "extensions.tab.\(Self.sampleID)").waitForExistence(timeout: 10),
                       "the host view controller is in the sidebar")
 
-        // The remote scene: storage goes through the host.
         let counter = element(app, "sample.counter")
         XCTAssertTrue(counter.waitForExistence(timeout: 15), "the extension's own view renders")
         element(app, "sample.increment").click()

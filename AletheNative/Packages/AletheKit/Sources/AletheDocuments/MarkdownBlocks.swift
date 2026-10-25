@@ -1,27 +1,19 @@
 import Foundation
 import Markdown
 
-/// A Markdown file as blocks a SwiftUI view can lay out (upstream renders with react-markdown +
-/// remark-gfm). Parsing is swift-markdown (cmark-gfm, ADR-11): CommonMark plus GFM tables, task
-/// lists, strikethrough and autolinks. Inline text becomes `AttributedString` with
-/// `inlinePresentationIntent` (emphasis, strong, code, strikethrough) and `link`, which SwiftUI's
-/// `Text` renders. Relative links and images resolve against the file's folder.
 public indirect enum MarkdownBlock: Hashable, Sendable {
     case heading(level: Int, text: AttributedString)
     case paragraph(AttributedString)
-    /// A paragraph that is only an image.
     case image(source: URL?, alt: String)
     case code(language: String?, code: String)
     case quote([MarkdownBlock])
     case list(ordered: Bool, start: Int, items: [MarkdownListItem])
     case table(header: [AttributedString], alignments: [MarkdownColumnAlignment], rows: [[AttributedString]])
     case rule
-    /// Raw HTML is not rendered (as upstream, which does not enable rehype-raw); shown as source.
     case html(String)
 }
 
 public struct MarkdownListItem: Hashable, Sendable {
-    /// nil: plain item; true / false: a GFM task, checked or not.
     public var checkbox: Bool?
     public var blocks: [MarkdownBlock]
 }
@@ -31,15 +23,12 @@ public enum MarkdownColumnAlignment: Hashable, Sendable {
 }
 
 public enum MarkdownBlocks {
-    /// - Parameter base: the file's folder, for relative links and images.
     public static func parse(_ text: String, base: URL? = nil) -> [MarkdownBlock] {
         let document = Document(parsing: text)
         let converter = Converter(base: base)
         return document.children.compactMap { converter.block($0) }
     }
 
-    /// `destination` as a URL: absolute URLs as they are, anything else relative to `base`. Fragments
-    /// alone (`#section`) have nowhere to go outside a web view and are dropped.
     static func resolve(_ destination: String?, base: URL?) -> URL? {
         guard let destination = destination?.trimmingCharacters(in: .whitespaces), !destination.isEmpty,
               !destination.hasPrefix("#") else { return nil }
@@ -143,7 +132,6 @@ private struct Converter {
             if let url = MarkdownBlocks.resolve(link.destination, base: base) { text.link = url }
             return text
         case let image as Markdown.Image:
-            // An image inside running text: its description, linked to the image.
             var text = styled(image.plainText.isEmpty ? (image.source ?? "") : image.plainText)
             if let url = MarkdownBlocks.resolve(image.source, base: base) { text.link = url }
             return text

@@ -75,7 +75,6 @@ extension BranchTestingSheet {
     func closeWeb() { if let closeOverlay { closeOverlay() } else { dismiss() } }
 }
 
-/// controls.module.css textarea, including its focus border.
 struct GitWebEditor: ViewModifier {
     @Environment(\.metrics) private var metrics
     @Environment(\.theme) private var theme

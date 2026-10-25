@@ -1,9 +1,7 @@
 import Darwin
 import Foundation
 
-/// Finds a Chromium-family browser and builds its command line (upstream `browser_session.rs`).
 public enum BrowserLaunch {
-    /// App bundles searched in preference order, in `/Applications` then `~/Applications`.
     public static let bundleNames = [
         "Google Chrome.app/Contents/MacOS/Google Chrome",
         "Chromium.app/Contents/MacOS/Chromium",
@@ -17,7 +15,6 @@ public enum BrowserLaunch {
         return roots.flatMap { root in bundleNames.map { root.appending(path: $0) } }
     }
 
-    /// An explicit path (the executable or its `.app`) must exist; blank means “find one”.
     public static func resolve(explicit: String?, candidates: [URL] = candidates(),
                                isExecutable: (String) -> Bool = { FileManager.default.isExecutableFile(atPath: $0) })
         throws(BrowserSessionError) -> URL {
@@ -31,8 +28,6 @@ public enum BrowserLaunch {
         return found
     }
 
-    /// Loopback only: the debugging port gives full control of the browser, so it is never
-    /// advertised on a routable address.
     public static func endpoint(port: UInt16) -> String {
         "http://127.0.0.1:\(port)"
     }
@@ -40,14 +35,10 @@ public enum BrowserLaunch {
     public static func arguments(port: UInt16, profileDirectory: URL, headless: Bool) -> [String] {
         var arguments = [
             "--remote-debugging-port=\(port)",
-            // Chromium binds only the loopback interface by default; stated so it never depends on that.
             "--remote-debugging-address=127.0.0.1",
-            // A profile of its own keeps the user's real one out of reach and is what makes the port
-            // bind at all instead of handing off to a browser that is already open.
             profileArgument(profileDirectory),
             "--no-first-run",
             "--no-default-browser-check",
-            // No Keychain prompt for a profile the user never opened by hand.
             "--use-mock-keychain",
             "--disable-features=Translate",
         ]
@@ -60,7 +51,6 @@ public enum BrowserLaunch {
         "--user-data-dir=\(directory.standardizedFileURL.path)"
     }
 
-    /// Asks the system for a free loopback port (bind to port 0 and read back what it assigned).
     public static func freePort() throws(BrowserSessionError) -> UInt16 {
         let socket = Darwin.socket(AF_INET, SOCK_STREAM, 0)
         guard socket >= 0 else { throw .noFreePort }
@@ -81,15 +71,11 @@ public enum BrowserLaunch {
         return port
     }
 
-    /// Browser spellings the stale sweep may kill. Matching a command line alone would also reach a
-    /// shell, an editor or an agent that merely mentions the profile path.
     public static func isBrowserExecutable(_ path: String) -> Bool {
         let name = (path as NSString).lastPathComponent.lowercased()
         return ["chrome", "chromium", "edge", "brave"].contains { name.contains($0) }
     }
 
-    /// A browser left by an earlier run: a browser executable whose arguments name exactly this
-    /// profile. Both must hold; neither alone is enough.
     public static func isStale(executable: String, arguments: [String], profileDirectory: URL) -> Bool {
         guard isBrowserExecutable(executable) else { return false }
         let expected = profileArgument(profileDirectory)
@@ -102,6 +88,5 @@ public enum BrowserSessionError: Error, Hashable, Sendable {
     case profileDirectory(String)
     case noFreePort
     case spawnFailed(String)
-    /// `/json/version` did not answer in time.
     case notReady
 }

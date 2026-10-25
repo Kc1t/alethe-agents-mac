@@ -4,8 +4,6 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Add Content (⇧⌘A; upstream `AddContentModal`): puts a file or page pane beside a project's
-/// terminals. Only kinds the app can already show are offered; each pane task adds its option.
 struct AddContentSheet: View {
     let workspace: WorkspaceModel
     let undoManager: UndoManager?
@@ -16,18 +14,15 @@ struct AddContentSheet: View {
     @Environment(\.theme) private var theme
     @Environment(\.metrics) private var metrics
 
-    /// One way to add content: what it shows, and how its target is chosen.
     struct Option: Identifiable {
         let kind: PaneContent.Kind
         let title: LocalizedStringKey
         let detail: LocalizedStringKey
         let symbol: String
-        /// Asks for the file or page (a panel, a field…); nil when cancelled.
         let choose: @MainActor (_ project: Project) -> PaneContent?
         var id: PaneContent.Kind { kind }
     }
 
-    /// One entry per pane kind the app can show (a kind's task adds it).
     static let options: [Option] = [
         Option(kind: .markdown, title: "addContent.markdown", detail: "addContent.markdown.detail",
                symbol: "doc.richtext") { project in
@@ -69,8 +64,6 @@ struct AddContentSheet: View {
         },
     ]
 
-    /// The options whose feature is on: web pages need the browser feature (P5-3), the code graph
-    /// the graphify one, the orchestrator board the orchestrator one.
     static func options(for features: Features) -> [Option] {
         options.filter { option in
             switch option.kind {
@@ -189,7 +182,6 @@ private struct WebContentOptionStyle: ButtonStyle {
     }
 }
 
-/// Browser setup uses the same private WKWebView and persisted resource policy as existing panes.
 struct AddBrowserSheet: View {
     let workspace: WorkspaceModel
     let undoManager: UndoManager?

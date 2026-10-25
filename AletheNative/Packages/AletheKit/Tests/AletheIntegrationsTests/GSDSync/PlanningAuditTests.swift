@@ -4,8 +4,6 @@ import Foundation
 import Testing
 @testable import AletheIntegrations
 
-/// A temporary repository isolated from the user's git configuration, with a committed
-/// `.planning/roadmap.md` and `code.txt` (upstream `planning_repo`).
 private struct PlanningRepo {
     static let runner = GitRunner(environment: [
         "GIT_CONFIG_GLOBAL": "/dev/null",
@@ -47,7 +45,6 @@ private struct PlanningRepo {
     }
 }
 
-// Upstream `planning.rs` tests.
 @Suite struct PlanningAuditGoldenTests {
     @Test func recordsScopedAuditCommitWithAgentTrailer() async throws {
         let repo = try await PlanningRepo()
@@ -66,7 +63,7 @@ private struct PlanningRepo {
         #expect(!status.contains("roadmap.md"))
 
         let history = try await repo.audit.history(repository: repo.root, limit: 10)
-        #expect(history.count == 2) // base + audit
+        #expect(history.count == 2)
         #expect(history[0].agentID == "agent-42")
         #expect(history[0].subject.contains("gsd(alethe)"))
         #expect(history[0].timestampMS > 0)
@@ -194,7 +191,6 @@ private struct PlanningRepo {
         await autocommit.setEnabled(true)
         for _ in 0..<3 { await autocommit.handle(Self.updated("/repo/a/.planning")) }
         await autocommit.handle(Self.updated("/repo/b/.planning", project: "p2"))
-        // Wait for both folders (generous under load), then give a duplicate commit time to show up.
         let deadline = ContinuousClock.now + .seconds(10)
         while await commits.roots.count < 2, ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(20)) }
         try await Task.sleep(for: .milliseconds(300))

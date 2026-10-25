@@ -1,7 +1,6 @@
 import Testing
 @testable import AletheMerge
 
-/// Golden cases ported from upstream `merge_analyzer.rs` (`classifies_by_extension_and_special_paths`).
 struct ConflictClassTests {
     @Test(arguments: [
         ("src-tauri/src/pty.rs", ConflictClass.rust),

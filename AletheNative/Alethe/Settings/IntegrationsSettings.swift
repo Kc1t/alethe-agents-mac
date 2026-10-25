@@ -1,8 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// Settings › Integrations (upstream `IntegrationsPage`): one section per service, each filled by
-/// its own task (Spotify P7-14, Discord P7-13, 9router P7-16).
 struct IntegrationsSettings: View {
     @Environment(\.metrics) private var metrics
     @Environment(AppEnvironment.self) private var environment

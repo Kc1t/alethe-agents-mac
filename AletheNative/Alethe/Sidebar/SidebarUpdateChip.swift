@@ -2,7 +2,6 @@ import AletheDesign
 import Foundation
 import SwiftUI
 
-/// Native releases are published on the fork; Windows releases must never trigger this chip.
 struct SidebarUpdateChip: View {
     @Environment(\.metrics) private var metrics
     @Environment(\.theme) private var theme
@@ -15,7 +14,6 @@ struct SidebarUpdateChip: View {
         Group {
             if let release {
                 Button {
-                    // The web opens its update modal; the native interface goes to the release page.
                     if metrics.isWebInterface { environment.editorRequest = .updateAvailable(release) }
                     else { openURL(release.page) }
                 } label: {
@@ -58,11 +56,9 @@ struct SidebarUpdateChip: View {
 struct SidebarNativeRelease: Hashable, Sendable {
     let version: String
     let page: URL
-    /// The release body (GitHub markdown), shown in What's New and the update modal.
     var notes = ""
     var published: Date?
 
-    /// The tag without its prefix, as shown to people ("1.4.0").
     var displayVersion: String {
         var text = version
         if text.hasPrefix("mac-native-v") { text.removeFirst("mac-native-v".count) }
@@ -85,15 +81,12 @@ struct SidebarNativeRelease: Hashable, Sendable {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
     }
 
-    /// Only comparable, stable native versions qualify. Preview tags have no installed-version
-    /// equivalent and are deliberately ignored rather than displaying a false update notification.
     static func check() async -> Self? {
         guard let current = versionParts(installedVersion) else { return nil }
         let candidates = await stableReleases().filter { current.lexicographicallyPrecedes($0.1) }
         return candidates.max(by: { $0.1.lexicographicallyPrecedes($1.1) })?.0
     }
 
-    /// The newest stable native releases, newest first (What's New).
     static func recent(limit: Int = 6) async -> [Self] {
         let all = await stableReleases().sorted { $1.1.lexicographicallyPrecedes($0.1) }
         return Array(all.prefix(limit).map(\.0))

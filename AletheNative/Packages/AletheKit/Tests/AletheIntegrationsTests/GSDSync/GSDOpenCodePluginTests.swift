@@ -20,7 +20,6 @@ private func install(_ root: URL, _ chain: [String] = []) throws -> GSDPluginIns
     try GSDOpenCodePlugin.install(root: root, modelChain: chain, writer: writer(root))
 }
 
-// Upstream `opencode_gsd_plugin.rs` tests.
 @Suite struct GSDOpenCodePluginTests {
     @Test func bundledPluginIsTheManagedUpstreamAsset() throws {
         let source = try GSDOpenCodePlugin.bundledPlugin()

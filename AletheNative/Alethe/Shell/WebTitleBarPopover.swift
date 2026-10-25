@@ -1,7 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// The web's absolutely positioned dropdowns, lifted above the workspace rather than AppKit bubbles.
 struct WebTitleBarPopover {
     let anchor: Anchor<CGRect>
     let content: AnyView
@@ -17,8 +16,6 @@ struct WebTitleBarPopoverKey: PreferenceKey {
     }
 }
 
-/// True while any title-bar popover is open: the panels below stop reacting to hover (their AppKit-backed
-/// rows keep tracking the pointer even under the popover layer).
 struct WebTitleBarPopoverOpenKey: PreferenceKey {
     static var defaultValue: Bool { false }
     static func reduce(value: inout Bool, nextValue: () -> Bool) { value = value || nextValue() }
@@ -62,7 +59,6 @@ struct WebTitleBarPopoverLayer: ViewModifier {
     }
 }
 
-/// Fit menus above or below their trigger and scroll when interface zoom exceeds the window.
 private struct WebPositionedMenu: View {
     let menu: WebTitleBarPopover
     let rect: CGRect

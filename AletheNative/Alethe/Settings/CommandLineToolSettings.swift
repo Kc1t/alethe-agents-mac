@@ -4,9 +4,6 @@ import AletheTerminal
 import AppKit
 import SwiftUI
 
-/// Settings › General › Command Line Tool (TERM-11; upstream `cli_shim.rs`): installs, reinstalls
-/// and removes the `alethe` script in `~/.local/bin`. Every change is a user action that asks
-/// first; nothing needs or asks for administrator rights.
 struct CommandLineToolSection: View {
     @State private var tool = CommandLineTool()
     @State private var confirming: CommandLineTool.Action?
@@ -147,7 +144,6 @@ struct CommandLineToolSection: View {
     }
 }
 
-/// State and file work behind the section; disk and shell work runs off the main thread.
 @Observable
 @MainActor
 final class CommandLineTool {
@@ -164,10 +160,8 @@ final class CommandLineTool {
     private(set) var status: Status?
     private(set) var error: String?
     private(set) var isBusy = false
-    /// The login shell's PATH, probed once per section.
     @ObservationIgnored private var shellPath: String?
 
-    /// The bundle the shim opens: this copy of the app.
     private var appPath: String { Bundle.main.bundlePath }
 
     func refresh() async {
@@ -204,7 +198,6 @@ final class CommandLineTool {
         isBusy = false
     }
 
-    /// `PATH` as the user's interactive login shell sets it (5 s at most); nil when it fails.
     nonisolated static func loginShellPath() async -> String? {
         await Task.detached {
             let output = FileManager.default.temporaryDirectory.appending(path: "alethe-path-\(UUID().uuidString)")
@@ -218,7 +211,6 @@ final class CommandLineTool {
             shell.executableURL = URL(filePath: ShellLaunch.userShell)
             shell.arguments = ["-l", "-i", "-c", CLIShim.pathProbeCommand]
             shell.currentDirectoryURL = URL(filePath: NSHomeDirectory())
-            // A file, not a pipe: a chatty profile can never fill a buffer and stall the probe.
             shell.standardOutput = handle
             shell.standardError = FileHandle.nullDevice
             shell.standardInput = FileHandle.nullDevice

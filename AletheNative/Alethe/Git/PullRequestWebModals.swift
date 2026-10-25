@@ -6,7 +6,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// PullRequestReviewModal.module.css card dimensions, backed by the existing native PR summary.
 struct GitPullRequestWebCard: View {
     let pr: PullRequestSummary
     @Environment(\.metrics) private var metrics
@@ -100,7 +99,6 @@ struct GitPullRequestReviewWebModal: View {
         .task { await loadHead() }
     }
 
-    /// Reads the current head SHA from GitHub so the review and merge target the same commit.
     private func loadHead() async {
         do {
             let details = try await GitHubPullRequests().details(for: pr)

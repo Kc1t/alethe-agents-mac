@@ -2,9 +2,6 @@ import AVFoundation
 import Foundation
 import Speech
 
-/// On-device speech to text (ADR-7a): the microphone through `AVAudioEngine`, converted to the
-/// analyzer's format, into `SpeechAnalyzer` with a `SpeechTranscriber`. Results arrive on the main
-/// actor; volatile ones are replaced by the final text of the same stretch.
 final class DictationEngine: @unchecked Sendable {
     enum StartError: Error { case languageUnsupported, unavailable }
 
@@ -14,8 +11,6 @@ final class DictationEngine: @unchecked Sendable {
     private var results: Task<Void, Never>?
     private var tapInstalled = false
 
-    /// Starts listening in `locale`'s language (the nearest supported one), installing its speech model
-    /// on first use.
     func start(locale: Locale, microphone: String = "", onModelDownload: @escaping @MainActor () -> Void,
                onResult: @escaping @MainActor (_ text: String, _ isFinal: Bool) -> Void) async throws {
         guard SpeechTranscriber.isAvailable else { throw StartError.unavailable }
@@ -60,7 +55,6 @@ final class DictationEngine: @unchecked Sendable {
         try audio.start()
     }
 
-    /// Stops the microphone and waits for the last words.
     func stop() async {
         stopAudio()
         input?.finish()
@@ -69,7 +63,6 @@ final class DictationEngine: @unchecked Sendable {
         reset()
     }
 
-    /// Stops without waiting; nothing more is reported.
     func cancel() async {
         stopAudio()
         results?.cancel()

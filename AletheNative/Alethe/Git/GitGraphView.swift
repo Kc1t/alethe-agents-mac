@@ -3,8 +3,6 @@ import AletheGit
 import AppKit
 import SwiftUI
 
-/// History tab of Git Control (P4-6; upstream `GitGraphList`): a lazily paginated commit graph,
-/// the selected commit's detail and a context menu of commit actions.
 struct GitGraphView: View {
     let history: GitHistoryModel
     @State private var branchTarget: String?
@@ -168,7 +166,6 @@ struct GitGraphView: View {
     }
 }
 
-/// One commit row: lanes drawn with a Canvas, ref badges, subject, author and relative date.
 struct GitGraphRowView: View {
     static let rowHeight: CGFloat = 26
     static let laneWidth: CGFloat = 14
@@ -178,7 +175,6 @@ struct GitGraphRowView: View {
     @Environment(\.theme) private var theme
     @Environment(\.metrics) private var metrics
 
-    /// Lane colors from theme tokens; lane 0 always uses the accent.
     private static let palette: [ThemeToken] = [
         .agentClaude, .agentCodex, .agentOpencode, .agentCursor, .agentKiro,
         .agentAntigravity, .agentMimo, .agentFreebuff, .statusWaiting, .statusActive,

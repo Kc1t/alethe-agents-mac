@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheIntegrations
 
-/// The MCP manager's form (P5-25): a stored secret is never shown and survives an edit untouched.
 @Suite struct McpDraftTests {
     private func secretServer() -> McpServer {
         McpServer(

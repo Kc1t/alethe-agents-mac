@@ -2,7 +2,6 @@ import AletheDesign
 import Foundation
 import SwiftUI
 
-/// GitGraph.tsx uses window.prompt/window.confirm; retain their text and actions in themed chrome.
 struct GitGraphBranchWebModal: View {
     @Binding var name: String
     let create: () -> Void

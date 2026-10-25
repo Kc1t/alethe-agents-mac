@@ -3,8 +3,6 @@ import Testing
 @testable import AletheGit
 
 @Suite struct GitWorktreeTests {
-    // MARK: U — pure
-
     @Test func parsesPorcelainList() {
         let output = """
         worktree /repo
@@ -69,8 +67,6 @@ import Testing
         #expect(try JSONDecoder().decode(WorktreeSettings.self, from: json) == on)
     }
 
-    // MARK: G — temp repositories
-
     private let worktrees = GitWorktrees(runner: TempRepo.runner)
 
     @Test func provisionListAndRemoveBothModes() async throws {
@@ -82,7 +78,6 @@ import Testing
         let lc = try await worktrees.provision(repo: repo.url, agentId: "lc1", mode: .localCopy)
         #expect(GitWorktrees.detectMode(URL(fileURLWithPath: lc.path)) == .localCopy)
 
-        // Resolves the main repository from inside a linked worktree too.
         let listed = try await worktrees.list(repo: URL(fileURLWithPath: wt.path))
         #expect(listed.map(\.agentId) == ["lc1", "wt1"])
         #expect(listed.map(\.branch) == ["alethe/agent-lc1", "alethe/agent-wt1"])
@@ -183,7 +178,6 @@ import Testing
         let repo = try await TempRepo()
         let wt = try await worktrees.provision(repo: repo.url, agentId: "gone", mode: .gitWorktree)
         _ = try await worktrees.provision(repo: repo.url, agentId: "kept", mode: .gitWorktree)
-        // Simulate a crash: the worktree's `.git` pointer vanished, leaving a stale directory and metadata.
         try FileManager.default.removeItem(at: URL(fileURLWithPath: wt.path).appendingPathComponent(".git"))
         #expect(try await worktrees.gitWorktrees(repo: repo.url).count == 3)
 

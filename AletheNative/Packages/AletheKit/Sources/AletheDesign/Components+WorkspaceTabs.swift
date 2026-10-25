@@ -1,7 +1,6 @@
 import SwiftUI
 
 extension Motion {
-    /// Timings from TitleBar, SubTabsLane and TerminalPane on origin/main.
     public enum WorkspaceEffect: Sendable {
         case tab, close, laneSelection, insertion, pane, action
 
@@ -23,7 +22,6 @@ extension Motion {
     }
 }
 
-/// TerminalPane.module.css `.action`: 20pt target, 12pt icon and accent hover fill.
 public struct AlethePaneActionStyle: ButtonStyle {
     private let danger: Bool
     public init(danger: Bool = false) { self.danger = danger }

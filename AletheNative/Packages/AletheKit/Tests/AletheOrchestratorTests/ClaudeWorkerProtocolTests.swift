@@ -13,9 +13,6 @@ private func claudeJob(cwd: String = "/tmp/claude-worker") -> Job {
     Job(id: "job-01", plannerID: nil, agent: WorkerAgent.claude, runID: "run-01", runLabel: nil, spec: "do something", cwd: cwd)
 }
 
-/// Plays the core's part around the protocol (the P6-6 core replaces it): spawning writes the first
-/// turn, a turn's end computes the diff then finishes it like upstream `finish_turn` (not terminal:
-/// the process stays parked), and every line written to the worker is recorded.
 private struct ClaudeReplay {
     var job: Job
     var written: [OrderedJSON] = []
@@ -70,7 +67,6 @@ private func tokens(_ job: Job, _ side: String, _ key: String) -> UInt64? {
 }
 
 @Suite(.timeLimit(.minutes(1))) struct ClaudeWorkerGoldenTests {
-    // Upstream `a_claude_worker_reports_its_result_and_tokens`.
     @Test func aClaudeWorkerReportsItsResultAndTokens() async throws {
         var replay = ClaudeReplay(job: claudeJob())
         await replay.feed(try transcript("result-and-tokens"))
@@ -87,13 +83,11 @@ private func tokens(_ job: Job, _ side: String, _ key: String) -> UInt64? {
         #expect(replay.job.costUSD == 0.0123)
         #expect(replay.announced.count == 1)
 
-        // What outlives the process keeps the tokens and the cost.
         let restored = try #require(Job(record: replay.job.record))
         #expect(tokens(restored, "total", "totalTokens") == 15)
         #expect(restored.costUSD == 0.0123)
     }
 
-    // Upstream `a_claude_worker_picks_up_its_own_uncommitted_changes_as_a_diff`.
     @Test func aClaudeWorkerPicksUpItsOwnUncommittedChangesAsADiff() async throws {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("alethe-orch-claude-diff-\(UUID().uuidString)", isDirectory: true)
@@ -119,8 +113,6 @@ private func tokens(_ job: Job, _ side: String, _ key: String) -> UInt64? {
         #expect(replay.job.diff?.contains("+after") == true)
     }
 
-    // Upstream `steering_a_running_claude_worker_interrupts_instead_of_waiting_out_the_turn`, carried
-    // on through the aborted turn: it is not announced and the correction starts at once.
     @Test func steeringARunningClaudeWorkerInterruptsInsteadOfWaitingOutTheTurn() async throws {
         var replay = ClaudeReplay(job: claudeJob())
         await replay.feed(try transcript("steer-live-turn"))
@@ -145,12 +137,10 @@ private func tokens(_ job: Job, _ side: String, _ key: String) -> UInt64? {
         #expect(replay.job.status == .done)
         #expect(replay.job.report == "TURNED_AROUND")
         #expect(replay.job.awaitingSteer == false)
-        // The aborted turn still counts.
         #expect(tokens(replay.job, "total", "totalTokens") == 10)
         #expect(abs((replay.job.costUSD ?? 0) - 0.003) < 1e-12)
     }
 
-    // Upstream `steering_a_settled_claude_worker_queues_the_next_turn`.
     @Test func steeringASettledClaudeWorkerQueuesTheNextTurn() async throws {
         var replay = ClaudeReplay(job: claudeJob())
         await replay.feed(try transcript("steer-idle"))
@@ -240,7 +230,6 @@ private func tokens(_ job: Job, _ side: String, _ key: String) -> UInt64? {
         #expect(tokens(job, "total", "cacheCreationInputTokens") == 6)
         #expect(tokens(job, "last", "totalTokens") == 6)
         #expect(job.costUSD == 1.0)
-        // A negative or missing cost is not counted.
         _ = ClaudeWorkerProtocol.handle(["type": "result", "result": "ok", "total_cost_usd": -1], job: &job)
         #expect(job.costUSD == 1.0)
     }

@@ -1,8 +1,6 @@
 import Foundation
 
-/// A saved copy of `graph.json` in `.alethe/graph-snapshots/<ms>.json` (upstream `SnapshotInfo`).
 public struct GraphSnapshot: Hashable, Sendable, Identifiable {
-    /// The creation time in milliseconds, as text: the file's stem.
     public var id: String
     public var url: URL
     public var createdAt: Date
@@ -11,9 +9,6 @@ public struct GraphSnapshot: Hashable, Sendable, Identifiable {
     public var createdMilliseconds: Int64 { Int64(id) ?? 0 }
 }
 
-/// The Graphify files of one repository (port of the file side of upstream `graphify.rs`). Blocking:
-/// callers run it off the main thread (`GraphifyService` does). The snapshot folder and file names
-/// match the Tauri app's, so its snapshots stay listed.
 public struct GraphifyRepository: Sendable {
     public let root: URL
     private let now: @Sendable () -> Date
@@ -30,11 +25,7 @@ public struct GraphifyRepository: Sendable {
     public var snapshotsFolder: URL { root.appending(path: ".alethe").appending(path: "graph-snapshots") }
     public var hasGraph: Bool { FileManager.default.fileExists(atPath: graphURL.path) }
 
-    /// The repository holding `directory`: the nearest folder with a `.git` entry (a folder, or the
-    /// file a linked worktree has), like `git rev-parse --show-toplevel`; nil outside a repository.
     public static func repositoryRoot(containing directory: URL) -> URL? {
-        // Walks path components rather than `deletingLastPathComponent()`, which turns `/` into
-        // `/..`, `/../..`, … so a loop waiting for the parent to equal the child never ends.
         var components = directory.standardizedFileURL.pathComponents
         while !components.isEmpty {
             let current = URL(filePath: NSString.path(withComponents: components), directoryHint: .isDirectory)
@@ -44,13 +35,10 @@ public struct GraphifyRepository: Sendable {
         return nil
     }
 
-    /// Upstream `graphify_read_graph`.
     public func readGraph(limit: Int = GraphData.visualizationLimit) throws -> GraphData {
         try GraphData.parse(graphData(), limit: limit)
     }
 
-    /// Copies the current graph into a new snapshot (upstream `graphify_snapshot`). Two snapshots in
-    /// the same millisecond get consecutive ids instead of overwriting each other.
     @discardableResult
     public func snapshot() throws -> GraphSnapshot {
         let data = try graphData()
@@ -64,7 +52,6 @@ public struct GraphifyRepository: Sendable {
                              createdAt: Date(timeIntervalSince1970: Double(milliseconds) / 1000), sizeBytes: data.count)
     }
 
-    /// Newest first; files that are not `<digits>.json` are ignored (upstream `read_snapshots`).
     public func snapshots() -> [GraphSnapshot] {
         let files = (try? FileManager.default.contentsOfDirectory(
             at: snapshotsFolder, includingPropertiesForKeys: [.fileSizeKey])) ?? []
@@ -78,24 +65,18 @@ public struct GraphifyRepository: Sendable {
         .sorted { $0.createdMilliseconds > $1.createdMilliseconds }
     }
 
-    /// From snapshot `base` to snapshot `compare`, or to the current graph when nil (upstream
-    /// `graphify_diff_snapshot`).
     public func diff(base: String, compare: String? = nil) throws -> GraphDiff {
         let baseSets = try GraphIDSets.parse(Data(contentsOf: snapshotFile(base)))
         let compareData = try compare.map { try Data(contentsOf: snapshotFile($0)) } ?? graphData()
         return GraphDiff(base: baseSets, compare: try GraphIDSets.parse(compareData))
     }
 
-    /// Puts a snapshot back as the current graph (upstream `graphify_rollback`), written atomically.
-    /// The caller asks first: the current graph is replaced.
     public func rollback(to id: String) throws {
         let data = try Data(contentsOf: snapshotFile(id))
         try FileManager.default.createDirectory(at: graphURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         try data.write(to: graphURL, options: .atomic)
     }
 
-    /// Keeps the newest `keepLast` and, with `maxAgeDays`, drops older ones too (upstream
-    /// `graphify_prune_snapshots`). Returns how many were removed.
     @discardableResult
     public func prune(keepLast: Int, maxAgeDays: Int? = nil) -> Int {
         let nowMilliseconds = Int64((now().timeIntervalSince1970 * 1000).rounded())
@@ -110,8 +91,6 @@ public struct GraphifyRepository: Sendable {
         return removed
     }
 
-    // MARK: - Helpers
-
     private func graphData() throws -> Data {
         do {
             return try Data(contentsOf: graphURL)
@@ -122,7 +101,6 @@ public struct GraphifyRepository: Sendable {
 
     private func snapshotURL(_ id: String) -> URL { snapshotsFolder.appending(path: "\(id).json") }
 
-    /// Only digits ever become a path, so an id cannot climb out of the folder.
     static func isSnapshotID(_ id: String) -> Bool {
         !id.isEmpty && id.allSatisfy { $0.isASCII && $0.isNumber }
     }

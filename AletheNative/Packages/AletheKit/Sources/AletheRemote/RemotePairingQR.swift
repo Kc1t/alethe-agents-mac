@@ -3,12 +3,9 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 import Foundation
 
-/// The pairing QR (upstream `qr_svg`), rendered with `CIQRCodeGenerator` and cached for the current
-/// pairing URL — a new pairing token means a new URL, so the cache holds one entry.
 public final class RemotePairingQR: @unchecked Sendable {
     public static let shared = RemotePairingQR()
 
-    /// Upstream's minimum rendered size.
     public static let minimumSide = 220
 
     private let lock = NSLock()
@@ -17,8 +14,6 @@ public final class RemotePairingQR: @unchecked Sendable {
 
     public init() {}
 
-    /// A black-on-white QR of `url`, at least `minimumSide` pixels square with a quiet zone, or
-    /// `nil` if it cannot be encoded.
     public func image(for url: String) -> CGImage? {
         lock.withLock {
             if let cache, cache.url == url { return cache.image }
@@ -28,7 +23,6 @@ public final class RemotePairingQR: @unchecked Sendable {
         }
     }
 
-    /// The URL the cache holds (for tests).
     var cachedURL: String? {
         lock.withLock { cache?.url }
     }

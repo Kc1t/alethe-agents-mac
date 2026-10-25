@@ -11,12 +11,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             folders.forEach(environment.openFolder)
         }
     }
-    /// Open requests that arrived before the window's environment was attached (a cold start).
     @MainActor private var pendingFolders: [URL] = []
 
     func applicationWillFinishLaunching(_ notification: Notification) {
-        // One Alethe per user session: a second copy would own the same data files and terminals.
-        // Debug builds pointed at their own data root (UI tests, experiments) may run side by side.
         #if DEBUG
         if UserDefaults.standard.string(forKey: "AletheDataRoot") != nil { return }
         #endif
@@ -33,8 +30,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ImagePasteMonitor.install { [weak self] in self?.environment?.metrics }
     }
 
-    /// Folders (or files) opened with the app: `alethe` runs `open -a Alethe <folder>`, and Finder's
-    /// Open With or a drop on the Dock icon land here too, on a cold start and while running.
     func application(_ application: NSApplication, open urls: [URL]) {
         MainActor.assumeIsolated {
             let files = urls.filter(\.isFileURL)
@@ -56,7 +51,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return .terminateLater
     }
 
-    /// Reached only on a normal quit: the session marker records it (P5-11).
     func applicationWillTerminate(_ notification: Notification) {
         MainActor.assumeIsolated { environment?.diagnostics.markCleanExit() }
     }
@@ -65,13 +59,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         true
     }
 
-    /// Quitting stops every terminal (upstream `useCloseConfirmation`): ask first while any runs,
-    /// unless the user turned the question off (also from the alert itself).
     @MainActor private func confirmQuit() -> Bool {
         guard let environment, !environment.relaunching,
               environment.preferences?.document.confirmQuit != false else { return true }
         #if DEBUG
-        // Smoke scripts quit throwaway instances with AppleScript; UI tests opt in explicitly.
         if UserDefaults.standard.string(forKey: "AletheDataRoot") != nil,
            !UserDefaults.standard.bool(forKey: "AletheConfirmQuit") { return true }
         #endif

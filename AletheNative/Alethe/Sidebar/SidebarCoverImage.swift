@@ -2,7 +2,6 @@ import AletheDesign
 import AppKit
 import SwiftUI
 
-/// Bounded object-fit: cover image with the same fallback during loading and on failure.
 struct SidebarCoverImage<Fallback: View>: View {
     let source: String
     let side: CGFloat

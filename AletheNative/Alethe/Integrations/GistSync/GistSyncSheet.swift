@@ -3,10 +3,6 @@ import AletheIntegrations
 import AppKit
 import SwiftUI
 
-/// The GitHub Sync sheet (`EditorRequest.gistSync`; upstream `SyncModal` GitHub card — the cloud card
-/// is SET-6, not ported): connect with a token, push, pull (asks once: it replaces this profile's
-/// workspace and relaunches), last push and pull, disconnect. A pulled Tauri gist opens the Tauri
-/// import in place. The token is never shown once entered.
 struct GistSyncSheet: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.dismiss) private var dismiss
@@ -22,7 +18,6 @@ struct GistSyncSheet: View {
     var body: some View {
         Group {
             if let pull = sync.tauriPull, let workspace = environment.workspace {
-                // The main window's undo manager: the import stays undoable once the sheet closes.
                 TauriImportSheet(workspace: workspace, undoManager: NSApp.mainWindow?.undoManager,
                                  projectsFile: pull.projectsFile)
             } else if metrics.isWebInterface {
@@ -219,12 +214,9 @@ struct GistSyncSheet: View {
             }
         }
         .onChange(of: askingPull) { _, shown in
-            // Cancelled: the staged copy is dropped and nothing changed.
             if !shown, !pullStarted { sync.cancelPull() }
         }
     }
-
-    // MARK: - Not connected
 
     @ViewBuilder
     private var connectContent: some View {
@@ -256,12 +248,9 @@ struct GistSyncSheet: View {
 
     private func connect() {
         let value = token
-        // Cleared at once: the token is never shown again after entry.
         token = ""
         sync.connect(token: value)
     }
-
-    // MARK: - Connected
 
     @ViewBuilder
     private var connectedContent: some View {

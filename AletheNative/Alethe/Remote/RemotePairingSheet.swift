@@ -3,10 +3,6 @@ import AletheRemote
 import AppKit
 import SwiftUI
 
-/// The pairing sheet (`EditorRequest.remotePairing`; upstream `RemoteControlModal`): status and the
-/// on/off switch, the pairing QR and URL with Copy and the 120 s countdown (reopened when it closes),
-/// the paired devices with Revoke, and Open Settings. The pairing window opens with the sheet and
-/// closes with it, so the URL and its token are only ever shown here, while the sheet is open.
 struct RemotePairingSheet: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.dismiss) private var nativeDismiss
@@ -17,7 +13,6 @@ struct RemotePairingSheet: View {
     @Environment(\.openSettings) private var openSettings
     @Environment(\.theme) private var theme
     @Environment(\.metrics) private var metrics
-    /// The URL last copied, so "Copied" never refers to an older pairing token.
     @State private var copiedURL: String?
 
     private var remote: RemoteControlController { environment.remoteControl }
@@ -84,7 +79,6 @@ struct RemotePairingSheet: View {
         }
         .padding(metrics.space(.xl))
         .frame(width: metrics.size(560))
-        // While the sheet is open: the countdown and device list follow the hub (upstream polls each second).
         .task {
             while !Task.isCancelled {
                 remote.refresh()
@@ -100,8 +94,6 @@ struct RemotePairingSheet: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("remote.pairing")
     }
-
-    // MARK: - Sections
 
     private func header(enabled: Bool) -> some View {
         HStack(alignment: .top, spacing: metrics.space(.l)) {
@@ -259,8 +251,6 @@ struct RemotePairingSheet: View {
     }
 }
 
-/// A paired device: name, online or idle, when its session expires, and Revoke. The address stays in
-/// Settings, hidden until revealed.
 private struct DeviceRow: View {
     let device: RemoteDeviceInfo
     let revoke: () -> Void

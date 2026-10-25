@@ -1,6 +1,5 @@
 import XCTest
 
-/// Model picker in New Terminal (P3-5).
 @MainActor
 final class ModelPickerTests: XCTestCase {
     override func setUp() async throws {

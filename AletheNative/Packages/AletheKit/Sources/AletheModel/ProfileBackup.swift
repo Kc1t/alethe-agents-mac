@@ -1,25 +1,15 @@
 import Foundation
 
-/// Why a backup could not be written or read (upstream `backup_inside_profile`,
-/// `backup_missing_projects`).
 public enum BackupError: Error, Equatable, Sendable {
-    /// The archive would be written inside the folder being archived.
     case targetInsideSource
-    /// Not a zip archive, or a damaged one; nothing was changed.
     case unreadableArchive
-    /// An entry with an absolute path, `..` or a symbolic link.
     case unsafeEntry(String)
-    /// No `workspace.json`: not an Alethe for Mac profile backup.
     case notAProfileBackup
-    /// A Tauri app backup (`projects.json`): File › Import from Alethe (Tauri)… reads that.
     case tauriBackup
-    /// Written by a newer Alethe.
     case newerFormat
-    /// `ditto` failed; its message.
     case archiveFailed(String)
 }
 
-/// `alethe-backup.json` at the archive root: what the backup is.
 public struct BackupManifest: Codable, Hashable, Sendable {
     public static let fileName = "alethe-backup.json"
     public static let currentFormat = 1
@@ -35,7 +25,6 @@ public struct BackupManifest: Codable, Hashable, Sendable {
     }
 }
 
-/// What an archive holds, shown before an import is confirmed.
 public struct BackupContents: Hashable, Sendable {
     public var manifest: BackupManifest?
     public var projects: Int
@@ -45,20 +34,14 @@ public struct BackupContents: Hashable, Sendable {
     public var hasScrollback: Bool
 }
 
-/// An archive unpacked and validated into `folder`, ready to replace a profile.
 public struct StagedBackup: Hashable, Sendable {
     public var folder: URL
     public var contents: BackupContents
 }
 
-/// Profile backups as `.zip` archives through `ditto` (P5-10, upstream `backup.rs`). Blocking:
-/// callers run it off the main thread.
 public enum ProfileBackup {
-    /// Automatic backups kept per folder (upstream `MAX_BACKUPS`).
     public static let keptSafetyBackups = 10
 
-    /// Archives `directory` into `archive`, runtime files and the top-level `skipping` entries left
-    /// out, with a manifest. An existing file at `archive` is replaced only once the new one is written.
     public static func export(_ directory: URL, to archive: URL, profileName: String?, skipping: Set<String> = [],
                               now: Date = Date()) throws {
         let source = directory.resolvingSymlinksInPath().path
@@ -87,7 +70,6 @@ public enum ProfileBackup {
         }
     }
 
-    /// Entry names of a zip archive; throws `unreadableArchive` for anything `unzip` cannot list.
     public static func entries(of archive: URL) throws -> [String] {
         let output: String
         do {
@@ -98,14 +80,11 @@ public enum ProfileBackup {
         return output.split(separator: "\n").map(String.init).filter { !$0.isEmpty }
     }
 
-    /// An entry that could land outside the destination (upstream: absolute paths and `..`).
     public static func isUnsafe(entry: String) -> Bool {
         let name = entry.replacingOccurrences(of: "\\", with: "/")
         return name.hasPrefix("/") || name.hasPrefix("~") || name.split(separator: "/").contains("..")
     }
 
-    /// Unpacks `archive` into `staging` (created, and removed again on failure) and validates it. Nothing
-    /// outside `staging` is touched, so a refused archive leaves every profile as it was.
     public static func stage(_ archive: URL, into staging: URL) throws -> StagedBackup {
         let manager = FileManager.default
         let names = try entries(of: archive)
@@ -130,8 +109,6 @@ public enum ProfileBackup {
         }
     }
 
-    /// The folder holding the profile files: the staging folder, or its only subfolder when the
-    /// archive was made from a folder (Finder's Compress).
     private static func profileRoot(in staging: URL) throws -> URL {
         let manager = FileManager.default
         if manager.fileExists(atPath: staging.appending(path: "workspace.json").path) { return staging }
@@ -209,8 +186,6 @@ public enum ProfileBackup {
                               files: files, bytes: ProfileFiles.size(of: staging), hasScrollback: hasScrollback)
     }
 
-    /// Archives `directory` into `folder` as `<label>-<date>.zip` and keeps the newest
-    /// `keptSafetyBackups` of that label.
     @discardableResult
     public static func safetyBackup(of directory: URL, label: String, into folder: URL, profileName: String?,
                                     skipping: Set<String> = [], now: Date = Date()) throws -> URL {
@@ -224,7 +199,6 @@ public enum ProfileBackup {
         return archive
     }
 
-    /// Removes all but the newest `count` archives of `label` (names sort by date).
     public static func prune(_ folder: URL, label: String, keeping count: Int) {
         let names = ((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [])
             .filter { $0.hasPrefix("\(label)-") && $0.hasSuffix(".zip") }
@@ -253,19 +227,13 @@ public enum ProfileBackup {
     }
 }
 
-/// An import, reset or erase confirmed by the user and applied at the next launch, before any document
-/// is loaded, so the quitting app's final saves never land on top of it.
 public enum PendingDataOperation: Codable, Hashable, Sendable {
-    /// Replace the profile with the staged folder (a path inside `DataLocations.importStaging`).
     case importProfile(ProfileID, stagedFolder: String)
-    /// Empty the profile's folder; the profile stays in the index.
     case resetProfile(ProfileID)
-    /// Remove every profile and the index; safety backups stay.
     case eraseAll
 }
 
 public enum DataMaintenance {
-    /// Top-level entries of the data root never archived, reset or erased.
     public static func maintenanceEntries(_ locations: DataLocations) -> Set<String> {
         [locations.safetyBackups.lastPathComponent, locations.importStaging.lastPathComponent,
          locations.pendingOperation.lastPathComponent]
@@ -276,7 +244,6 @@ public enum DataMaintenance {
         try JSONEncoder().encode(operation).write(to: locations.pendingOperation, options: .atomic)
     }
 
-    /// Clears a scheduled operation (the relaunch was cancelled) and any staged import.
     public static func cancelPending(in locations: DataLocations) {
         try? FileManager.default.removeItem(at: locations.pendingOperation)
         try? FileManager.default.removeItem(at: locations.importStaging)
@@ -287,8 +254,6 @@ public enum DataMaintenance {
         return try? JSONDecoder().decode(PendingDataOperation.self, from: data)
     }
 
-    /// Applies the scheduled operation, if any, and clears it and the import staging area. The marker
-    /// goes first: a failing operation is not retried on every launch.
     @discardableResult
     public static func applyPending(in locations: DataLocations) throws -> PendingDataOperation? {
         let manager = FileManager.default

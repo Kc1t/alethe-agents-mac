@@ -45,7 +45,6 @@ private let claudeConfig = """
         let zeta = try #require(editor.value(at: ["mcpServers", "zeta"])?.objectValue)
         #expect(zeta.keys == ["userNote", "type", "command", "args"])
         #expect(zeta["userNote"] == .string("hand-added"))
-        // Siblings and the rest of the file are untouched and in place.
         #expect(editor.value(at: ["mcpServers"])?.objectValue?.keys == ["zeta", "alpha"])
         #expect(editor.root.keys.last == "tipsHistory")
         #expect(editor.value(at: ["numStartups"]) == .number("42"))
@@ -116,7 +115,6 @@ private let claudeConfig = """
             #expect(detail.column == 8)
         }
         #expect(throws: JSONConfigError.rootNotAnObject) { try JSONConfigEditor(parsing: "[1, 2]") }
-        // Trailing commas and comments are not JSON without `allowComments`.
         #expect(throws: (any Error).self) { try JSONConfigEditor(parsing: "{\"a\": 1,}") }
     }
 

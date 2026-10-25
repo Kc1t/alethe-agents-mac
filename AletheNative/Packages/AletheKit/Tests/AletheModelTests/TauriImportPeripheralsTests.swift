@@ -3,12 +3,8 @@ import Foundation
 import Testing
 @testable import AletheModel
 
-/// The Phase 7 part of the Tauri import (P7-1) over an anonymized v9 profile folder: preferences,
-/// remote sharing, 9router routing, and the plaintext secrets reported for the Keychain and never
-/// written to a profile file.
 @Suite struct TauriImportPeripheralsTests {
     private static let context = TauriImport.Context(agents: ["claude", "codex", "shell"], themes: ["elite-indigo"])
-    /// Every secret value in the fixture folder.
     private static let secretValues = [
         "FIXTURE-SPOTIFY-SECRET-0001", "FIXTURE-ROUTER9-KEY-0002", "FIXTURE-SPOTIFY-ACCESS-0003",
         "FIXTURE-SPOTIFY-REFRESH-0004", "FIXTURE-GITHUB-TOKEN-0005",

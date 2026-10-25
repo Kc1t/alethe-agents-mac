@@ -162,10 +162,10 @@ private func touch(_ url: URL, _ text: String = "") {
         #expect(file("src/app/view.swift") == .modified)
         #expect(file("src/new.swift") == .added)
         #expect(file("docs/guide.md") == .stagedModified)
-        #expect(file("docs/gone.md") == .stagedModified) // staged M outranks unstaged D
+        #expect(file("docs/gone.md") == .stagedModified)
         #expect(file("old.txt") == .deleted)
         #expect(file("lib/renamed.swift") == .renamed)
-        #expect(file("src/app/conflict.swift") == .conflict) // case-insensitive
+        #expect(file("src/app/conflict.swift") == .conflict)
         #expect(file("notes.txt") == .untracked)
         #expect(file("build") == nil)
         #expect(file("clean.swift") == nil)

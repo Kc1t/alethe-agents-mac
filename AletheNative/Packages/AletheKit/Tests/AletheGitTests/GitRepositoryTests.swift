@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheGit
 
-/// A throwaway repository isolated from the user's git configuration.
 struct TempRepo {
     static let runner = GitRunner(environment: [
         "GIT_CONFIG_GLOBAL": "/dev/null",
@@ -279,7 +278,7 @@ struct TempRepo {
 
         try await t.repo.reset(to: base, mode: .soft)
         #expect(try await t.head() == base)
-        #expect(try await t.repo.status().isClean) // cherry-pick + revert cancel out
+        #expect(try await t.repo.status().isClean)
         try await t.commitFile("x.txt", "x", "x")
         try await t.repo.reset(to: base, mode: .mixed)
         #expect(try await t.repo.status().untracked.map(\.path) == ["x.txt"])
@@ -302,7 +301,7 @@ struct TempRepo {
         #expect(try await a.repo.incomingOutgoing() == nil)
         try await a.git("remote", "add", "origin", remote.url.path)
         let lines = LineCollector()
-        _ = try await a.repo.push(onProgress: { lines.append($0) }) // publishes with --set-upstream
+        _ = try await a.repo.push(onProgress: { lines.append($0) })
         #expect(try await a.repo.status().branch.upstream == "origin/main")
 
         let b = try await TempRepo(empty: true)
@@ -340,7 +339,6 @@ struct TempRepo {
         task.cancel()
         await #expect(throws: GitError.cancelled) { _ = try await task.value }
         #expect(Date().timeIntervalSince(started) < 10)
-        // The queue keeps working after a cancelled operation.
         #expect(try await t.repo.status().isClean)
     }
 

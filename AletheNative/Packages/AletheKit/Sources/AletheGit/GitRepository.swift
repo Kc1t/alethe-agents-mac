@@ -5,8 +5,6 @@ public enum GitResetMode: String, Sendable, CaseIterable {
     case soft, mixed, hard
 }
 
-/// One repository (by its top-level directory). Operations run one at a time, in call order: an
-/// actor alone would interleave across `await`s, so each call is chained after the previous one.
 public actor GitRepository {
     public nonisolated let root: URL
     public nonisolated let runner: GitRunner
@@ -17,9 +15,6 @@ public actor GitRepository {
         self.runner = runner
     }
 
-    // MARK: Discovery and init
-
-    /// The top-level directory of the repository containing `path`.
     public static func discover(_ path: URL, runner: GitRunner = GitRunner()) async throws -> URL {
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: path.path, isDirectory: &isDirectory) else {
@@ -32,8 +27,6 @@ public actor GitRepository {
         return URL(fileURLWithPath: top, isDirectory: true).standardizedFileURL
     }
 
-    /// Makes `path` a repository with a first commit of its files (upstream `git_init`); an existing
-    /// repository is returned untouched.
     public static func initialize(_ path: URL, runner: GitRunner = GitRunner()) async throws -> URL {
         if let root = try? await discover(path, runner: runner) { return root }
         try FileManager.default.createDirectory(at: path, withIntermediateDirectories: true)
@@ -47,7 +40,6 @@ public actor GitRepository {
         do {
             _ = try await runner.run(["commit", "-m", message], in: path)
         } catch GitError.commandFailed {
-            // No identity configured, or nothing to commit.
             _ = try await runner.run(
                 ["-c", "user.name=Alethe", "-c", "user.email=alethe@localhost", "commit", "--allow-empty", "-m", message],
                 in: path
@@ -67,8 +59,6 @@ public actor GitRepository {
 
     """
 
-    // MARK: Serial execution
-
     private func serialized<T: Sendable>(_ operation: @escaping @Sendable () async throws -> T) async throws -> T {
         let previous = tail
         let task = Task { () async throws -> T in
@@ -84,7 +74,6 @@ public actor GitRepository {
         }
     }
 
-    /// Runs raw git arguments in the repository, serialized with the other operations.
     public func run(
         _ arguments: [String],
         allowedExitCodes: Set<Int32> = [0],
@@ -104,13 +93,10 @@ public actor GitRepository {
         (try? await run(["rev-parse", "--verify", "-q", "HEAD"])) != nil
     }
 
-    // MARK: Status and diff
-
     public func status() async throws -> GitStatus {
         GitParsers.parseStatus(try await text(["status", "--porcelain=v2", "-z", "--branch", "--untracked-files=all"]))
     }
 
-    /// The unified diff of one file (or all files when `path` is nil), staged or in the worktree.
     public func diff(path: String? = nil, staged: Bool = false) async throws -> String {
         var args = ["diff", "--no-color", "--no-ext-diff"]
         if staged { args.append("--staged") }
@@ -121,13 +107,11 @@ public actor GitRepository {
         return try await text(args)
     }
 
-    /// The diff of an untracked file against nothing.
     public func diffUntracked(path: String) async throws -> String {
         try GitParsers.validatePaths([path])
         return try await run(["diff", "--no-color", "--no-index", "--", "/dev/null", path], allowedExitCodes: [0, 1]).text
     }
 
-    /// Per-file line counts: staged, worktree, or between two revisions (`from..to`).
     public func diffSummary(staged: Bool = false, range: String? = nil) async throws -> [GitDiffStat] {
         var args = ["diff", "--numstat", "-z", "-M"]
         if staged { args.append("--staged") }
@@ -138,13 +122,10 @@ public actor GitRepository {
         return GitParsers.parseNumstat(try await text(args))
     }
 
-    // MARK: Branches
-
     public func branches() async throws -> [GitBranch] {
         GitParsers.parseBranches(try await text(["for-each-ref", GitParsers.branchFormat, "refs/heads", "refs/remotes"]))
     }
 
-    /// The current branch name, `nil` when detached.
     public func currentBranch() async throws -> String? {
         let output = try await run(["symbolic-ref", "--short", "-q", "HEAD"], allowedExitCodes: [0, 1])
         let name = output.text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -156,7 +137,6 @@ public actor GitRepository {
         _ = try await run(["switch", name])
     }
 
-    /// Creates a branch at `startPoint` (HEAD when nil), switching to it when asked.
     public func createBranch(_ name: String, from startPoint: String? = nil, switchTo: Bool = true) async throws {
         try GitParsers.validateBranchName(name)
         if let startPoint { try GitParsers.validateBranchName(startPoint) }
@@ -165,13 +145,10 @@ public actor GitRepository {
         _ = try await run(args)
     }
 
-    /// A new branch at a commit from the graph, without switching (upstream `git_create_branch_from_commit`).
     public func createBranch(_ name: String, atCommit hash: String) async throws {
         try GitParsers.validateHash(hash)
         try await createBranch(name, from: hash, switchTo: false)
     }
-
-    // MARK: Index and worktree
 
     public func stage(_ paths: [String]) async throws {
         try GitParsers.validatePaths(paths)
@@ -191,7 +168,6 @@ public actor GitRepository {
         }
     }
 
-    /// Throws away worktree changes; untracked files are deleted.
     public func discard(_ paths: [String], untracked: Bool = false) async throws {
         try GitParsers.validatePaths(paths)
         if untracked {
@@ -201,7 +177,6 @@ public actor GitRepository {
         }
     }
 
-    /// Commits the index and returns the new commit hash. Amending without a message keeps the old one.
     @discardableResult
     public func commit(message: String?, amend: Bool = false) async throws -> String {
         var args = ["commit"]
@@ -217,8 +192,6 @@ public actor GitRepository {
         return try await text(["rev-parse", "HEAD"]).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    // MARK: Remotes
-
     public func fetch(onProgress: (@Sendable (String) -> Void)? = nil) async throws -> String {
         try await run(["fetch", "--progress", "--prune"], onProgress: onProgress).errorText
     }
@@ -227,7 +200,6 @@ public actor GitRepository {
         try await run(["pull", "--ff-only", "--progress"], onProgress: onProgress).errorText
     }
 
-    /// Pushes, publishing the branch to `origin` when it has no upstream yet.
     public func push(onProgress: (@Sendable (String) -> Void)? = nil) async throws -> String {
         do {
             return try await run(["push", "--progress"], onProgress: onProgress).errorText
@@ -236,9 +208,6 @@ public actor GitRepository {
         }
     }
 
-    // MARK: History
-
-    /// A page of the commit graph (branches, tags and HEAD), newest first in topological order.
     public func log(skip: Int = 0, limit: Int = 200, allRefs: Bool = true) async throws -> [GitCommit] {
         guard await hasHead() else { return [] }
         var args = ["log", GitParsers.logFormat, "--decorate=full", "--topo-order", "--skip=\(skip)", "--max-count=\(limit)"]
@@ -276,7 +245,6 @@ public actor GitRepository {
         _ = try await run(["reset", "--\(mode.rawValue)", hash])
     }
 
-    /// Commits between HEAD and its upstream; `nil` when the branch tracks nothing.
     public func incomingOutgoing(limit: Int = 200) async throws -> GitIncomingOutgoing? {
         let upstream = try await run(
             ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"],
@@ -291,7 +259,6 @@ public actor GitRepository {
     }
 }
 
-/// One `GitRepository` per root, so every caller shares the same serial queue.
 public final class GitRepositories: Sendable {
     public static let shared = GitRepositories()
     private let repositories = Mutex<[URL: GitRepository]>([:])

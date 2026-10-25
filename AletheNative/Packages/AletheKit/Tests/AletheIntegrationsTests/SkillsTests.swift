@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheIntegrations
 
-/// A throwaway home with skills laid out like a real one.
 private struct Home {
     let url: URL
     let store: SkillStore
@@ -116,7 +115,6 @@ private struct Home {
     @Test func aSymlinkedParentOutsideTheRootIsRefused() throws {
         let home = Home()
         let outside = home.skill("elsewhere/evil")
-        // `.system` pointing outside the root: the skill's parent is not under the root.
         home.link(".codex/skills/.system", to: outside.deletingLastPathComponent())
         #expect(throws: SkillError.outsideRoot) { try home.store.detailNow(agent: .codex, name: "evil") }
     }
@@ -155,7 +153,6 @@ private struct Home {
         #expect(codex.skills.map(\.name) == ["imagegen", "mine"])
         #expect(codex.skills.first { $0.name == "imagegen" }?.bundled == true)
         #expect(codex.skills.first { $0.name == "mine" }?.bundled == false)
-        // The marker marks every skill beneath its folder.
         #expect(home.store.summarize(.codex, root: home.store.root(for: .codex),
                                      dir: home.url.appending(path: ".codex/skills/vendor/tool"))?.bundled == true)
     }
@@ -194,7 +191,7 @@ private struct Home {
 
         let task = Task { try await home.store.scan() }
         task.cancel()
-        _ = await task.result // either finished before the cancel or threw CancellationError; never hangs
+        _ = await task.result
     }
 }
 

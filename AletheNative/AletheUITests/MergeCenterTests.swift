@@ -1,6 +1,5 @@
 import XCTest
 
-/// Merge Center and Branch Testing sheets open from the project menu (P4-10, P4-12).
 @MainActor
 final class MergeCenterTests: XCTestCase {
     override func setUp() async throws {

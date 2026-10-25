@@ -5,18 +5,9 @@ import AppKit
 import Observation
 import SwiftUI
 
-/// Pointer-driven sidebar drag: the equivalent of dnd-kit's `PointerSensor` in the web app.
-///
-/// The system drag session is not used for sidebar items. SwiftUI reports no drag end or cancel, delivers
-/// `performDrop` unreliably for custom types and draws its own preview. Instead a row's `DragGesture` calls
-/// `begin`; from then on the pointer is read from `NSEvent`, targets come from the live row views
-/// (`SidebarDropGeometry`) ranked by `SidebarWebDropRules`, the preview is a floating window (dnd-kit's
-/// `DragOverlay`) and the drop is applied on mouse up. Escape cancels.
 @MainActor @Observable
 final class SidebarWebDragState {
-    /// What dropping here would do; drives the insertion line, the box and the row fills.
     private(set) var plan: SidebarDropPlan?
-    /// Payload string of the item being dragged; nil when idle. Rows dim themselves while it matches.
     private(set) var source: String?
     private(set) var sourceGroup: GroupID?
 
@@ -33,7 +24,6 @@ final class SidebarWebDragState {
     @ObservationIgnored private var escapeMonitor: Any?
     @ObservationIgnored private var releasedTicks = 0
     #if DEBUG
-    /// Self-test seam: pretends the left button stays down.
     @ObservationIgnored var debugHoldsButton = false
     var debugGhostVisible: Bool { ghost?.isVisible ?? false }
     #endif
@@ -45,10 +35,6 @@ final class SidebarWebDragState {
         self.perform = perform
     }
 
-    // MARK: - Drag lifecycle (rows)
-
-    /// Picks `item` up. `translation` is the gesture's offset when it activated, which recovers where the
-    /// mouse went down inside `row`.
     func begin(_ item: SidebarDragPayload, raw: String, label: String, translation: CGSize, row: NSView?,
                theme: Theme, metrics: Metrics) {
         guard !isDragging, geometry?.surface != nil else { return }
@@ -71,7 +57,6 @@ final class SidebarWebDragState {
         tick()
     }
 
-    /// Mouse up: drops where the pointer is.
     func finish() {
         guard isDragging else { return }
         if let point = geometry?.pointer() { resolve(at: point) }
@@ -87,8 +72,6 @@ final class SidebarWebDragState {
         teardown()
     }
 
-    // MARK: - Finder folders (system drag, hover feedback only)
-
     func hover(_ plan: SidebarDropPlan?) {
         guard !isDragging else { return }
         publish(plan)
@@ -99,11 +82,8 @@ final class SidebarWebDragState {
         publish(nil)
     }
 
-    // MARK: - Tracking
-
     private func tick() {
         guard isDragging else { return }
-        // Mouse up normally arrives through the gesture; this also covers a row torn down mid-drag.
         if !buttonDown {
             releasedTicks += 1
             if releasedTicks >= 3 { finish(); return }
@@ -178,10 +158,6 @@ final class SidebarWebDragState {
         }
     }
 
-    // MARK: - Diagnostics
-
-    /// `defaults write com.kc1t.alethe.mac debug.sidebarDrop -bool true` logs every target change and the drop
-    /// to `~/Library/Application Support/com.kc1t.alethe.mac/logs/sidebar-drop.log`.
     private func log(_ event: String) {
         guard UserDefaults.standard.bool(forKey: "debug.sidebarDrop") else { return }
         func r(_ rect: CGRect) -> String { "(\(Int(rect.minX)),\(Int(rect.minY)) \(Int(rect.width))x\(Int(rect.height)))" }
@@ -203,13 +179,8 @@ final class SidebarWebDragState {
     }
 }
 
-// MARK: - Drag overlay
-
-/// dnd-kit's `DragOverlay`: a borderless window that follows the pointer so it is never clipped by the
-/// sidebar and never takes events.
 @MainActor
 final class SidebarDragGhost {
-    /// The pill alone, without the transparent margin that leaves room for its shadow.
     let size: CGSize
     var isVisible: Bool { panel.isVisible }
     private let panel: NSPanel
@@ -225,7 +196,6 @@ final class SidebarDragGhost {
         let host = NSHostingView(rootView: root)
         host.layoutSubtreeIfNeeded()
         var fitting = host.fittingSize
-        // An off-screen hosting view can report no size; fall back to the pill's minimum (web `.dragOverlay`).
         if fitting.width < 2 * inset + 1 || fitting.height < 2 * inset + 1 {
             fitting = CGSize(width: metrics.size(150) + 2 * inset, height: metrics.size(34) + 2 * inset)
         }
@@ -245,7 +215,6 @@ final class SidebarDragGhost {
         panel.orderFront(nil)
     }
 
-    /// `pointer` is in screen coordinates; `grab` is where the pointer sits inside the pill, from its top-left.
     func move(pointer: CGPoint, grab: CGPoint) {
         panel.setFrameTopLeftPoint(CGPoint(x: pointer.x - grab.x - inset, y: pointer.y + grab.y + inset))
     }
@@ -256,7 +225,6 @@ final class SidebarDragGhost {
     }
 }
 
-/// Web `.dragOverlay`: folder glyph and name in an elevated, bordered pill.
 struct SidebarDragPill: View {
     let label: String
     @Environment(\.theme) private var theme

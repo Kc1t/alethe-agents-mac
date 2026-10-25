@@ -1,7 +1,6 @@
 import Foundation
 
 extension OrchestrationPreferences {
-    /// routingPresets.ts: replace preset-owned names, preserve all other user roles.
     public mutating func applyPreset(_ preset: String) {
         guard ["economy", "balanced", "performance"].contains(preset) else { return }
         let scout = OrchestrationRole(name: "scout", agent: "claude", model: "haiku", effort: "low", fallback: "handyman")

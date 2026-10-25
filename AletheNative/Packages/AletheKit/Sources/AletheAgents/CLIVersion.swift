@@ -1,19 +1,14 @@
 import Foundation
 
-/// What version an agent CLI reports (upstream `agent_cli_version`, `cli_version_at`).
 public enum CLIVersion {
-    /// Tried in order: the CLIs disagree, and none documents it (upstream `VERSION_FLAGS`).
     public static let flags = ["--version", "-v", "version"]
 
-    /// The first dotted number in the output, trailing dot dropped (upstream `parse_version`).
     public static func parse(_ output: String) -> String? {
         output.split { !($0.isNumber || $0 == ".") }
             .first { $0.contains(".") && $0.first?.isNumber == true }
             .map { String($0).trimmingCharacters(in: CharacterSet(charactersIn: ".")) }
     }
 
-    /// Runs the CLI with each flag until one prints a version; nil when none does or it hangs past
-    /// `timeout`. The CLI's own directory leads PATH (npm CLIs start with `#!/usr/bin/env node`).
     public static func probe(_ executable: String, timeout: Duration = .seconds(5)) async -> String? {
         for flag in flags {
             if let version = await run(executable, flag, timeout: timeout).flatMap(parse) { return version }
@@ -26,7 +21,6 @@ public enum CLIVersion {
     }
 }
 
-/// Output (stdout and stderr) of a short CLI call, or nil when it cannot start; killed past `timeout`.
 public enum CLIOutput {
     public static func run(_ executable: String, _ arguments: [String], timeout: Duration,
                            directory: String? = nil) async -> String? {

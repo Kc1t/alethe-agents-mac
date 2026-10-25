@@ -3,14 +3,12 @@ import AppKit
 import Foundation
 import UniformTypeIdentifiers
 
-/// A row the sidebar can select.
 enum SidebarItem: Hashable {
     case group(GroupID)
     case project(ProjectID)
     case tab(TabID)
 }
 
-/// What a sidebar drag carries: a prefixed id as plain text (kept in-app; no custom UTType needed).
 enum SidebarDrag {
     static let projectPrefix = "alethe-project:"
     static let groupPrefix = "alethe-group:"
@@ -39,7 +37,6 @@ enum SidebarDrag {
 
     typealias Dropped = SidebarDragPayload
 
-    /// Reads dragged sidebar payloads and hands each one to `apply` on the main actor.
     static func load(_ providers: [NSItemProvider], apply: @escaping @MainActor (Dropped) -> Void) {
         for provider in providers {
             if let type = [projectType, groupType, paneType].first(where: {
@@ -67,13 +64,11 @@ enum SidebarDrag {
     }
 }
 
-/// Sidebar actions that touch the workspace document (undoable) or the system.
 @MainActor
 struct SidebarActions {
     let workspace: WorkspaceModel
     let undoManager: UndoManager?
 
-    /// Adds each folder as a project (skipping folders already added); returns the new ids.
     @discardableResult
     func addProjects(folders: [URL], in location: ProjectLocation = .ungrouped) -> [ProjectID] {
         let known = Set(workspace.document.projects.map { URL(filePath: $0.folder).standardizedFileURL.path })
@@ -122,8 +117,6 @@ struct SidebarActions {
         }
     }
 
-    /// A drop between rows of a list: projects are inserted at `index` of that list; groups dropped
-    /// between projects land inside the list's group.
     func insert(_ dropped: SidebarDrag.Dropped, into location: ProjectLocation, at index: Int) {
         workspace.update(undoManager: undoManager, actionName: String(localized: "undo.move")) { doc in
             switch dropped {
@@ -137,7 +130,6 @@ struct SidebarActions {
         }
     }
 
-    /// Reordering inside one list (the outline view's own drag).
     func reorder(in location: ProjectLocation, from source: IndexSet, to destination: Int, visibleIDs: [ProjectID]? = nil) {
         let ids = location == .ungrouped
             ? workspace.document.ungroupedProjectIDs
@@ -150,7 +142,6 @@ struct SidebarActions {
         }
     }
 
-    /// Translate an insertion among visible rows to the persisted list, including hidden projects.
     func insertionIndex(_ index: Int, in location: ProjectLocation, visibleIDs: [ProjectID]) -> Int {
         let ids = location == .ungrouped
             ? workspace.document.ungroupedProjectIDs
@@ -159,7 +150,6 @@ struct SidebarActions {
         return ids.firstIndex(of: visibleIDs[index]) ?? ids.count
     }
 
-    /// A drop between group rows: groups are reordered among the children of `parent`.
     func insertGroup(_ dropped: SidebarDrag.Dropped, under parent: GroupID?, at index: Int) {
         guard case .group(let group) = dropped else { return }
         workspace.update(undoManager: undoManager, actionName: String(localized: "undo.move")) {
@@ -167,7 +157,6 @@ struct SidebarActions {
         }
     }
 
-    /// Dropping on a project row places the dragged project before it, in the target's list.
     func drop(_ dropped: SidebarDrag.Dropped, onProject target: ProjectID) {
         if case .pane(let pane) = dropped {
             workspace.update(undoManager: undoManager, actionName: String(localized: "undo.move")) {
@@ -258,8 +247,6 @@ struct SidebarActions {
         }
     }
 
-    /// Suspending asks first: it ends every terminal of the group's projects (upstream
-    /// `SuspendGroupModal`).
     func suspendGroup(_ group: ProjectGroup) {
         if WebDialogCenter.shared.themed {
             Task {
@@ -308,8 +295,6 @@ struct SidebarActions {
         workspace.update { $0.setLaneVisible(visible, for: pane) }
     }
 
-    /// Selecting a project shows it in its own workspace tab; with ⌥ it joins the current tab instead
-    /// (upstream `openProjectWorkspace` / `addProjectToWorkspace`).
     func select(_ item: SidebarItem?) {
         let adding = NSEvent.modifierFlags.contains(.option)
         workspace.update { doc in

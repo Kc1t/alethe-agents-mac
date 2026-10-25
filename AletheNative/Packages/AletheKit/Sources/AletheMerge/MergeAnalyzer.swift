@@ -6,8 +6,6 @@ public enum MergeError: Error, Equatable, Sendable {
     case invalidBranch(String)
 }
 
-/// Trial-merges one branch into another in a disposable detached worktree under
-/// `.alethe/merge-envs/`, so the user's working tree is never touched (upstream `merge_analyze`).
 public struct MergeAnalyzer: Sendable {
     public let root: URL
     public let runner: GitRunner
@@ -43,7 +41,6 @@ public struct MergeAnalyzer: Sendable {
         }
     }
 
-    /// Paths left unmerged (`--diff-filter=U`) in a conflicted worktree.
     public func unmergedFiles(in directory: URL) async throws -> [String] {
         let output = try await runner.run(["diff", "--name-only", "--diff-filter=U", "-z"], in: directory)
         return output.text.split(separator: "\0").map(String.init).filter { !$0.isEmpty }
@@ -56,7 +53,6 @@ public struct MergeAnalyzer: Sendable {
         guard output.exitCode == 0 else { throw MergeError.branchNotFound(branch) }
     }
 
-    /// Best-effort: a clean uncommitted merge also leaves staged state that `remove --force` discards.
     private func teardown(_ env: URL) async {
         _ = try? await runner.run(["merge", "--abort"], in: env, allowedExitCodes: [0, 1, 128])
         _ = try? await runner.run(["worktree", "remove", "--force", env.path], in: root)

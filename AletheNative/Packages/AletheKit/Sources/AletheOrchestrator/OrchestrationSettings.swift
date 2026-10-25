@@ -18,7 +18,6 @@ extension OrchestratorCore {
         return "<alethe-rules>\nThese are Alethe's working rules for this task. If this repository states something different (CLAUDE.md, AGENTS.md, CONTRIBUTING.md), the repository wins.\n\n" + body + "\n</alethe-rules>\n\n"
     }
 
-    /// Preferences are applied before accepting a delegate call; existing workers keep their budget.
     public func applySettings(_ settings: OrchestrationPreferences) {
         orchestrationSettings = settings.normalized
         setConcurrencyLimit(orchestrationSettings.maxConcurrent)

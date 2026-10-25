@@ -2,8 +2,6 @@ import Foundation
 import Synchronization
 import AletheIntegrations
 
-/// `orchestrator-jobs.json` in upstream's v2 shape (`version`, job records in creation order,
-/// planners), so a file written by the Tauri app loads here and the other way round.
 public struct OrchestratorJobsFile: Hashable, Sendable {
     public static let version = 2
 
@@ -15,7 +13,6 @@ public struct OrchestratorJobsFile: Hashable, Sendable {
         self.planners = planners
     }
 
-    /// Upstream `persist`'s payload, key for key.
     public var json: OrderedJSON {
         [
             "version": .integer(Self.version),
@@ -24,8 +21,6 @@ public struct OrchestratorJobsFile: Hashable, Sendable {
         ]
     }
 
-    /// Upstream `restore`: the version is not checked, records without an id are skipped and the
-    /// in-flight ones come back interrupted (`Job.init?(record:)`). Nil when the root is no object.
     public init?(json: OrderedJSON) {
         guard let object = json.objectValue else { return nil }
         var jobs: [Job] = []
@@ -34,7 +29,6 @@ public struct OrchestratorJobsFile: Hashable, Sendable {
             guard let job = Job(record: record), seenJobs.insert(job.id).inserted else { continue }
             jobs.append(job)
         }
-        // Upstream keeps planners in a map: a repeated id replaces the earlier entry.
         var planners: [Planner] = []
         var plannerIndex: [String: Int] = [:]
         for record in object["planners"]?.arrayValue ?? [] {
@@ -50,19 +44,15 @@ public struct OrchestratorJobsFile: Hashable, Sendable {
     }
 }
 
-/// What a launch starts from: the previous session's history and the counters past its ids.
 public struct OrchestratorRestore: Hashable, Sendable {
     public enum Outcome: Hashable, Sendable {
-        /// No file yet.
         case fresh
         case loaded
-        /// The file could not be read; it was moved to `movedTo` (nil if even that failed).
         case setAside(movedTo: URL?)
     }
 
     public var jobs: [Job]
     public var planners: [Planner]
-    /// The highest `job-NN` restored; the next job is `job-(jobCounter + 1)`.
     public var jobCounter: UInt64
     public var runCounter: UInt64
     public var outcome: Outcome
@@ -79,12 +69,6 @@ public struct OrchestratorRestore: Hashable, Sendable {
     public var nextRunID: String { OrchestratorID.run(runCounter + 1) }
 }
 
-/// The job history that outlives the app (upstream `set_store` / `restore` / `persist`).
-///
-/// `persist` is called on transitions only (never on streamed tokens) and never blocks: the state is
-/// handed over and written on a serial queue. Requests that arrive while a write is waiting or in
-/// progress coalesce into one write of the latest state. Writes are atomic (temporary file renamed
-/// over the target), so a crash leaves either the previous file or the new one.
 public final class OrchestratorJobStore: Sendable {
     public static let fileName = "orchestrator-jobs.json"
 
@@ -98,7 +82,6 @@ public final class OrchestratorJobStore: Sendable {
         var writes = 0
     }
 
-    /// `queue` is where writes happen; tests pass one they can suspend.
     public init(url: URL, queue: DispatchQueue = DispatchQueue(label: "alethe.orchestrator.job-store", qos: .utility)) {
         self.url = url
         self.queue = queue
@@ -108,16 +91,12 @@ public final class OrchestratorJobStore: Sendable {
         self.init(url: profileDirectory.appending(path: Self.fileName))
     }
 
-    /// Where an unreadable file is set aside.
     public var backupURL: URL {
         url.deletingLastPathComponent().appending(path: url.lastPathComponent + ".bak")
     }
 
-    /// How many times the file has been written (coalescing is observable in tests).
     public var writeCount: Int { state.withLock { $0.writes } }
 
-    /// Reads the previous session's history. Never fails: an unreadable file is moved to `.bak` and
-    /// the store starts empty, so the next write does not destroy what could still be recovered.
     public func restore() -> OrchestratorRestore {
         let fileManager = FileManager.default
         guard fileManager.fileExists(atPath: url.path) else {
@@ -131,7 +110,6 @@ public final class OrchestratorJobStore: Sendable {
         return OrchestratorRestore(file: OrchestratorJobsFile(), outcome: .setAside(movedTo: setAside()))
     }
 
-    /// Asks for the state to be written; returns at once.
     public func persist(_ file: OrchestratorJobsFile) {
         let schedule = state.withLock { state -> Bool in
             state.pending = file
@@ -146,7 +124,6 @@ public final class OrchestratorJobStore: Sendable {
         persist(OrchestratorJobsFile(jobs: jobs, planners: planners))
     }
 
-    /// Returns once every requested state is on disk (call on quit and before reading the file back).
     public func flush() async {
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             queue.async {
@@ -178,7 +155,6 @@ public final class OrchestratorJobStore: Sendable {
             try data.write(to: url, options: .atomic)
             state.withLock { $0.writes += 1 }
         } catch {
-            // Like upstream, a failed write is dropped: the next transition writes the whole state again.
         }
     }
 

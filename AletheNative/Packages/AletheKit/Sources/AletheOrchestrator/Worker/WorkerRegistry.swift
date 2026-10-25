@@ -3,13 +3,9 @@ import Foundation
 import Synchronization
 import AletheFoundation
 
-/// One live worker as written to `orchestrator-workers.json`.
 public struct WorkerRecord: Hashable, Sendable, Codable {
-    /// The worker's pid, which is also its process group (it leads its own group).
     public var pid: pid_t
     public var groupID: pid_t
-    /// Every image the process was seen running: the program at spawn and what it became after
-    /// exec (an npm CLI's `#!/usr/bin/env node` ends as node), read once it answered.
     public var executables: [String]
     public var startTime: ProcessStartTime
     public var jobID: String?
@@ -23,11 +19,6 @@ public struct WorkerRecord: Hashable, Sendable, Codable {
     }
 }
 
-/// Live workers on disk (`<profile>/orchestrator-workers.json`), so the launch after a crash can end
-/// the groups the dead app left behind. A worker matches only when the process with its pid still
-/// runs one of its recorded executables and started at the recorded instant — never by command line,
-/// which any shell or editor mentioning the same words would share (as the browser sweep, P5-19).
-/// Workers usually exit on their own once their stdin closes with the app; this is the backstop.
 public final class WorkerRegistry: Sendable {
     public static let fileName = "orchestrator-workers.json"
 
@@ -60,7 +51,6 @@ public final class WorkerRegistry: Sendable {
         }
     }
 
-    /// Adds an image the worker was seen running (after its exec settled).
     public func noteExecutable(_ executable: String, for pid: pid_t) {
         state.withLock { records in
             guard let index = records.firstIndex(where: { $0.pid == pid }),
@@ -78,15 +68,12 @@ public final class WorkerRegistry: Sendable {
         }
     }
 
-    /// Whether `live`, the process now holding a record's pid, is that worker.
     public static func matches(_ record: WorkerRecord, live: LiveProcess?) -> Bool {
         guard let live, live.pid == record.pid, live.startTime == record.startTime,
               let executable = live.executable else { return false }
         return record.executables.contains(executable)
     }
 
-    /// Records written by an earlier run, dropped when they come from another boot (their pids name
-    /// nothing now) or cannot be read.
     public func leftovers(currentBoot: ProcessStartTime? = WorkerRegistry.currentBootTime) -> [WorkerRecord] {
         guard let data = try? Data(contentsOf: url),
               let document = try? JSONDecoder().decode(Document.self, from: data) else { return [] }
@@ -94,9 +81,6 @@ public final class WorkerRegistry: Sendable {
         return document.workers
     }
 
-    /// Ends every leftover worker that still matches (SIGTERM to its group, SIGKILL to the tree after
-    /// `grace`), then starts the file over with this run's workers. Call once at launch, before the
-    /// first spawn. Returns the pids that were ended.
     @concurrent
     public func terminateLeftovers(
         grace: Duration = WorkerProcess.terminationGrace,
@@ -119,7 +103,6 @@ public final class WorkerRegistry: Sendable {
             try? await Task.sleep(for: .milliseconds(50))
         }
         for record in stale {
-            // Not our child, so it cannot be reaped here: launchd reaps it once it dies.
             WorkerProcessTable.killTree(leader: record.pid, leaderAlive: Self.matches(record, live: lookup(record.pid)))
         }
         if !stale.isEmpty {
@@ -129,7 +112,6 @@ public final class WorkerRegistry: Sendable {
         return stale.map(\.pid)
     }
 
-    /// Atomic (tmp → rename); a failure is logged and the next change tries again.
     private func write(_ records: [WorkerRecord]) {
         let document = Document(bootTime: WorkerProcessTable.bootTime(), workers: records)
         do {

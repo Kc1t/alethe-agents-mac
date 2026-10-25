@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheGit
 
-/// Upstream `project_detector.rs` test cases, with the suggested commands they imply (P5-5).
 struct ProjectStackTests {
     private func folder(_ files: [String: String]) throws -> URL {
         let root = FileManager.default.temporaryDirectory.appending(path: "alethe-detect-\(UUID().uuidString)")

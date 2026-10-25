@@ -13,7 +13,6 @@ final class AppShellTests: XCTestCase {
         app.terminate()
     }
 
-    /// Zoom scales the layout itself (the empty-state title grows) and survives a relaunch.
     func testZoomMenuChangesAndPersistsTheUIScale() {
         let (app, root) = launchAlethe()
         let empty = app.descendants(matching: .any)["workspace.empty"]
@@ -25,7 +24,6 @@ final class AppShellTests: XCTestCase {
         app.menuItems["Zoom In"].click()
         XCTAssertTrue(eventually { empty.frame.height > baseline * 1.1 })
         let zoomed = empty.frame.height
-        // XCUIApplication.terminate() kills the process; wait past the save debounce first.
         RunLoop.current.run(until: Date().addingTimeInterval(1))
         app.terminate()
 
@@ -42,14 +40,12 @@ final class AppShellTests: XCTestCase {
         let (app, root) = launchAlethe()
         XCTAssertTrue(app.descendants(matching: .any)["workspace.empty"].waitForExistence(timeout: 5))
         app.typeKey(",", modifierFlags: .command)
-        // Settings reopens on the last tab used (kept in the app's defaults, across test runs).
         app.toolbars.buttons["General"].firstMatch.click()
         let toggle = app.descendants(matching: .any)["settings.alwaysUnrestricted"].firstMatch
         XCTAssertTrue(toggle.waitForExistence(timeout: 5))
         XCTAssertEqual(toggle.value as? Int, 0, "type=\(toggle.elementType.rawValue) value=\(String(describing: toggle.value))")
         toggle.click()
         XCTAssertTrue(eventually { toggle.value as? Int == 1 }, "value=\(String(describing: toggle.value))")
-        // Past the save debounce, then relaunch.
         RunLoop.current.run(until: Date().addingTimeInterval(1))
         app.terminate()
 

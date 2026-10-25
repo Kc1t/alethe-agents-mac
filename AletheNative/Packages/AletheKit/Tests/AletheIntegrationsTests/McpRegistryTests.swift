@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheIntegrations
 
-// Golden cases from upstream `mcp_catalog.rs`.
 private let packageServer = #"""
 {
   "name": "com.pulsemcp/playwright-stealth",
@@ -93,7 +92,6 @@ private func pageBody(cursor: String? = "abc:1.0") -> Data {
         #expect(McpRegistryParser.runtime(registryType: "nuget", hint: nil) == "dnx")
         #expect(McpRegistryParser.runtime(registryType: "mcpb", hint: nil) == nil)
         #expect(McpRegistryParser.runtime(registryType: "npm", hint: "docker") == "docker")
-        // Only npm packages get a pinned `@version`.
         let pypi = #"{"name":"a/b","packages":[{"registryType":"pypi","identifier":"srv","version":"1.2"}]}"#
         #expect(try entry(pypi).installs.first?.args == ["srv"])
     }

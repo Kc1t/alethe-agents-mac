@@ -1,8 +1,6 @@
 import AletheGit
 import Foundation
 
-/// A project's validation settings (upstream `Project.validationCommands`/`healthCheckCommand`/path).
-/// Upstream leaves them user-configured; `suggested(for:)` only pre-fills an empty editor.
 public struct ValidationSettings: Codable, Equatable, Sendable {
     public var commands: [String]
     public var healthCheckCommand: String?
@@ -14,12 +12,10 @@ public struct ValidationSettings: Codable, Equatable, Sendable {
         self.healthCheckPath = healthCheckPath
     }
 
-    /// Non-empty trimmed commands, in order.
     public var effectiveCommands: [String] {
         commands.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
     }
 
-    /// Build/test commands inferred from well-known manifests at `root`, then the stack's checks.
     public static func suggested(for root: URL) -> ValidationSettings {
         let fm = FileManager.default
         func exists(_ name: String) -> Bool { fm.fileExists(atPath: root.appendingPathComponent(name).path) }
@@ -35,8 +31,6 @@ public struct ValidationSettings: Codable, Equatable, Sendable {
         if exists("Cargo.toml") { commands += ["cargo build", "cargo test"] }
         if exists("Package.swift") { commands += ["swift build", "swift test"] }
         if exists("go.mod") { commands += ["go build ./...", "go test ./..."] }
-        // The detected stack (P5-5) adds its checks for toolchains the manifests above did not cover:
-        // a Tauri app's `src-tauri` crate, a Python backend.
         if let detection = try? ProjectStackDetector.detect(root) {
             let covered = Set(commands.map(toolchain))
             commands += detection.suggestedCommands.filter { !covered.contains(toolchain($0)) }
@@ -44,14 +38,12 @@ public struct ValidationSettings: Codable, Equatable, Sendable {
         return ValidationSettings(commands: commands)
     }
 
-    /// The toolchain a command runs (`npm`, `pnpm` and `yarn` count as one).
     static func toolchain(_ command: String) -> String {
         let tool = command.split(separator: " ").first.map(String.init) ?? command
         return ["npm", "pnpm", "yarn"].contains(tool) ? "node" : tool
     }
 }
 
-/// One command's captured run.
 public struct ValidationStepResult: Codable, Hashable, Sendable {
     public var command: String
     public var exitCode: Int32
@@ -61,11 +53,9 @@ public struct ValidationStepResult: Codable, Hashable, Sendable {
     public var succeeded: Bool { exitCode == 0 }
 }
 
-/// The outcome of a validation pipeline (upstream `ValidationResult`), kept per merge.
 public struct ValidationReport: Codable, Hashable, Sendable {
     public enum Status: String, Codable, Sendable {
         case passed, failed, cancelled
-        /// No command configured: nothing was checked (not a blocker, but never shown as "validated").
         case unverified
     }
 
@@ -74,16 +64,12 @@ public struct ValidationReport: Codable, Hashable, Sendable {
     public var healthProbe: HealthProbeResult?
     public var finishedAt: Date
 
-    /// The failing command (upstream `stage`), if any.
     public var failedCommand: String? { steps.first { !$0.succeeded }?.command }
     public var ranAnyCommand: Bool { !steps.isEmpty }
 }
 
-/// Runs validation commands in a directory with `/bin/sh -c`, stopping at the first failure
-/// (upstream `run_validation`). Cancelling the calling task terminates the running command.
 public struct ValidationRunner: Sendable {
     public static let maxOutput = 64 * 1024
-    /// Shell exit statuses (and signal numbers) are 0...255; all of them are reported, not thrown.
     static let anyExit = Set<Int32>(0...255)
     public var shell: URL
     public var environment: [String: String]
@@ -136,7 +122,6 @@ public struct ValidationRunner: Sendable {
     static func ms(since start: Date) -> Int { Int(Date().timeIntervalSince(start) * 1000) }
 }
 
-/// Validation results kept per merge environment id; Codable so the Merge Center can persist them.
 public struct MergeValidationLog: Codable, Equatable, Sendable {
     public private(set) var reports: [String: [ValidationReport]] = [:]
 

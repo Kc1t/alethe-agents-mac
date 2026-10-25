@@ -3,7 +3,6 @@ import Foundation
 import Testing
 @testable import AletheMerge
 
-/// Port of upstream `detects_conflict_and_clean_merges` against a throwaway repository.
 struct MergeAnalyzerTests {
     static let runner = GitRunner(environment: ["GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1"])
 
@@ -50,7 +49,6 @@ struct MergeAnalyzerTests {
         #expect(conflicted.conflicts == [ConflictFile(path: "shared.ts", class: .typeScript)])
         #expect(conflicted.classes == [.typeScript])
 
-        // No trial worktree is left behind, and the user's checkout is untouched.
         let envs = MergeAnalyzer.mergeEnvsDirectory(root: root)
         let leftovers = (try? FileManager.default.contentsOfDirectory(atPath: envs.path)) ?? []
         #expect(leftovers.isEmpty)

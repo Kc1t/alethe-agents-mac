@@ -1,7 +1,5 @@
 import Foundation
 
-/// A JSON value, for migrations that reshape stored documents before they are decoded into the
-/// current model types.
 public enum JSONValue: Hashable, Sendable, Codable {
     case null
     case bool(Bool)

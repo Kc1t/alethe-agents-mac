@@ -1,17 +1,11 @@
 import Foundation
 
-/// Where a project sits in the sidebar: in a group, or ungrouped.
 public enum ProjectLocation: Hashable, Sendable {
     case ungrouped
     case group(GroupID)
 }
 
-/// Mutations of the workspace document. Pure (no I/O) so every rule is unit-tested; the store applies
-/// them and schedules the save. Invariant kept by every operation: each project id appears exactly
-/// once, either in one group's `projectIDs` or in `ungroupedProjectIDs`.
 extension WorkspaceDocument {
-    // MARK: - Lookup
-
     public func project(_ id: ProjectID) -> Project? {
         projects.first { $0.id == id }
     }
@@ -25,12 +19,10 @@ extension WorkspaceDocument {
         return groups.first { $0.projectIDs.contains(project) }.map { .group($0.id) }
     }
 
-    /// Child groups of `parent` (nil: top level), in sibling order.
     public func childGroups(of parent: GroupID?) -> [ProjectGroup] {
         groups.filter { $0.parentID == parent }
     }
 
-    /// `ancestor` itself or any group above `group`.
     public func isGroup(_ group: GroupID, inside ancestor: GroupID) -> Bool {
         var current: GroupID? = group
         var visited = Set<GroupID>()
@@ -48,8 +40,6 @@ extension WorkspaceDocument {
         return nil
     }
 
-    // MARK: - Groups
-
     @discardableResult
     public mutating func addGroup(name: String, color: ProjectColor? = nil, parent: GroupID? = nil) -> GroupID {
         let group = ProjectGroup(name: name, color: color, parentID: parent.flatMap { self.group($0)?.id })
@@ -65,7 +55,6 @@ extension WorkspaceDocument {
         groups[index].parentID = parent
     }
 
-    /// Deletes a group; its projects and child groups move up to its parent (or the top level).
     public mutating func deleteGroup(_ id: GroupID) {
         guard let removed = group(id) else { return }
         let formerChildren = sidebarChildren(of: id)
@@ -87,7 +76,6 @@ extension WorkspaceDocument {
         if let parent = removed.parentID { normalizeSidebarChildOrder(of: parent) }
     }
 
-    /// Removes the entire group subtree and its projects through the normal cleanup path.
     public mutating func deleteGroupAndProjects(_ id: GroupID) {
         let subtree = groups.filter { isGroup($0.id, inside: id) }
         for project in subtree.flatMap(\.projectIDs) { removeProject(project) }
@@ -95,8 +83,6 @@ extension WorkspaceDocument {
         groups.removeAll { ids.contains($0.id) }
     }
 
-    /// Moves a group under `parent` (nil: top level) at `index` among its new siblings. Moving a group
-    /// into itself or into one of its descendants is ignored.
     public mutating func moveGroup(_ id: GroupID, toParent parent: GroupID?, at index: Int) {
         guard var moving = group(id) else { return }
         if let parent, isGroup(parent, inside: id) { return }
@@ -108,8 +94,6 @@ extension WorkspaceDocument {
         let insertAt = clamped < siblings.count ? siblings[clamped] : (siblings.last.map { $0 + 1 } ?? groups.count)
         groups.insert(moving, at: insertAt)
     }
-
-    // MARK: - Projects
 
     @discardableResult
     public mutating func addProject(name: String, folder: String, color: ProjectColor = .blue,
@@ -137,8 +121,6 @@ extension WorkspaceDocument {
         repairNavigation()
     }
 
-    /// Moves a project to `location` at `index` (clamped). Moving within the same list accounts for
-    /// the removal, so dropping an item "after itself" is a no-op.
     public mutating func moveProject(_ id: ProjectID, to location: ProjectLocation, at index: Int) {
         guard project(id) != nil else { return }
         if case .group(let group) = location, self.group(group) == nil { return }
@@ -151,9 +133,6 @@ extension WorkspaceDocument {
         insert(id, into: location, at: target)
     }
 
-    // MARK: - Panes and tabs
-
-    /// Adds a pane with one tab to a project and opens/focuses it.
     @discardableResult
     public mutating func addPane(to projectID: ProjectID, tab: PaneTab) -> PaneID? {
         guard let project = project(projectID) else { return nil }
@@ -166,7 +145,6 @@ extension WorkspaceDocument {
         return pane.id
     }
 
-    /// Adds a pane showing a file or page (not a terminal) and opens/focuses it.
     @discardableResult
     public mutating func addPane(to projectID: ProjectID, content: PaneContent) -> PaneID? {
         guard !content.isTerminal, let project = project(projectID) else { return nil }
@@ -189,7 +167,6 @@ extension WorkspaceDocument {
         }
     }
 
-    /// The pane holding a tab.
     public func paneHolding(_ tabID: TabID) -> (project: Project, pane: Pane)? {
         for project in projects {
             if let pane = project.panes.first(where: { $0.tabs.contains { $0.id == tabID } }) { return (project, pane) }
@@ -197,8 +174,6 @@ extension WorkspaceDocument {
         return nil
     }
 
-    /// Removes a tab; a pane left without tabs is closed. Closing the active tab shows the next one,
-    /// or the previous one when it was last (upstream `closeSubTab`).
     public mutating func closeTab(_ tabID: TabID) {
         guard let (_, pane) = paneHolding(tabID) else { return }
         if pane.tabs.count == 1 { return closePane(pane.id) }
@@ -210,7 +185,6 @@ extension WorkspaceDocument {
         }
     }
 
-    /// Adds a sub-tab to a pane, shows it and focuses the pane.
     @discardableResult
     public mutating func addTab(_ tab: PaneTab, to paneID: PaneID) -> Bool {
         guard let (project, pane) = pane(paneID), pane.content.isTerminal else { return false }
@@ -224,7 +198,6 @@ extension WorkspaceDocument {
         return true
     }
 
-    /// Shows a sub-tab in its pane and focuses the pane.
     public mutating func activateTab(_ tabID: TabID) {
         guard let (project, pane) = paneHolding(tabID) else { return }
         reveal(pane.id)
@@ -233,7 +206,6 @@ extension WorkspaceDocument {
         workspace.selectedProjectID = project.id
     }
 
-    /// The tab `offset` places after the active one, wrapping around.
     public func tab(_ offset: Int, from paneID: PaneID) -> TabID? {
         guard let (_, pane) = pane(paneID), !pane.tabs.isEmpty else { return nil }
         let current = pane.tabs.firstIndex { $0.id == pane.activeTab?.id } ?? 0
@@ -255,7 +227,6 @@ extension WorkspaceDocument {
         }
     }
 
-    /// Swaps two panes of the same project (drag-to-reorder).
     public mutating func swapPanes(_ first: PaneID, _ second: PaneID) {
         guard let (project, _) = pane(first), pane(second)?.project.id == project.id else { return }
         updateProject(project.id) { project in
@@ -277,9 +248,6 @@ extension WorkspaceDocument {
         }
     }
 
-    // MARK: - Workspace
-
-    /// Shows a project as a container (appended to the right) and selects it.
     public mutating func open(_ id: ProjectID) {
         guard project(id) != nil else { return }
         if !workspace.openProjectIDs.contains(id) {
@@ -296,7 +264,6 @@ extension WorkspaceDocument {
         if workspace.selectedProjectID == id { workspace.selectedProjectID = workspace.openProjectIDs.last }
     }
 
-    /// Drops stale references (deleted projects/panes) — run after loading or importing.
     public mutating func repair() {
         let known = Set(projects.map(\.id))
         var seen = Set<ProjectID>()
@@ -324,16 +291,12 @@ extension WorkspaceDocument {
         syncActiveTab()
     }
 
-    // MARK: - Containers
-
-    /// Changes how a project arranges its panes; custom track sizes belong to one mode, so they reset.
     public mutating func setLayoutMode(_ mode: PaneLayoutMode, for id: ProjectID) {
         guard let project = project(id), project.layout != mode else { return }
         updateProject(id) { $0.activeArrangement.layoutMode = mode == .auto ? nil : mode }
         workspace.gridWeights.removeValue(forKey: project.weightsKey)
     }
 
-    /// Moves an open container to `index` among the open ones; its width moves with it.
     public mutating func moveContainer(_ id: ProjectID, to index: Int) {
         guard let from = workspace.openProjectIDs.firstIndex(of: id) else { return }
         let to = max(0, min(index, workspace.openProjectIDs.count - 1))
@@ -354,7 +317,6 @@ extension WorkspaceDocument {
         }
     }
 
-    /// Shows one container alone (nil: all again).
     public mutating func setFullscreen(_ id: ProjectID?) {
         workspace.isolatedPaneID = nil
         guard let id, workspace.openProjectIDs.contains(id) else {
@@ -366,7 +328,6 @@ extension WorkspaceDocument {
         workspace.selectedProjectID = id
     }
 
-    /// Shows one pane alone, its container alone too (nil: everything again).
     public mutating func isolate(_ paneID: PaneID?) {
         guard let paneID, let (project, _) = pane(paneID) else {
             workspace.isolatedPaneID = nil
@@ -387,8 +348,6 @@ extension WorkspaceDocument {
             workspace.isolatedPaneID = nil
         }
     }
-
-    // MARK: - Helpers
 
     private func ids(in location: ProjectLocation) -> [ProjectID] {
         switch location {

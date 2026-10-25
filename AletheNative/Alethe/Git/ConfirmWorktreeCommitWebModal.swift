@@ -3,7 +3,6 @@ import AletheGit
 import Foundation
 import SwiftUI
 
-/// ConfirmWorktreeCommitModal.tsx and its CSS, using the selected worktree's real status.
 struct ConfirmWorktreeCommitWebModal: View {
     let folder: URL
     let branch: String

@@ -3,7 +3,6 @@ import Testing
 @testable import AlethePluginKit
 @testable import AletheTodos
 
-/// An in-memory file system for `TodoFileAccess` and plugin services.
 actor MemoryFiles {
     private(set) var contents: [String: Data] = [:]
     private(set) var writes: [String] = []
@@ -37,7 +36,6 @@ actor MemoryFiles {
         store.move(b.id, to: .global)
         #expect(store.todos(in: .global).map(\.id) == [b.id])
         #expect(store.todos(in: .project("p2")).isEmpty)
-        // Moving to the list it is already in changes nothing.
         let before = store.todos
         store.move(b.id, to: .global)
         #expect(store.todos == before)
@@ -70,7 +68,6 @@ actor MemoryFiles {
         #expect(store.templateURL?.path == "/mem/todos/\(TodoTemplate.fileName)")
         let url = try await store.ensureTemplate(using: files.access)
         #expect(try await files.read(url) == Data(TodoTemplate.defaultContent.utf8))
-        // An existing template is never overwritten.
         await files.write(Data("// custom\n{\"todos\": [{\"title\": \"Custom\"}]}".utf8), url)
         _ = try await store.ensureTemplate(using: files.access)
         try await store.importTemplate(from: url, using: files.access)

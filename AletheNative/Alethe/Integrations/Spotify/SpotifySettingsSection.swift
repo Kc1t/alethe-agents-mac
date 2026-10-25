@@ -3,8 +3,6 @@ import AletheIntegrations
 import AppKit
 import SwiftUI
 
-/// Settings › Integrations › Spotify (upstream `IntegrationsPage` `spotify`): the client ID, the secret
-/// (Keychain, never shown back), the redirect URI to register, Connect/Disconnect and errors.
 struct SpotifySettingsSection: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme

@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheRemote
 
-/// Upstream `remote/appearance.rs` test.
 struct RemoteClientBundleGoldenTests {
     @Test func selectedBrandIconUsesEmbeddedPNGAssets() async throws {
         let bundle = RemoteClientBundle()
@@ -22,7 +21,6 @@ struct RemoteClientBundleTests {
         return String(decoding: asset.data, as: UTF8.self)
     }
 
-    /// Absolute static paths in a file (`"/app.css"`, `'/assets/agents/claude.png'`), skipping the API.
     private func staticPaths(in source: String) -> Set<String> {
         let pattern = /["'`](\/[A-Za-z0-9._\/-]+\.[A-Za-z0-9]+)/
         return Set(source.matches(of: pattern).map { String($0.output.1) })
@@ -34,7 +32,6 @@ struct RemoteClientBundleTests {
         let app = try await text("/app.js")
         let theme = try await text("/theme.css")
         var paths = staticPaths(in: index).union(staticPaths(in: app))
-        // theme.css loads its fonts relative to /theme.css.
         for match in theme.matches(of: /url\('\.\.(\/assets\/fonts\/[^']+)'\)/) {
             paths.insert(String(match.output.1))
         }
@@ -49,7 +46,6 @@ struct RemoteClientBundleTests {
             #expect(asset != nil, "\(path) does not resolve")
             #expect(asset?.data.isEmpty == false, "\(path) is empty")
         }
-        // app.js imports its locales relative to itself.
         #expect(app.contains("from './locales.js'"))
         #expect(await bundle.asset(at: "/locales.js", appIconTheme: "elite-indigo") != nil)
     }
@@ -109,7 +105,6 @@ struct RemoteClientBundleTests {
         #expect(manifest.xterm.hasPrefix("5.5."))
         #expect(manifest.addonUnicode11.hasPrefix("0.9."))
         #expect(bundle.checksumMismatches().isEmpty)
-        // Unpatched files are byte-identical to upstream; patched ones are listed with a patch.
         for entry in manifest.files where !entry.patched {
             #expect(entry.sha256 == entry.upstreamSHA256, "\(entry.path)")
         }

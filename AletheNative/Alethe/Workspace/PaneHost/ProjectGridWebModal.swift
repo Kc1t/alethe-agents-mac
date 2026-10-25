@@ -2,7 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// `ProjectGridModal.tsx` (create / rename / delete) in `Modal.module.css` chrome, 540 points wide.
 struct ProjectGridWebModal: View {
     enum Mode {
         case create
@@ -12,7 +11,6 @@ struct ProjectGridWebModal: View {
 
     let mode: Mode
     let initial: String
-    /// True when the name is unique, non-empty and not reserved (the web `createProjectGrid` check).
     let isValid: (String) -> Bool
     let finish: (WebDialogCenter.Outcome) -> Void
     @Environment(\.metrics) private var metrics

@@ -4,8 +4,6 @@ import AletheAgents
 import AletheIntegrations
 @testable import AletheOrchestrator
 
-// Upstream `src/lib/agentFitness.test.ts`, fed through the P3-13 readers' own parsers.
-
 private func claudeUsage(_ fiveHour: Double, _ sevenDay: Double, _ opus: Double,
                          resets: (String, String, String) = ("", "", "")) throws -> ProviderUsage {
     let body: [String: Any] = [
@@ -31,28 +29,24 @@ private func codexUsage(_ primary: Double, _ secondary: Double, plan: String? = 
 }
 
 @Suite struct AgentFitnessTests {
-    // Upstream "reports the window closest to its ceiling, not the five-hour one".
     @Test func reportsTheWindowClosestToItsCeiling() throws {
         let fitness = try #require(AgentFitness(try codexUsage(22, 60)))
         #expect(fitness.worst == "week")
         #expect(fitness.used == 60)
     }
 
-    // Upstream "keeps the two vendors comparable when their five-hour windows look tied".
     @Test func keepsTheTwoVendorsComparable() throws {
         let claude = try #require(AgentFitness(try claudeUsage(20, 19, 0)))
         let codex = try #require(AgentFitness(try codexUsage(22, 60)))
         #expect(claude.used < codex.used)
     }
 
-    // Upstream "carries the detected codex plan and drops it when absent".
     @Test func carriesTheCodexPlanAndDropsItWhenAbsent() throws {
         #expect(AgentFitness(try codexUsage(1, 1, plan: "plus"))?.plan == "plus")
         #expect(AgentFitness(try codexUsage(1, 1, plan: ""))?.plan == nil)
         #expect(AgentFitness(try codexUsage(1, 1, plan: nil))?.plan == nil)
     }
 
-    // Upstream "carries the reset time of the worst window" (real timestamps: the reader parses them).
     @Test func carriesTheResetTimeOfTheWorstWindow() throws {
         let fitness = try #require(AgentFitness(try claudeUsage(
             10, 90, 0, resets: ("2026-09-25T10:00:00Z", "2026-09-30T08:00:00Z", ""))))

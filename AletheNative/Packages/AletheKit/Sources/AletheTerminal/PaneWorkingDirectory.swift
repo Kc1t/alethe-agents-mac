@@ -1,7 +1,6 @@
 import Darwin
 import Foundation
 
-/// Fallback for shells without OSC 7 integration. Never reads another app's focused terminal.
 public enum PaneWorkingDirectory {
     public static func processDirectory(_ pid: pid_t) -> String? {
         guard pid > 0 else { return nil }
@@ -14,7 +13,6 @@ public enum PaneWorkingDirectory {
         }
     }
 
-    /// A missing saved folder must not make the next PTY spawn fail.
     public static func existing(_ saved: String?, home: String = NSHomeDirectory()) -> String {
         var directory: ObjCBool = false
         if let saved, !saved.isEmpty,

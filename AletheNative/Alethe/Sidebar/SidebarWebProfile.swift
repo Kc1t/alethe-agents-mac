@@ -4,7 +4,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// Web sidebar identity row, using the existing local profile switching actions.
 struct SidebarWebProfile: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.openSettings) private var openSettings
@@ -53,8 +52,6 @@ struct SidebarWebProfile: View {
         .onHover { hovering = $0 }
         .frame(maxWidth: .infinity)
         .fixedSize(horizontal: false, vertical: true)
-        // Flat, full-bleed fill (the web row has no radius): it runs under the bottom safe area so the
-        // window's own rounded corner clips it instead of an inner radius that never lines up.
         .background {
             ZStack {
                 theme[.bg]

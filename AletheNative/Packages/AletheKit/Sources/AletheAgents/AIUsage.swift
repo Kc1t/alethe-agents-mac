@@ -1,9 +1,7 @@
 import Foundation
 
-/// One rate-limit window of a provider (used share, when it resets).
 public struct UsageWindow: Hashable, Sendable, Identifiable {
     public var label: String
-    /// 0…100.
     public var usedPercent: Double
     public var resetsAt: Date?
     public var id: String { label }
@@ -15,7 +13,6 @@ public struct UsageWindow: Hashable, Sendable, Identifiable {
     }
 }
 
-/// A reset credit Codex can spend to clear its limit early (upstream `CodexResetCredit`).
 public struct CodexResetCredit: Hashable, Sendable, Identifiable {
     public var id: String
     public var title: String
@@ -23,13 +20,10 @@ public struct CodexResetCredit: Hashable, Sendable, Identifiable {
     public var expiresAt: Date?
 }
 
-/// What one provider reports (upstream `ClaudeUsage`, `CodexUsage`, `AntigravityUsage`).
 public struct ProviderUsage: Hashable, Sendable {
     public enum Status: Hashable, Sendable {
         case ready
-        /// No CLI installed.
         case noCLI
-        /// Not signed in (no token found).
         case noAuth
         case unavailable(String)
     }
@@ -37,7 +31,6 @@ public struct ProviderUsage: Hashable, Sendable {
     public var agent: AgentKind
     public var status: Status
     public var windows: [UsageWindow]
-    /// Account plan, when the provider tells it (Codex).
     public var plan: String?
     public var rateLimited: Bool
     public var resetCredits: [CodexResetCredit]
@@ -52,7 +45,6 @@ public struct ProviderUsage: Hashable, Sendable {
         self.resetCredits = resetCredits
     }
 
-    /// The most used window: what a toolbar pill shows.
     public var peak: UsageWindow? { windows.max { $0.usedPercent < $1.usedPercent } }
 }
 
@@ -64,8 +56,6 @@ public enum AIUsage {
         return fractional.date(from: text) ?? ISO8601DateFormatter().date(from: text)
     }
 
-    /// Local credential discovery is independent of the usage endpoint and CLI availability.
-    /// Keychain reads never display an authorization prompt during background discovery.
     public static func isAuthenticated(_ provider: AgentKind, homeDirectory: String = NSHomeDirectory()) -> Bool {
         switch provider {
         case .claude:
@@ -85,7 +75,6 @@ public enum AIUsage {
         return ["access_token", "refresh_token"].contains { (tokens[$0] as? String)?.isEmpty == false }
     }
 
-    /// A failed refresh keeps valid figures, but a sign-out clears them.
     public static func retainedReading(previous: ProviderUsage?, fresh: ProviderUsage) -> ProviderUsage {
         if case .unavailable = fresh.status, let previous, previous.status == .ready { return previous }
         return fresh
@@ -93,10 +82,6 @@ public enum AIUsage {
 
     public static func showsPill(authenticated: Bool, enabled: Bool) -> Bool { authenticated && enabled }
 
-    // MARK: - Claude Code
-
-    /// `/api/oauth/usage` body: `five_hour`, `seven_day`, `seven_day_opus` windows (upstream
-    /// `get_claude_usage`); absent windows are left out.
     public static func parseClaude(_ body: Data) -> ProviderUsage? {
         guard let object = try? JSONSerialization.jsonObject(with: body) as? [String: Any] else { return nil }
         let keys = [("five_hour", "5h"), ("seven_day", "7d"), ("seven_day_opus", "7d Opus")]
@@ -109,8 +94,6 @@ public enum AIUsage {
                              rateLimited: windows.contains { $0.usedPercent >= 100 })
     }
 
-    /// Claude Code's OAuth token: `CLAUDE_OAUTH_TOKEN`, `~/.claude/.credentials.json`, then the
-    /// Keychain item Claude Code writes (upstream `discover_token`). Never logged.
     public static func claudeToken(homeDirectory: String = NSHomeDirectory(), allowInteraction: Bool = true) -> String? {
         if let token = ProcessInfo.processInfo.environment["CLAUDE_OAUTH_TOKEN"], !token.isEmpty { return token }
         if let data = FileManager.default.contents(atPath: "\(homeDirectory)/.claude/.credentials.json"),
@@ -123,14 +106,12 @@ public enum AIUsage {
 
     private static let credentialCache = UsageCredentialCache()
 
-    /// Call after an explicit reconnect/login action to permit credential discovery again.
     public static func reconnectCredentials() { credentialCache.reconnect() }
 
     static func claudeCredential(_ data: Data) -> UsageCredentialCache.Credential? {
         guard let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
               let oauth = object["claudeAiOauth"] as? [String: Any],
               let token = oauth["accessToken"] as? String, !token.isEmpty else { return nil }
-        // Claude Code stores expiresAt as Unix milliseconds.
         let expiry = (oauth["expiresAt"] as? NSNumber).map { Date(timeIntervalSince1970: $0.doubleValue / 1000) }
             ?? date(oauth["expiresAt"])
         return .init(token: token, expiresAt: expiry)
@@ -169,9 +150,6 @@ public enum AIUsage {
         return ProviderUsage(agent: .claude, status: .noAuth)
     }
 
-    // MARK: - Codex
-
-    /// The `account/rateLimits/read` result of `codex app-server` (upstream `fetch_usage`).
     public static func parseCodex(_ result: [String: Any]) -> ProviderUsage? {
         guard let limits = result["rateLimits"] as? [String: Any] else { return nil }
         func window(_ key: String) -> UsageWindow? {
@@ -194,8 +172,6 @@ public enum AIUsage {
                              resetCredits: credits)
     }
 
-    /// One JSON-RPC exchange with `codex app-server`: initialize, then `method`, answering with its
-    /// result (12 s at most).
     static func codexRPC(_ executable: String, method: String, params: [String: Any]? = nil) async -> [String: Any]? {
         var call: [String: Any] = ["id": 2, "method": method]
         if let params { call["params"] = params }
@@ -216,7 +192,6 @@ public enum AIUsage {
             process.standardError = FileHandle.nullDevice
             guard (try? process.run()) != nil else { return nil }
             defer { if process.isRunning { process.terminate() } }
-            // A silent server must not hold the read forever: ending it closes the pipe.
             let watchdog = Task.detached {
                 try? await Task.sleep(for: .seconds(12))
                 if process.isRunning { process.terminate() }
@@ -252,7 +227,6 @@ public enum AIUsage {
         return parseCodex(result) ?? ProviderUsage(agent: .codex, status: .noAuth)
     }
 
-    /// Spends a reset credit (upstream `consume_codex_reset_credit`); answers the usage after it.
     public static func consumeCodexResetCredit(executable: String, credit: String?) async -> ProviderUsage? {
         var params: [String: Any] = ["idempotencyKey": UUID().uuidString]
         if let credit, !credit.isEmpty { params["creditId"] = credit }
@@ -260,10 +234,6 @@ public enum AIUsage {
         return await codex(executable: executable)
     }
 
-    // MARK: - Antigravity
-
-    /// Quota buckets from `fetchAvailableModels`: models sharing a remaining fraction and reset time
-    /// are one bucket, named after their family (upstream `parse_usage`).
     public static func parseAntigravity(_ body: Data) -> ProviderUsage? {
         guard let object = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
               let models = object["models"] as? [String: [String: Any]] else { return nil }
@@ -316,7 +286,6 @@ public enum AIUsage {
         guard var token = antigravityToken() else { return ProviderUsage(agent: .antigravity, status: .noAuth) }
         var answer = await fetch(token)
         if let status = answer?.1, credentialCache.reject(key: "antigravity", token: token, status: status) {
-            // `agy models` refreshes the stored credential (upstream `refresh_credential_with_agy`).
             _ = await CLIOutput.run(executable, ["models"], timeout: .seconds(12))
             guard let fresh = antigravityToken() else { return ProviderUsage(agent: .antigravity, status: .noAuth) }
             token = fresh
@@ -328,9 +297,6 @@ public enum AIUsage {
         return parseAntigravity(data) ?? ProviderUsage(agent: .antigravity, status: .unavailable("format"))
     }
 
-    // MARK: - Keychain
-
-    /// Attribute-only discovery never requests access to the secret.
     static func keychainContains(service: String, account: String? = nil) -> Bool {
         UsageKeychainReader().contains(service: service, account: account)
     }
@@ -340,9 +306,6 @@ public enum AIUsage {
         return UsageKeychainReader().read(service: service, account: account)
     }
 
-    // MARK: - Limit resets
-
-    /// Windows that were at their limit before and have reset since (upstream `limitResetWatch`).
     public static func resets(from previous: ProviderUsage, to current: ProviderUsage, now: Date = Date()) -> [UsageWindow] {
         current.windows.filter { window in
             guard let before = previous.windows.first(where: { $0.label == window.label }), before.usedPercent >= 99.9 else { return false }

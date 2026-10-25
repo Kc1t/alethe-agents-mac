@@ -61,7 +61,6 @@ extension GitControlSheet {
 
     func closeWeb() { if let closeOverlay { closeOverlay() } else { dismiss() } }
 
-    /// GitControl.module.css: repoHeader 48, branchRow 30, commitBox 9×10 and compact groups.
     func webRepository(_ model: GitControlModel) -> some View {
         VStack(spacing: 0) {
             HStack(spacing: metrics.size(8)) {
@@ -242,7 +241,6 @@ extension GitControlSheet {
         return true
     }
 
-    /// Web `commit`: with nothing staged it asks before staging everything.
     func requestCommit(_ model: GitControlModel) {
         guard model.canCommitWeb else { return }
         if model.commitNeedsStageAll, model.status?.entries.contains(where: \.isConflict) != true {
@@ -256,7 +254,6 @@ extension GitControlSheet {
         String(format: String(localized: "git.web.sync.title"), model.status?.branch.behind ?? 0, model.status?.branch.ahead ?? 0)
     }
 
-    /// `.syncButton`: the small refresh icon with the behind / ahead counts.
     func webSyncButton(_ model: GitControlModel) -> some View {
         let detached = model.status?.branch.head == nil
         let working = model.remoteAction == .sync
@@ -286,7 +283,6 @@ extension GitControlSheet {
         .accessibilityIdentifier("git.sync")
     }
 
-    /// `.syncWide`: the labelled Sync button next to Commit.
     func webSyncWide(_ model: GitControlModel) -> some View {
         let detached = model.status?.branch.head == nil
         return Button { model.remote(.sync) } label: {

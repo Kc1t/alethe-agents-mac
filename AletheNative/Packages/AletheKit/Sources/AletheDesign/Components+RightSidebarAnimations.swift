@@ -1,8 +1,6 @@
 import SwiftUI
 
-/// CSS timings shared by the right sidebar; native spring behavior is unchanged.
 public extension Motion {
-    // src/styles/reset.css: CSS `ease` is cubic-bezier(.25, .1, .25, 1).
     static func sidebarColor(reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : .timingCurve(0.25, 0.1, 0.25, 1, duration: 0.14)
     }
@@ -11,17 +9,14 @@ public extension Motion {
         reduceMotion ? nil : .timingCurve(0.25, 0.1, 0.25, 1, duration: 0.12)
     }
 
-    // TodoSidebar.module.css: sectionChevron.
     static func sidebarChevron(reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : .timingCurve(0.16, 1, 0.3, 1, duration: 0.16)
     }
 
-    // TodoSidebar.module.css: todoRow transform.
     static func sidebarDrag(reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : .timingCurve(0.16, 1, 0.3, 1, duration: 0.18)
     }
 
-    // DotmCircular2.module.css: steps(12, end) applies between each pair of keyframes.
     static let sidebarDotPeriod = 1.8 / 1.2
     static func sidebarDotAppearance(elapsed: Double, order: Int) -> (opacity: Double, size: CGFloat) {
         let phase = (max(0, elapsed) + Double(order) * 0.05 / 1.2)
@@ -55,14 +50,13 @@ public extension Motion {
         case mcp, pullRequests
         public var period: Double {
             switch self {
-            case .mcp: 0.9 // McpPanel.module.css: mcpSpin
-            case .pullRequests: 1 // PullRequestsSidebar.module.css: prSpin
+            case .mcp: 0.9
+            case .pullRequests: 1
             }
         }
     }
 }
 
-/// Absolute phase avoids repeatForever state leaking across refreshes or Reduce Motion changes.
 public struct AletheSidebarSpinner: ViewModifier {
     let active: Bool
     let kind: Motion.SidebarSpinner
@@ -85,7 +79,6 @@ public struct AletheSidebarSpinner: ViewModifier {
     }
 }
 
-/// Preserves the shared tab control's geometry, adding only web CSS color transitions.
 public struct AletheAnimatedRightSidebarTabStyle: ButtonStyle {
     public var selected: Bool
     public var width: CGFloat
@@ -143,7 +136,6 @@ private struct AnimatedRightSidebarTabBody: View {
     }
 }
 
-/// RightSidebar/index.tsx and ui/DotmCircular2.module.css: 13-point GSD busy indicator.
 public struct AletheSidebarBusyMatrix: View {
     @Environment(\.metrics) private var metrics
     @Environment(\.theme) private var theme
@@ -178,7 +170,6 @@ public struct AletheSidebarBusyMatrix: View {
     }
 }
 
-/// TodoSidebar's section toggle; content is conditional in the web source (no height tween).
 public struct AletheSidebarTodoSection<Content: View>: View {
     let title: Text
     let count: Int
@@ -227,7 +218,6 @@ public struct AletheSidebarTodoSection<Content: View>: View {
     }
 }
 
-/// Drop feedback is an overlay, so it cannot change row or scroll geometry.
 public struct AletheSidebarDropIndicator: ViewModifier {
     let targeted: Bool
     @Environment(\.metrics) private var metrics
@@ -245,7 +235,6 @@ public struct AletheSidebarDropIndicator: ViewModifier {
     }
 }
 
-/// TodoSidebar.module.css: reserve the row's geometry while the hover fill fades.
 public struct AletheSidebarRowHover: ViewModifier {
     @Environment(\.metrics) private var metrics
     @Environment(\.theme) private var theme

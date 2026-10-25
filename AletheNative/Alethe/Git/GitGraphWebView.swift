@@ -2,9 +2,6 @@ import AletheDesign
 import AletheGit
 import SwiftUI
 
-/// Web Commit graph (`plugins/git-control/GitGraphList.tsx`, `GitGraphCommitDetail.tsx`,
-/// `GitGraph.module.css`): a 34pt-row lane graph with a filter field, and a commit detail screen
-/// that replaces the list in place (with a Back button) instead of a split panel.
 struct GitGraphWebView<RowMenu: View>: View {
     static var rowHeight: CGFloat { 34 }
     static var laneWidth: CGFloat { 18 }
@@ -34,7 +31,6 @@ struct GitGraphWebView<RowMenu: View>: View {
             }
         }
         .onChange(of: history.rows.count) { _, _ in
-            // The selected commit vanished after a reload: back to the list (upstream `onBack`).
             if let hash = history.selection, !history.rows.contains(where: { $0.id == hash }), !history.loading {
                 history.select(nil)
             }
@@ -57,7 +53,6 @@ struct GitGraphWebView<RowMenu: View>: View {
         .padding(.horizontal, metrics.size(4)).padding(.bottom, metrics.size(6))
     }
 
-    /// Lanes of the whole graph: every row starts its text at the same X.
     private var laneCount: Int { history.rows.reduce(1) { max($0, $1.laneCount) } }
 
     private var matches: Set<String>? {
@@ -112,7 +107,6 @@ struct GitGraphWebView<RowMenu: View>: View {
 }
 
 enum GitGraphWebRefs {
-    /// The decoration text as git prints it (`%D`): `HEAD -> main`, `tag: v1`, `origin/main`.
     static func label(_ ref: GitRef) -> String {
         switch ref.kind {
         case .head: "HEAD"
@@ -121,7 +115,6 @@ enum GitGraphWebRefs {
         }
     }
 
-    /// Decorations in the web's order; a lone `HEAD` entry is folded into `HEAD -> branch`.
     static func labels(_ refs: [GitRef]) -> [GitRef] {
         let hasCurrent = refs.contains { $0.isCurrent }
         return refs.filter { !($0.kind == .head && hasCurrent) }
@@ -139,7 +132,6 @@ enum GitGraphWebRefs {
     }
 }
 
-/// `RefBadges`: at most two badges plus a `+N` counter.
 struct GitGraphWebRefBadges: View {
     let refs: [GitRef]
     @Environment(\.theme) private var theme
@@ -189,7 +181,6 @@ private struct GitGraphWebRow: View {
     @Environment(\.theme) private var theme
     @Environment(\.metrics) private var metrics
 
-    /// `LANE_COLOR_VARS` (lane 0 is always `--status-working`).
     private static let palette: [ThemeToken] = [
         .agentClaude, .agentCodex, .agentOpencode, .agentFreebuff, .agentMimo, .agentAntigravity,
         .agentKiro, .agentCursor, .agentKimi, .agentGrok, .agentCodewhale,
@@ -261,7 +252,6 @@ private struct GitGraphWebRow: View {
     }
 }
 
-/// `GitGraphCommitDetail`: the full message and changed files of one commit, with Back.
 private struct GitGraphWebDetail: View {
     let history: GitHistoryModel
     let commit: GitCommit

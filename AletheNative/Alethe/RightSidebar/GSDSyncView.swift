@@ -4,8 +4,6 @@ import AletheModel
 import AlethePluginKit
 import SwiftUI
 
-/// Right sidebar GSD Sync tab (P5-24; upstream `GsdSyncSidebarContent`): the selected project's child
-/// sessions from the app-wide poll, each opening its activity.
 struct GSDSyncView: View {
     @Environment(AppEnvironment.self) private var environment
 
@@ -56,7 +54,6 @@ struct GSDSyncView: View {
     }
 }
 
-/// A child session: its state glyph, checkout, state and roadmap progress.
 struct GSDSyncRow: View {
     let session: GSDSyncSession
     @Environment(AppEnvironment.self) private var environment
@@ -134,7 +131,6 @@ struct GSDSyncRow: View {
     }
 }
 
-/// Busy, error or idle, as upstream's row dot.
 struct GSDSyncStateGlyph: View {
     let session: GSDSyncSession
     @Environment(\.theme) private var theme
@@ -173,7 +169,6 @@ struct GSDSyncStateGlyph: View {
     }
 }
 
-/// Planning status in words (upstream `todo.gsdProgress`, `Progress:`, complete).
 enum GSDPlanningText {
     static func progress(_ session: GSDSyncSession) -> String? {
         if session.planning.reportedComplete { return String(localized: "gsdSync.planning.complete") }

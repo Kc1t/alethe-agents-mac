@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheGit
 
-/// Returns canned outputs keyed by the first two arguments and records every call.
 private final class FakeGh: GitHubCLIRunning, @unchecked Sendable {
     private let lock = NSLock()
     private var responses: [String: GitOutput]

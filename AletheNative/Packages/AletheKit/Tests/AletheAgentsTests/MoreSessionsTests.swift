@@ -2,8 +2,6 @@ import Foundation
 import Testing
 @testable import AletheAgents
 
-/// OpenCode, Antigravity and Cursor sessions (P3-6; upstream `opencode_sessions.rs`,
-/// `antigravity_sessions.rs`, `cursor_sessions.rs`).
 @Suite struct MoreSessionsTests {
     @Test func openCodeListsSessionsOfTheFolderNewestFirst() {
         let json = """

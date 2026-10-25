@@ -16,7 +16,6 @@ final class SidebarTests: XCTestCase {
         app.descendants(matching: .any)["sidebar.\(kind).\(name)"].firstMatch
     }
 
-    /// Indentation of a row: deeper levels start further right.
     private func indent(_ element: XCUIElement) -> CGFloat { element.frame.minX }
 
     func testTreeShowsNestedGroups() {
@@ -28,9 +27,6 @@ final class SidebarTests: XCTestCase {
         XCTAssertLessThan(indent(scratch), indent(site))
         app.terminate()
     }
-
-    // Drag and drop is covered by Scripts/smoke/sidebar-drag.sh: XCUITest's synthesized drags do not
-    // start a SwiftUI drag session on macOS, while real mouse events do.
 
     func testMoveToGroupMenuAndUndo() {
         let app = launchSeeded()

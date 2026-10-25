@@ -1,7 +1,5 @@
 import XCTest
 
-/// Settings › Profiles (P5-9): create, rename and delete. Switching relaunches the app and is left to
-/// manual checks.
 @MainActor
 final class ProfilesTests: XCTestCase {
     override func setUp() async throws {
@@ -30,7 +28,6 @@ final class ProfilesTests: XCTestCase {
     func testCreateRenameAndDelete() {
         let (app, _) = launchAlethe()
         openProfiles(app)
-        // The running profile is marked and cannot be deleted.
         XCTAssertTrue(element(app, "settings.profiles.active.Default").exists)
         XCTAssertFalse(element(app, "settings.profiles.delete.Default").isEnabled)
 
@@ -38,7 +35,6 @@ final class ProfilesTests: XCTestCase {
         XCTAssertTrue(element(app, "settings.profiles.name.Work").waitForExistence(timeout: 5))
         XCTAssertTrue(element(app, "settings.profiles.switch.Work").exists)
 
-        // A taken name is refused, case-insensitively.
         create("work", in: app)
         XCTAssertTrue(element(app, "settings.profiles.error").waitForExistence(timeout: 5))
 
@@ -52,7 +48,6 @@ final class ProfilesTests: XCTestCase {
         XCTAssertTrue(element(app, "settings.profiles.name.Client").waitForExistence(timeout: 5))
         XCTAssertFalse(element(app, "settings.profiles.name.Work").exists)
 
-        // Delete asks once; cancelling keeps the profile.
         element(app, "settings.profiles.delete.Client").click()
         let confirm = element(app, "settings.profiles.deleteConfirm")
         XCTAssertTrue(confirm.waitForExistence(timeout: 5))

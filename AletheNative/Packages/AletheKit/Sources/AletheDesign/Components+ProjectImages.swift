@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// ImageInput's controls.module.css iconBtn: 36px, bordered sunken background.
 public struct AletheImageInputButtonStyle: ButtonStyle {
     public init() {}
 

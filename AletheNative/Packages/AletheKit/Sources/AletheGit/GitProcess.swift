@@ -5,11 +5,9 @@ public enum GitError: Error, Equatable, Sendable {
     case gitMissing
     case commandFailed(exitCode: Int32, stderr: String)
     case cancelled
-    /// A path, hash or branch name rejected before reaching git (argument-injection defense).
     case invalidArgument(String)
 }
 
-/// The captured result of one git invocation.
 public struct GitOutput: Sendable {
     public var exitCode: Int32
     public var stdout: Data
@@ -19,8 +17,6 @@ public struct GitOutput: Sendable {
     public var errorText: String { String(decoding: stderr, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines) }
 }
 
-/// Runs the user's `git` binary off the main thread. The process is terminated when the calling task
-/// is cancelled; credentials are left to git's own helpers (`GIT_TERMINAL_PROMPT=0`, no stdin).
 public struct GitRunner: Sendable {
     public var executable: URL?
     public var environment: [String: String]
@@ -40,8 +36,6 @@ public struct GitRunner: Sendable {
         return nil
     }
 
-    /// Runs git and returns its output; a non-zero exit outside `allowedExitCodes` throws.
-    /// `onProgress` receives stderr lines (split on `\r` and `\n`) as they arrive.
     public func run(
         _ arguments: [String],
         in directory: URL,
@@ -107,9 +101,6 @@ extension Task where Success == Never, Failure == Never {
     }
 }
 
-/// Collects a process's output and resumes the continuation once it exited and both pipes hit EOF.
-/// A grandchild holding a pipe open (a hook, an alias) must not hang the call, so EOF is awaited
-/// only briefly after exit.
 private final class RunState: @unchecked Sendable {
     private let lock = NSLock()
     private let process: Process

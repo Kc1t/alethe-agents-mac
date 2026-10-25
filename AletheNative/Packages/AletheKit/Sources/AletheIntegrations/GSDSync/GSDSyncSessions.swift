@@ -1,6 +1,5 @@
 import Foundation
 
-/// A folder where an OpenCode tab of a project runs, watched for a GSD Sync child session.
 public struct GSDSyncTarget: Hashable, Sendable {
     public var projectID: String
     public var directory: URL
@@ -11,15 +10,11 @@ public struct GSDSyncTarget: Hashable, Sendable {
     }
 }
 
-/// A child session found in a watched checkout (upstream `GsdSyncSession`), with the checkout's
-/// planning status for the sidebar rows.
 public struct GSDSyncSession: Hashable, Sendable, Identifiable {
     public var projectID: String
-    /// The checkout the child session keeps `.planning/` in.
     public var root: URL
     public var childID: String
     public var busy: Bool
-    /// The error the child reported since the last poll (consumed by the read).
     public var error: String?
     public var planning: PlanningStatus
 
@@ -35,7 +30,6 @@ public struct GSDSyncSession: Hashable, Sendable, Identifiable {
     public var id: String { "\(projectID):\(root.path)" }
     public var name: String { root.lastPathComponent }
 
-    /// Checked roadmap items out of all of them; nil without a `task.md` checklist.
     public var roadmapProgress: (done: Int, total: Int)? {
         guard let total = planning.roadmapTotalCount, let pending = planning.roadmapPendingCount, total > 0 else { return nil }
         return (total - pending, total)
@@ -43,9 +37,6 @@ public struct GSDSyncSession: Hashable, Sendable, Identifiable {
 }
 
 extension GSDSyncService {
-    /// One poll of every target (upstream `useGsdSyncSessionsWatcher` tick): targets resolving to the
-    /// same checkout of a project are read once; checkouts without a child session are left out.
-    /// Reads happen off the calling actor, and a cancelled poll stops between checkouts.
     public func sessions(for targets: [GSDSyncTarget]) async -> [GSDSyncSession] {
         await Task.detached(priority: .utility) { Self.readSessions(targets) }.value
     }

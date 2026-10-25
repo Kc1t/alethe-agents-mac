@@ -1,6 +1,5 @@
 import XCTest
 
-/// Home (P3-15): ⇧⌘H switches, the quick launch opens an agent terminal in the workspace.
 @MainActor
 final class HomeTests: XCTestCase {
     func testShiftCommandHTogglesHome() {

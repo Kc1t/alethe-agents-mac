@@ -1,9 +1,5 @@
 import XCTest
 
-/// GSD Sync UI (P5-24) over a seeded `.planning/` folder (`-AletheUITestSeed gsdSync`: a repository
-/// with a busy child session and a 1-of-3 roadmap, a project holding a disabled OpenCode tab, the
-/// feature on): the right sidebar tab, the sidebar planning row, the activity sheet and the model
-/// chain in Settings › Features.
 @MainActor
 final class GSDSyncTests: XCTestCase {
     override func setUp() async throws {
@@ -18,7 +14,6 @@ final class GSDSyncTests: XCTestCase {
         launchAlethe(dataRoot: dataRoot, arguments: ["-AletheUITestSeed", "gsdSync", "-main.rightSidebarVisible", "YES"]).0
     }
 
-    /// Selects the GSD Sync tab of the right sidebar.
     private func showGSDTab(_ app: XCUIApplication) -> XCUIElement {
         let tabs = element(app, "rightSidebar.tabs")
         XCTAssertTrue(tabs.waitForExistence(timeout: 10))
@@ -52,7 +47,6 @@ final class GSDSyncTests: XCTestCase {
         let sheet = element(app, "gsdActivity.sheet")
         XCTAssertTrue(sheet.waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["gsdrepo"].exists, "titled with the checkout")
-        // No real child session exists: the export ends in a message, never a hang.
         XCTAssertTrue(element(app, "gsdActivity.error").waitForExistence(timeout: 40))
         element(app, "gsdActivity.done").click()
         XCTAssertTrue(eventually { !self.element(app, "gsdActivity.sheet").exists })
@@ -109,8 +103,6 @@ final class GSDSyncTests: XCTestCase {
         relaunched.terminate()
     }
 
-    /// Hit targets at three zoom levels: the tab, the row, the sheet's Done and the chain's buttons
-    /// react where they are drawn.
     func testControlsReceiveClicksAtThreeZoomLevels() {
         for (steps, label) in [(-1, "90%"), (0, "100%"), (2, "120%")] {
             let app = launchSeeded()

@@ -1,8 +1,5 @@
 import Foundation
 
-/// Dictation's key handling and phases (upstream `DictationButton` toggle/hold): a short press of the
-/// shortcut starts and a second press stops (toggle); holding it past `holdThreshold` stops on release
-/// (hold). Esc cancels. Times are seconds on any clock.
 public struct DictationMachine: Equatable, Sendable {
     public enum Failure: String, Equatable, Sendable {
         case microphoneDenied, languageUnsupported, unavailable
@@ -10,10 +7,8 @@ public struct DictationMachine: Equatable, Sendable {
 
     public enum Phase: Equatable, Sendable {
         case idle
-        /// Permission, speech model, audio engine.
         case starting
         case listening
-        /// Stopped; the last words are being transcribed.
         case finishing
         case failed(Failure)
     }
@@ -54,7 +49,6 @@ public struct DictationMachine: Equatable, Sendable {
         return .stop
     }
 
-    /// A click on the menu item or a button.
     public mutating func toggle() -> Effect {
         pressedAt = nil
         switch phase {

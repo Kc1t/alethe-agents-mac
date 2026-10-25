@@ -1,9 +1,6 @@
 import AletheGit
 import Foundation
 
-/// FSEvents watchers on worktrees' `.planning/` folders, one per project and folder (upstream
-/// `start_gsd_watcher`/`stop_gsd_watcher`). Each watcher's `events` yields once per burst of
-/// changes; the consumer re-reads `PlanningGate` then.
 public final class PlanningWatchers: @unchecked Sendable {
     private let lock = NSLock()
     private var watchers: [String: GitWatcher] = [:]
@@ -17,8 +14,6 @@ public final class PlanningWatchers: @unchecked Sendable {
         stopAll()
     }
 
-    /// Starts watching `root`'s `.planning/` (created when missing, as upstream does) for
-    /// `projectID`; returns the running watcher when there is one already.
     public func start(projectID: String, root: URL) throws -> GitWatcher {
         let folder = PlanningGate.planningFolder(of: root).standardizedFileURL
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

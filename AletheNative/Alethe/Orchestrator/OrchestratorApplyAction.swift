@@ -4,10 +4,6 @@ import AletheModel
 import AletheOrchestrator
 import SwiftUI
 
-/// Applying a finished worker's worktree into the project's branch, on the worker detail (P6-16,
-/// upstream `WorkerNode`'s Apply): shown for a done worker with a `worktree`. The first click shows
-/// the branch that changes and the files, and asks once; the apply then reports its step and can be
-/// cancelled until the merge step. Conflicts continue in the Merge Center.
 struct OrchestratorApplyAction: View {
     let job: JobSnapshot
     let project: ProjectID
@@ -77,8 +73,6 @@ struct OrchestratorApplyAction: View {
         }
     }
 
-    // MARK: The one confirmation
-
     private func confirmation(_ preview: WorktreeApplyPreview) -> some View {
         let files = preview.files
         return VStack(alignment: .leading, spacing: units.space(.s)) {
@@ -136,8 +130,6 @@ struct OrchestratorApplyAction: View {
         .accessibilityIdentifier("orchestrator.apply.\(job.id).confirmation")
     }
 
-    // MARK: Pieces
-
     private func progress(_ label: Text, cancelable: Bool) -> some View {
         HStack(spacing: units.space(.s)) {
             ProgressView().controlSize(.small)
@@ -170,7 +162,6 @@ struct OrchestratorApplyAction: View {
         }
     }
 
-    /// Laid out at the board's zoomed size, like every control on the canvas.
     private func button(_ title: LocalizedStringKey, symbol: String?, prominent: Bool, id: String,
                         action: @escaping () -> Void) -> some View {
         Button(action: action) {

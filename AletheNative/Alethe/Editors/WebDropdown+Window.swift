@@ -2,7 +2,6 @@ import AppKit
 import AletheDesign
 import SwiftUI
 
-/// A portal into the owning window, so choices are never clipped by a panel or scroll view.
 struct WebDropdownPortal: NSViewRepresentable {
     let open: Bool
     let height: CGFloat

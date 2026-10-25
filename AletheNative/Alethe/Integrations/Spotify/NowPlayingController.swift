@@ -4,14 +4,10 @@ import AppKit
 import Foundation
 import Observation
 
-/// Spotify's current track for the Now Playing views (PER-3; upstream `useNowPlaying`). Nothing is read
-/// until a Now Playing view appears; the poll runs only while one is visible and the app is active.
 @Observable
 @MainActor
 final class NowPlayingController {
-    /// Created by `start`; nil before the profile loaded.
     private(set) var model: NowPlayingModel?
-    /// Whether a client secret is stored in the Keychain; nil until read (Settings).
     private(set) var hasClientSecret: Bool?
     @ObservationIgnored private weak var environment: AppEnvironment?
     @ObservationIgnored private var secrets: (any SecretStore)?
@@ -47,7 +43,6 @@ final class NowPlayingController {
 
     var isConnecting: Bool { model?.connecting ?? false }
 
-    /// Login through the browser (up to 5 minutes); `cancelConnect` stops waiting.
     func connect() {
         guard let model, connectTask == nil else { return }
         connectTask = Task { [weak self] in
@@ -66,9 +61,6 @@ final class NowPlayingController {
         Task { await model.disconnect() }
     }
 
-    // MARK: - Client secret
-
-    /// Reads whether a secret is stored (never the value into the UI), off the main thread.
     func loadSecretStatus() {
         guard let secrets else { return }
         let profile = profile
@@ -80,7 +72,6 @@ final class NowPlayingController {
         }
     }
 
-    /// Stores (or, when blank, removes) the client secret in the Keychain, off the main thread.
     func setClientSecret(_ value: String) {
         guard let secrets else { return }
         let profile = profile
@@ -103,8 +94,6 @@ final class NowPlayingController {
         }
     }
 
-    // MARK: - Text
-
     private static var callbackPages: SpotifyCallbackPages {
         SpotifyCallbackPages(
             successTitle: String(localized: "spotify.callback.success.title"),
@@ -113,7 +102,6 @@ final class NowPlayingController {
             failureMessage: String(localized: "spotify.callback.failure.message"))
     }
 
-    /// A user-facing sentence for a Spotify error; never carries a token or response body.
     static func message(_ error: SpotifyError) -> String {
         switch error {
         case .missingCredentials: String(localized: "spotify.error.missingCredentials")

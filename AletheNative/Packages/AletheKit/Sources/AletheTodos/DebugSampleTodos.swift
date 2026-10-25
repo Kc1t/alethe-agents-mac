@@ -1,7 +1,6 @@
 #if DEBUG
 import Foundation
 
-/// Preview fixtures stay out of Release and never replace the user's todos.
 public enum DebugSampleTodos {
     @MainActor
     public static func load(into store: TodoStore, titles: [String], projectID: String) {

@@ -1,7 +1,5 @@
 import Foundation
 
-/// Web navigation uses the existing composition source slot for groups and individual panes.
-/// No persisted fields or enum cases are added; native navigation keeps its original entry points.
 extension WorkspaceTab {
     public var webGroupID: GroupID? {
         guard kind == .composition, let source = projectID?.rawValue,
@@ -17,7 +15,6 @@ extension WorkspaceTab {
 }
 
 extension WorkspaceDocument {
-    /// Upstream `applyTabNavigation` moves an explicitly opened saved tab to the end of the bar.
     private mutating func navigateWeb(to tab: WorkspaceTab, adding: Bool) {
         navigate(to: tab, adding: adding)
         if adding, let index = workspace.tabs.firstIndex(where: { $0.id == tab.id }) {
@@ -26,7 +23,6 @@ extension WorkspaceDocument {
         }
     }
 
-    /// `openProjectGrid`: always navigate to the project's own tab, even from a group view.
     public mutating func openWebProject(_ id: ProjectID) {
         guard project(id) != nil else { return }
         if workspace.activeTabID != nil { syncActiveTab() }
@@ -37,8 +33,6 @@ extension WorkspaceDocument {
         navigateWeb(to: tab, adding: true)
     }
 
-    /// `openGroupWorkspace`: only projects with panes participate, in document order, recursively.
-    /// Hidden/archived sidebar flags do not filter this action in the web store.
     public mutating func openWebGroup(_ id: GroupID, adding: Bool) {
         guard groups.contains(where: { $0.id == id }) else { return }
         if workspace.activeTabID != nil { syncActiveTab() }
@@ -70,7 +64,6 @@ extension WorkspaceDocument {
         navigateWeb(to: tab, adding: true)
     }
 
-    /// `focusWorkspaceTerminal`: keep the composition if visible; otherwise open its own grid.
     public mutating func focusWebPane(_ id: PaneID) {
         guard let (project, pane) = pane(id) else { return }
         if !webPaneIsVisible(id) {
@@ -82,7 +75,6 @@ extension WorkspaceDocument {
         syncActiveTab()
     }
 
-    /// `openTerminalWorkspace`: a separate, reusable tab displaying only this pane.
     public mutating func openWebPane(_ id: PaneID) {
         guard let (project, _) = pane(id) else { return }
         if workspace.activeTabID != nil { syncActiveTab() }
@@ -104,7 +96,6 @@ extension WorkspaceDocument {
         return project.visiblePanes.contains { $0.id == id }
     }
 
-    /// `addProjectToWorkspace`: append explicitly, never through an Option-click shortcut.
     public mutating func addWebProject(_ id: ProjectID) {
         guard project(id) != nil else { return }
         guard workspace.activeTabID != nil else { openWebProject(id); return }
@@ -120,7 +111,6 @@ extension WorkspaceDocument {
         syncActiveTab()
     }
 
-    /// `moveTerminal`: preserve the pane and its sessions when moving between projects.
     public mutating func moveWebPane(_ id: PaneID, to target: ProjectID) {
         guard let (source, original) = pane(id), source.id != target, project(target) != nil else { return }
         var moved = original

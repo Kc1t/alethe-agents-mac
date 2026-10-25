@@ -3,15 +3,12 @@ import Foundation
 public enum Greeting: String, Sendable {
     case morning, afternoon, evening
 
-    /// Upstream `getGreeting`: 5–12 morning, 12–18 afternoon, evening otherwise.
     public init(hour: Int) {
         self = (5..<12).contains(hour) ? .morning : (12..<18).contains(hour) ? .afternoon : .evening
     }
 }
 
 extension WorkspaceDocument {
-    /// Home's recent projects (upstream `recentProjects`): the projects of the navigation history, newest
-    /// visit first, then the open ones and those of the tab bar, then the rest in sidebar order.
     public func recentProjectIDs(limit: Int = 6) -> [ProjectID] {
         var ordered: [ProjectID] = []
         func add(_ id: ProjectID?) {

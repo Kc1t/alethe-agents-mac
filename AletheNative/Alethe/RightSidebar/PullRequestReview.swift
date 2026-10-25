@@ -5,8 +5,6 @@ import AletheGit
 import AletheModel
 import SwiftUI
 
-/// Head SHAs recorded when a PR review started, plus the last review agent/model (P4-15), kept in
-/// the profile's `pull-request-reviews.json` so a merge guard and the choice survive relaunch.
 @MainActor
 struct PullRequestReviewState {
     let document: PullRequestReviewsModel?
@@ -25,7 +23,6 @@ struct PullRequestReviewState {
         document?.update { $0.setPreference(agent: agent.rawValue, model: model) }
     }
 
-    /// Agent-facing prompt (upstream `pullRequestReviewPrompt`); never commits, pushes or merges.
     static func prompt(for pr: PullRequestSummary, headSHA: String) -> String {
         let url = pr.browserURL?.absoluteString ?? "https://github.com/\(pr.repo)/pull/\(pr.number)"
         return "Review Pull Request #\(pr.number) in \(pr.repo): \"\(pr.title)\" (\(url)). "
@@ -37,7 +34,6 @@ struct PullRequestReviewState {
     }
 }
 
-/// Chooses the review agent and model, then opens it in a new terminal of the selected project.
 struct PullRequestReviewSheet: View {
     let pr: PullRequestSummary
     @Environment(AppEnvironment.self) private var environment
@@ -104,7 +100,6 @@ struct PullRequestReviewSheet: View {
         .task { await loadHead() }
     }
 
-    /// Reads the current head SHA from GitHub so the review and merge target the same commit.
     private func loadHead() async {
         do {
             let details = try await GitHubPullRequests().details(for: pr)
@@ -135,7 +130,6 @@ struct PullRequestReviewSheet: View {
     }
 }
 
-/// Confirms and runs the squash merge guarded by the reviewed head SHA.
 struct PullRequestMergeSheet: View {
     let pr: PullRequestSummary
     let headSHA: String

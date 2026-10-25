@@ -1,7 +1,5 @@
 import Foundation
 
-/// Bounded buffer of the most recent terminal output. Oldest bytes are dropped once `capacity` is
-/// exceeded. Used to replay a terminal when its view is recreated, and (P2) persisted to disk.
 public struct ScrollbackRing: Sendable {
     public static let defaultCapacity = 4 * 1024 * 1024
 
@@ -9,7 +7,6 @@ public struct ScrollbackRing: Sendable {
     private var storage: [UInt8]
     private var start = 0
     public private(set) var count = 0
-    /// Total bytes ever appended, including dropped ones.
     public private(set) var totalAppended: UInt64 = 0
 
     public init(capacity: Int = ScrollbackRing.defaultCapacity) {
@@ -20,7 +17,6 @@ public struct ScrollbackRing: Sendable {
 
     public mutating func append(_ data: Data) {
         totalAppended += UInt64(data.count)
-        // Only the last `capacity` bytes of an oversized chunk can survive.
         let bytes = data.count > capacity ? data.suffix(capacity) : data[...]
         guard !bytes.isEmpty else { return }
         storage.withUnsafeMutableBytes { ring in

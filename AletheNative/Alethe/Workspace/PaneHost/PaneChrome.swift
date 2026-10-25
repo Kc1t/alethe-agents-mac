@@ -3,8 +3,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// Title bar of a project container: color, name, collapse, show alone (fullscreen), close. Dragging
-/// it moves the container among the open ones.
 struct ContainerHeader: View {
     let project: Project
     let isSelected: Bool
@@ -56,7 +54,6 @@ struct ContainerHeader: View {
                              label: isFullscreen ? "workspace.container.showAll" : "workspace.container.showAlone",
                              id: "container.fullscreen.\(project.name)", action: onFullscreen)
                 headerButton("minus", label: "workspace.container.close", id: "container.close.\(project.name)", action: onClose)
-                // Retain native layout and saved-grid commands in the web container.
                 layoutMenu
                 if !project.namedGrids.isEmpty { gridMenu }
             }
@@ -77,7 +74,6 @@ struct ContainerHeader: View {
     }
 
     private var nativeContainerHeader: some View {
-        // Upstream container tag: 7pt bullet, 11pt semibold name, 1px rule under an elevated bar.
         HStack(spacing: metrics.space(.s)) {
             Circle()
                 .fill(theme[project.color.token])
@@ -112,7 +108,6 @@ struct ContainerHeader: View {
         .accessibilityIdentifier("container.\(project.name)")
     }
 
-    /// Layout picker (upstream `LayoutFooter`): Auto stays the default.
     private var layoutMenu: some View {
         WebMenu {
             if metrics.isWebInterface {
@@ -149,7 +144,6 @@ struct ContainerHeader: View {
         .accessibilityIdentifier("container.layout.\(project.name)")
     }
 
-    /// Switches between the project's grids (upstream `ProjectGrids`), named after the shown one.
     private var gridMenu: some View {
         WebMenu {
             if metrics.isWebInterface {
@@ -206,8 +200,6 @@ struct ContainerHeader: View {
     }
 }
 
-/// A collapsed container: a narrow strip with the project's color and vertical name; clicking it
-/// expands the container, dragging it moves it.
 struct CollapsedContainerStrip: View {
     let project: Project
     let isSelected: Bool
@@ -251,35 +243,26 @@ struct CollapsedContainerStrip: View {
     }
 }
 
-/// Title bar of a pane: agent, title, close. Dragging it reorders the pane; its context menu adds a
-/// sub-tab and shows or hides the sub-tabs lane.
 struct PaneHeader: View {
     let tab: PaneTab
     let isFocused: Bool
     let isLaneVisible: Bool
-    /// The lane can only be hidden while the pane has a single tab.
     let canHideLane: Bool
     let isIsolated: Bool
     let onClose: () -> Void
     let onNewSubTab: () -> Void
     let onToggleLane: () -> Void
     let onToggleIsolation: () -> Void
-    /// Grows the pane over the free grid slots next to it; nil outside a grid with room.
     let onFillFreeSpace: (() -> Void)?
-    /// The other grids of the project the pane can move to (empty: no named grids).
     let gridTargets: [GridTarget]
     let onMoveToGrid: (ProjectGridID?) -> Void
     let isInFocusMode: Bool
     let onToggleFocus: () -> Void
     let onDisable: () -> Void
-    /// The pane is shared with remote devices (P7-18).
     let isRemoteShared: Bool
     let onToggleRemoteShared: () -> Void
-    /// Session Cost… for the shown tab; nil when it has no session.
     let onSessionCost: (() -> Void)?
-    /// Continue in the other agent (Claude Code ↔ Codex); nil for other agents.
     let onHandoff: (() -> Void)?
-    /// Translation of an ongoing header drag, in the header's coordinates; nil when it ends.
     let onDrag: (CGSize?) -> Void
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme
@@ -346,7 +329,6 @@ struct PaneHeader: View {
                     .font(metrics.font(size: 12, weight: .medium))
                     .foregroundStyle(theme[.fg])
                 }
-                // Pinned: flat full-width bar. Floating: a pill that fits its content (web `.headLeft`).
                 .frame(minWidth: 0, maxWidth: topbarPinned ? .infinity : metrics.size(320), alignment: .leading)
                 .clipped()
                 .padding(.horizontal, metrics.size(topbarPinned ? 0 : 6))
@@ -402,7 +384,6 @@ struct PaneHeader: View {
         .overlay(alignment: .bottom) {
             if topbarPinned { theme[.shapeTabsLaneBorder].frame(height: metrics.size(1)) }
         }
-        // No visible grip (it left an empty slot beside the logo): the bar itself drags the pane.
         .background {
             if canDragPane && !isLaneVisible {
                 Color.clear.contentShape(Rectangle())
@@ -430,7 +411,6 @@ struct PaneHeader: View {
                            action: @escaping () -> Void) -> some View {
         Button(action: action) {
             if symbol == "chevron.left.forwardslash.chevron.right" {
-                // The VS Code logo, as in the web header.
                 Label { Text(label) } icon: {
                     Image("BrandLogo-vscode").resizable().interpolation(.high).scaledToFit()
                         .frame(width: metrics.size(13), height: metrics.size(13))
@@ -517,7 +497,6 @@ struct PaneHeader: View {
         .accessibilityIdentifier("pane.header.\(tab.title ?? tab.agent)")
     }
 
-    /// Upstream `headLeft`: agent icon, name and working-directory pill on an elevated chip.
     private var identityChip: some View {
         HStack(spacing: metrics.space(.s)) {
             Image(systemName: tab.agent == "shell" ? "terminal" : "sparkles")
@@ -586,7 +565,6 @@ extension PaneLayoutMode {
     }
 }
 
-/// What the container header's grid menu asks for.
 enum GridAction {
     case activate(ProjectGridID?)
     case new
@@ -594,13 +572,11 @@ enum GridAction {
     case delete(ProjectGridID)
 }
 
-/// A grid a pane can move to (nil `grid`: the main one; nil `name`: shown as "Main").
 struct GridTarget: Identifiable {
     let grid: ProjectGridID?
     let name: String?
     var id: String { grid?.rawValue ?? "" }
 
-    /// Every grid of the project except the pane's own.
     static func all(for pane: Pane, in project: Project) -> [GridTarget] {
         guard !project.namedGrids.isEmpty else { return [] }
         let targets = [GridTarget(grid: nil, name: nil)] + project.namedGrids.map { GridTarget(grid: $0.id, name: $0.name) }

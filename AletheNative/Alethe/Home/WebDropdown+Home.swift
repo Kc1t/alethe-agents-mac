@@ -1,7 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// HomeView.module.css: the 30px details summaries retain their compact trigger design.
 struct HomeChoiceTrigger: ViewModifier {
     let open: Bool
     var agent = false

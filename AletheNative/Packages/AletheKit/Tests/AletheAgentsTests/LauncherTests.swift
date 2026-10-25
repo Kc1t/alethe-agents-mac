@@ -3,7 +3,6 @@ import Synchronization
 import Testing
 @testable import AletheAgents
 
-/// Resolver behavior ported from upstream `cli_resolver.rs` tests, on a fake file system.
 @Suite struct LauncherResolverTests {
     static func resolver(env: [String: String] = ["PATH": "/usr/bin:/bin"], files: Set<String>,
                          directories: [String: [String]] = [:]) -> LauncherResolver {
@@ -22,7 +21,6 @@ import Testing
         #expect(resolver.resolve("claude") == "/usr/bin/claude")
     }
 
-    /// An app launched from Finder has no Homebrew or npm prefix on PATH.
     @Test func findsHomebrewAndUserInstallsUnderAMinimalPath() {
         #expect(Self.resolver(files: ["/opt/homebrew/bin/codex"]).resolve("codex") == "/opt/homebrew/bin/codex")
         #expect(Self.resolver(files: ["/Users/me/.npm-global/bin/claude"]).resolve("claude")
@@ -103,7 +101,6 @@ import Testing
         #expect(command.workingDirectory == "/src/app")
         #expect(command.sessionID == "s-1" && command.createdSession)
         #expect(command.environment["CLAUDECODE"] == .some(nil))
-        // With it Claude Code stops saving transcripts, and nothing could be resumed.
         #expect(command.environment["CLAUDE_CODE_CHILD_SESSION"] == .some(nil))
     }
 
@@ -147,7 +144,6 @@ import Testing
     }
 }
 
-/// The generated line runs in a real POSIX shell: quoting survives and the CLI's folder leads PATH.
 @Suite struct AgentCommandShellTests {
     @Test func lineRunsInARealShell() throws {
         let registry = AgentRegistry(descriptors: [
@@ -173,7 +169,6 @@ import Testing
     }
 }
 
-/// CLI version probe (P3-2; upstream `parse_version`).
 @Suite struct CLIVersionTests {
     @Test func parsesTheFirstDottedNumber() {
         #expect(CLIVersion.parse("2.0.14 (Claude Code)") == "2.0.14")
@@ -183,7 +178,6 @@ import Testing
     }
 
     @Test func probesARealExecutable() async {
-        // /bin/sh answers --version with nothing usable; the probe returns nil instead of hanging.
         #expect(await CLIVersion.probe("/usr/bin/true", timeout: .seconds(2)) == nil)
     }
 }

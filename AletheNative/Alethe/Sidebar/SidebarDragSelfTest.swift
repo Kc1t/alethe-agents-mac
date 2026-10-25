@@ -3,12 +3,6 @@ import AletheFoundation
 import AletheModel
 import AppKit
 
-/// Debug-only check of the sidebar drag inside the running app, for when nobody can drag by hand:
-/// `defaults write com.kc1t.alethe.mac debug.sidebarDragSelfTest -bool true`, then launch. It cross-checks the
-/// registered row frames against the List's own table rows, feeds scripted pointer positions through
-/// `SidebarWebDropRules` and checks that every mark is drawn next to the pointer. With
-/// `debug.sidebarDragSelfTest.drags` it also drives whole drags with synthetic mouse events (only while the app is
-/// active and the window key). The report lands in `~/Library/Application Support/com.kc1t.alethe.mac/logs/sidebar-drag-selftest.log`.
 @MainActor
 enum SidebarDragSelfTest {
     static var enabled: Bool { UserDefaults.standard.bool(forKey: "debug.sidebarDragSelfTest") }
@@ -34,7 +28,6 @@ enum SidebarDragSelfTest {
         func r(_ rect: CGRect) -> String { "(\(Int(rect.minX)),\(Int(rect.minY)) \(Int(rect.width))x\(Int(rect.height)))" }
         for region in regions { report.append("  \(region.target) hit=\(r(region.hit)) visual=\(r(region.visual))") }
 
-        // 1. The probes must agree with the table's own row frames.
         if let table = findTable(from: surface) {
             var worst: CGFloat = 0
             var matched = 0
@@ -59,7 +52,6 @@ enum SidebarDragSelfTest {
             report.append("CHECK no NSTableView found to cross-check")
         }
 
-        // 2. Plans on live geometry: every mark must be drawn near the pointer that produced it.
         let doc = document()
         func markY(_ plan: SidebarDropPlan) -> CGFloat {
             switch plan.mark {
@@ -101,7 +93,6 @@ enum SidebarDragSelfTest {
         report.append("\(stray.isEmpty ? "PASS" : "FAIL") marks near the pointer: samples=\(samples) plans=\(plans) stray=\(stray.count)")
         for line in stray.prefix(10) { report.append("  stray: \(line)") }
 
-        // A canonical case computed from the document, not from the rules.
         let rows = regions.compactMap { region -> (ProjectID, SidebarDropRegion)? in
             if case .project(let id) = region.target { (id, region) } else { nil }
         }
@@ -117,7 +108,6 @@ enum SidebarDragSelfTest {
             report.append("\(ok ? "PASS" : "FAIL") first project onto the top half of the last project row -> \(upper.map { "\($0.action)" } ?? "none")")
         }
 
-        // 3. Whole drags (opt-in: they synthesize clicks in the live window, so never while someone is using it).
         guard UserDefaults.standard.bool(forKey: "debug.sidebarDragSelfTest.drags") else {
             report.append("SKIPPED scripted drags (set debug.sidebarDragSelfTest.drags to run them)")
             report.append("selftest failures=\(failures)")
@@ -128,9 +118,6 @@ enum SidebarDragSelfTest {
             report.append("selftest failures=\(failures)")
             return
         }
-        // Synthetic mouse events go through the real window, so the rows' DragGesture, the engine, the preview
-        // window and the drop plumbing all run. The drop goes to a recorder, never to the workspace, and the real
-        // mouse is untouched (the engine reads a scripted pointer).
         var recorded: SidebarDropPlan.Action?
         state.configure(geometry: geometry, document: document, perform: { recorded = $0 })
         defer { restore(); geometry.pointerOverride = nil; state.debugHoldsButton = false }
@@ -150,7 +137,6 @@ enum SidebarDragSelfTest {
             CGPoint(x: region.visual.minX + region.visual.width * 0.35, y: region.visual.midY)
         }
 
-        /// `to` is evaluated after the drag has started, because the list lays out extra rows while dragging.
         func scenario(_ name: String, source: SidebarWebDropRules.Source, from start: CGPoint,
                       escapeBeforeRelease: Bool = false, to: () -> CGPoint?) async {
             recorded = nil

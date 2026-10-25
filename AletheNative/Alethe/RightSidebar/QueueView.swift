@@ -3,7 +3,6 @@ import AletheOrchestrator
 import AlethePluginKit
 import SwiftUI
 
-/// Native-only queue; web styling follows the adjacent Agents panel's cards and typography.
 struct QueueView: View {
     static let tabID = "promptQueue"
     static let tab = SidebarTabContribution(id: tabID, title: "Queue", symbol: "list.bullet.rectangle",

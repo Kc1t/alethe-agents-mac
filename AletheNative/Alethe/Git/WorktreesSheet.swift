@@ -4,8 +4,6 @@ import AletheGit
 import AletheModel
 import SwiftUI
 
-/// Worktrees of a project (P4-9; upstream worktree panel): the agent environments under
-/// `.alethe/worktrees/`, with lock/unlock, fetch branch, commit pending, remove and stale cleanup.
 struct WorktreesSheet: View {
     let workspace: WorkspaceModel
     let projectID: ProjectID?
@@ -264,7 +262,6 @@ struct WorktreesSheet: View {
             .disabled(row.isLocked)
     }
 
-    /// Tabs that ran in a removed worktree fall back to the project folder.
     private func detachTabs(from agentID: String) {
         guard let project else { return }
         let tabs = project.panes.flatMap(\.tabs).filter { $0.worktreeAgentID == agentID }.map(\.id)
@@ -281,8 +278,6 @@ struct WorktreesSheet: View {
     }
 }
 
-/// Worktree list of one repository: agent environments joined with git's lock state. Git runs off
-/// the main thread; every failure lands in `error`.
 @MainActor @Observable
 final class WorktreesModel {
     struct Row: Identifiable, Equatable {
@@ -299,7 +294,6 @@ final class WorktreesModel {
     private(set) var loading = true
     private(set) var running = false
     private(set) var error: String? { didSet { if error != oldValue { AppLog.shown(error, .git) } } }
-    /// Outcome of the last action.
     private(set) var note: String?
 
     init(folder: URL) { self.folder = folder }
@@ -319,7 +313,6 @@ final class WorktreesModel {
         }
     }
 
-    /// Lock state comes from `git worktree list`; paths compare after resolving symlinks.
     static func join(_ infos: [WorktreeInfo], _ entries: [GitWorktreeEntry]) -> [Row] {
         func key(_ path: String) -> String { URL(filePath: path).resolvingSymlinksInPath().standardizedFileURL.path }
         let byPath = Dictionary(entries.map { (key($0.path), $0) }, uniquingKeysWith: { first, _ in first })
@@ -351,7 +344,6 @@ final class WorktreesModel {
         }
     }
 
-    /// Removes the environment (never a locked one) and reports the agent id on success.
     func remove(_ row: Row, onRemoved: @escaping (String) -> Void) {
         guard !row.isLocked else {
             error = String(format: String(localized: "worktrees.error.locked"), row.lockReason ?? "")

@@ -2,8 +2,6 @@ import Foundation
 import Testing
 @testable import AletheIntegrations
 
-// Upstream `mcp_store.rs` cases (golden), run against throwaway homes; never the user's real configs.
-
 private let codexRealShape = #"""
 # hand written
 model = "gpt-5.6-sol"
@@ -23,8 +21,6 @@ name = "gate"
 
 """#
 
-/// The real `~/.claude.json` shape: `claude mcp add` writes to `projects.<cwd>.mcpServers`, not to the
-/// top-level `mcpServers`.
 private let claudeRealShape = #"""
 {
   "numStartups": 1871,
@@ -48,7 +44,6 @@ private let claudeRealShape = #"""
 }
 """#
 
-/// A throwaway home, repository and profile.
 private struct Sandbox {
     let root: URL
     let store: McpStore
@@ -92,8 +87,6 @@ private func fileSource(_ url: URL, _ kind: McpSourceKind) -> McpSource {
 private func localSource(_ url: URL, _ key: String) -> McpSource {
     McpSource(url: url, kind: .local, projectKey: key)
 }
-
-// MARK: - Golden (upstream mcp_store.rs tests)
 
 @Suite struct McpStoreGoldenTests {
     @Test func claudeLocalScopeReadsServersFromTheProjectsMap() throws {
@@ -308,8 +301,6 @@ private func localSource(_ url: URL, _ key: String) -> McpSource {
     }
 }
 
-// MARK: - Scan
-
 @Suite struct McpStoreScanTests {
     @Test func scanReadsEveryAgentsFileAndMarksImports() throws {
         let box = Sandbox()
@@ -372,8 +363,6 @@ private func localSource(_ url: URL, _ key: String) -> McpSource {
         #expect(McpStore.capabilities.map(\.agent) == McpAgent.allCases)
     }
 }
-
-// MARK: - Source picking and mutations
 
 @Suite struct McpStoreSourcePickingTests {
     @Test func anExistingServerIsEditedWhereItLives() throws {
@@ -476,8 +465,6 @@ private func localSource(_ url: URL, _ key: String) -> McpSource {
         #expect(server.env == ["KEY": .literal("1")])
     }
 }
-
-// MARK: - Sync, reveal, backups
 
 @Suite struct McpStoreSyncTests {
     @Test func syncReportsWrittenBlockedSkippedAndFailed() throws {

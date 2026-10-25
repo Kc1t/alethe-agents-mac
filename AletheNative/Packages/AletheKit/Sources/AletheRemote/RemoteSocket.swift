@@ -7,8 +7,6 @@ enum RemoteSocketError: Error {
     case timedOut
 }
 
-/// Async access to one accepted `NWConnection`. Every operation that can wait on the peer takes a
-/// timeout; a timeout or task cancellation cancels the connection, which ends any pending I/O.
 final class RemoteSocket: @unchecked Sendable {
     let connection: NWConnection
     private let queue: DispatchQueue
@@ -20,10 +18,8 @@ final class RemoteSocket: @unchecked Sendable {
         self.queue = queue
     }
 
-    /// The peer as `ip:port` (`[ip]:port` for IPv6).
     var peerAddress: String { Self.address(of: connection.endpoint) }
 
-    /// Starts the connection; false when it fails, is cancelled or is not ready within `timeout`.
     func start(timeout: Duration) async -> Bool {
         let resumed = OnceFlag()
         let ready: Bool = await withTaskCancellationHandler {
@@ -52,7 +48,6 @@ final class RemoteSocket: @unchecked Sendable {
         return ready
     }
 
-    /// Bytes as they arrive (TCP); `complete` once the peer closed its side.
     func receive(maximumLength: Int, timeout: Duration) async throws -> (data: Data?, complete: Bool) {
         try await withDeadline(timeout) { connection, continuation in
             connection.receive(minimumIncompleteLength: 1, maximumLength: maximumLength) { data, _, complete, error in
@@ -65,7 +60,6 @@ final class RemoteSocket: @unchecked Sendable {
         }
     }
 
-    /// One WebSocket message: its opcode and payload. `nil` when the peer closed.
     func receiveMessage() async throws -> (opcode: NWProtocolWebSocket.Opcode, data: Data)? {
         try await withDeadline(nil) { connection, continuation in
             connection.receiveMessage { data, context, _, error in
@@ -76,7 +70,6 @@ final class RemoteSocket: @unchecked Sendable {
                 let metadata = context?.protocolMetadata(definition: NWProtocolWebSocket.definition)
                     as? NWProtocolWebSocket.Metadata
                 guard let metadata else {
-                    // No WebSocket metadata: the connection ended.
                     continuation.resume(returning: nil)
                     return
                 }
@@ -107,14 +100,11 @@ final class RemoteSocket: @unchecked Sendable {
         }
     }
 
-    /// Closes a plain TCP connection once pending sends are flushed.
     func close() {
         guard markClosed() else { return }
         connection.cancel()
     }
 
-    /// Sends a WebSocket close frame, then cancels; forced after a short grace period so a peer
-    /// that stopped reading cannot hold the socket open.
     func closeWebSocket(code: NWProtocolWebSocket.CloseCode = .protocolCode(.normalClosure)) {
         guard markClosed() else { return }
         let metadata = NWProtocolWebSocket.Metadata(opcode: .close)
@@ -128,7 +118,6 @@ final class RemoteSocket: @unchecked Sendable {
         }
     }
 
-    /// Cancels at once (remote control stopping).
     func cancel() {
         _ = markClosed()
         connection.forceCancel()
@@ -141,8 +130,6 @@ final class RemoteSocket: @unchecked Sendable {
         }
     }
 
-    /// Runs one callback-based operation; the connection is cancelled when `timeout` passes or the
-    /// task is cancelled first, which makes Network.framework complete the callback with an error.
     private func withDeadline<Value: Sendable>(
         _ timeout: Duration?,
         _ operation: @escaping @Sendable (NWConnection, CheckedContinuation<Value, any Error>) -> Void
@@ -188,7 +175,6 @@ final class RemoteSocket: @unchecked Sendable {
     }
 }
 
-/// True for the first `claim()` only.
 final class OnceFlag: @unchecked Sendable {
     private let lock = NSLock()
     private var claimed = false

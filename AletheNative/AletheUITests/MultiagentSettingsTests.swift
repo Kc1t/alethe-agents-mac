@@ -1,9 +1,5 @@
 import XCTest
 
-/// Settings › Multiagent (P6-22) over a seeded `.planning/` project (`-AletheUITestSeed multiagent`:
-/// `agentrepo`, a committed three-item roadmap with the first item done, the orchestrator feature on):
-/// Run Tick starts the next task in a worktree, Cancel asks once and fails it, and autocommit (off at
-/// every launch) commits `.planning/` changes into the history (`multiagentLive` keeps changing it).
 @MainActor
 final class MultiagentSettingsTests: XCTestCase {
     override func setUp() async throws {
@@ -35,7 +31,6 @@ final class MultiagentSettingsTests: XCTestCase {
     func testTickStartsTheNextTaskAndCancelFailsIt() {
         let app = launchSeeded()
         openMultiagent(app)
-        // The first project is picked and its queue read from task.md, before any tick.
         XCTAssertTrue(element(app, "multiagent.task.2").waitForExistence(timeout: 10), "three roadmap items")
         XCTAssertEqual(status(app, 0), "Completed")
         XCTAssertEqual(status(app, 1), "Pending")
@@ -89,8 +84,6 @@ final class MultiagentSettingsTests: XCTestCase {
         relaunched.terminate()
     }
 
-    /// Hit targets at three zoom levels: the tab, Run Tick, Cancel and its confirmation, and the
-    /// autocommit toggle react where they are drawn.
     func testControlsReceiveClicksAtThreeZoomLevels() {
         for (steps, label) in [(-1, "90%"), (0, "100%"), (2, "120%")] {
             let app = launchSeeded()

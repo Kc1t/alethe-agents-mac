@@ -2,7 +2,6 @@ import AletheFoundation
 import Darwin
 import Foundation
 
-/// A running shared browser.
 public struct BrowserSessionInfo: Hashable, Sendable {
     public var endpoint: String
     public var port: UInt16
@@ -12,17 +11,12 @@ public struct BrowserSessionInfo: Hashable, Sendable {
     public var headless: Bool
 }
 
-/// The Chromium-family browser automation tools attach to over the DevTools protocol (upstream
-/// `browser_session.rs`): launched on a free loopback port with its profile inside the Alethe profile,
-/// ready once `/json/version` answers, killed with its process group on stop and when a leftover of
-/// an earlier run holds the profile. Concurrent starts share one launch.
 public actor BrowserSession {
     public let profileDirectory: URL
     private let readyTimeout: Duration
     private let pollInterval: Duration
     private let running = RunningSlot()
     private var starting: Task<(BrowserProcess, BrowserSessionInfo), any Error>?
-    /// Bumped by `stop()`, so a launch that finishes after it is discarded.
     private var stops = 0
 
     public init(profileDirectory: URL, readyTimeout: Duration = .seconds(20), pollInterval: Duration = .milliseconds(150)) {
@@ -31,11 +25,8 @@ public actor BrowserSession {
         self.pollInterval = pollInterval
     }
 
-    /// The running browser, if its process is still alive. Safe from any thread.
     public nonisolated var current: BrowserSessionInfo? { running.info() }
 
-    /// Starts the browser, or returns the one already running. Cancelling the caller cancels the
-    /// launch and kills what it started.
     public func start(executable: String? = nil, headless: Bool = false) async throws -> BrowserSessionInfo {
         if let info = running.info() { return info }
         running.take()?.terminate(grace: 0)
@@ -70,7 +61,6 @@ public actor BrowserSession {
         }
     }
 
-    /// Stops the browser (and a launch in progress); waits until its processes are gone.
     public func stop() async {
         stops += 1
         starting?.cancel()
@@ -79,7 +69,6 @@ public actor BrowserSession {
         await Task.detached { process.terminate() }.value
     }
 
-    /// Resolve, sweep leftovers, spawn, wait for `/json/version`; anything started is killed on failure.
     private static func launch(executable: String?, headless: Bool, profile: URL, timeout: Duration,
                                poll: Duration) async throws -> (BrowserProcess, BrowserSessionInfo) {
         let binary = try BrowserLaunch.resolve(explicit: executable)
@@ -109,8 +98,6 @@ public actor BrowserSession {
         return (process, info)
     }
 
-    /// Chromium answers `/json/version` only once the debugging port is bound, so that is the signal
-    /// rather than the process merely existing.
     static func waitUntilReady(_ endpoint: String, process: BrowserProcess, timeout: Duration,
                                poll: Duration) async throws {
         guard let url = URL(string: "\(endpoint)/json/version") else { throw BrowserSessionError.notReady }
@@ -133,8 +120,6 @@ public actor BrowserSession {
         throw BrowserSessionError.notReady
     }
 
-    /// Kills browsers an earlier run left on this profile: they hold its lock, so a new browser would
-    /// never bind its port. Matched by executable and exact profile argument, never by command line alone.
     public static func killStale(profileDirectory: URL) {
         let own = ProcessInfo.processInfo.processIdentifier
         for pid in ProcessTable.pids() where pid != own && pid > 1 {
@@ -147,7 +132,6 @@ public actor BrowserSession {
     }
 }
 
-/// The running process, readable without hopping onto the actor (launch wiring is synchronous).
 private final class RunningSlot: @unchecked Sendable {
     private let lock = NSLock()
     private var process: BrowserProcess?
@@ -167,7 +151,6 @@ private final class RunningSlot: @unchecked Sendable {
         stored = info
     }
 
-    /// Clears the slot and hands back the process to terminate (dead or alive).
     func take() -> BrowserProcess? {
         lock.lock()
         defer { lock.unlock() }

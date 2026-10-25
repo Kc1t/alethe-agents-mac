@@ -1,7 +1,6 @@
 import Testing
 @testable import AletheModel
 
-/// Find/Jump ranking (P2-25).
 @Suite struct FuzzyMatchTests {
     @Test func charactersMustAppearInOrder() {
         #expect(FuzzyMatch.match("cld", in: "Claude Code") != nil)

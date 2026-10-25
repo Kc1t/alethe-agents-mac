@@ -1,7 +1,5 @@
 import Foundation
 
-/// A typed identifier, stored as a plain string (the Tauri app's ids are nanoid strings, so imported
-/// ids keep working).
 public struct Identifier<Owner>: Hashable, Codable, Sendable, RawRepresentable, CustomStringConvertible {
     public let rawValue: String
 
@@ -22,7 +20,6 @@ public struct Identifier<Owner>: Hashable, Codable, Sendable, RawRepresentable, 
         Array("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-")
     }
 
-    /// A new random id (21 characters, nanoid alphabet).
     public static func make() -> Identifier {
         var generator = SystemRandomNumberGenerator()
         let alphabet = alphabet

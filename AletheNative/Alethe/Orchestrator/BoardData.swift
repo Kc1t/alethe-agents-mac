@@ -1,37 +1,26 @@
 import AletheOrchestrator
 import Foundation
 
-/// What one board reads: every job (the core's workers and the planners' own subagents), the
-/// declared planners, and the project it was opened in.
 struct BoardSource: Equatable, Sendable {
     var jobs: [JobSnapshot] = []
     var planners: [Planner] = []
-    /// Tab ids of the board's project: a planner id is the tab its agent runs in.
     var projectTabs: Set<String> = []
-    /// Tab ids open anywhere in the workspace, to tell a closed planner from another project's.
     var openTabs: Set<String> = []
     var folder: String = ""
 }
 
-/// The board's derived state, computed off the main thread.
 struct BoardDerived: Sendable {
     var groups: [PlannerGroup] = []
     var activeKey: String?
     var graph: BoardGraph = .empty
-    /// Promoted image per job id (its own canvas card).
     var media: [String: MediaItem] = [:]
     var jobsByID: [String: JobSnapshot] = [:]
-    /// Every visible job, across planners (the header's totals).
     var visibleJobs: [JobSnapshot] = []
 }
 
 enum BoardData {
-    /// A planner id is a tab id, never empty, so "" stands for work delegated from outside a terminal.
     static func key(_ group: PlannerGroup) -> String { group.id ?? "" }
 
-    /// Upstream filters the global snapshot to the board's project: a job whose planner is one of
-    /// its tabs, or one without a planner that ran inside its folder. A planner whose tab was closed
-    /// is kept when its work ran inside the folder, so the board can say the tab is gone.
     static func visibleJobs(_ source: BoardSource) -> [JobSnapshot] {
         source.jobs.filter { job in
             if let planner = job.plannerID {
@@ -64,8 +53,6 @@ enum BoardData {
         )
     }
 
-    /// The rail's order: runs that need the person first (worst first), then the rest as delegated;
-    /// inside a run, workers by lane (`RUN_LANE_ORDER`), keeping their order within a lane.
     static func railRuns(_ runs: [BoardRun]) -> [BoardRun] {
         let attentionRank: (BoardRun) -> Int = { run in
             guard let lane = run.counts.attention?.lane else { return RunAttention.Lane.allCases.count }
@@ -89,7 +76,6 @@ enum BoardData {
             }
     }
 
-    /// A finished run folds itself away; anything still live or still needing the person opens.
     static func opensByDefault(_ run: BoardRun) -> Bool { run.state != .finished }
 
     private static func isInside(_ path: String, _ folder: String) -> Bool {

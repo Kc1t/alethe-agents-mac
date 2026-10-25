@@ -12,7 +12,6 @@ struct WebTitleBarNewsKey: PreferenceKey {
     static func reduce(value: inout Bool, nextValue: () -> Bool) { value = value || nextValue() }
 }
 
-/// Only actions backed by the native app are shown; no placeholder web commands.
 struct WebWindowMenu: View {
     let close: () -> Void
     @Environment(AppEnvironment.self) private var environment

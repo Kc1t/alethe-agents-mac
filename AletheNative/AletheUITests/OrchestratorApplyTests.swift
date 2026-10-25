@@ -1,8 +1,5 @@
 import XCTest
 
-/// Applying a worker's worktree (P6-16) over `-AletheUITestSeed orchestratorApply`: job `job-01` is
-/// done, and its worktree on `alethe/agent-job-01` holds an uncommitted `feature.txt` that merges
-/// cleanly into `main`.
 @MainActor
 final class OrchestratorApplyTests: XCTestCase {
     override func setUp() async throws {
@@ -21,7 +18,6 @@ final class OrchestratorApplyTests: XCTestCase {
         row.click()
         XCTAssertTrue(element(app, "orchestrator.worker.job-01.detail").waitForExistence(timeout: 5))
 
-        // The first click only shows what will change and asks.
         let action = element(app, "orchestrator.apply.job-01.action")
         XCTAssertTrue(action.waitForExistence(timeout: 5), "a done worker with a worktree offers Apply")
         action.click()
@@ -31,7 +27,6 @@ final class OrchestratorApplyTests: XCTestCase {
         XCTAssertTrue(files.exists)
         XCTAssertTrue(files.label.contains("feature.txt"), "the pending file is listed: \(files.label)")
 
-        // Cancel closes the confirmation without applying anything.
         element(app, "orchestrator.apply.job-01.cancel").click()
         XCTAssertTrue(eventually { !confirmation.exists })
         XCTAssertTrue(action.waitForExistence(timeout: 5))
@@ -45,7 +40,6 @@ final class OrchestratorApplyTests: XCTestCase {
         XCTAssertFalse(element(app, "orchestrator.apply.job-01.action").exists, "an applied job is not offered again")
         XCTAssertFalse(element(app, "merge.center").exists, "a clean apply does not open the Merge Center")
 
-        // Reselecting the worker still shows it applied for the session.
         element(app, "orchestrator.worker.job-01.card").click()
         XCTAssertTrue(eventually { !self.element(app, "orchestrator.worker.job-01.detail").exists })
         row.click()

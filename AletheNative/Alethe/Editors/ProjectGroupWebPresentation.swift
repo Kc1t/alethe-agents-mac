@@ -1,7 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// Reuses the terminal overlay's dismissal, scrim and Motion entrance at the CRUD modal widths.
 struct ProjectGroupWebOverlay<Content: View>: View {
     let width: CGFloat
     let onClose: () -> Void
@@ -18,7 +17,6 @@ struct ProjectGroupWebOverlay<Content: View>: View {
     }
 }
 
-/// Modal.module.css header/body/footer; the overlay remains owned by NewTerminalWebOverlay.
 struct ProjectGroupWebModal<Content: View>: View {
     let title: LocalizedStringKey
     let confirm: LocalizedStringKey
@@ -97,7 +95,6 @@ struct ProjectGroupWebField<Content: View>: View {
     }
 }
 
-/// controls.module.css input and cwdInputWrap focus border.
 struct ProjectGroupWebInput: ViewModifier {
     var mono = false
     var focus: FocusState<Bool>.Binding? = nil
@@ -117,7 +114,6 @@ struct ProjectGroupWebInput: ViewModifier {
     }
 }
 
-/// GroupFields.module.css flex-wrap keeps the swatches usable at larger interface zoom.
 struct ProjectGroupSwatchLayout: Layout {
     let gap: CGFloat
 

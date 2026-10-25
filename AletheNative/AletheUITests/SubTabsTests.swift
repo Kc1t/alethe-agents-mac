@@ -1,7 +1,5 @@
 import XCTest
 
-/// Sub-tabs lane (P2-1): switch, add from the lane, close (undoable), lane visibility, and hit
-/// targets at three zoom levels.
 @MainActor
 final class SubTabsTests: XCTestCase {
     override func setUp() async throws {
@@ -44,7 +42,6 @@ final class SubTabsTests: XCTestCase {
         app.terminate()
     }
 
-    /// One tab hides the lane by default; the header menu shows it and hides it again.
     func testLaneVisibility() {
         let (app, _) = launchAlethe(arguments: ["-AletheUITestSeed", "terminals"])
         let header = element(app, "pane.header.claude")
@@ -59,7 +56,6 @@ final class SubTabsTests: XCTestCase {
         app.terminate()
     }
 
-    /// HT: lane items and + are clicked where they are drawn at 90 %, 100 % and 120 %.
     func testLaneControlsReceiveClicksAtThreeZoomLevels() {
         for (label, keys) in [("90 %", ["-"]), ("100 %", []), ("120 %", ["+", "+"])] {
             let (app, _) = launchAlethe(arguments: ["-AletheUITestSeed", "subtabs"])

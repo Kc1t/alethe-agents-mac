@@ -3,9 +3,6 @@ import AletheDesign
 import AletheIntegrations
 import SwiftUI
 
-/// Installs or uninstalls the managed 9router (upstream `Router9InstallModal`, `useRouter9Install`):
-/// the exact command is shown before anything runs, the sheet's button is the one confirmation, and
-/// the run goes through the P3-3 installer with its live log. Node is offered first when npm is missing.
 struct Router9InstallSheet: View {
     let action: Router9Controller.InstallAction
     @Environment(AppEnvironment.self) private var environment
@@ -23,7 +20,6 @@ struct Router9InstallSheet: View {
     private var isThisRun: Bool { installer.tool == Router9Controller.installTool && installer.status != .idle }
     private var isNodeRun: Bool { startedNode && installer.agent != nil && installer.status != .idle }
     private var missingNode: Bool { installing && toolchain != nil && toolchain?.npm != true }
-    /// Another install (an agent's, elsewhere) holds the shared installer.
     private var blocked: Bool { installer.isBusy && !isThisRun && !isNodeRun }
 
     var body: some View {
@@ -38,7 +34,6 @@ struct Router9InstallSheet: View {
         .accessibilityIdentifier("router9.installSheet")
     }
 
-    /// Router9InstallModal.tsx + agentActions.module.css.
     private var webBody: some View {
         ModalsM2WebModal(title: Text(installing ? "router9.install.title" : "router9.uninstall.title"), close: closeWeb, width: 480) {
             VStack(alignment: .leading, spacing: metrics.size(10)) {
@@ -75,7 +70,6 @@ struct Router9InstallSheet: View {
             Spacer()
             Button(isThisRun && installer.status != .running ? "router9.web.close" : "editor.cancel", action: closeWeb)
                 .accessibilityIdentifier("router9.install.close")
-            // The run worked: offering to do it again would undo what just happened.
             if !isThisRun || installer.status != .succeeded {
                 Button(action: run) {
                     Label {
@@ -120,7 +114,6 @@ struct Router9InstallSheet: View {
         guard let node = AgentInstallCatalog.nodeMethods(toolchain: toolchain).first else { return }
         startedNode = true
         Task {
-            // Any agent carries the Node install: it verifies against npm, not the agent.
             await installer.run(node, for: .claude, cli: "npm", launchers: environment.launchers)
             toolchain = await installer.toolchain(launchers: environment.launchers)
         }
@@ -181,7 +174,6 @@ struct Router9InstallSheet: View {
                     Button("agentInstall.installNode") {
                         startedNode = true
                         Task {
-                            // Any agent carries the Node install: it verifies against npm, not the agent.
                             await installer.run(node, for: .claude, cli: "npm", launchers: environment.launchers)
                             toolchain = await installer.toolchain(launchers: environment.launchers)
                         }

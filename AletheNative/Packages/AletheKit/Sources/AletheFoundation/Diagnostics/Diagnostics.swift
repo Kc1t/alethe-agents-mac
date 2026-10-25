@@ -1,12 +1,8 @@
 import Foundation
 import Synchronization
 
-/// Recorder of warnings and errors (upstream `record_app_event`, `lib/auditLogger.ts`): each one goes
-/// to OSLog (`.private`), to an in-memory list of the recent ones and, redacted, to a small rotating
-/// JSON-lines file that outlives the run. Also keeps the spawn log. Callable from any thread.
 public final class Diagnostics: Sendable {
     public static let shared = Diagnostics()
-    /// Posted (on the recording thread) after an event is recorded or the list cleared.
     public static let didChange = Notification.Name("AletheDiagnosticsDidChange")
     public static let recentLimit = 300
 
@@ -21,7 +17,6 @@ public final class Diagnostics: Sendable {
 
     private let state = Mutex(State())
 
-    /// Unconfigured: events are kept in memory and in OSLog only until `configure` names the folder.
     public init(logsDirectory: URL? = nil) {
         state.withLock { $0.directory = logsDirectory }
     }
@@ -32,7 +27,6 @@ public final class Diagnostics: Sendable {
 
     public var logsDirectory: URL? { state.withLock { $0.directory } }
 
-    /// Warnings and errors, newest first (this run).
     public var recent: [DiagnosticEvent] { state.withLock { $0.recent } }
 
     public func clearRecent() {
@@ -53,15 +47,12 @@ public final class Diagnostics: Sendable {
         NotificationCenter.default.post(name: Self.didChange, object: self)
     }
 
-    /// Every recorded event in the log file (this and earlier runs), oldest first.
     public func journalEvents() -> [DiagnosticEvent] {
         guard let directory = logsDirectory else { return [] }
         let text = state.withLock { _ in Self.journal(in: directory).readAll() }
         return text.split(separator: "\n").compactMap { try? Self.lineDecoder.decode(DiagnosticEvent.self, from: Data($0.utf8)) }
     }
 
-    /// One line in the spawn log (upstream `spawn.log`): what was started, never environment values.
-    /// `domain` picks the OSLog category the line is also traced under.
     public func recordSpawn(_ line: String, domain: LogDomain = .terminal, date: Date = .now) {
         let stamped = "\(date.formatted(.iso8601)) \(SecretRedactor.redact(line.replacingOccurrences(of: "\n", with: " ")))"
         AppLog.logger(domain).info("\(stamped, privacy: .private)")

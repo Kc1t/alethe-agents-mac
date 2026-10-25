@@ -1,7 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// Changes to a mounted panel animate; restoring a window never animates its initial layout.
 struct SidebarPanelMotion: ViewModifier {
     let identity: String
     @Environment(\.metrics) private var metrics
@@ -20,7 +19,6 @@ struct SidebarPanelMotion: ViewModifier {
     }
 }
 
-/// Status and menu share a grid cell, as in `.rowEndSlot`; hover never removes the status view.
 struct SidebarRowEndSlot<Status: View, Action: View>: View {
     let active: Bool
     let hovering: Bool
@@ -55,7 +53,6 @@ struct SidebarRowEndSlot<Status: View, Action: View>: View {
     }
 }
 
-/// UserProfile.module.css `pop` / visual-clean.css `cleanPopoverIn`, without zoom transforms.
 struct SidebarProfilePopoverMotion: ViewModifier {
     @Environment(\.metrics) private var metrics
     @State private var appeared = false

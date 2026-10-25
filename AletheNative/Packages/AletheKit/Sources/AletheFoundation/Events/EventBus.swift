@@ -1,10 +1,7 @@
 import Foundation
 
-/// One event on the bus (upstream `EventBusPayload`), encoded with upstream's snake_case keys so
-/// `telemetry.jsonl` lines and exported traces keep upstream's shape.
 public struct BusEvent: Codable, Equatable, Hashable, Sendable {
     public var type: String
-    /// Milliseconds since 1970.
     public var timestampMS: UInt64
     public var correlationID: String
     public var taskID: String?
@@ -21,7 +18,6 @@ public struct BusEvent: Codable, Equatable, Hashable, Sendable {
         self.data = data
     }
 
-    /// An event stamped now (upstream `publish_event_simple`).
     public init(type: String, correlationID: String, taskID: String? = nil, agentID: String? = nil,
                 data: JSONValue = .object([:]), date: Date = .now) {
         self.init(type: type, timestampMS: UInt64(max(0, date.timeIntervalSince1970 * 1000)),
@@ -30,7 +26,6 @@ public struct BusEvent: Codable, Equatable, Hashable, Sendable {
 
     public var date: Date { Date(timeIntervalSince1970: Double(timestampMS) / 1000) }
 
-    /// A fresh correlation id, `<prefix>-<random>` (upstream `format!("gsd-{}", nanoid!())`).
     public static func correlationID(prefix: String) -> String {
         let alphabet = Array("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-")
         var generator = SystemRandomNumberGenerator()
@@ -56,7 +51,6 @@ public struct BusEvent: Codable, Equatable, Hashable, Sendable {
         data = try container.decodeIfPresent(JSONValue.self, forKey: .data) ?? .null
     }
 
-    /// Upstream serializes absent ids as `null`, not as missing keys.
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(type, forKey: .type)
@@ -68,17 +62,12 @@ public struct BusEvent: Codable, Equatable, Hashable, Sendable {
     }
 }
 
-/// Well-known event types (upstream's names), for publishers and subscribers to share.
 public enum BusEventType {
     public static let planningUpdated = "PlanningUpdated"
     public static let planningCommitted = "PlanningCommitted"
 }
 
-/// In-process publish/subscribe (upstream `event_bus.rs`, a tokio broadcast channel). Every
-/// subscriber gets its own `AsyncStream` buffering the newest `limit` events: a slow subscriber
-/// loses its oldest events, the publisher never waits for it.
 public actor EventBus {
-    /// Upstream's channel capacity.
     public static let defaultBufferLimit = 1024
 
     private var subscribers: [UUID: AsyncStream<BusEvent>.Continuation] = [:]
@@ -89,14 +78,11 @@ public actor EventBus {
         for continuation in subscribers.values { continuation.yield(event) }
     }
 
-    /// Stamps and publishes an event (upstream `publish_event_simple`).
     public func publish(_ type: String, correlationID: String, taskID: String? = nil, agentID: String? = nil,
                         data: JSONValue = .object([:])) {
         publish(BusEvent(type: type, correlationID: correlationID, taskID: taskID, agentID: agentID, data: data))
     }
 
-    /// Events published from now on. The stream ends when `finishAll` runs; cancelling its
-    /// consumer unsubscribes it.
     public func subscribe(bufferLimit: Int = defaultBufferLimit) -> AsyncStream<BusEvent> {
         let (stream, continuation) = AsyncStream.makeStream(of: BusEvent.self,
                                                             bufferingPolicy: .bufferingNewest(max(1, bufferLimit)))
@@ -110,7 +96,6 @@ public actor EventBus {
 
     public var subscriberCount: Int { subscribers.count }
 
-    /// Ends every subscriber's stream (app shutdown).
     public func finishAll() {
         let all = subscribers.values
         subscribers.removeAll()

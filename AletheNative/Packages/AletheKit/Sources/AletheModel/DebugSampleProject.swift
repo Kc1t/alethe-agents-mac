@@ -2,12 +2,10 @@
 import Foundation
 
 public enum DebugSampleProject {
-    /// Existing files are preserved so loading again does not erase edits made in the preview.
     public static func writeFiles(in folder: URL, documents: [String: String]) throws {
         let files = FileManager.default
         try files.createDirectory(at: folder, withIntermediateDirectories: true)
         for (name, source) in documents {
-            // Fixture names are relative paths, never destinations outside the sample folder.
             guard !name.hasPrefix("/"), !name.split(separator: "/").contains("..") else { continue }
             let target = folder.appending(path: name)
             try files.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -15,7 +13,6 @@ public enum DebugSampleProject {
         }
     }
 
-    /// Reuses both the project and its README pane across repeated loads and relaunches.
     @discardableResult
     public static func open(in document: inout WorkspaceDocument, folder: URL, name: String, webInterface: Bool = false) -> ProjectID {
         let id = document.projects.first { $0.folder == folder.path }?.id

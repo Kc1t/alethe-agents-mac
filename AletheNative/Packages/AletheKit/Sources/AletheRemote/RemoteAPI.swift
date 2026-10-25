@@ -1,18 +1,12 @@
 import Foundation
 
-/// Remote control's HTTP surface (upstream `remote/http.rs` `handle_http`/`handle_api`): pairing,
-/// the bearer-authorized `/api/*` routes and the phone client's static files. Policy lives here —
-/// session checks, sharing, read-only, shell input, rate limits — so the transport only moves bytes.
-/// Tokens and message text never reach the log; device ids and sizes do.
 public struct RemoteAPI: RemoteRouter {
     public let hub: RemoteHub
     private let terminals: any RemoteTerminalSource
     private let workspace: any RemoteWorkspaceSource
     private let assets: any RemoteAssetSource
 
-    /// Longest terminal id a request may name; real ids are short nanoids.
     static let maxTerminalID = 128
-    /// Longest custom answer typed into an agent question (upstream `take(1_000)`).
     static let maxCustomAnswer = 1_000
 
     public init(
@@ -53,8 +47,6 @@ public struct RemoteAPI: RemoteRouter {
         return await staticAsset(path)
     }
 
-    // MARK: Pairing
-
     private struct PairRequest: Decodable {
         var token: String
         var deviceName: String?
@@ -77,7 +69,6 @@ public struct RemoteAPI: RemoteRouter {
         return .json(200, encoding: SessionPayload(info: info, pairing: pairing))
     }
 
-    /// `/api/pair` and `/api/info` answers; `wsUrl` is sent as `null` when unknown, as upstream.
     private struct SessionPayload: Encodable {
         var info: RemoteInfo
         var pairing: RemotePairing?
@@ -98,8 +89,6 @@ public struct RemoteAPI: RemoteRouter {
             try container.encode(info.sessionExpirySecs, forKey: .sessionExpirySecs)
         }
     }
-
-    // MARK: API
 
     private func api(_ request: RemoteRequest, path: String, sessionID: Int) async -> RemoteResponse {
         switch (path, request.method) {
@@ -151,12 +140,10 @@ public struct RemoteAPI: RemoteRouter {
             let snapshot = try await workspace.transcript(for: tab, since: since, limit: RemoteLimits.maxTranscriptEvents)
             return .json(200, encoding: TranscriptPayload(snapshot: snapshot, agent: tab.agent, supported: true, error: nil), sizeLimit: .large)
         } catch {
-            // The underlying error may name local paths; the phone gets a fixed message.
             return .json(200, encoding: TranscriptPayload(snapshot: nil, agent: tab.agent, supported: true, error: "Transcript is not available"))
         }
     }
 
-    /// The snapshot's fields plus `supported` and `agent` (upstream merges them into one object).
     private struct TranscriptPayload: Encodable {
         var snapshot: RemoteTranscript?
         var agent: String
@@ -174,7 +161,6 @@ public struct RemoteAPI: RemoteRouter {
         }
     }
 
-    /// Read-only and the per-session rate, checked before any input is parsed.
     private func inputGate(_ sessionID: Int) async -> RemoteResponse? {
         if await hub.isReadOnly {
             return .error(403, "Remote control is in read-only mode")
@@ -252,7 +238,6 @@ public struct RemoteAPI: RemoteRouter {
         return await deliver(text + "\r", to: id, sessionID: sessionID, preview: text)
     }
 
-    /// Types `input` into the tab and tells the app which device sent it.
     private func deliver(_ input: String, to terminalID: String, sessionID: Int, preview: String) async -> RemoteResponse {
         do {
             try await terminals.write(terminalID: terminalID, text: input)
@@ -269,23 +254,17 @@ public struct RemoteAPI: RemoteRouter {
         return .noContent
     }
 
-    // MARK: Static files
-
     private func staticAsset(_ path: String) async -> RemoteResponse {
-        // Only the brand icon depends on the Mac's preferences.
         let iconTheme = path == "/brand-icon.png"
             ? await workspace.appearance().normalized.appIconTheme
             : RemoteAppearance.defaultTheme
         return await assets.asset(at: path, appIconTheme: iconTheme)?.response ?? .notFound
     }
 
-    // MARK: Helpers
-
     private static func decode<Value: Decodable>(_ type: Value.Type, _ body: Data) -> Value? {
         try? JSONDecoder().decode(type, from: body)
     }
 
-    /// A non-empty id of sane length, free of control characters.
     static func terminalID(_ value: String?) -> String? {
         guard let value, !value.isEmpty, value.count <= maxTerminalID,
               RemoteText.sanitize(value) == value else { return nil }
@@ -296,10 +275,6 @@ public struct RemoteAPI: RemoteRouter {
         public var message: String
     }
 
-    /// The keystrokes that pick an answer in the agent's question UI (upstream
-    /// `question_answer_input`): per question, arrow-up past the top to anchor on the first
-    /// option, arrow-down to each choice (Space toggles in multi-select), or down to "Other" and
-    /// type the custom answer; Return confirms.
     public static func questionAnswerInput(
         questions: [RemoteQuestion],
         selections: [[Int]],
@@ -342,7 +317,6 @@ public struct RemoteAPI: RemoteRouter {
 }
 
 extension RemoteResponse {
-    /// Upstream's answer to a request it could not parse.
     static let badRequest = RemoteResponse.error(400, "Bad request")
     static let notShared = RemoteResponse.error(403, "This terminal is not available remotely")
 }

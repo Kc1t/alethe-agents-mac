@@ -2,7 +2,6 @@ import AletheDesign
 import AlethePluginKit
 import SwiftUI
 
-/// PluginCatalog.tsx / PluginsPage.module.css: 12px cards, 8px list gap and capability detail.
 struct PluginCatalogWebSection: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics

@@ -28,7 +28,6 @@ struct WebTitleBarMemoryPill: View {
                     .strokeBorder(theme[hovering ? .borderStrong : pressure].opacity(metrics.style == .clean || (!hovering && available >= 2048) ? 0 : 1), lineWidth: metrics.size(1)))
         }
         .buttonStyle(.plain).fixedSize().onHover { hovering = $0 }
-        // ramPillPulse: high pressure 1.5 s, critical 0.8 s (TitleBar.module.css).
         .webOpacityPulse(period: available < 256 ? 0.8 : 1.5, active: available < 512)
         .help(Text("titlebar.memory.open"))
         .accessibilityLabel(Text(MemoryIndicator.accessibilityText(
@@ -38,8 +37,6 @@ struct WebTitleBarMemoryPill: View {
     }
 }
 
-/// `MemoryAnalyticsModal.tsx` / `MemoryAnalyticsModal.module.css` with real macOS readings. The
-/// Windows-only working-set, private-commit and job-guard figures have no equivalent here.
 struct WebTitleBarMemory: View {
     let close: () -> Void
     @Environment(AppEnvironment.self) private var environment
@@ -52,7 +49,6 @@ struct WebTitleBarMemory: View {
     private var history: [ResourceMonitor.Sample] { environment.resources.history }
     private var latest: ResourceMonitor.Sample? { history.last }
 
-    /// 10-minute window used by the average, the trend and the diagnostics.
     private var windowed: [ResourceMonitor.Sample] {
         guard let latest else { return [] }
         let recent = history.filter { latest.timestamp.timeIntervalSince($0.timestamp) <= 600 }
@@ -93,8 +89,6 @@ struct WebTitleBarMemory: View {
         }
         .accessibilityIdentifier("memory.details")
     }
-
-    // MARK: Tabs
 
     private var tabStrip: some View {
         HStack(spacing: metrics.size(4)) {
@@ -147,8 +141,6 @@ struct WebTitleBarMemory: View {
             AIProcessList()
         }
     }
-
-    // MARK: Panels
 
     private func panel<Content: View>(border: ThemeToken = .border, tint: ThemeToken? = nil,
                                       @ViewBuilder content: () -> Content) -> some View {
@@ -261,7 +253,6 @@ struct WebTitleBarMemory: View {
         }
     }
 
-    /// `.chartWrap`: 150 points, three guide lines at 25/50/75 % and a smoothed total line.
     @ViewBuilder private var chart: some View {
         let samples = Array(history.suffix(90))
         if samples.count < 2 {
@@ -391,7 +382,6 @@ struct WebTitleBarMemory: View {
         }
     }
 
-    /// Live terminals, largest first (the web lists runtimes with their process tables).
     private var runtimePanel: some View {
         let rows = environment.resources.terminals
         return panel {
@@ -457,8 +447,6 @@ struct WebTitleBarMemory: View {
         .overlay(alignment: .top) { if !head { theme[.border].frame(height: metrics.size(1)) } }
     }
 
-    // MARK: Derived
-
     private struct Bucket { let label: String; let value: Double; let share: Double }
 
     private func dominant(_ sample: ResourceMonitor.Sample?) -> Bucket? {
@@ -468,7 +456,6 @@ struct WebTitleBarMemory: View {
             .max { $0.value < $1.value }
     }
 
-    /// `buildDiagnostics` of the web modal.
     private var diagnostics: [String] {
         guard let latest else { return [String(localized: "memModal.noData")] }
         var items: [String] = []
@@ -525,7 +512,6 @@ struct WebTitleBarMemory: View {
     }
 }
 
-/// `smoothPath` of the web modal: a Catmull-Rom curve through the samples.
 private struct MemoryChartPath: Shape {
     let points: [CGPoint]
     let closed: Bool

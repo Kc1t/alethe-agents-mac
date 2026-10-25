@@ -4,9 +4,6 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Settings › General › Data (P5-10, upstream `backup.rs`, `diagnostics.rs`): export and import a
-/// backup of the running profile, reset it, erase everything, open the data folder, open GitHub Sync
-/// (P7-15). Import, reset and erase ask once, take a safety backup and relaunch.
 enum DataSettingsAction: String, Hashable {
     case manage, exportBackup, importBackup, reset, erase
 }
@@ -114,7 +111,6 @@ struct DataSettingsSection: View {
             }
         }
         .confirmationDialog(Text("settings.data.import.confirm"), isPresented: Binding(get: { !metrics.isWebInterface && confirmImport }, set: { confirmImport = $0 })) {
-            // The staged archive is captured now: the dialog may clear its binding before the action runs.
             if let pending = staged {
                 Button("settings.data.import.action", role: .destructive) {
                     importStarted = true
@@ -126,7 +122,6 @@ struct DataSettingsSection: View {
             Text(verbatim: staged.map(importSummary) ?? "")
         }
         .onChange(of: confirmImport) { _, shown in
-            // Cancelled: drop the unpacked copy (a later launch would clear it anyway).
             guard !shown, !importStarted, let pending = staged else { return }
             staged = nil
             environment.discardStaged(pending)
@@ -171,7 +166,6 @@ struct DataSettingsSection: View {
         return lines.joined(separator: "\n\n")
     }
 
-    /// The sheet belongs to the main window: Settings closes and the main window comes forward.
     private func openGistSync() {
         environment.editorRequest = .gistSync
         openWindow(id: "main")
@@ -236,7 +230,6 @@ struct DataSettingsSection: View {
         }
     }
 
-    /// A scheduled operation that failed at launch is reported once here.
     private func reportLaunchResult() {
         guard status == nil, case .failure(let error) = environment.dataMaintenanceResult else { return }
         let message = (error as? BackupError)?.localizedMessage ?? error.localizedDescription
@@ -244,7 +237,6 @@ struct DataSettingsSection: View {
     }
 }
 
-/// Main-menu data actions reuse the profile backup, confirmation and recovery implementation.
 struct DataManagementSheet: View {
     let action: DataSettingsAction
     let close: () -> Void

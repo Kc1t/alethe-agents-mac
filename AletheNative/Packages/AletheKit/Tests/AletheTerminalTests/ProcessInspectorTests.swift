@@ -3,9 +3,7 @@ import Foundation
 import Testing
 @testable import AletheTerminal
 
-// Spawns real processes and sockets: a rare intermittent hang must fail the test, not stall the run.
 @Suite(.timeLimit(.minutes(1))) struct ProcessInspectorTests {
-    /// A TCP socket listening on a kernel-chosen loopback port; closed by `close()`.
     private func listen() throws -> (fd: Int32, port: UInt16) {
         let fd = socket(AF_INET, SOCK_STREAM, 0)
         try #require(fd >= 0)

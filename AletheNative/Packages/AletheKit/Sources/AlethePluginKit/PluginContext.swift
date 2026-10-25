@@ -1,7 +1,5 @@
 import Foundation
 
-/// Host services behind capabilities. The app fills these in; a nil service makes the matching
-/// context call throw `PluginError.serviceUnavailable`.
 public struct PluginServices: Sendable {
     public var runGit: (@Sendable (_ arguments: [String], _ directory: URL) async throws -> String)?
     public var readFile: (@Sendable (URL) async throws -> Data)?
@@ -24,15 +22,12 @@ public struct PluginServices: Sendable {
     }
 }
 
-/// The only surface a plugin sees. Every host service checks the manifest's capabilities first;
-/// contributions are staged and only published by the host once `activate` returns.
 @MainActor
 public final class PluginContext {
     public let manifest: PluginManifest
     private let services: PluginServices
     private let storageProvider: () -> PluginStorage
     private(set) var contributions = PluginContributions()
-    /// Cleared when the plugin is deactivated; later calls throw `PluginError.inactive`.
     var isActive = true
 
     init(manifest: PluginManifest, services: PluginServices, storage: @escaping () -> PluginStorage) {
@@ -45,15 +40,12 @@ public final class PluginContext {
         manifest.capabilities.contains(capability)
     }
 
-    /// Throws unless the context is live and `capability` is declared in the manifest.
     public func require(_ capability: PluginCapability) throws {
         guard isActive else { throw PluginError.inactive(pluginID: manifest.id) }
         guard hasCapability(capability) else {
             throw PluginError.undeclaredCapability(capability, pluginID: manifest.id)
         }
     }
-
-    // MARK: Capability-gated services
 
     public func storage() throws -> PluginStorage {
         try require(.storage)
@@ -89,8 +81,6 @@ public final class PluginContext {
         guard let session = services.urlSession else { throw PluginError.serviceUnavailable(.network) }
         return session
     }
-
-    // MARK: Contributions
 
     public func addSidebarTab(_ tab: SidebarTabContribution) throws {
         try checkNew(tab.id, kind: "sidebarTab", in: contributions.sidebarTabs.map(\.id))

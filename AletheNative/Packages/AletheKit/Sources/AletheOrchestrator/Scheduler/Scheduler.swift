@@ -3,15 +3,12 @@ import AletheGit
 import AletheIntegrations
 import Foundation
 
-/// Where a scheduled task stands (upstream `TaskStatus`, camelCase in JSON).
 public enum SchedulerTaskStatus: String, Hashable, Sendable, CaseIterable, Codable {
     case pending, ready, running, completed, failed, blocked
 
-    /// Kept across a reload even when its `task.md` line is gone.
     var survivesReload: Bool { self == .running || self == .completed || self == .failed }
 }
 
-/// One roadmap item of a project's `.planning/task.md` (upstream `Task`).
 public struct SchedulerTask: Hashable, Sendable, Codable, Identifiable {
     public var id: String
     public var projectID: String
@@ -20,7 +17,6 @@ public struct SchedulerTask: Hashable, Sendable, Codable, Identifiable {
     public var status: SchedulerTaskStatus
     public var assignedAgentID: String?
     public var leaseResource: String?
-    /// The provisioned worktree whose `.planning/` decides when the task is done.
     public var worktreePath: String?
     public var priority: Int
 
@@ -43,7 +39,6 @@ public struct SchedulerTask: Hashable, Sendable, Codable, Identifiable {
         case assignedAgentID = "assignedAgentId", leaseResource, worktreePath, priority
     }
 
-    /// Upstream serializes absent values as `null`, not as missing keys.
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
@@ -58,7 +53,6 @@ public struct SchedulerTask: Hashable, Sendable, Codable, Identifiable {
     }
 }
 
-/// Scheduler event names (upstream's).
 public enum SchedulerEvent {
     public static let taskReserved = "TaskReserved"
     public static let taskStarted = "TaskStarted"
@@ -68,15 +62,9 @@ public enum SchedulerEvent {
 }
 
 public enum SchedulerError: Error, Equatable {
-    /// Upstream `repository_root` fails outside a git checkout.
     case notARepository
 }
 
-/// Runs a project's `.planning/task.md` roadmap as a chain of tasks (upstream `scheduler.rs`): each
-/// item depends on the one before; a tick readies tasks whose dependencies are completed, starts
-/// ready ones on a `worktree:<task>` lease with a provisioned worktree, and completes running ones
-/// once their worktree's planning reports complete. State lives in memory, like upstream. Nothing
-/// runs on its own: ticks happen on request, and on `PlanningUpdated` only after `startAutoTick`.
 public actor Scheduler {
     public typealias Provisioner = @Sendable (_ repo: URL, _ agentID: String, _ mode: WorktreeMode) async throws -> WorktreeInfo
     public typealias PlanningReader = @Sendable (_ worktree: URL) -> PlanningStatus
@@ -105,8 +93,6 @@ public actor Scheduler {
         self.now = now
     }
 
-    /// Upstream `derive_item_task_id`: stable for a project and item text, never shared across
-    /// projects. FNV-1a stands in for Rust's `DefaultHasher`; ids live only in memory.
     public static func taskID(projectID: String, text: String) -> String {
         var hash: UInt64 = 0xcbf2_9ce4_8422_2325
         for byte in text.utf8 {
@@ -128,17 +114,11 @@ public actor Scheduler {
         modes[projectID] = mode
     }
 
-    /// Test and restore seam: puts a task (and its lease) in place as is.
     public func insert(_ task: SchedulerTask) {
         tasks[task.id] = task
         if let lease = task.leaseResource { leases.insert(lease) }
     }
 
-    // MARK: Loading
-
-    /// Upstream `load_gsd_tasks`: rebuilds the project's chain from `.planning/task.md`. Running,
-    /// completed and failed tasks keep their state (and survive a removed line); pending ones whose
-    /// line is gone are dropped. A missing `task.md` changes nothing.
     public func load(projectID: String, repo: URL) throws {
         guard let root = PlanningGate.repositoryRoot(containing: repo) else { throw SchedulerError.notARepository }
         let file = PlanningGate.planningFolder(of: root).appending(path: "task.md")
@@ -168,22 +148,15 @@ public actor Scheduler {
         }
     }
 
-    // MARK: Ticks
-
-    /// Upstream `trigger_scheduler_tick`: remembers the project's worktree mode when given, reloads
-    /// `task.md` (a failed reload still ticks, like upstream) and runs one tick.
     public func trigger(projectID: String, repo: URL, mode: WorktreeMode? = nil) async throws {
         if let mode { modes[projectID] = mode }
         try? load(projectID: projectID, repo: repo)
         try await tick(projectID: projectID, repo: repo)
     }
 
-    /// Upstream `run_scheduler_tick`. Worktrees are provisioned concurrently and awaited, so a
-    /// tick returns once every task it started has its worktree (or failed).
     public func tick(projectID: String, repo: URL) async throws {
         try Task.checkCancellation()
 
-        // Pending -> ready when every dependency is completed.
         let toReady = tasks.values.filter { task in
             task.projectID == projectID && task.status == .pending
                 && task.dependencies.allSatisfy { tasks[$0]?.status == .completed }
@@ -195,7 +168,6 @@ public actor Scheduler {
             await publish(SchedulerEvent.taskReserved, prefix: "sched", task: task)
         }
 
-        // Ready -> running when its worktree lease is free.
         var started: [(id: String, agentID: String, title: String)] = []
         for task in tasks.values where task.projectID == projectID && task.status == .ready {
             let lease = "worktree:\(task.id)"
@@ -231,7 +203,6 @@ public actor Scheduler {
             }
         }
 
-        // Running -> completed when its worktree's planning reports complete.
         let reader = planningStatus
         for task in tasks.values where task.projectID == projectID && task.status == .running {
             guard let path = task.worktreePath else { continue }
@@ -253,13 +224,11 @@ public actor Scheduler {
         case .success(let info):
             task.worktreePath = info.path
             tasks[taskID] = task
-            // Unlike upstream, a task cancelled while provisioning asks for no agent.
             guard task.status == .running, task.assignedAgentID == agentID else { return }
             await publish(SchedulerEvent.agentSpawnRequested, prefix: "sched", task: task, data: [
                 "agent_id": .string(agentID), "worktree_path": .string(info.path), "task_title": .string(title),
             ])
         case .failure(let error):
-            // A cancel while provisioning already failed the task and published it.
             guard task.status == .running, task.assignedAgentID == agentID else { return }
             task.status = .failed
             if let lease = task.leaseResource { leases.remove(lease) }
@@ -271,10 +240,6 @@ public actor Scheduler {
         }
     }
 
-    // MARK: Cancel
-
-    /// Upstream `cancel_task`: a running task fails and frees its lease; anything else is left as is.
-    /// Returns whether the task was cancelled.
     @discardableResult
     public func cancel(taskID: String) async -> Bool {
         guard var task = tasks[taskID], task.status == .running else { return false }
@@ -288,11 +253,6 @@ public actor Scheduler {
         return true
     }
 
-    // MARK: Auto tick
-
-    /// Ticks a project whenever the bus reports its `.planning/` changed (upstream
-    /// `start_scheduler_event_loop`: the project comes as the event's task id, the repository is
-    /// the parent of `planning_dir`). Off until called.
     public func startAutoTick(on bus: EventBus) async {
         guard autoTick == nil else { return }
         let events = await bus.subscribe()
@@ -315,9 +275,6 @@ public actor Scheduler {
 
     public var isAutoTicking: Bool { autoTick != nil }
 
-    // MARK: Events
-
-    /// Upstream publishes the project as the event's task id and the task as its agent id.
     private func publish(_ type: String, prefix: String, task: SchedulerTask, data: [String: JSONValue] = [:]) async {
         guard let bus else { return }
         await bus.publish(BusEvent(type: type, correlationID: BusEvent.correlationID(prefix: prefix),

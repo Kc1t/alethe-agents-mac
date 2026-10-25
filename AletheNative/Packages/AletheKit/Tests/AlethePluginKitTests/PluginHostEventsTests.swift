@@ -15,7 +15,6 @@ private final class ThrowingPlugin: AlethePlugin {
     func activate(context: PluginContext) throws { throw EventsBoom() }
 }
 
-/// Plugin events for the bus (P6-19).
 @MainActor
 @Suite struct PluginHostEventsTests {
     @Test func aLoadFailureIsHeldUntilABusIsAttached() async {

@@ -1,8 +1,6 @@
 import CoreServices
 import Foundation
 
-/// Watches a repository (worktree and `.git`) with FSEvents and yields one refresh signal per burst
-/// of changes, after `debounce` of quiet. Object-store writes and lock files are ignored.
 public final class GitWatcher: @unchecked Sendable {
     public let root: URL
     public let events: AsyncStream<Void>
@@ -63,7 +61,6 @@ public final class GitWatcher: @unchecked Sendable {
 
     private static let queueKey = DispatchSpecificKey<Void>()
 
-    /// Called on `queue`.
     private func received(_ paths: [String]) {
         guard paths.contains(where: { !Self.isNoise($0) }) else { return }
         pending?.cancel()

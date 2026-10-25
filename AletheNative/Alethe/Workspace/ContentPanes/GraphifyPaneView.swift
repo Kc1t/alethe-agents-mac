@@ -4,9 +4,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// Graphify pane (upstream `GraphifyView`, Cytoscape): the repository's code graph drawn on a Canvas
-/// with pan, zoom and search, a node's details with its source file, and the snapshot timeline with
-/// the changes since a snapshot highlighted and rollback.
 struct GraphifyPaneView: View {
     let model: GraphifyPaneModel
     let project: ProjectID
@@ -19,7 +16,6 @@ struct GraphifyPaneView: View {
     @State private var pendingRollback: GraphSnapshot?
     @State private var confirmingPrune = false
 
-    /// Upstream `KEEP_LAST`.
     static let keepLast = 10
 
     var body: some View {
@@ -121,8 +117,6 @@ struct GraphifyPaneView: View {
         }
     }
 
-    // MARK: - Graph
-
     @ViewBuilder
     private var graphArea: some View {
         switch model.state {
@@ -187,8 +181,6 @@ struct GraphifyPaneView: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("graphify.empty")
     }
-
-    // MARK: - Timeline
 
     private var timeline: some View {
         VStack(alignment: .leading, spacing: metrics.space(.s)) {
@@ -278,9 +270,6 @@ struct GraphifyPaneView: View {
         .background(RoundedRectangle(cornerRadius: metrics.radius(.sm)).fill(compared ? theme[.accentFaint] : .clear))
     }
 
-    // MARK: - Actions
-
-    /// A node's source file: Markdown, images and videos in a pane, anything else in its default app.
     private func openFile(_ relative: String) {
         let url = relative.hasPrefix("/") ? URL(filePath: relative) : model.root.appending(path: relative)
         guard FileManager.default.fileExists(atPath: url.path) else {
@@ -295,7 +284,6 @@ struct GraphifyPaneView: View {
     }
 }
 
-/// The graph itself: nodes colored by community, edges, search dimming, selection and the diff.
 private struct GraphCanvas: View {
     let model: GraphifyPaneModel
     let graph: GraphData
@@ -309,7 +297,6 @@ private struct GraphCanvas: View {
     @State private var magnifyStart: CGFloat?
     @FocusState private var searchFocused: Bool
 
-    /// Community colors: the project accents (never gray or black), in a fixed order.
     private static let palette: [ThemeToken] = [.projectBlue, .projectGreen, .projectOrange, .projectPurple,
                                                 .projectPink, .projectTeal, .projectYellow, .projectRed]
 
@@ -343,8 +330,6 @@ private struct GraphCanvas: View {
         }
         .clipped()
     }
-
-    // MARK: Drawing
 
     private func canvas(size: CGSize) -> some View {
         let query = model.query.trimmingCharacters(in: .whitespaces)
@@ -418,8 +403,6 @@ private struct GraphCanvas: View {
         return Self.palette[community % Self.palette.count]
     }
 
-    // MARK: Transform
-
     private func screen(_ point: GraphPoint, size: CGSize) -> CGPoint {
         let center = layout.bounds.center
         return CGPoint(x: (point.x - center.x) * scale + size.width / 2 + offset.width,
@@ -442,12 +425,10 @@ private struct GraphCanvas: View {
 
     private func zoom(by factor: CGFloat) {
         let newScale = min(max(scale * factor, 0.05), 8)
-        // Keep the view's center fixed.
         offset = CGSize(width: offset.width * newScale / scale, height: offset.height * newScale / scale)
         scale = newScale
     }
 
-    /// Centers a node and selects it.
     private func focus(_ index: Int) {
         model.selectedNode = index
         let center = layout.bounds.center, point = layout.positions[index]
@@ -481,8 +462,6 @@ private struct GraphCanvas: View {
         let radius = Double(max(nodeRadius(0), 6) + 4) / scale
         model.selectedNode = layout.node(near: world(location, size: size), radius: radius)
     }
-
-    // MARK: Overlays
 
     private func search(size: CGSize) -> some View {
         @Bindable var model = model

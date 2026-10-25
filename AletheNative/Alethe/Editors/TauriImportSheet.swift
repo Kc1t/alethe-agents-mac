@@ -4,14 +4,10 @@ import AletheFoundation
 import AletheModel
 import SwiftUI
 
-/// File › Import from Alethe (Tauri)…: previews what the Tauri app's data adds (a dry run on copies
-/// of the documents), then imports it as one undoable change. The Tauri files are only read.
 struct TauriImportSheet: View {
     let workspace: WorkspaceModel
     let undoManager: UndoManager?
-    /// Told what an import added (the onboarding's import step shows it).
     var onImported: ((TauriImport.Report) -> Void)?
-    /// A `projects.json` to import instead of the Tauri app's profiles (a pulled Tauri gist, P7-15).
     var projectsFile: URL?
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.dismiss) private var nativeDismiss
@@ -188,8 +184,6 @@ struct TauriImportSheet: View {
         .onChange(of: includePreferences) { refreshPreview() }
     }
 
-    // MARK: - Content
-
     private func summary(_ report: TauriImport.Report, title: LocalizedStringKey) -> some View {
         Group {
             Section {
@@ -276,8 +270,6 @@ struct TauriImportSheet: View {
         }
     }
 
-    // MARK: - Import
-
     private var context: TauriImport.Context {
         TauriImport.Context(agents: Set(AgentRegistry.builtin.kinds.map(\.rawValue)),
                             themes: Set(ThemeCatalog.builtin.themes.map(\.id)),
@@ -294,7 +286,6 @@ struct TauriImportSheet: View {
         }
     }
 
-    /// The import run on copies: exactly what Import will do.
     private func refreshPreview() {
         guard let preferences = environment.preferences else { return }
         preview = load()?.map { file in
@@ -333,13 +324,10 @@ struct TauriImportSheet: View {
         onImported?(report)
     }
 
-    /// The Tauri profile's token files, read at preview and import time only.
     private func companions() -> TauriImport.Companions {
         profile.map { TauriImport.Companions.beside($0.projectsFile) } ?? TauriImport.Companions()
     }
 
-    /// Plaintext Tauri secrets go to the Keychain, and the gist status (never its token) to the
-    /// profile's `github_sync.json`, off the main thread. Failures record the item, never its value.
     private static func storeSecrets(_ secrets: TauriImport.Secrets, gistSync: GistSyncState?, profile: ProfileID,
                                      locations: DataLocations) {
         guard !secrets.values.isEmpty || gistSync != nil else { return }
@@ -365,7 +353,6 @@ struct TauriImportSheet: View {
         }
     }
 
-    /// Drops the language when it is one the app does not offer or the one already chosen.
     private func languageAdjusted(_ report: TauriImport.Report) -> TauriImport.Report {
         var report = report
         if let code = report.language {
@@ -375,12 +362,8 @@ struct TauriImportSheet: View {
         return report
     }
 
-    /// The Tauri app's profiles on this Mac. Reads a few small files; the onboarding asks it once.
     nonisolated static func availableProfiles() -> [TauriProfile] {
         #if DEBUG
-        // `-AletheTauriProjectsFile <path>`: one fixture file instead of the Tauri app's profiles, for
-        // UI tests. Under a test data root without it, the Mac's own Tauri data is never offered.
-        // Profile discovery itself is unit-tested.
         if let path = UserDefaults.standard.string(forKey: "AletheTauriProjectsFile") {
             return [TauriProfile(id: "test", name: "Test", projectsFile: URL(filePath: path), isActive: true)]
         }

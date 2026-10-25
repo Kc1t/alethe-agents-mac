@@ -1,20 +1,13 @@
 import Foundation
 
-/// What a pane shows (upstream `PaneKind`). Terminal panes hold sub-tabs; every other kind shows one
-/// file or page and has no tabs. Stored as `{ "kind": …, "path"/"url": … }`.
 public enum PaneContent: Hashable, Sendable {
     case terminal
-    /// A Markdown file, rendered and reloaded when it changes.
     case markdown(path: String)
     case image(path: String)
     case video(path: String)
-    /// `git diff` of the project, or of one file when `path` is set; `staged` shows the index
-    /// (`--staged`) instead of the working tree.
     case diff(path: String?, staged: Bool)
     case web(url: String, options: WebPaneOptions)
-    /// The project repository's Graphify code graph (upstream `graphify` pane, P5-23).
     case graphify
-    /// The orchestrator board: planners, runs and workers (upstream `orchestrator` pane, P6-13).
     case orchestrator
 
     public enum Kind: String, Codable, CaseIterable, Sendable {
@@ -36,7 +29,6 @@ public enum PaneContent: Hashable, Sendable {
 
     public var isTerminal: Bool { self == .terminal }
 
-    /// The file this pane shows, for file-backed kinds.
     public var filePath: String? {
         switch self {
         case .markdown(let path), .image(let path), .video(let path): path
@@ -44,9 +36,6 @@ public enum PaneContent: Hashable, Sendable {
         }
     }
 
-    /// The pane for a file, by extension (upstream `classifyPaneKind` in `terminalFactory.ts`); a
-    /// trailing `:line[:column]` (as agents print paths) is dropped. nil for any other file, which
-    /// upstream opens as a plain `file` pane the native app does not have yet.
     public static func forFile(_ rawPath: String) -> PaneContent? {
         let path = rawPath.trimmingCharacters(in: .whitespaces)
             .replacingOccurrences(of: #":\d+(:\d+)?$"#, with: "", options: .regularExpression)

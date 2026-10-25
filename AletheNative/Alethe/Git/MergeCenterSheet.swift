@@ -6,10 +6,6 @@ import AletheMerge
 import AletheModel
 import SwiftUI
 
-/// Merge Center (P4-10…P4-13; upstream merge plugin) for a project's repository. The Analyze stage
-/// trial-merges a source branch into a target in a disposable worktree and lists the conflicts
-/// with their class and resolution strategy. With `resumeID` it reopens a prepared environment
-/// from its metadata at the stage it had reached.
 struct MergeCenterSheet: View {
     let workspace: WorkspaceModel
     let undoManager: UndoManager?
@@ -119,9 +115,6 @@ struct MergeCenterSheet: View {
         }
     }
 
-    // MARK: Shared
-
-    /// Progress with cancel while an operation runs, otherwise the given actions.
     @ViewBuilder
     func actionRow(_ model: MergeCenterModel, @ViewBuilder _ actions: () -> some View) -> some View {
         HStack {
@@ -152,8 +145,6 @@ struct MergeCenterSheet: View {
             .disabled(model.environment == nil)
             .accessibilityIdentifier("merge.abort")
     }
-
-    // MARK: Prepare
 
     func prepare(_ model: MergeCenterModel) -> some View {
         VStack(alignment: .leading, spacing: metrics.space(.m)) {
@@ -193,7 +184,6 @@ struct MergeCenterSheet: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    /// Enabled agents whose CLI is installed (shells cannot resolve conflicts).
     var agents: [AgentKind] {
         let preferences = environment.preferences?.document
         return environment.agentRegistry.enabledKinds(preferences?.enabledAgents).filter { kind in
@@ -202,8 +192,6 @@ struct MergeCenterSheet: View {
         }
     }
 
-    /// Opens a terminal of the chosen agent in the merge environment, primed with the conflict
-    /// instruction; the choice becomes the last used agent.
     func resolveWithAgent(_ model: MergeCenterModel) {
         guard let project, let path = model.environment?.path.path, agents.contains(agent) else { return }
         let tab = PaneTab(agent: agent.rawValue, title: String(localized: "merge.agentPaneName"),
@@ -216,8 +204,6 @@ struct MergeCenterSheet: View {
         environment.preferences?.update { $0.lastAgent = agent.rawValue }
         if metrics.isWebInterface, let closeOverlay { closeOverlay() } else { dismiss() }
     }
-
-    // MARK: Validate
 
     func validate(_ model: MergeCenterModel) -> some View {
         VStack(alignment: .leading, spacing: metrics.space(.m)) {
@@ -240,7 +226,6 @@ struct MergeCenterSheet: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    /// The last validate/finalize outcome: its message, each command, the probe and the contract check.
     @ViewBuilder
     func outcomeDetails(_ model: MergeCenterModel) -> some View {
         if model.note != nil || model.outcome != nil {
@@ -265,8 +250,6 @@ struct MergeCenterSheet: View {
         }
     }
 
-    // MARK: Finish
-
     func finish(_ model: MergeCenterModel) -> some View {
         VStack(alignment: .leading, spacing: metrics.space(.m)) {
             actionRow(model) {
@@ -288,8 +271,6 @@ struct MergeCenterSheet: View {
         .padding(metrics.space(.l))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
-
-    // MARK: Stage header
 
     func stageHeader(_ current: MergeCenterStage) -> some View {
         HStack(spacing: metrics.space(.s)) {
@@ -316,8 +297,6 @@ struct MergeCenterSheet: View {
         case .finish: "merge.stage.finish"
         }
     }
-
-    // MARK: Analyze
 
     func analyze(_ model: MergeCenterModel) -> some View {
         VStack(alignment: .leading, spacing: metrics.space(.m)) {
@@ -404,7 +383,6 @@ struct MergeCenterSheet: View {
     }
 }
 
-/// State of the Merge Center: repository branches, the chosen pair, and the running analysis.
 @MainActor @Observable
 final class MergeCenterModel {
     let folder: URL
@@ -418,22 +396,17 @@ final class MergeCenterModel {
     }
     private(set) var environment: ConflictEnvironment?
     private(set) var conflicts: [ConflictFile] = []
-    /// Validation commands for this run, one per line.
     var commandsText = ""
     var healthCheckCommand: String?
     var healthCheckPath: String?
-    /// Output of the last prepare / rebase / validate / finish step.
     private(set) var note: String?
     private(set) var merged = false
-    /// The last validate/finalize outcome, for its structured results.
     private(set) var outcome: MergeFinishOutcome?
     private(set) var analysis: MergeAnalysis?
     private(set) var loading = true
     private(set) var running = false
     private(set) var error: String? { didSet { if error != oldValue { AppLog.shown(error, .git) } } }
     private var task: Task<Void, Never>?
-    /// Analysis and conflict-resolution events (P6-19; upstream `merge_analyzer.rs`,
-    /// `conflict_resolution.rs`).
     @ObservationIgnored let events: EventOutbox
 
     init(folder: URL, projectID: ProjectID? = nil, bus: EventBus? = nil) {
@@ -461,8 +434,6 @@ final class MergeCenterModel {
         }
     }
 
-    /// Restores a prepared environment from its metadata: branches, live conflicts, the stage it had
-    /// reached and its last validation (the sheet no longer restarts at Analyze).
     private func resume(id: String, root: URL) async throws {
         let (env, meta) = try await Task.detached { try await ConflictResolution(root: root).resume(id: id) }.value
         source = meta.source
@@ -478,8 +449,6 @@ final class MergeCenterModel {
                                        unresolved: env.conflicts.map(\.path))
     }
 
-    /// Persists the stage reached (and the latest validation) in the environment's metadata, so the
-    /// sidebar panel shows it and a reopened sheet resumes there. Best-effort.
     private func recordStage() {
         guard let root, let id = environment?.id, stage != .analyze else { return }
         let (stage, report, warnings) = (stage, outcome?.validation, outcome?.contractWarnings)
@@ -501,7 +470,6 @@ final class MergeCenterModel {
         error = nil
         analysis = nil
         task = Task {
-            // The analyzer runs git subprocesses; keep it off the main actor.
             let work = Task.detached {
                 do { return Result<MergeAnalysis, Error>.success(
                     try await MergeAnalyzer(root: root).analyze(source: source, target: target)) }
@@ -521,7 +489,6 @@ final class MergeCenterModel {
         }
     }
 
-    /// Cancels the running operation; the git process is terminated and temporary worktrees torn down.
     private var handle: MergeEnvHandle? {
         environment.map { MergeEnvHandle(id: $0.id, source: source, target: target, conflictPaths: conflicts.map(\.path)) }
     }
@@ -532,14 +499,11 @@ final class MergeCenterModel {
             healthCheckCommand: healthCheckCommand, healthCheckPath: healthCheckPath)
     }
 
-    /// Runs `operation` off the main actor with the shared progress/cancel state.
     private func perform<T: Sendable>(_ operation: @escaping @Sendable () async throws -> T,
                                       then apply: @escaping @MainActor (T) -> Void) {
         running = true
         error = nil
         task = Task {
-            // Detached so git runs off the main actor; cancellation is forwarded so the git
-            // process is terminated (GitRunner) and the environment torn down.
             let work = Task.detached { () -> Result<T, Error> in
                 do { return .success(try await operation()) } catch { return .failure(error) }
             }
@@ -612,8 +576,6 @@ final class MergeCenterModel {
         }
     }
 
-    /// `MergeValidated`/`MergeValidationFailed` when the pipeline ran, then `MergeMerged`, like
-    /// upstream's validate and finalize.
     private func publishEvents(of outcome: MergeFinishOutcome, handle: MergeEnvHandle) {
         let projectID = projectID?.rawValue
         if let report = outcome.validation {
@@ -640,7 +602,6 @@ final class MergeCenterModel {
         stage = .analyze
     }
 
-    /// The outcome's headline; commands, probe and contract warnings render separately.
     private static func describe(_ outcome: MergeFinishOutcome) -> String {
         "[\(outcome.stage.rawValue)] \(outcome.output)"
     }

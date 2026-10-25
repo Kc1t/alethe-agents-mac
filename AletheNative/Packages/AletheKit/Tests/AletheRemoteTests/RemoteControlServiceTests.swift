@@ -2,8 +2,6 @@ import Foundation
 import Testing
 @testable import AletheRemote
 
-/// Remote control's commands (P7-12, upstream `remote/commands.rs`) over real listeners on
-/// 127.0.0.1, in their own port range so they never compete with the transport tests.
 @Suite(.serialized)
 struct RemoteControlServiceTests {
     private static let configuration = RemoteTransport.Configuration(

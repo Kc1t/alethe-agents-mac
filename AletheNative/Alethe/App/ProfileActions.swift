@@ -1,8 +1,6 @@
 import AletheModel
 import Foundation
 
-/// Profile management (P5-9, upstream `profiles.rs`): the index changes at once; switching saves
-/// everything and relaunches into the other profile.
 extension AppEnvironment {
     static var defaultProfileName: String { String(localized: "profiles.defaultName") }
 
@@ -10,19 +8,16 @@ extension AppEnvironment {
         profiles?.document.displayName(of: entry, defaultName: Self.defaultProfileName) ?? Self.defaultProfileName
     }
 
-    /// The running profile's name (the toolbar menu's title).
     var activeProfileName: String {
         guard let profileID, let entry = profiles?.document.profile(profileID) else { return Self.defaultProfileName }
         return profileName(entry)
     }
 
-    /// Web account display name when set, otherwise the profile name.
     var webDisplayName: String {
         if let name = preferences?.document.displayName, !name.isEmpty { return name }
         return activeProfileName
     }
 
-    /// Adds a profile with an empty folder.
     @discardableResult
     func createProfile(named name: String) async throws -> ProfileID {
         let id = try changeProfiles { try $0.createProfile(named: name, defaultName: Self.defaultProfileName) }
@@ -38,8 +33,6 @@ extension AppEnvironment {
         await profiles?.flush()
     }
 
-    /// A new profile holding a copy of `id`'s projects, settings and scrollback. The running profile
-    /// is saved first so the copy is current.
     @discardableResult
     func duplicateProfile(_ id: ProfileID) async throws -> ProfileID {
         guard let locations, let index = profiles?.document else { throw ProfileError.notFound }
@@ -59,7 +52,6 @@ extension AppEnvironment {
         return copy
     }
 
-    /// Removes a profile other than the running one; its folder goes to the Trash.
     func deleteProfile(_ id: ProfileID) async throws {
         guard let locations else { throw ProfileError.notFound }
         guard id != profileID else { throw ProfileError.activeProfile }
@@ -71,7 +63,6 @@ extension AppEnvironment {
         await profiles?.flush()
     }
 
-    /// Makes `id` active, saves and relaunches into it.
     func switchProfile(to id: ProfileID) async throws {
         guard id != profileID else { return }
         try changeProfiles { try $0.activate(id) }
@@ -79,14 +70,11 @@ extension AppEnvironment {
         relaunch()
     }
 
-    /// Quits (saving everything on the way out) and reopens the app, without the quit question.
     func relaunch() {
         relaunching = true
         AppRelaunch.relaunch()
     }
 
-    /// Summaries read from disk off the main thread; the running profile's counts come from memory,
-    /// its file may be behind.
     func profileSummaries() async -> [ProfileID: ProfileSummary] {
         guard let locations, let ids = profiles?.document.profiles.map(\.id) else { return [:] }
         var summaries = await Task.detached {
@@ -99,7 +87,6 @@ extension AppEnvironment {
         return summaries
     }
 
-    /// Writes the running profile's documents now (before its folder is copied or archived).
     func saveDocuments() async {
         await workspace?.flush()
         await preferences?.flush()
@@ -131,8 +118,6 @@ extension ProfileError {
 }
 
 extension AppEnvironment {
-    /// Archives any profile into `archive` (the running one is saved first). The web's per-profile
-    /// backup that precedes a delete.
     func exportProfileBackup(_ id: ProfileID, to archive: URL) async throws {
         guard let locations, let entry = profiles?.document.profile(id) else { throw ProfileError.notFound }
         if id == profileID { await saveDocuments() }

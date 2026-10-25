@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheRemote
 
-/// A clock tests move by hand.
 final class TestClock: @unchecked Sendable {
     private let lock = NSLock()
     private var current = Date(timeIntervalSince1970: 1_800_000_000)
@@ -28,7 +27,6 @@ private func makeHub(clock: TestClock = TestClock(), resolver: RemoteHostResolve
     RemoteHub(resolver: resolver, now: { clock.now })
 }
 
-/// A running hub with its pairing window open.
 private func openHub(clock: TestClock = TestClock()) async -> RemoteHub {
     let hub = makeHub(clock: clock)
     await hub.beginRun()
@@ -36,7 +34,6 @@ private func openHub(clock: TestClock = TestClock()) async -> RemoteHub {
     return hub
 }
 
-/// Upstream `remote/state.rs` tests.
 struct RemoteHubGoldenTests {
     @Test func publishDoesNotBuildPayloadWithoutSubscribers() async {
         let hub = makeHub()
@@ -135,7 +132,6 @@ struct RemoteHubGoldenTests {
 
         await hub.refreshHost()
 
-        // Never the LAN address or a wildcard: nothing can bind the empty host.
         #expect(await !RemoteHost.isBindableAddress(hub.host))
     }
 
@@ -199,7 +195,6 @@ struct RemoteHubTests {
         clock.advance(2)
         #expect(await !hub.authBlocked(address))
 
-        // A fresh window: one more failure does not lock again.
         await hub.recordAuthFailure(address)
         #expect(await !hub.authBlocked(address))
     }

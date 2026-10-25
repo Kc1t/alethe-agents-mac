@@ -2,7 +2,6 @@ import AletheFoundation
 import AletheModel
 import Foundation
 
-/// What the GitHub Sync sheet shows (upstream `GithubSyncStatus`); never the token.
 public struct GistSyncStatus: Hashable, Sendable {
     public var connected: Bool
     public var login: String?
@@ -10,7 +9,6 @@ public struct GistSyncStatus: Hashable, Sendable {
     public var gistURL: URL?
     public var lastPushAt: Date?
     public var lastPullAt: Date?
-    /// The imported Tauri app's gist: pulled from when this app has none of its own, never pushed to.
     public var tauriGistID: String?
 
     init(connected: Bool, state: GistSyncState) {
@@ -24,30 +22,21 @@ public struct GistSyncStatus: Hashable, Sendable {
     }
 }
 
-/// A validated pull that replaces this profile's workspace (and the preferences and activity it
-/// carried). Nothing has changed yet: the user confirms, then the app takes a safety backup,
-/// schedules `operation` and relaunches (the P5-10 path); otherwise `GistSyncService.discard`.
 public struct StagedGistPull: Hashable, Sendable {
-    /// The whole data folder to discard (inside `DataLocations.importStaging`).
     public var stagingRoot: URL
-    /// The profile folder as it will be after the relaunch.
     public var profileFolder: URL
     public var operation: PendingDataOperation
-    /// Synced file names taken from the gist.
     public var files: [String]
     public var projects: Int
     public var terminals: Int
 }
 
-/// A gist holding only upstream's `projects.json`: offered as a Tauri import instead (P1-12 mapping).
 public struct TauriGistPull: Hashable, Sendable {
     public var stagingRoot: URL
-    /// The pulled `projects.json`, already checked to parse as a supported Tauri file.
     public var projectsFile: URL
 }
 
 public enum GistPullResult: Hashable, Sendable {
-    /// Replaces this profile's data: the UI must ask before applying it.
     case replacesProfile(StagedGistPull)
     case tauriImport(TauriGistPull)
 
@@ -59,10 +48,6 @@ public enum GistPullResult: Hashable, Sendable {
     }
 }
 
-/// GitHub gist sync of one profile (P7-11, upstream `github_sync.rs`). The token is the profile's
-/// `githubToken` Keychain item; everything else is its `github_sync.json`. Pushes go to this app's own
-/// private gist only, never to the Tauri app's. Every call runs off the main thread and stops when its
-/// task is cancelled.
 public actor GistSyncService {
     public static let gistDescription = "Alethe for Mac sync — workspace, preferences & activity (managed by the app)"
     public static let defaultAPIBase = URL(string: "https://api.github.com")!
@@ -93,15 +78,12 @@ public actor GistSyncService {
         self.log = log
     }
 
-    /// Ephemeral (no cookies or cache on disk) with request and resource timeouts.
     public static func makeSession() -> URLSession {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = 30
         configuration.timeoutIntervalForResource = 120
         return URLSession(configuration: configuration)
     }
-
-    // MARK: - Status and token
 
     private var stateURL: URL { locations.gistSync(profile) }
     private var profileFolder: URL { locations.profileDirectory(profile) }
@@ -121,7 +103,6 @@ public actor GistSyncService {
         GistSyncStatus(connected: try token() != nil, state: GistSyncState.load(from: stateURL))
     }
 
-    /// Checks `token` with `GET /user`, then keeps it in the Keychain and its login in the state.
     public func connect(token raw: String) async throws -> GistSyncStatus {
         let token = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !token.isEmpty else { throw GistSyncError.emptyToken }
@@ -135,7 +116,6 @@ public actor GistSyncService {
         return GistSyncStatus(connected: true, state: state)
     }
 
-    /// Deletes the token and forgets the login; the gist ids stay for a later reconnect.
     public func disconnect() throws -> GistSyncStatus {
         try secrets.delete(.githubToken, profile: profile.rawValue)
         var state = GistSyncState.load(from: stateURL)
@@ -145,9 +125,6 @@ public actor GistSyncService {
         return GistSyncStatus(connected: false, state: state)
     }
 
-    // MARK: - Push
-
-    /// The profile's synced files that exist and are not blank (upstream `collect_files`).
     func collectFiles() throws -> [String: String] {
         var files: [String: String] = [:]
         for name in Self.syncedFiles {
@@ -159,15 +136,12 @@ public actor GistSyncService {
         return files
     }
 
-    /// Uploads the synced files to this app's gist: `PATCH` when its id is known (a new gist if that one
-    /// is gone), a new private gist otherwise. The caller saves open documents first.
     public func push() async throws -> GistSyncStatus {
         let client = try client()
         let files = try collectFiles()
         guard !files.isEmpty else { throw GistSyncError.nothingToSync }
         let payload = try GistClient.payload(files: files, description: Self.gistDescription)
         let state = GistSyncState.load(from: stateURL)
-        // Never the Tauri app's gist, even if an id was copied over by hand.
         let target = state.gistID.flatMap { $0 == state.tauriGistID ? nil : $0 }
         let id: String
         if let target {
@@ -184,11 +158,6 @@ public actor GistSyncService {
         return GistSyncStatus(connected: true, state: updated)
     }
 
-    // MARK: - Pull
-
-    /// Downloads the gist (this app's, else the imported Tauri app's) and stages it without changing
-    /// anything: a native gist is validated by decoding and staged as the next launch's profile folder;
-    /// a Tauri gist is offered as a Tauri import.
     public func pull() async throws -> GistPullResult {
         let client = try client()
         let state = GistSyncState.load(from: stateURL)
@@ -221,8 +190,6 @@ public actor GistSyncService {
         }
     }
 
-    /// Validates the pulled files in a scratch folder, then lays them over a copy of the profile folder
-    /// (scrollback, history and sync state carried over) with the pull time recorded in its sync state.
     private func stageProfile(_ contents: [String: String], into stagingRoot: URL) async throws -> StagedGistPull {
         let manager = FileManager.default
         let check = stagingRoot.appending(path: "check", directoryHint: .isDirectory)
@@ -253,7 +220,6 @@ public actor GistSyncService {
                               files: contents.keys.sorted(), projects: counts.projects, terminals: counts.terminals)
     }
 
-    /// Decodes a pulled document the way launch loads it (migrations included); unreadable → refused.
     private static func validate<Document: VersionedDocument>(_: Document.Type, _ url: URL) async throws {
         do {
             let (_, outcome) = try await DocumentStore<Document>(url: url).load()
@@ -276,7 +242,6 @@ public actor GistSyncService {
         return TauriGistPull(stagingRoot: stagingRoot, projectsFile: file)
     }
 
-    /// Drops a pull the user did not apply.
     public nonisolated func discard(_ pull: GistPullResult) {
         try? FileManager.default.removeItem(at: pull.stagingRoot)
     }

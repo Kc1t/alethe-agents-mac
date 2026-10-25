@@ -1,9 +1,6 @@
 import Foundation
 
-/// JSON with comments: drops `//` and `/* */` comments and trailing commas, leaving strings intact.
-/// Shared by the Todo template and the agents' config files (`opencode.jsonc`, `settings.json`).
 public enum JSONC {
-    /// `strip` over UTF-8 bytes.
     public static func strip(_ data: Data) -> Data {
         Data(strip(String(decoding: data, as: UTF8.self)).utf8)
     }
@@ -38,7 +35,6 @@ public enum JSONC {
                 }
                 index += 2
             } else if char == "," {
-                // A comma followed only by whitespace/comments before `}` or `]` is trailing.
                 var lookahead = index + 1
                 var trailing = false
                 scan: while lookahead < chars.count {

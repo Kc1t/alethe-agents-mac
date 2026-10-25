@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheModel
 
-/// App icon themes (P5-12): upstream's four ids and `normalizeAppIconTheme`.
 @Suite struct AppIconThemeTests {
     @Test func upstreamIdsAndDefault() {
         #expect(AppIconTheme.allCases.map(\.rawValue) == ["elite-original", "elite-pure-black", "elite-indigo", "elite-blush"])

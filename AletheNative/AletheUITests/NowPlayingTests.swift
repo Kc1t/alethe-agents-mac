@@ -1,9 +1,6 @@
 import AppKit
 import XCTest
 
-/// Now Playing (P7-14): the seeded track on Home and in the sidebar, the last track after a relaunch,
-/// Settings › Integrations › Spotify, and the Home connect prompt's hit target. Seeds replace the
-/// Spotify service with an in-memory stand-in: no test reaches Spotify or opens a browser.
 @MainActor
 final class NowPlayingTests: XCTestCase {
     override func setUp() async throws {
@@ -39,11 +36,9 @@ final class NowPlayingTests: XCTestCase {
     func testLastTrackShownPausedAfterRelaunch() {
         let (first, dataRoot) = launchAlethe(arguments: ["-AletheUITestSeed", "spotify"])
         XCTAssertTrue(element(first, "sidebar.nowPlaying").waitForExistence(timeout: 10))
-        // The kept copy is written off the main thread right after the fetch.
         RunLoop.current.run(until: Date().addingTimeInterval(1))
         first.terminate()
 
-        // Without the seed the stand-in is gone and nothing is connected: only the kept track shows.
         let (app, _) = launchAlethe(dataRoot: dataRoot)
         let row = element(app, "sidebar.nowPlaying")
         XCTAssertTrue(row.waitForExistence(timeout: 10), "the last track is restored")
@@ -84,7 +79,6 @@ final class NowPlayingTests: XCTestCase {
         app.terminate()
     }
 
-    /// HT: Home's Connect is clicked where it is drawn at 90 %, 100 % and 120 %.
     func testHomeConnectReceivesClicksAtThreeZoomLevels() {
         for (label, keys) in [("90 %", ["-"]), ("100 %", []), ("120 %", ["+", "+"])] {
             let (app, _) = launchAlethe(arguments: ["-AletheUITestSeed", "spotifyOff"])

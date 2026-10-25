@@ -4,7 +4,6 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Web ImageInput.tsx, plus macOS clipboard and file-drop integration.
 struct ImageInputField: View {
     @Binding var value: String
     let name: String

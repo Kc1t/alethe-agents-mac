@@ -1,7 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// `ramPillPulse` (TitleBar.module.css): opacity 1 to 0.55 and back, looping every `period` seconds.
 private struct WebOpacityPulse: ViewModifier {
     let period: Double
     let active: Bool
@@ -26,7 +25,6 @@ private struct WebOpacityPulse: ViewModifier {
     }
 }
 
-/// `avatarIn` (WelcomeModal.module.css): 520 ms, rises 12 points from 0.92 scale.
 private struct WebAvatarIn: ViewModifier {
     @Environment(\.metrics) private var metrics
     @State private var appeared = false

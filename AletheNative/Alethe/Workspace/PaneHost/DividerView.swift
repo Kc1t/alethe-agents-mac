@@ -2,8 +2,6 @@ import AppKit
 import AletheDesign
 import QuartzCore
 
-/// An invisible resize handle over the gap between two tracks. Reports the pointer's travel since
-/// mouse-down; the owner turns it into track sizes.
 final class DividerView: NSView {
     enum Axis { case vertical, horizontal }
 
@@ -55,7 +53,6 @@ final class DividerView: NSView {
         CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(controlPoints: 0.25, 0.1, 0.25, 1))
         hoverFill.frame = bounds
         hoverFill.backgroundColor = context.theme.nsColor(.accentSoft).cgColor
-        // Split separators highlight their background only on hover, including during a drag.
         hoverFill.opacity = m.isWebInterface && hovering && (gridHandle || m.style != .clean) ? 1 : 0
         centerLine.backgroundColor = context.theme.nsColor(.borderStrong).cgColor
         centerLine.cornerRadius = m.size(2)
@@ -108,7 +105,6 @@ final class DividerView: NSView {
         guard let start else { return }
         hasDragged = true
         let point = event.locationInWindow
-        // Window coordinates grow upward; the host is flipped.
         onDrag?(axis == .vertical ? point.x - start.x : start.y - point.y)
     }
 

@@ -1,7 +1,5 @@
 import XCTest
 
-/// Graphify view (P5-23): Add Content › Code Graph opens the seeded repository's graph; search finds a
-/// node, selecting it shows its details; a snapshot shows what changed since.
 @MainActor
 final class GraphifyViewTests: XCTestCase {
     override func setUp() async throws {

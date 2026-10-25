@@ -1,6 +1,5 @@
 import Foundation
 
-/// The web preference keys preserve nil (defaults) separately from an explicitly empty list.
 public struct OrchestratorShortcut: Codable, Hashable, Sendable, Identifiable {
     public var id: String
     public var name: String
@@ -15,7 +14,6 @@ public struct OrchestratorShortcut: Codable, Hashable, Sendable, Identifiable {
     public func render(jobID: String, agent: String, worktree: String?, project: String?) -> String {
         let values = ["jobId": jobID, "agent": agent, "branch": "alethe/agent-" + jobID,
                       "worktree": worktree ?? "", "project": project ?? ""]
-        // Replace from the end so substituted values containing placeholders remain literal.
         let pattern = #"\{(jobId|agent|branch|worktree|project)\}"#
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return text }
         var output = text

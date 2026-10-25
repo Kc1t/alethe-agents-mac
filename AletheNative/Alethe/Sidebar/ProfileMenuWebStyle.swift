@@ -1,7 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// UserProfile.module.css item geometry, including its destructive hover treatment.
 struct ProfileMenuWebStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         ProfileMenuWebRow(configuration: configuration)

@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheModel
 
-/// Ports the navigation-store contracts and upstream workspaceNavigation snapshot regressions.
 @Suite struct WebSidebarNavigationTests {
     private func sample() -> (WorkspaceDocument, GroupID, ProjectID, ProjectID, PaneID, PaneID) {
         var doc = WorkspaceDocument()

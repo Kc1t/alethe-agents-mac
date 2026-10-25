@@ -3,7 +3,6 @@ import Foundation
 import Testing
 @testable import AletheTerminal
 
-// Spawns real processes: a rare intermittent hang must fail the test, not stall the run.
 @Suite(.timeLimit(.minutes(1))) struct ForceKillTests {
     private let ctrlC = Data([0x03])
     private let start = ContinuousClock.now
@@ -44,16 +43,12 @@ import Testing
     }
 
     @Test func descendantsFollowTheWholeTree() {
-        // 10 ─┬─ 11 ── 13
-        //     └─ 12        20 is unrelated; 1 is launchd.
         let parents: [pid_t: pid_t] = [10: 1, 11: 10, 12: 10, 13: 11, 20: 1, 1: 1]
         #expect(ProcessTree.descendants(of: 10, parents: parents) == [10, 11, 12, 13])
         #expect(ProcessTree.descendants(of: 99, parents: parents) == [99])
     }
 
     @Test func killReachesAChildInItsOwnProcessGroup() throws {
-        // A shell whose child leaves the group (like an agent's workers): SIGKILL to the group alone
-        // would miss it.
         let process = try PTYProcess(PTYLaunch(
             executable: "/bin/sh", arguments: ["sh", "-c", "perl -e 'setpgrp(0,0); sleep 30' & wait"],
             environment: ["PATH": "/usr/bin:/bin"], workingDirectory: nil, size: PTYSize(columns: 80, rows: 24)))

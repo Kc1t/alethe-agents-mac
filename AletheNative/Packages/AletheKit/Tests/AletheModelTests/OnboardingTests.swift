@@ -16,7 +16,6 @@ struct OnboardingTests {
         var preferences = PreferencesDocument()
         #expect(preferences.recordLaunch(version: "1.0", hasProjects: false, now: start) == .onboarding)
         #expect(preferences.firstLaunchAt == start)
-        // Not finished: asked again next launch.
         #expect(preferences.recordLaunch(version: "1.0", hasProjects: false, now: start + 60) == .onboarding)
         preferences.onboardingDone = true
         #expect(preferences.recordLaunch(version: "1.0", hasProjects: false, now: start + 120) == .none)
@@ -33,7 +32,6 @@ struct OnboardingTests {
     @Test func welcomeBackAfterUpdateOrLongAbsence() {
         var preferences = PreferencesDocument()
         preferences.onboardingDone = true
-        // Upgrading into this feature: no previous launch recorded, no greeting.
         #expect(preferences.recordLaunch(version: "1.0", hasProjects: true, now: start) == .none)
 
         let day2 = start + 86_400 + 10

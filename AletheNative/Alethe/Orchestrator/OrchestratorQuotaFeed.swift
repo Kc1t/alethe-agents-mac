@@ -3,11 +3,6 @@ import AletheOrchestrator
 import Foundation
 import Observation
 
-/// The app side of the P6-17 `FitnessFeed`: every open board header registers here, and while one
-/// is open Claude's and Codex's usage is read every 60 s through P3-13's `UsageMonitor` (so the
-/// toolbar pills see the same figures), pushed into the orchestrator core as fitness and turned
-/// into the headers' quota warnings. One per process, like the core, so a second board shares the
-/// same loop instead of starting another.
 @Observable
 @MainActor
 final class OrchestratorQuotaFeed {
@@ -15,8 +10,6 @@ final class OrchestratorQuotaFeed {
 
     private(set) var warnings: [QuotaWarning] = []
     @ObservationIgnored private var feed: FitnessFeed?
-    /// Opens and closes reach the feed in the order the views sent them, so a board that appears
-    /// and disappears quickly never leaves the loop running.
     @ObservationIgnored private var pending: Task<Void, Never>?
 
     func open(_ board: UUID, environment: AppEnvironment) {
@@ -53,9 +46,6 @@ final class OrchestratorQuotaFeed {
         await environment.orchestrator.prepared()?.setAgentFitness(agent, fitness)
     }
 
-    /// Codex is read through its CLI every time. Claude's token lives in the Keychain, so it is
-    /// fetched only while its toolbar pill is on — exactly when P3-13 already polls it — and
-    /// otherwise the last reading P3-13 has (e.g. from the AI Usage sheet) is used.
     private static func read(_ environment: AppEnvironment) async -> [ProviderUsage] {
         #if DEBUG
         if let seeded = seededUsage() { return seeded }
@@ -68,9 +58,6 @@ final class OrchestratorQuotaFeed {
     }
 
     #if DEBUG
-    /// `-AletheUITestUsage "codex:92,claude:40!"`: fixed readings instead of the real ones, so UI
-    /// tests never reach the network, a CLI or the Keychain. `!` marks the agent rate-limited; every
-    /// window resets in two hours.
     private static func seededUsage() -> [ProviderUsage]? {
         guard let spec = UserDefaults.standard.string(forKey: "AletheUITestUsage") else { return nil }
         let resetsAt = Date().addingTimeInterval(2 * 3600)

@@ -1,6 +1,5 @@
 import XCTest
 
-/// File › Import from Alethe (Tauri)… (P1-12), against `Fixtures/tauri-projects.json`.
 @MainActor
 final class TauriImportTests: XCTestCase {
     override func setUp() async throws {
@@ -28,7 +27,6 @@ final class TauriImportTests: XCTestCase {
         XCTAssertTrue(confirm.isEnabled)
         confirm.click()
 
-        // The result stays on screen until Done.
         XCTAssertTrue(app.staticTexts["Imported"].waitForExistence(timeout: 5))
         app.buttons["editor.confirm"].firstMatch.click()
 
@@ -38,13 +36,11 @@ final class TauriImportTests: XCTestCase {
         XCTAssertTrue(row(app, "project", "imported-var").exists)
         XCTAssertLessThan(group.frame.minX, nested.frame.minX)
 
-        // Importing again finds nothing new.
         openImport(app)
         XCTAssertTrue(app.descendants(matching: .any)["import.nothingNew"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["editor.confirm"].firstMatch.isEnabled)
         app.buttons["Cancel"].firstMatch.click()
 
-        // One undo removes the whole import.
         app.typeKey("z", modifierFlags: .command)
         XCTAssertTrue(eventually { !group.exists && !self.row(app, "project", "imported-var").exists })
         app.terminate()

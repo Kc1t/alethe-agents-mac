@@ -1,18 +1,13 @@
 import Foundation
 import AletheGit
 
-/// Where one delegated job works: the folder it was given, or its own worktree.
 struct JobWorkspace: Hashable, Sendable {
     var jobID: String
     var cwd: String
-    /// Set when the job runs isolated; the same path as `cwd` then.
     var worktree: String?
 }
 
 extension OrchestratorCore {
-    /// The folder each job of a batch works in. With `isolate`, one git worktree per job on
-    /// upstream's path and branch (`<repo>/.alethe/worktrees/<job>/`, `alethe/agent-<job>`), made
-    /// outside the actor's isolation so git never stalls a running worker.
     func workspaces(for ids: [String], request: DelegateRequest) async throws(OrchestratorToolError) -> [JobWorkspace] {
         guard request.isolate else {
             return ids.map { JobWorkspace(jobID: $0, cwd: request.cwd, worktree: nil) }
@@ -20,8 +15,6 @@ extension OrchestratorCore {
         return try await Self.makeWorktrees(for: ids, repo: request.cwd, worktrees: configuration.worktrees)
     }
 
-    /// A batch is accepted whole or not at all: when one worktree cannot be made, the ones already
-    /// made are removed (with their branches) before the refusal.
     @concurrent
     static func makeWorktrees(for ids: [String], repo: String, worktrees: GitWorktrees) async throws(OrchestratorToolError) -> [JobWorkspace] {
         let folder = URL(fileURLWithPath: repo, isDirectory: true)
@@ -38,8 +31,6 @@ extension OrchestratorCore {
         return made
     }
 
-    /// Removes the worktrees of a batch that was not accepted, and their branches. Best effort:
-    /// nothing else refers to them yet.
     @concurrent
     static func removeWorktrees(_ workspaces: [JobWorkspace], repo: String, worktrees: GitWorktrees) async {
         let folder = URL(fileURLWithPath: repo, isDirectory: true)

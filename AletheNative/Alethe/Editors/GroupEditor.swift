@@ -2,7 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// New Group / Edit Group sheet.
 struct GroupEditor: View {
     let workspace: WorkspaceModel
     let undoManager: UndoManager?
@@ -125,7 +124,6 @@ struct GroupEditor: View {
         save()
     }
 
-    /// A group cannot be nested inside itself or its descendants.
     private var parentCandidates: [ProjectGroup] {
         workspace.document.groups.filter { candidate in
             guard let editing else { return true }

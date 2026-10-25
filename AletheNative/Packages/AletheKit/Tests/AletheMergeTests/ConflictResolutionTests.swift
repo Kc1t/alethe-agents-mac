@@ -3,11 +3,9 @@ import Foundation
 import Testing
 @testable import AletheMerge
 
-/// Ports of upstream `conflict_resolution.rs` tests against throwaway repositories.
 struct ConflictResolutionTests {
     static let runner = GitRunner(environment: ["GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1"])
 
-    /// `main` plus `agent-a` / `agent-b` that both edit `shared.ts`, and `agent-c` touching another file.
     func repo() async throws -> URL {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("alethe-conflict-\(UUID().uuidString)", isDirectory: true)
@@ -73,16 +71,13 @@ struct ConflictResolutionTests {
         #expect(meta.projectId == "p1" && meta.conflictPaths == ["shared.ts"])
         #expect(try await resolution.conflicts(id: env.id).map(\.path) == ["shared.ts"])
 
-        // The user's tree is untouched.
         #expect(try await git(["status", "--porcelain", "--untracked-files=no"], in: root).isEmpty)
 
-        // Resumable: the merge stays in progress until preflight abort clears it (then a no-op).
         _ = try await git(["rev-parse", "--verify", "MERGE_HEAD"], in: env.path)
         try await resolution.preflightAbort(id: env.id)
         try await resolution.preflightAbort(id: env.id)
         #expect(try await resolution.conflicts(id: env.id).isEmpty)
 
-        // Abort restores: no worktree, branch or metadata left behind.
         try await resolution.abort(id: env.id)
         #expect(!FileManager.default.fileExists(atPath: env.path.path))
         #expect(!FileManager.default.fileExists(atPath: resolution.metaURL(id: env.id).path))
@@ -100,12 +95,10 @@ struct ConflictResolutionTests {
         defer { try? FileManager.default.removeItem(at: root) }
         let resolution = ConflictResolution(root: root, runner: Self.runner)
         let env = try await resolution.prepare(source: "agent-b", target: "agent-a")
-        // "Agent" resolves; commit as finalize would.
         try write(env.path, "shared.ts", "export const value = 'from-a+from-b'\n")
         try FileManager.default.removeItem(at: try #require(env.promptPath))
         _ = try await git(["commit", "-am", "merge"], in: env.path)
 
-        // Concurrent commit on the target in another file: clean reconciliation.
         _ = try await git(["checkout", "agent-a"], in: root)
         try write(root, "concurrent.txt", "concurrent\n")
         _ = try await git(["add", "concurrent.txt"], in: root)
@@ -116,7 +109,6 @@ struct ConflictResolutionTests {
         #expect(steps.values == [.fetchingTarget, .reconciling])
         #expect(FileManager.default.fileExists(atPath: env.path.appendingPathComponent("concurrent.txt").path))
 
-        // Concurrent edit of the resolved file: conflict, prompt and metadata rewritten.
         try write(root, "shared.ts", "export const value = 'from-a-again'\n")
         _ = try await git(["commit", "-am", "again"], in: root)
         let conflicted = try await resolution.rebaseOntoTarget(id: env.id)
@@ -132,7 +124,6 @@ struct ConflictResolutionTests {
     @Test func cancellationTerminatesGitAndCleansUp() async throws {
         let root = try await repo()
         defer { try? FileManager.default.removeItem(at: root) }
-        // A slow post-checkout hook makes `worktree add` hang until cancelled.
         let hook = root.appendingPathComponent(".git/hooks/post-checkout")
         try write(root.appendingPathComponent(".git/hooks"), "post-checkout", "#!/bin/sh\nsleep 30\n")
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: hook.path)

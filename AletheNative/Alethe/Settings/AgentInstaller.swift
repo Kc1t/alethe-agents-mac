@@ -3,16 +3,12 @@ import AletheTerminal
 import Foundation
 import Observation
 
-/// Runs agent installs, updates and uninstalls (upstream `useAgentInstall`): one at a time app-wide
-/// (two `npm -g` runs fight over the same folder), in the user's login shell, with a live log, and
-/// verified afterwards by looking the CLI up again (and, for an update, by its version moving).
 @Observable
 @MainActor
 final class AgentInstaller {
     enum Status: Equatable { case idle, running, succeeded, failed }
 
     private(set) var agent: AgentKind?
-    /// The non-agent tool this run is for (`router9`, P7-16); nil for agent runs.
     private(set) var tool: String?
     private(set) var method: InstallMethod?
     private(set) var status: Status = .idle
@@ -50,7 +46,6 @@ final class AgentInstaller {
         if method.verifyAbsent {
             worked = found == nil
         } else if let found {
-            // An update counts only once the version at that path moves.
             let after = await CLIVersion.probe(found)
             worked = before == nil || (after != nil && after != before)
         } else {
@@ -60,8 +55,6 @@ final class AgentInstaller {
         status = worked ? .succeeded : .failed
     }
 
-    /// Runs a fixed command line (9router's install or uninstall, built by `Router9Commands`) with the
-    /// same shell, lock and log as an agent install; `verify` decides whether it worked.
     func run(command: String, tool: String, verify: @MainActor () async -> Bool) async {
         guard !isBusy else { return }
         agent = nil
@@ -76,13 +69,11 @@ final class AgentInstaller {
         status = worked ? .succeeded : .failed
     }
 
-    /// The login shell with `arguments`, its output appended to the log; returns the exit status.
     private func execute(_ arguments: [String], command: String) async -> Int32 {
         let process = Process()
         process.executableURL = URL(filePath: ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh")
         process.arguments = arguments
         #if DEBUG
-        // UI tests: print the command instead of running it.
         if UserDefaults.standard.bool(forKey: "AletheInstallDryRun") {
             process.arguments = ["-c", "echo \"dry run: $0\"", command]
         }
@@ -90,7 +81,7 @@ final class AgentInstaller {
         process.currentDirectoryURL = URL(filePath: NSHomeDirectory())
         var environment = ProcessInfo.processInfo.environment
         for key in AgentLauncher.scrubbedVariables { environment.removeValue(forKey: key) }
-        environment["NONINTERACTIVE"] = "1"  // Homebrew: never wait for a key press
+        environment["NONINTERACTIVE"] = "1"
         process.environment = environment
         let pipe = Pipe()
         process.standardOutput = pipe

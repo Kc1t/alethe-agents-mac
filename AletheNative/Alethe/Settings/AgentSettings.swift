@@ -4,9 +4,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// Settings › Agents (upstream Preferences › Terminal: enabled agents and CLI paths): each agent can
-/// be turned off (it leaves New Terminal and the launcher) and shows the CLI it will run, with the
-/// version it reports; Choose… points it at another CLI, Reset goes back to automatic lookup.
 struct AgentSettings: View {
     @Environment(\.metrics) private var metrics
     @Environment(AppEnvironment.self) private var environment
@@ -191,8 +188,6 @@ struct AgentSettingsRow: View {
         latest = await AgentVersions.latest(for: agent.kind)
     }
 
-    /// Install when the CLI is missing; Update (npm, when a newer release exists) and Uninstall when
-    /// it is there (upstream `AgentInstallButton`, `AgentUpdateButton`, `AgentUninstallButton`).
     @ViewBuilder
     private var installMenu: some View {
         if AgentInstallCatalog.entries[agent.kind] != nil {

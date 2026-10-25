@@ -1,7 +1,5 @@
 import Foundation
 
-/// A planning step a human confirms by hand, recorded by the plugin's `gsd_record_step` tool into
-/// `.planning/procedure.json` (upstream `ProcedureStep`).
 public struct GSDProcedureStep: Codable, Hashable, Sendable {
     public var description: String
     public var category: String
@@ -12,8 +10,6 @@ public struct GSDProcedureStep: Codable, Hashable, Sendable {
     }
 }
 
-/// The OpenCode child session the plugin runs to keep `.planning/` in sync (upstream
-/// `GsdChildState`): its id, whether it is working, and the last error it reported.
 public struct GSDChildState: Hashable, Sendable {
     public var sessionID: String?
     public var busy: Bool
@@ -26,14 +22,12 @@ public struct GSDChildState: Hashable, Sendable {
     }
 }
 
-/// What a worktree's `.planning/` folder says about its task (upstream `PlanningStatus`).
 public struct PlanningStatus: Hashable, Sendable {
     public var hasPlanning: Bool
     public var reportedComplete: Bool
     public var progress: Int?
     public var roadmapPendingCount: Int?
     public var roadmapTotalCount: Int?
-    /// `plan.md`, trimmed; the step-by-step plan the child session writes.
     public var notes: String?
 
     public init(hasPlanning: Bool = false, reportedComplete: Bool = false, progress: Int? = nil,
@@ -47,14 +41,11 @@ public struct PlanningStatus: Hashable, Sendable {
     }
 }
 
-/// A markdown checklist item (`- [ ] text` / `- [x] text`).
 public struct RoadmapItem: Hashable, Sendable {
     public var checked: Bool
     public var text: String
 }
 
-/// Reads the `.planning/` folder the GSD plugin maintains (upstream `planning_gate.rs`). Every
-/// method does file I/O synchronously; call it off the main thread.
 public enum PlanningGate {
     public static let folderName = ".planning"
     static let childSessionFile = ".gsd-child-session"
@@ -62,13 +53,7 @@ public enum PlanningGate {
     static let childErrorFile = ".gsd-child-error"
     static let procedureFile = "procedure.json"
 
-    /// The checkout that contains `path`: the nearest folder holding a `.git` entry (a folder in a
-    /// main checkout, a file in a linked worktree), like `git rev-parse --show-toplevel` without
-    /// spawning git. nil outside a repository.
     public static func repositoryRoot(containing path: URL) -> URL? {
-        // Walks path components rather than `deletingLastPathComponent()`: on a URL that went
-        // through `resolvingSymlinksInPath()`, Foundation turns `/` into `/..`, `/../..`, … and a
-        // loop waiting for the parent to equal the child never ends.
         var components = path.standardizedFileURL.resolvingSymlinksInPath().pathComponents
         let fileManager = FileManager.default
         while !components.isEmpty {
@@ -83,11 +68,6 @@ public enum PlanningGate {
         root.appending(path: folderName, directoryHint: .isDirectory)
     }
 
-    // MARK: Status
-
-    /// Upstream `compute_planning_status`. `status.md`'s `Status:` wins over its `Progress:`, so a
-    /// stale `In Progress` with a forgotten `100%` is not read as complete; without `status.md`, a
-    /// fully checked `task.md` is.
     public static func status(of root: URL) -> PlanningStatus {
         let folder = planningFolder(of: root)
         var isDirectory: ObjCBool = false
@@ -128,7 +108,6 @@ public enum PlanningGate {
         )
     }
 
-    /// `Status: <value>` (lowercased) and `Progress: <pct>%` lines (upstream `parse_status_md`).
     static func parseStatus(_ content: String) -> (status: String?, progress: Int?) {
         var status: String?
         var progress: Int?
@@ -144,7 +123,6 @@ public enum PlanningGate {
             case "progress":
                 var number = Substring(value)
                 while number.hasSuffix("%") { number = number.dropLast() }
-                // Upstream parses a `u8`: out-of-range values are no progress.
                 progress = UInt8(number.trimmingCharacters(in: .whitespaces)).map(Int.init)
             default: break
             }
@@ -156,8 +134,6 @@ public enum PlanningGate {
         ["completed", "complete", "done"].contains(status)
     }
 
-    /// Upstream `parse_roadmap_items`: leading `-`/`*` bullets dropped, then `[<mark>]`; any mark
-    /// but a space counts as checked.
     public static func roadmapItems(_ content: String) -> [RoadmapItem] {
         content.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline).compactMap { line in
             let rest: Substring = line.drop(while: \.isWhitespace).drop(while: { $0 == "-" }).drop(while: { $0 == "*" })
@@ -169,9 +145,6 @@ public enum PlanningGate {
         }
     }
 
-    // MARK: Child session
-
-    /// The child session id, trimmed; nil when missing or empty.
     public static func childSessionID(of root: URL) -> String? {
         nonEmpty(read(planningFolder(of: root), childSessionFile))
     }
@@ -182,8 +155,6 @@ public enum PlanningGate {
         return FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory) && !isDirectory.boolValue
     }
 
-    /// The child's last error, consumed: the file is removed once read, so each error is shown once
-    /// (upstream `read_gsd_child_error`).
     public static func takeChildError(of root: URL) -> String? {
         let file = planningFolder(of: root).appending(path: childErrorFile)
         guard let error = nonEmpty(try? String(contentsOf: file, encoding: .utf8)) else { return nil }
@@ -191,8 +162,6 @@ public enum PlanningGate {
         return error
     }
 
-    /// All three sentinels in one read (upstream `read_gsd_child_state`); the error is consumed only
-    /// while a child session exists.
     public static func childState(of root: URL) -> GSDChildState {
         let sessionID = childSessionID(of: root)
         return GSDChildState(
@@ -202,14 +171,11 @@ public enum PlanningGate {
         )
     }
 
-    /// The steps in `procedure.json`; empty when it is missing or not a list of steps.
     public static func procedure(of root: URL) -> [GSDProcedureStep] {
         guard let data = FileManager.default.contents(atPath: planningFolder(of: root).appending(path: procedureFile).path),
               let steps = try? JSONDecoder().decode([GSDProcedureStep].self, from: data) else { return [] }
         return steps
     }
-
-    // MARK: Helpers
 
     private static func read(_ folder: URL, _ name: String) -> String? {
         try? String(contentsOf: folder.appending(path: name), encoding: .utf8)

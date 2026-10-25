@@ -1,8 +1,6 @@
 import AletheDesign
 import AppKit
 
-/// Web link hit testing against the renderer's visible rows. The wrapper exposes row text but
-/// not soft-wrap flags; full-width rows are joined until the first short row.
 @MainActor
 final class TerminalLinkHighlightView: NSView {
     var rectangles: [CGRect] = []
@@ -24,7 +22,6 @@ final class TerminalLinkHighlightView: NSView {
 }
 
 extension TerminalPaneView {
-    /// Pointer in window coordinates. Reading on demand also handles scrolled-back output.
     public func webLink(at point: CGPoint) -> (link: DetectedTerminalLink, rects: [CGRect])? {
         guard Self.inputMetrics()?.isWebInterface == true,
               let text = viewportText(), gridSize.columns > 0, gridSize.rows > 0 else { return nil }
@@ -47,7 +44,6 @@ extension TerminalPaneView {
         guard let line = TerminalLinks.logicalLine(buffer, lineNumber: row + 1) else { return nil }
         let start = line.startLine - 1
         let logical = line.text
-        // UTF-16 offsets are converted to display cells before comparing with pointer positions.
         let hitCell = (row - start) * columns + Int(local.x / cellWidth)
         for link in TerminalLinks.detect(logical) {
             let string = logical as NSString

@@ -2,22 +2,11 @@ import AletheDesign
 import AppKit
 import SwiftUI
 
-// Themed replacement for AppKit menus in the web interface. It mirrors the web's
-// `ProjectSidebar/ContextMenu.tsx` + `ContextMenu.module.css`: a fixed-position panel on
-// `--bg-elevated` with a 1px `--border`, `--radius-md`, `--shadow-md`, 180px min width, 4px padding,
-// 13px items with 6/10 padding, an 8px gap to a 15px icon column, `--panel-hover` hover, a danger
-// colour, 1px separators with 4/2 margins, kept 8px inside the window, closed by Escape or an outside
-// click. Everything is drawn only when `metrics.isWebInterface`; `.mac` keeps `.contextMenu`/`Menu`.
-
-// MARK: - Session (per open panel)
-
-/// One open panel (or flyout): the registry of its items, the highlighted row and the open flyout.
 @MainActor @Observable
 final class WebMenuSession {
     struct Entry {
         let id: UUID
         let enabled: Bool
-        /// Submenu rows open their flyout instead of closing the menu.
         let opensSubmenu: Bool
         let trigger: () -> Void
     }
@@ -25,7 +14,6 @@ final class WebMenuSession {
     @ObservationIgnored var entries: [Entry] = []
     @ObservationIgnored weak var parent: WebMenuSession?
     var highlighted: UUID?
-    /// Row whose flyout is open, and the flyout's own session.
     var openSubmenu: UUID?
     @ObservationIgnored var child: WebMenuSession?
 
@@ -39,7 +27,6 @@ final class WebMenuSession {
         if highlighted == id { highlighted = nil }
     }
 
-    /// The deepest session whose flyout chain is open: keyboard input goes there.
     var active: WebMenuSession {
         if openSubmenu != nil, let child { return child.active }
         return self
@@ -66,8 +53,6 @@ extension EnvironmentValues {
     @Entry var webMenuItemDanger = false
 }
 
-// MARK: - Host (one presentation at a time)
-
 @MainActor @Observable
 final class WebMenuHost {
     static let shared = WebMenuHost()
@@ -86,7 +71,6 @@ final class WebMenuHost {
 
     var presentation: Presentation?
     @ObservationIgnored var session: WebMenuSession?
-    /// Layer geometry, in the SwiftUI global space.
     @ObservationIgnored var layerOrigin: CGPoint = .zero
     @ObservationIgnored weak var layerView: NSView?
 
@@ -94,7 +78,6 @@ final class WebMenuHost {
         presentation = Presentation(placement: .point(point), content: content, usesDefaultChrome: usesDefaultChrome)
     }
 
-    /// `rect` is in the SwiftUI global space (a trigger's `frame(in: .global)`).
     func present(anchor rect: CGRect, trailing: Bool, content: AnyView) {
         let local = rect.offsetBy(dx: -layerOrigin.x, dy: -layerOrigin.y)
         presentation = Presentation(placement: .anchor(local, trailing: trailing), content: content)
@@ -106,17 +89,12 @@ final class WebMenuHost {
         session = nil
     }
 
-    /// Closes the menu, then runs the item on the next turn so modal prompts do not sit under it.
     func activate(_ trigger: @escaping () -> Void) {
         dismiss()
         DispatchQueue.main.async(execute: trigger)
     }
 }
 
-// MARK: - Items
-
-/// `PrimitiveButtonStyle` so every existing `Button` in a menu body becomes a themed row, with its
-/// action reachable (`trigger`) for keyboard activation.
 struct WebMenuButtonStyle: PrimitiveButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         WebMenuItemView(configuration: configuration)
@@ -181,7 +159,6 @@ private struct WebMenuItemView: View {
     }
 }
 
-/// 15px icon column in `--fg-muted` (inherits the danger colour), an 8px gap, then the title.
 struct WebMenuLabelStyle: LabelStyle {
     @Environment(\.metrics) private var metrics
     @Environment(\.theme) private var theme
@@ -197,7 +174,6 @@ struct WebMenuLabelStyle: LabelStyle {
     }
 }
 
-/// 1px `--border` separator with 4px / 2px margins.
 struct WebMenuDivider: View {
     @Environment(\.metrics) private var metrics
     @Environment(\.theme) private var theme
@@ -215,7 +191,6 @@ struct WebMenuDivider: View {
     }
 }
 
-/// A submenu: the native `Menu` in `.mac`, a hover/arrow-key flyout row in the web interface.
 struct WebSubmenu<Content: View>: View {
     let title: LocalizedStringKey
     let symbol: String?
@@ -311,7 +286,6 @@ struct WebSubmenu<Content: View>: View {
     }
 }
 
-/// The panel surface shared by the root menu and flyouts.
 struct WebMenuChrome<Content: View>: View {
     @ViewBuilder let content: () -> Content
     @Environment(\.metrics) private var metrics
@@ -334,7 +308,6 @@ struct WebMenuChrome<Content: View>: View {
     }
 }
 
-/// A menu row with a trailing check for the current choice (replaces `Picker(.inline)` and `Toggle`).
 struct WebMenuCheckRow: View {
     let title: Text
     let symbol: String
@@ -350,9 +323,6 @@ struct WebMenuCheckRow: View {
     }
 }
 
-// MARK: - Layer
-
-/// Lifts the open menu above the whole window (the web portals to `body`, z-index 2000).
 struct WebContextMenuLayer: ViewModifier {
     func body(content: Content) -> some View {
         content.overlay { WebContextMenuLayerBody() }
@@ -420,7 +390,6 @@ private struct WebMenuPanel: View {
         }
     }
 
-    /// The web clamps to an 8px margin on every side (`ContextMenu.tsx`).
     private func position(margin: CGFloat) -> CGPoint {
         var x: CGFloat
         var y: CGFloat
@@ -441,9 +410,6 @@ private struct WebMenuPanel: View {
     }
 }
 
-// MARK: - Triggers
-
-/// Right-click source: registers an AppKit view whose bounds receive the menu request.
 final class WebMenuTriggerView: NSView {
     var content: (() -> AnyView)?
     nonisolated(unsafe) static let registry = NSHashTable<WebMenuTriggerView>.weakObjects()
@@ -465,8 +431,6 @@ private struct WebMenuTrigger: NSViewRepresentable {
     func updateNSView(_ view: WebMenuTriggerView, context: Context) { view.content = content }
 }
 
-/// Window-wide event monitor: right clicks open the smallest registered trigger under the cursor;
-/// while a menu is open, Escape/arrows/Return drive it.
 private struct WebMenuMonitor: NSViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -562,8 +526,6 @@ private struct WebMenuMonitor: NSViewRepresentable {
     }
 }
 
-// MARK: - Public API
-
 private struct WebContextMenuModifier<Menu: View>: ViewModifier {
     @ViewBuilder let menu: () -> Menu
     @Environment(\.metrics) private var metrics
@@ -578,13 +540,11 @@ private struct WebContextMenuModifier<Menu: View>: ViewModifier {
 }
 
 extension View {
-    /// Right-click menu: the themed web panel in the web interface, `.contextMenu` otherwise.
     func webContextMenu<Menu: View>(@ViewBuilder _ menu: @escaping () -> Menu) -> some View {
         modifier(WebContextMenuModifier(menu: menu))
     }
 }
 
-/// A button that opens its menu below itself: the themed panel in the web interface, `Menu` otherwise.
 struct WebMenu<Content: View, Label: View>: View {
     @ViewBuilder let content: () -> Content
     @ViewBuilder let label: () -> Label

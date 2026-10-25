@@ -1,8 +1,5 @@
 import XCTest
 
-/// 9router settings, install sheet and toolbar pill (P7-16) against a stub install: "node" is
-/// `/bin/sh` running a sleeping script, so nothing real is installed or started. Every control is
-/// clicked where it is drawn and its effect checked (HT).
 @MainActor
 final class Router9Tests: XCTestCase {
     override func setUp() async throws {
@@ -33,7 +30,6 @@ final class Router9Tests: XCTestCase {
         XCTAssertTrue(element(app, "router9.installInfo").waitForExistence(timeout: 10), "the stub install is found")
         XCTAssertTrue(eventually(timeout: 10) { self.stateLabel(app).contains("Ready") })
 
-        // The key is saved to the Keychain (in memory for UI tests) and never shown again.
         let field = element(app, "router9.apiKey.field")
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         field.click()
@@ -50,7 +46,6 @@ final class Router9Tests: XCTestCase {
         toggle.click()
         XCTAssertTrue(eventually(timeout: 10) { self.stateLabel(app).contains("Ready") }, "stopped")
 
-        // Turning it off hides the connection rows.
         element(app, "router9.enabled").click()
         XCTAssertTrue(eventually { !self.element(app, "router9.autoStart").exists })
         XCTAssertTrue(eventually { self.stateLabel(app).contains("Off") })
@@ -83,7 +78,6 @@ final class Router9Tests: XCTestCase {
         XCTAssertTrue(text.hasPrefix("npm install --prefix '"), text)
         XCTAssertTrue(text.contains(dataRoot.path), "the private prefix lives in the profile")
         XCTAssertTrue(text.hasSuffix("9router@0.5.59"), text)
-        // Nothing ran yet: closing leaves no log behind.
         XCTAssertFalse(element(app, "router9.install.log").exists)
         element(app, "router9.install.close").click()
         XCTAssertTrue(eventually { !command.exists }, "the sheet closes without running")

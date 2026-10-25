@@ -2,8 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// Settings › Toolbar (UI-7, upstream `TopbarSettingsModal`): which main window toolbar items show.
-/// Arranging them is View › Customize Toolbar…; the usage pills share AI Usage's toggles.
 struct ToolbarSettings: View {
     @Environment(AppEnvironment.self) private var environment
 

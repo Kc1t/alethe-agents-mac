@@ -1,7 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// VoiceHistoryPanel.module.css: 44px header, 10px content inset, 8px card gap.
 struct WebVoiceHistoryPanel: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics

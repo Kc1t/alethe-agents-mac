@@ -4,10 +4,6 @@ import AletheRemote
 import AppKit
 import SwiftUI
 
-/// Settings › Remote (PER-7; upstream `RemoteControlPage`, `RemoteControlSettingsFields`): on/off,
-/// reach, the security policy, the pairing window and the paired devices. Turning it on — the only
-/// way anything listens beyond this Mac — asks once with the network warning; revoking asks once.
-/// Pairing and session tokens are never shown here (the QR lives in the pairing sheet).
 struct RemoteSettings: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme
@@ -83,8 +79,6 @@ struct RemoteSettings: View {
         }
     }
 
-    // MARK: - Sections
-
     private var serviceSection: some View {
         Section {
             Toggle(isOn: Binding(get: { controller.isEnabled }, set: setEnabled)) {
@@ -95,7 +89,6 @@ struct RemoteSettings: View {
                 .settingsRowSurface(.remote)
             #if DEBUG
             if UserDefaults.standard.string(forKey: "AletheDataRoot") != nil {
-                // UI tests read what the controller and its hub hold, not just what the form shows.
                 Text(verbatim: probe)
                     .font((metrics.isWebInterface ? metrics.font(size: 10) : metrics.font(.caption)))
                     .foregroundStyle(theme[.textTertiary])
@@ -301,11 +294,8 @@ struct RemoteSettings: View {
         }
     }
 
-    // MARK: - Text
-
     private var statusLine: String {
         guard controller.isEnabled else { return String(localized: "settings.remote.status.off") }
-        // The listener's address shows once a device is paired (upstream); before that it stays hidden.
         if let url = info?.httpURL, (info?.connectedDevices ?? 0) > 0 {
             return String(format: String(localized: "settings.remote.status.onAt"), url)
         }
@@ -324,7 +314,6 @@ struct RemoteSettings: View {
         String(format: String(localized: "settings.remote.revoke.confirm"), revoking?.name ?? "")
     }
 
-    /// The upstream choices, plus a stored value outside them (an imported or edited file).
     static func expiryOptions(including current: Int) -> [Int] {
         sessionOptions.contains(current) ? sessionOptions : (sessionOptions + [current]).sorted()
     }
@@ -346,8 +335,6 @@ struct RemoteSettings: View {
             + "expiry=\(info.sessionExpirySecs) reach=\(info.reachMode.rawValue) shared=\(shared)"
     }
     #endif
-
-    // MARK: - Actions
 
     private func setEnabled(_ enabled: Bool) {
         if enabled { confirmEnable = true } else { controller.setEnabled(false) }
@@ -378,8 +365,6 @@ struct RemoteSettings: View {
         }
     }
 
-    /// Keeps the device list and countdown current (1 s) and Tailscale's presence (5 s; it runs the
-    /// CLI off main) while the tab is shown.
     private func poll() async {
         var tick = 0
         while !Task.isCancelled {

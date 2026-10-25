@@ -2,8 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// The toolbar's profile menu (UI-7, upstream `UserProfile`): the running profile's name, the other
-/// profiles to switch to (asks once, then relaunches) and Manage Profiles….
 struct ProfileToolbarMenu: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.openSettings) private var openSettings

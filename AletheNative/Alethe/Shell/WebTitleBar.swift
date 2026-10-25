@@ -3,10 +3,8 @@ import AletheFoundation
 import AletheModel
 import SwiftUI
 
-/// `TitleBar/index.tsx` and `TitleBar.module.css`, with the system traffic lights retained.
 struct WebTitleBar: View {
     @Binding var sidebarVisible: Bool
-    /// AppKit coordinates are already in points; only the web gap scales with UI zoom.
     let trafficLightTrailingEdge: CGFloat
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme

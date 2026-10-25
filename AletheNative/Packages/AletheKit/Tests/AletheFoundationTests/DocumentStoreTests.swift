@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheFoundation
 
-/// Version 3 of a test document; v1 had `title`, v2 renamed it to `name`, v3 added `count`.
 private struct Sample: VersionedDocument, Equatable {
     static let currentVersion = 3
     static let migrations: [Int: @Sendable (inout JSONObject) throws -> Void] = [
@@ -47,7 +46,6 @@ private func temporaryURL() -> URL {
         guard case .migrated(let from, let backup) = outcome else { Issue.record("not migrated"); return }
         #expect(from == 1)
         #expect(try String(contentsOf: backup, encoding: .utf8).contains("\"title\":\"old\""))
-        // The migrated document was written back at the current version.
         let (_, second) = try await DocumentStore<Sample>(url: url).load()
         #expect(second == .loaded)
     }

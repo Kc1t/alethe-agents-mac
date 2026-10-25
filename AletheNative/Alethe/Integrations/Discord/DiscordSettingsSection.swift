@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Settings › Integrations › Discord (upstream `IntegrationsPage` `discord`): Rich Presence on or off.
 struct DiscordSettingsSection: View {
     @Environment(AppEnvironment.self) private var environment
 

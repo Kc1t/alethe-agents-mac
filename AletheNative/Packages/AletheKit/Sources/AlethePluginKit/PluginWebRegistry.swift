@@ -1,7 +1,6 @@
 import CryptoKit
 import Foundation
 
-/// Web manifests are retained verbatim. Registration never loads JavaScript or grants host services.
 public struct WebPluginManifest: Codable, Sendable, Identifiable {
     public let id: String
     public let name: String
@@ -108,7 +107,6 @@ public actor PluginWebRegistry {
         try files.removeItem(at: root.appending(path: id))
     }
 
-    /// Imports metadata only; executable assets cannot enter the native runtime through this path.
     public func importFile(_ source: URL) throws {
         let access = source.startAccessingSecurityScopedResource()
         defer { if access { source.stopAccessingSecurityScopedResource() } }
@@ -149,7 +147,6 @@ public actor PluginWebRegistry {
     }
 
     private func importArchive(_ source: URL) throws {
-        // Stream only a manifest; never extract archive paths or follow archive symlinks.
         let listing = try output(["-Z1", source.path])
         let paths = String(decoding: listing, as: UTF8.self).split(separator: "\n").map(String.init)
         let candidates = paths.filter { path in
@@ -213,7 +210,6 @@ public actor PluginWebRegistry {
         let temporary = files.temporaryDirectory.appending(path: UUID().uuidString + ".zip")
         try data.write(to: temporary)
         defer { try? files.removeItem(at: temporary) }
-        // Validate identity before changing the registry.
         let listing = try output(["-Z1", temporary.path])
         let paths = String(decoding: listing, as: UTF8.self).split(separator: "\n").map(String.init)
         let manifests = paths.filter { $0.split(separator: "/").last == "manifest.json" }

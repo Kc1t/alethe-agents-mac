@@ -3,10 +3,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-// MARK: - Usage
-
-/// Home's usage strip (upstream `UsageStrip`): each provider's windows. Providers without a toolbar pill
-/// are only read after usage access is enabled in preferences.
 struct UsageStrip: View {
     var homeActivityDays: Binding<[ActivityDays.Day]>?
     var webContainerWidth: CGFloat?
@@ -67,7 +63,6 @@ struct UsageStrip: View {
         if paneWidth <= metrics.size(1100) {
             return [GridItem(.flexible(), spacing: gap), GridItem(.flexible())]
         }
-        // The activity column is 1.15fr; the two provider columns are each 1fr.
         let providerWidth = max(0, contentWidth - metrics.size(24)) / 3.15
         return [GridItem(.fixed(providerWidth), spacing: gap),
                 GridItem(.fixed(providerWidth), spacing: gap), GridItem(.flexible())]
@@ -116,9 +111,6 @@ struct UsageStrip: View {
     }
 }
 
-// MARK: - Activity graph
-
-/// Messages per day over 13 weeks (upstream `ActivityGraph`), from Claude Code, Codex and OpenCode.
 struct ActivityGraph: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme
@@ -287,7 +279,6 @@ struct ActivityGraph: View {
                                         days.reduce(0) { $0 + $1.count }, ActivityDays.streak(days))))
     }
 
-    /// Compare the last seven days with the seven days immediately before them, as on the web.
     private var delta: Double? {
         guard days.count >= 14 else { return nil }
         let recent = days.suffix(7).reduce(0) { $0 + $1.count }
@@ -324,7 +315,6 @@ struct ActivityGraph: View {
                                         days.reduce(0) { $0 + $1.count }, ActivityDays.streak(days))))
     }
 
-    /// Weeks as columns, weekdays as rows (Sunday first, like upstream), padded at the start.
     private var columns: [[ActivityDays.Day?]] {
         guard let first = days.first else { return [] }
         var calendar = Calendar(identifier: .gregorian)
@@ -359,9 +349,6 @@ struct ActivityGraph: View {
     }
 }
 
-// MARK: - Time analytics
-
-/// Where the time went (upstream `TimeAnalytics`), from the activity tracker (P3-14).
 struct TimeAnalytics: View {
     enum Range: String, CaseIterable, Identifiable {
         case today, week, month, all
@@ -537,7 +524,6 @@ struct TimeAnalytics: View {
     }
 }
 
-/// HomeView.module.css `.usageCard`; kept local so native cards retain their existing style.
 struct HomeWebCard: ViewModifier {
     @State private var hovered = false
     @Environment(\.theme) private var theme

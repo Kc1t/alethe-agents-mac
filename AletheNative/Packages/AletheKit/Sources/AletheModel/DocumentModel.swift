@@ -2,14 +2,11 @@ import AletheFoundation
 import Foundation
 import Observation
 
-/// Observable, main-actor owner of one persisted document. Views read `document`; every change goes
-/// through `update`, which bumps the revision and schedules a debounced atomic save.
 @Observable
 @MainActor
 public final class DocumentModel<Document: VersionedDocument> {
     public private(set) var document: Document
     public let loadOutcome: DocumentLoadOutcome?
-    /// Set when the file belongs to a newer build: the app runs on defaults and never overwrites it.
     public let loadError: DocumentStoreError?
 
     @ObservationIgnored private let store: DocumentStore<Document>
@@ -22,8 +19,6 @@ public final class DocumentModel<Document: VersionedDocument> {
         loadError = error
     }
 
-    /// Loads (migrating or recovering as needed). Never fails: problems are reported through
-    /// `loadOutcome`/`loadError` and the model starts from the initial document.
     public static func load(from url: URL) async -> DocumentModel {
         let store = DocumentStore<Document>(url: url)
         let name = url.lastPathComponent
@@ -46,8 +41,6 @@ public final class DocumentModel<Document: VersionedDocument> {
         }
     }
 
-    /// A change that leaves the document as it was is dropped: observers (the pane host rebuilds
-    /// its hosted views) are not woken and nothing is saved.
     public func update(_ body: (inout Document) -> Void) {
         var next = document
         body(&next)
@@ -55,7 +48,6 @@ public final class DocumentModel<Document: VersionedDocument> {
         replace(with: next)
     }
 
-    /// An undoable change: ⌘Z restores the document as it was before `body` (and ⇧⌘Z re-applies it).
     public func update(undoManager: UndoManager?, actionName: String, _ body: (inout Document) -> Void) {
         let before = document
         update(body)
@@ -83,7 +75,6 @@ public final class DocumentModel<Document: VersionedDocument> {
         Task { await store.scheduleSave(snapshot, revision: revision) }
     }
 
-    /// Writes pending changes now (quit, profile switch).
     public func flush() async {
         revision += 1
         try? await store.save(document, revision: revision)

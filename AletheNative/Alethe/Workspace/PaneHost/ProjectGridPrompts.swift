@@ -2,11 +2,8 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// Name and delete prompts for a project's named grids (upstream `ProjectGridModal`), as alerts: a
-/// name field that explains why a name is refused, and keep / close choices when deleting.
 @MainActor
 enum ProjectGridPrompts {
-    /// Asks for a grid name until it is valid or cancelled.
     static func name(title: String, initial: String, action: String,
                      problem: (String) -> WorkspaceDocument.GridNameProblem?) -> String? {
         var value = initial
@@ -34,7 +31,6 @@ enum ProjectGridPrompts {
         }
     }
 
-    /// Web `ProjectGridModal` (create / rename): the name, or nil when cancelled.
     static func webName(rename: Bool, initial: String, problem: @escaping (String) -> WorkspaceDocument.GridNameProblem?) async -> String? {
         let outcome = await WebDialogCenter.shared.present(width: 540) { finish in
             ProjectGridWebModal(mode: rename ? .rename : .create, initial: initial,
@@ -44,7 +40,6 @@ enum ProjectGridPrompts {
         return nil
     }
 
-    /// Web `ProjectGridModal` (delete): keep the terminals in Default, or close them.
     static func webDelete(grid: String, paneCount: Int) async -> DeleteChoice? {
         let outcome = await WebDialogCenter.shared.present(width: 540) { finish in
             ProjectGridWebModal(mode: .delete(name: grid, count: paneCount), finish: finish)
@@ -56,7 +51,6 @@ enum ProjectGridPrompts {
         }
     }
 
-    /// New Grid…: asks for a name, then adds the grid and shows it (undoable).
     static func createGrid(in project: ProjectID, workspace: WorkspaceModel, undoManager: UndoManager?) {
         if WebDialogCenter.shared.themed {
             Task {

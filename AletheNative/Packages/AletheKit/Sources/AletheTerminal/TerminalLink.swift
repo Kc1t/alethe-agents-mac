@@ -1,21 +1,12 @@
 import Foundation
 
-/// Where a ⌘-clicked terminal link goes (upstream `terminalLinks.ts` + `XTermView` link actions).
-/// Ghostty detects the link (URLs, rooted or relative paths, OSC 8 hyperlinks); this decides what it
-/// means once clicked.
 public enum TerminalLink: Equatable, Sendable {
-    /// An http(s) page.
     case web(URL)
-    /// An existing file, with the line (and column) an agent printed after it, if any.
     case file(path: String, line: Int?)
     case directory(path: String)
-    /// Another scheme (mailto:, ssh:…), handed to the system.
     case other(URL)
-    /// Nothing that exists or can be opened.
     case none
 
-    /// Web `terminalLinks.ts`: bare localhost uses HTTP; deployment domains use HTTPS. Keep this
-    /// separate from `resolve` so the macOS profile's existing routing does not change.
     public static func resolveWeb(_ raw: String, cwd: String?, home: String = NSHomeDirectory(),
                                   fileKind: (String) -> Bool? = TerminalLink.fileKind) -> TerminalLink {
         var text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -36,21 +27,13 @@ public enum TerminalLink: Equatable, Sendable {
         return resolve(text, cwd: cwd, home: home, fileKind: fileKind)
     }
 
-    /// - Parameters:
-    ///   - raw: the text Ghostty reports for the link.
-    ///   - cwd: the terminal's working directory, for relative paths.
-    ///   - fileKind: whether a path exists and is a directory (nil: missing); injected for tests.
     public static func resolve(_ raw: String, cwd: String?, home: String = NSHomeDirectory(),
                                fileKind: (String) -> Bool? = TerminalLink.fileKind) -> TerminalLink {
-        // Sentence punctuation after a link, and quotes or brackets around it; a leading `.` stays
-        // (`./file`, `../dir`, `.env`).
         var text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         while let last = text.last, ".,;:)]}'\"`".contains(last) { text.removeLast() }
         while let first = text.first, "([{'\"`".contains(first) { text.removeFirst() }
         guard !text.isEmpty else { return .none }
 
-        // `README.md:12` parses as a URL with scheme "README.md": a scheme has no dots, and a
-        // location suffix is not a URL.
         if text.firstMatch(of: /^[A-Za-z][A-Za-z0-9+\-]*:(?!\d+(:\d+)?$)/) != nil,
            let url = URL(string: text), let scheme = url.scheme?.lowercased(), scheme.count > 1 {
             switch scheme {
@@ -59,7 +42,6 @@ public enum TerminalLink: Equatable, Sendable {
             default: return .other(url)
             }
         }
-        // `path:12` or `path:12:4`, as compilers and agents print locations.
         var path = text
         var line: Int?
         if let match = text.firstMatch(of: /^(.+?):(\d+)(?::\d+)?$/) {
@@ -92,14 +74,12 @@ public enum TerminalLink: Equatable, Sendable {
         }
     }
 
-    /// true: a directory, false: a file, nil: nothing there.
     public static func fileKind(_ path: String) -> Bool? {
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory) else { return nil }
         return isDirectory.boolValue
     }
 
-    /// OSC 7 reports `file://host/path`; Ghostty may pass it on as a URL or a plain path.
     public static func workingDirectory(fromReported value: String) -> String? {
         if value.hasPrefix("file://"), let url = URL(string: value) { return url.path }
         return value.hasPrefix("/") ? value : nil

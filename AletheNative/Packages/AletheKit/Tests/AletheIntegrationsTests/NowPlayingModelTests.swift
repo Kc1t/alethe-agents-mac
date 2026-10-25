@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheIntegrations
 
-/// A Spotify stand-in: counts requests and answers with what the test set.
 private actor StubSource: NowPlayingSource {
     var connected: Bool
     var track: SpotifyNowPlaying?
@@ -52,7 +51,6 @@ private func temporaryStore() -> NowPlayingLastTrackStore {
         .appending(path: "now-playing-\(UUID().uuidString)").appending(path: NowPlayingLastTrackStore.fileName))
 }
 
-/// Polls `condition` on the main actor for up to `timeout` seconds.
 @MainActor
 private func eventually(timeout: Duration = .seconds(2), _ condition: @MainActor () async -> Bool) async -> Bool {
     let clock = ContinuousClock()
@@ -77,7 +75,6 @@ private func eventually(timeout: Duration = .seconds(2), _ condition: @MainActor
 
         model.viewDisappeared()
         #expect(!model.isPolling)
-        // Once the loop ended (its last request included), several intervals pass without a request.
         await model.pollingStopped()
         let stopped = await source.currentCalls
         try? await Task.sleep(for: .milliseconds(60))
@@ -131,7 +128,6 @@ private func eventually(timeout: Duration = .seconds(2), _ condition: @MainActor
         #expect(await eventually { model.current?.track == "kept" })
         #expect(await eventually { await store.load() != nil })
 
-        // A relaunch: a new model over the same file, before any fetch.
         let relaunched = NowPlayingModel(source: StubSource(connected: false), lastTrack: store)
         await relaunched.restoreLastTrack()
         let restored = try #require(relaunched.current)

@@ -1,6 +1,5 @@
 import XCTest
 
-/// The Todos tab: add items, edit tags and manage settings.
 @MainActor
 final class TodosTests: XCTestCase {
     override func setUp() async throws {
@@ -11,7 +10,6 @@ final class TodosTests: XCTestCase {
         app.descendants(matching: .any)[identifier].firstMatch
     }
 
-    /// View › New Todo reveals the tab and focuses the field.
     private func newTodo(_ title: String, in app: XCUIApplication) {
         app.menuBars.menuBarItems["View"].click()
         app.menuItems["New Todo"].click()

@@ -98,7 +98,6 @@ struct WebAccountSettings: View {
 }
 
 extension WebAccountSettings {
-    /// "Manage accounts" in the profile menus lands here and opens the accounts modal directly.
     fileprivate func openRequestedProfiles() {
         guard environment.settingsTab == .profiles else { return }
         environment.settingsTab = .general
@@ -305,7 +304,6 @@ struct WebAboutSettings: View {
     }
 }
 
-/// Web `TerminalPage` spawn concurrency stepper: 1...8, default 3.
 private struct SpawnConcurrencyField: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics
@@ -333,7 +331,6 @@ private struct SpawnConcurrencyField: View {
     }
 }
 
-/// Web `TerminalPage` shell executable override: Set... picks a file, Reset returns to automatic.
 private struct ShellPathField: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics
@@ -361,7 +358,6 @@ private struct ShellPathField: View {
     }
 }
 
-/// Web `TerminalPage` font family input, committed on Enter or focus loss.
 private struct TerminalFontField: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var draft = ""

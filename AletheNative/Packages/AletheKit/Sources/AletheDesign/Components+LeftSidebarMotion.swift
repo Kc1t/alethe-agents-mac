@@ -1,7 +1,6 @@
 import SwiftUI
 
 extension Motion {
-    /// CSS timings from origin/main's NormalProjectSidebar, Collapse, SidebarUpdate and UserProfile.
     public enum SidebarEffect: Sendable {
         case tabColor, tabFill, tabLift, layout, quickNavigation, rowSlot, status
         case chevron, collapse, collapseOpacity, panel, profile, profilePopover, cleanPopover
@@ -30,14 +29,12 @@ extension Motion {
             case .profilePopover:
                 return .timingCurve(0, 0, 0.58, 1, duration: duration)
             default:
-                // CSS `ease`, which differs from SwiftUI's easeInOut.
                 return .timingCurve(0.25, 0.1, 0.25, 1, duration: duration)
             }
         }
     }
 }
 
-/// The shared sidebar tab geometry with the web's independent color, fill and lift transitions.
 public struct AletheSidebarMotionTabStyle: ButtonStyle {
     private let selected: Bool
     private let layout: Bool

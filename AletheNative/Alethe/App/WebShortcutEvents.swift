@@ -2,7 +2,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// Non-menu shortcuts from web useKeybindings.ts. Never consume terminal text as a restart.
 struct WebShortcutEvents: NSViewRepresentable {
     let environment: AppEnvironment
 

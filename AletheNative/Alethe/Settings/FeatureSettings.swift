@@ -3,8 +3,6 @@ import AletheIntegrations
 import AletheModel
 import SwiftUI
 
-/// Settings › Features (upstream `FeaturesPage`): each optional module with its toggle, the secondary
-/// ones under “Show more”. A feature's own options appear under it while it is on (`FeatureOptions`).
 struct FeatureSettings: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics
@@ -49,7 +47,6 @@ struct FeatureSettings: View {
             }
             if environment.features.isOn(.mcp) {
                 Section {
-                    // Upstream `FeaturesPage`: a link under the list that reopens the MCP intro.
                     Button {
                         environment.editorRequest = .mcpIntro
                     } label: {
@@ -70,7 +67,6 @@ struct FeatureSettings: View {
 
 struct FeatureRow: View {
     let feature: Feature
-    /// The onboarding lists the toggles only; options stay in Settings.
     var showsOptions = true
     @Environment(AppEnvironment.self) private var environment
 
@@ -96,9 +92,6 @@ struct FeatureRow: View {
     }
 }
 
-/// The options slot under a feature that is on. Each task that gives a feature options adds its case
-/// here (Graphify command P5-17, ai-memory status P5-18, Playwright browser P5-19, GSD Sync model
-/// chain P5-24).
 private struct FeatureOptions: View {
     let feature: Feature
 
@@ -118,7 +111,6 @@ private struct FeatureOptions: View {
     }
 }
 
-/// Settings › Features › Graphify: the CLI command and whether it answers.
 private struct GraphifyOptions: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics
@@ -162,7 +154,6 @@ private struct GraphifyOptions: View {
         return Text(verbatim: format("features.graphify.found", status.version ?? executable, executable))
     }
 
-    /// Saves the command (empty is the default) and checks it.
     private func save() {
         store()
         Task { await graphify.detect() }
@@ -176,8 +167,6 @@ private struct GraphifyOptions: View {
     }
 }
 
-/// Settings › Features › GSD Sync (upstream `prefs.gsdSyncModels*`): the fallback models the child
-/// session tries in order after the mirrored one; saved on submit, remove and close.
 private struct GSDSyncOptions: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics
@@ -245,7 +234,6 @@ private struct GSDSyncOptions: View {
         models = (environment.preferences?.document.gsdSyncModelChain ?? []).map { ModelEntry(name: $0) }
     }
 
-    /// Blank rows are dropped; an empty chain is stored as none.
     private func store() {
         let chain = models.map { $0.name.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         let value = chain.isEmpty ? nil : chain

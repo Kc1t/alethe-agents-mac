@@ -1,6 +1,5 @@
 import XCTest
 
-/// Empty workspace launcher (P2-22).
 @MainActor
 final class WorkspaceLauncherTests: XCTestCase {
     override func setUp() async throws {
@@ -33,7 +32,6 @@ final class WorkspaceLauncherTests: XCTestCase {
         app.terminate()
     }
 
-    /// HT: launcher rows are clicked where they are drawn at 90 %, 100 % and 120 %.
     func testLauncherReceivesClicksAtThreeZoomLevels() {
         for (label, keys) in [("90 %", ["-"]), ("100 %", []), ("120 %", ["+", "+"])] {
             let (app, _) = launchAlethe(arguments: ["-AletheUITestSeed", "sidebar"])

@@ -55,7 +55,6 @@ private struct Settings: Codable, Equatable {
         #expect(await storage.writeCount == 1)
         let object = try JSONDecoder().decode(JSONObject.self, from: Data(contentsOf: storage.url))
         #expect(object["value"] == .number(19))
-        // Nothing pending: flush does not write again.
         try await storage.flush()
         #expect(await storage.writeCount == 1)
     }
@@ -76,7 +75,6 @@ private struct Settings: Codable, Equatable {
         let host = PluginHost(plugins: [StoringPlugin.self], dataRoot: root, storageDebounce: .seconds(60))
         await host.load()
         #expect(host.record(for: "test.storing")?.state == .active)
-        // Let the plugin's fire-and-forget write reach its storage actor.
         try await Task.sleep(for: .milliseconds(100))
         try await host.setEnabled(false, for: "test.storing")
         let reopened = PluginStorage(root: root, pluginID: "test.storing")

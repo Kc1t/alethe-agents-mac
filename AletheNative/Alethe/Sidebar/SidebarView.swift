@@ -6,7 +6,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// Projects organized in nested groups, with each project's terminals underneath.
 struct SidebarView: View {
     @AppStorage(SidebarProjectVisibility.archivedGroupsKey) private var archivedGroups = "[]"
     @AppStorage(SidebarProjectVisibility.revealKey) private var revealHidden = false
@@ -111,7 +110,6 @@ struct SidebarView: View {
         }
         .modifier(SidebarListAppearance())
         .modifier(SidebarWebDropSurface(actions: actions))
-        // Clean density uses the available upstream visual-clean.css tokens.
         .environment(\.sidebarRowSize, metrics.style == .clean ? .small : .medium)
         .accessibilityIdentifier("sidebar.list")
         .modifier(SidebarNativeFolderDrop(actions: actions))
@@ -179,7 +177,6 @@ struct SidebarView: View {
     }
 }
 
-/// Upstream sidebar header: the uppercase `PROJECTS` label with add-folder and new-project actions.
 private struct SidebarProjectsHeader: View {
     let actions: SidebarActions
     @Environment(AppEnvironment.self) private var environment
@@ -288,7 +285,6 @@ private struct GroupRow: View {
                 }
             }
             if metrics.isWebInterface {
-                // Child groups and projects share one order (a sub-group may sit between projects).
                 ForEach(webChildren, id: \.self) { child in
                     switch child {
                     case .group(let id):
@@ -316,7 +312,6 @@ private struct GroupRow: View {
             }
         } label: {
             Label {
-                // Upstream group tag: faint, lightly tracked name followed by a hairline rule.
                 HStack(spacing: metrics.isWebInterface ? metrics.size(8) : metrics.space(.s)) {
                     if metrics.isWebInterface, let icon = group.iconUrl, !icon.isEmpty {
                         SidebarCoverImage(source: icon, side: 16) {
@@ -472,7 +467,6 @@ private struct ProjectRow: View {
                                 SidebarTerminalRow(tab: tab, project: project, actions: actions)
                                     .id(pane.id)
                             } else if !pane.content.isTerminal {
-                                // File panes and the board / Graphify / diff / web panes occupy a row in the tree too.
                                 SidebarFileRow(pane: pane, project: project, actions: actions)
                             }
                         }
@@ -721,12 +715,10 @@ private struct SidebarTerminalRow: View {
         environment.terminals.markRead(tab.id)
         environment.showingHome = false
         if environment.inspectedPaneID != nil { environment.inspectedPaneID = pane.id }
-        // Also refocus on repeated clicks: the focused pane ID may already be unchanged.
         DispatchQueue.main.async { environment.terminals.view(for: tab.id)?.focus() }
     }
 }
 
-/// File panes have no terminal sub-tabs, but occupy the same row in the web tree.
 private struct SidebarFileRow: View {
     let pane: Pane
     let project: Project
@@ -800,7 +792,6 @@ private struct SidebarFileRow: View {
         .contentShape(Rectangle())
         .onTapGesture {
             if metrics.isWebInterface {
-                // The orchestration board is worked on alone: one click shows only it, in its own tab.
                 actions.workspace.update {
                     if pane.content == .orchestrator { $0.openWebPane(pane.id) } else { $0.focusWebPane(pane.id) }
                 }
@@ -830,7 +821,6 @@ private struct ProjectContextMenu: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics
 
-    /// In the web interface related actions fold into a flyout so the menu stays short; `.mac` keeps them flat.
     @ViewBuilder
     private func projectGroup<C: View>(_ title: LocalizedStringKey, symbol: String, @ViewBuilder _ content: @escaping () -> C) -> some View {
         if metrics.isWebInterface { WebSubmenu(title, symbol: symbol, content: content) } else { content() }
@@ -903,7 +893,6 @@ private struct ProjectContextMenu: View {
                 .accessibilityIdentifier("graphify.openInProject")
             }
             if environment.features.isOn(.orchestrator) {
-                // Upstream `menu.addOrchestrator` always adds a board, like Add Content.
                 SidebarMenuButton("orchestrator.addToProject", symbol: "rectangle.3.group") {
                     actions.workspace.update(undoManager: actions.undoManager, actionName: String(localized: "undo.addContent")) {
                         $0.addPane(to: project.id, content: .orchestrator)
@@ -1134,7 +1123,6 @@ private struct TabContextMenu: View {
 
 @MainActor
 private enum SidebarRenamePrompt {
-    /// Web `window.prompt("New name:", current)` in the themed dialog; the `.mac` path keeps its alert.
     static func name(initial: String, width: CGFloat, height: CGFloat, apply: @escaping (String) -> Void) {
         guard WebDialogCenter.shared.themed else {
             if let name = name(initial: initial, width: width, height: height) { apply(name) }
@@ -1164,8 +1152,6 @@ private enum SidebarRenamePrompt {
     }
 }
 
-/// Share with Remote Devices (upstream `sidebarMenus.tsx` `remoteShared`): a terminal pane stays
-/// private to this Mac until shared; paired devices see every tab of a shared pane.
 struct RemoteShareToggle: View {
     let pane: Pane
     @Environment(AppEnvironment.self) private var environment
@@ -1177,7 +1163,6 @@ struct RemoteShareToggle: View {
     }
 }
 
-/// Marks a terminal shared with remote devices, in the sidebar and the pane header.
 struct RemoteSharedGlyph: View {
     @Environment(\.theme) private var theme
     @Environment(\.metrics) private var metrics
@@ -1192,7 +1177,6 @@ struct RemoteSharedGlyph: View {
     }
 }
 
-/// Worktree actions of an agent tab (P4-9); git runs off the main thread, failures show an alert.
 @MainActor
 enum WorktreeActions {
     static func commit(_ agentID: String, project: Project) {
@@ -1283,14 +1267,12 @@ enum WorktreeActions {
     }
 }
 
-/// Display names of agents (product names, not translated).
 enum AgentLabels {
     static func name(for agent: String) -> String {
         AgentRegistry.builtin.descriptor(for: AgentKind(rawValue: agent))?.displayName ?? agent
     }
 }
 
-/// Hosts the pending-commit web modal for the sidebar's "Commit worktree changes…" action.
 private struct WorktreeCommitWebHost: View {
     let folder: URL
     let branch: String

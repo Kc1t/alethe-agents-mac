@@ -1,6 +1,5 @@
 import Foundation
 
-/// Separate file beside orchestrator-jobs.json; job history retains its existing schema.
 public struct PromptQueueStore: Sendable {
     public static let fileName = "orchestrator-queue.json"
     public let url: URL

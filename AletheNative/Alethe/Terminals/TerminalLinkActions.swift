@@ -42,7 +42,6 @@ extension AppEnvironment {
     }
 }
 
-/// XTermView.module.css: 272px menu, 39px header, 34px action rows and theme-owned hover colors.
 private struct TerminalLinkActions: View {
     let environment: AppEnvironment
     let project: ProjectID

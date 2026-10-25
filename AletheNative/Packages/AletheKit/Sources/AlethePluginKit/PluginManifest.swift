@@ -1,7 +1,5 @@
 import Foundation
 
-/// Version of the plugin API (ADR-9). A plugin built against another major version is not loaded;
-/// minor versions add API without breaking older plugins.
 public struct PluginAPIVersion: Hashable, Sendable, Codable, Comparable, CustomStringConvertible {
     public var major: Int
     public var minor: Int
@@ -11,10 +9,8 @@ public struct PluginAPIVersion: Hashable, Sendable, Codable, Comparable, CustomS
         self.minor = minor
     }
 
-    /// The version this host implements.
     public static let current = PluginAPIVersion(major: 1, minor: 0)
 
-    /// True when a plugin declaring `self` can run on a host implementing `host`.
     public func isCompatible(withHost host: PluginAPIVersion = .current) -> Bool {
         major == host.major && minor <= host.minor
     }
@@ -26,7 +22,6 @@ public struct PluginAPIVersion: Hashable, Sendable, Codable, Comparable, CustomS
     public var description: String { "\(major).\(minor)" }
 }
 
-/// A host service a plugin must declare before using it. The context refuses any undeclared one.
 public enum PluginCapability: String, Hashable, Sendable, Codable, CaseIterable {
     case git
     case filesystemRead
@@ -37,13 +32,11 @@ public enum PluginCapability: String, Hashable, Sendable, Codable, CaseIterable 
 }
 
 public struct PluginManifest: Hashable, Sendable, Codable {
-    /// Reverse-DNS style id (`com.alethe.todos`); also names the plugin's storage file.
     public var id: String
     public var version: String
     public var name: String
     public var capabilities: Set<PluginCapability>
     public var apiVersion: PluginAPIVersion
-    /// Whether the plugin starts enabled before the user has toggled it.
     public var enabledByDefault: Bool
 
     public init(
@@ -62,8 +55,6 @@ public struct PluginManifest: Hashable, Sendable, Codable {
         self.enabledByDefault = enabledByDefault
     }
 
-    /// Lowercase letters, digits, `.`, `-` and `_`, starting with a letter or digit, so the id is
-    /// safe as a file name.
     public var hasValidID: Bool {
         guard let first = id.unicodeScalars.first, id.count <= 128 else { return false }
         let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyz0123456789.-_")
@@ -72,15 +63,11 @@ public struct PluginManifest: Hashable, Sendable, Codable {
     }
 }
 
-/// A plugin: built-ins are listed statically in an array of plugin types handed to `PluginHost`.
 @MainActor
 public protocol AlethePlugin: AnyObject {
     static var manifest: PluginManifest { get }
     init()
-    /// Registers contributions through `context`. Throwing marks the plugin failed; nothing it
-    /// registered is kept and the other plugins still load.
     func activate(context: PluginContext) throws
-    /// Called when the plugin is disabled or the host shuts down.
     func deactivate()
 }
 
@@ -94,7 +81,6 @@ public enum PluginError: Error, Equatable, Sendable {
     case invalidID(String)
     case duplicatePlugin(String)
     case duplicateContribution(kind: String, id: String)
-    /// The host did not provide the service behind a declared capability.
     case serviceUnavailable(PluginCapability)
     case inactive(pluginID: String)
     case unknownPlugin(String)

@@ -19,7 +19,6 @@ import Testing
                 #expect(doc.group(parent) != nil)
                 #expect(!doc.isGroup(parent, inside: group.id))
             }
-            // Legacy APIs may leave stale persisted tokens; the reader must discard them.
             let effective = doc.sidebarChildren(of: group.id).map(\.orderToken)
             #expect(effective.count == Set(effective).count)
         }
@@ -162,7 +161,6 @@ import Testing
         }
         doc.place(.project(q), in: a, before: .group(c)); check(doc)
         #expect(doc.group(d)?.childOrder == nil)
-        // Deleting the only mixed group token restores the parent's default project order.
         doc.deleteGroup(c); check(doc)
         #expect(doc.group(a)?.childOrder == nil)
     }
@@ -177,7 +175,6 @@ import Testing
             return Int((seed >> 32) % UInt64(max(1, count)))
         }
         for step in 0..<300 {
-            // Replenish after destructive operations so the full run exercises populated containers.
             if doc.groups.count < 6 { _ = doc.addGroup(name: "G\(step)"); check(doc) }
             if doc.projects.count < 12 { _ = doc.addProject(name: "P\(step)", folder: "/f\(step)"); check(doc) }
             let g = doc.groups[next(doc.groups.count)].id

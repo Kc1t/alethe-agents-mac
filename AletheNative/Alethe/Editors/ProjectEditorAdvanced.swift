@@ -34,7 +34,6 @@ struct ProjectAdvancedDraft {
     }
 }
 
-/// The additional web EditProjectAgentSettings fields; the native Form stays unchanged.
 struct ProjectEditorAdvanced: View {
     @Binding var draft: ProjectAdvancedDraft
     let project: ProjectID?
@@ -134,7 +133,6 @@ struct ProjectEditorAdvanced: View {
             for tab in tabs {
                 do {
                     let info = try await GitWorktrees().provision(repo: URL(filePath: current.folder), agentId: tab.id.rawValue, mode: mode)
-                    // Only stop a running conversation after its replacement checkout exists.
                     environment.terminals.suspend(tab.id)
                     workspace.update { document in
                         document.updateTab(tab.id) {

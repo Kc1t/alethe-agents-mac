@@ -2,8 +2,6 @@ import Foundation
 import Testing
 @testable import AletheRemote
 
-// MARK: - Fakes
-
 final class FakeTerminals: RemoteTerminalSource, @unchecked Sendable {
     private let lock = NSLock()
     private var _writes: [(String, String)] = []
@@ -87,7 +85,6 @@ private struct Harness {
         api = RemoteAPI(hub: hub, terminals: terminals, workspace: workspace, assets: FakeAssets())
     }
 
-    /// Opens pairing and pairs one device through the API; returns its session token.
     func pairDevice() async throws -> String {
         await hub.beginRun()
         await hub.openPairingWindow()
@@ -116,9 +113,6 @@ private func json(_ response: RemoteResponse) -> [String: Any] {
     (try? JSONSerialization.jsonObject(with: response.body) as? [String: Any]) ?? [:]
 }
 
-// MARK: - Upstream goldens
-
-/// Upstream `remote/http.rs` and `remote/appearance.rs` tests.
 struct RemoteAPIGoldenTests {
     @Test func interactiveAnswersBecomeTerminalNavigation() throws {
         let questions = [scopeQuestion]
@@ -160,8 +154,6 @@ struct RemoteAPIGoldenTests {
         #expect(appearance.motionPreference == "animated")
     }
 }
-
-// MARK: - Routes
 
 struct RemoteAPIRouteTests {
     @Test func badPairingTokenIs401AndRecordsAFailure() async {

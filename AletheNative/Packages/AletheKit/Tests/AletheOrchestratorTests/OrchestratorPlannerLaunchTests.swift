@@ -4,8 +4,6 @@ import AletheAgents
 import AletheIntegrations
 @testable import AletheOrchestrator
 
-/// Planners and the loopback `/mcp` endpoint (P6-9; upstream `orchestrator_mcp_config_path` and
-/// `agent_events.rs` `/mcp`).
 @Suite(.timeLimit(.minutes(1))) struct OrchestratorPlannerLaunchTests {
     @Test func claudeAndCodexTabsBecomePlanners() {
         #expect(OrchestratorPlannerLaunch.planner(tab: "tab1", label: " Lead ", kind: .claude)
@@ -23,7 +21,6 @@ import AletheIntegrations
         #expect(server.url == "http://127.0.0.1:5000/mcp")
         #expect(server.headers == ["X-Alethe-Token": "tok", "X-Alethe-Planner": "tab1"])
         #expect(server.arguments.isEmpty && server.environment.isEmpty)
-        // Never passed as arguments: agents taking servers on the command line skip HTTP ones.
         #expect(McpLaunchConfig.codexArguments([server]).isEmpty)
     }
 
@@ -35,8 +32,6 @@ import AletheIntegrations
         #expect(await core.snapshot().planners == [Planner(id: "tab1", label: "Renamed", agent: "claude")])
     }
 
-    /// P: a planner's tool call over the loopback listener, as Claude Code sends it, reaches the core
-    /// and its answer comes back; a notification gets 202 and a request without the token 401.
     @Test func aToolCallRoundTripsOverLoopback() async throws {
         let core = OrchestratorCore()
         await core.registerPlanner(Planner(id: "tab1", label: "Lead", agent: "claude"))

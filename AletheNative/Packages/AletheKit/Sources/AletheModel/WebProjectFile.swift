@@ -1,7 +1,6 @@
 import AletheFoundation
 import Foundation
 
-/// The web sidebar exports a bare Project, including terminals, rather than a settings envelope.
 public enum WebProjectFile {
     public enum Failure: Error { case invalidProject }
 
@@ -176,7 +175,6 @@ public enum WebProjectFile {
             })
             return .object(terminal)
         })
-        // Unsupported web-only panes remain in the file for a lossless return to the web app.
         let knownKinds = Set(PaneContent.Kind.allCases.map(\.rawValue) + ["file"])
         let opaque = originals.filter { !knownKinds.contains($0["kind"]?.stringValue ?? "terminal") }
         raw["terminals"] = .array((raw["terminals"]?.arrayValue ?? []) + opaque.map { original in
@@ -193,8 +191,6 @@ public enum WebProjectFile {
         return try encoder.encode(raw)
     }
 
-    /// Web import creates a new project and clears live PTYs. Native ids are global, so conflicting
-    /// pane/tab identities and their layout references are remapped together.
     public static func importing(_ data: Data, avoiding workspace: WorkspaceDocument) throws -> Project {
         let raw = try JSONDecoder().decode(JSONObject.self, from: data)
         let occupied = Set(workspace.projects.flatMap(\.panes).flatMap { [$0.id.rawValue] + $0.tabs.map(\.id.rawValue) })

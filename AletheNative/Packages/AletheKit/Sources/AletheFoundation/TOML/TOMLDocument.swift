@@ -1,15 +1,10 @@
 import Foundation
 
 public enum TOMLError: Error, Equatable, Sendable, CustomStringConvertible {
-    /// The source is not valid TOML. `reason` is a fixed phrase that never quotes the file.
     case malformed(line: Int, column: Int, reason: String)
-    /// The table or key to edit does not exist.
     case notFound
-    /// The path runs through a key that holds a non-table value.
     case conflict
-    /// The path runs through an array of tables (`[[…]]`), which the editor does not change.
     case unsupportedLayout
-    /// The edit did not produce the expected document; nothing was changed.
     case invalidEdit
 
     public var description: String {
@@ -23,13 +18,6 @@ public enum TOMLError: Error, Equatable, Sendable, CustomStringConvertible {
     }
 }
 
-/// A TOML file that can be edited one table or key at a time while every other byte — comments,
-/// blank lines, key order, spacing, quoting — stays as it was.
-///
-/// Edits splice the source: an unchanged key keeps its line, a changed scalar keeps its key,
-/// spacing and trailing comment, and a table keeps the container it was written in (a
-/// `[section]` or an `{ inline }` table). Each edit re-reads its result and checks it before
-/// taking it, so a failed edit throws and leaves the document untouched.
 public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
     public private(set) var text: String
     public private(set) var root: TOMLTable
@@ -73,9 +61,6 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
         return (line, end - lineStart + 1)
     }
 
-    // MARK: Reading
-
-    /// The value at a key path; the empty path is the root table.
     public func value(at path: [String]) -> TOMLValue? {
         root.value(at: path)
     }
@@ -84,11 +69,6 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
         value(at: path)?.tableValue
     }
 
-    // MARK: Editing
-
-    /// Makes the table at `path` equal to `table`, creating it when missing. Keys and subtables
-    /// whose value does not change keep their bytes; new keys go after the table's last key and
-    /// new tables after the last table under the same parent.
     public mutating func upsertTable(_ table: TOMLTable, at path: [String]) throws {
         guard !path.isEmpty else { throw TOMLError.conflict }
         try checkPath(path)
@@ -97,8 +77,6 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
         try commit(edit) { $0.table(at: path) == table }
     }
 
-    /// Removes a table with its subtables (`[a.b]` takes `[a.b.env]` with it) and the comment
-    /// lines directly above its header.
     public mutating func removeTable(at path: [String]) throws {
         guard !path.isEmpty, table(at: path) != nil else { throw TOMLError.notFound }
         try checkPath(path)
@@ -107,7 +85,6 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
         try commit(edit) { $0.value(at: path) == nil }
     }
 
-    /// Sets one key of an existing table (the root table by default).
     public mutating func setValue(_ value: TOMLValue, forKey key: String, inTableAt path: [String] = []) throws {
         guard var table = table(at: path) else { throw TOMLError.notFound }
         try checkPath(path + [key])
@@ -121,7 +98,6 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
         try commit(edit) { $0.value(at: path + [key]) == value }
     }
 
-    /// Removes one key of a table (the root table by default).
     public mutating func removeValue(forKey key: String, inTableAt path: [String] = []) throws {
         guard table(at: path)?[key] != nil else { throw TOMLError.notFound }
         let full = path + [key]
@@ -162,8 +138,6 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
         self = next
     }
 
-    // MARK: Planning
-
     private struct StatementRef {
         let section: Int
         let statement: Int
@@ -176,7 +150,6 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
         index.sections[ref.section].statements[ref.statement]
     }
 
-    /// The `[path]` section (the root section for the empty path).
     private func headerSection(at path: [String]) -> Int? {
         if path.isEmpty { return 0 }
         return index.sections.indices.first { position in
@@ -185,7 +158,6 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
         }
     }
 
-    /// Every section below `path`, arrays of tables included.
     private func descendants(of path: [String]) -> [Int] {
         index.sections.indices.filter { position in
             let section = index.sections[position]
@@ -193,7 +165,6 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
         }
     }
 
-    /// Key/value lines of the sections that are `path` or one of its ancestors.
     private func statementRefs(along path: [String]) -> [StatementRef] {
         var refs: [StatementRef] = []
         for (position, section) in index.sections.enumerated()
@@ -205,12 +176,10 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
         return refs
     }
 
-    /// The line whose value holds `path` (the key itself, or an inline table around it).
     private func covering(_ path: [String]) -> StatementRef? {
         statementRefs(along: path).first { path.starts(with: $0.fullPath) }
     }
 
-    /// Dotted keys in ancestor sections that define something below `path` (`a.b.c = 1` in `[a]`).
     private func dottedKeys(under path: [String]) -> [StatementRef] {
         statementRefs(along: path).filter { ref in
             index.sections[ref.section].path.count < path.count && ref.fullPath.count > path.count
@@ -218,15 +187,12 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
         }
     }
 
-    /// Start of the comment lines directly above a header.
     private func attachedStart(_ offset: Int) -> Int {
         var start = offset
         while let line = index.trivia[start], line.kind == .comment { start = line.start }
         return start
     }
 
-    /// A section with its attached comments and the one blank line separating it from what
-    /// precedes it, so that removing a table added by `upsertTable` restores the original.
     private func sectionRange(_ position: Int) -> Range<Int> {
         let section = index.sections[position]
         let headerStart = section.header?.lowerBound ?? index.contentStart
@@ -240,8 +206,6 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
         return section.statements.last?.line.upperBound ?? section.header?.upperBound ?? index.contentStart
     }
 
-    /// Where a new table goes: after the last section under its nearest existing ancestor,
-    /// otherwise at the end of the file.
     private func placement(for path: [String]) -> Int {
         for length in stride(from: path.count - 1, through: 1, by: -1) {
             let prefix = Array(path.prefix(length))
@@ -282,7 +246,6 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
         return out
     }
 
-    /// A section-like value as one `[table]` or a run of `[[array]]` elements.
     private func sectionTexts(_ path: [String], _ value: TOMLValue) -> String {
         switch value {
         case .table(let table):
@@ -327,8 +290,6 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
         edit.insert(leadingBlank(at: offset) + sectionText(path, table), at: offset)
     }
 
-    /// Edits the table at `path`, which is written as a `[path]` section, implied by
-    /// `[path.child]` headers, or defined by dotted keys in an ancestor section.
     private func planMerge(_ table: TOMLTable, into current: TOMLTable, at path: [String],
                            _ edit: inout TOMLEdit) throws {
         let own = headerSection(at: path)
@@ -436,7 +397,6 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
     }
 }
 
-/// Byte splices against one source, applied back to front.
 struct TOMLEdit {
     private struct Change {
         let range: Range<Int>
@@ -464,7 +424,6 @@ struct TOMLEdit {
         changes.append(Change(range: range, text: text, order: changes.count))
     }
 
-    /// Inserts at an offset; text inserted after a last line without a newline gets one first.
     mutating func insert(_ text: String, at offset: Int) {
         var text = text
         if offset == bytes.count, offset > 0, bytes[offset - 1] != 0x0A, !endOfFileTerminated {
@@ -481,8 +440,6 @@ struct TOMLEdit {
         }) {
             unique.append(change)
         }
-        // Back to front; at one offset a removal goes before insertions, and later insertions
-        // go first so the text ends up in the order it was planned.
         let ordered = unique.sorted { lhs, rhs in
             if lhs.range.lowerBound != rhs.range.lowerBound { return lhs.range.lowerBound > rhs.range.lowerBound }
             if lhs.range.isEmpty != rhs.range.isEmpty { return !lhs.range.isEmpty }

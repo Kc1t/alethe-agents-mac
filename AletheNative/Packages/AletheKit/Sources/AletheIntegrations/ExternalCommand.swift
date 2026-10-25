@@ -1,7 +1,6 @@
 import Darwin
 import Foundation
 
-/// A finished external CLI call.
 public struct ExternalCommandResult: Sendable, Equatable {
     public var status: Int32
     public var stdout: String
@@ -16,14 +15,7 @@ public enum ExternalCommandError: Error, Equatable, Sendable {
     case cancelled
 }
 
-/// Runs an external CLI (`opencode`, `graphify`, `npx`, …) with a timeout; the process and every
-/// process it started are killed when the timeout passes or the calling task is cancelled.
-///
-/// Nothing blocks a Swift-concurrency thread: output arrives through readability handlers and the
-/// exit through the termination handler, so a timeout still fires while the cooperative pool is
-/// busy (blocking reads there once starved the watchdog and let `sleep 30` run to completion).
 public enum ExternalCommand {
-    /// How long EOF is awaited after exit: a grandchild holding a pipe open must not hang the call.
     static let pipeGrace: TimeInterval = 1
 
     public static func run(
@@ -39,7 +31,6 @@ public enum ExternalCommand {
         if let directory, FileManager.default.fileExists(atPath: directory.path) {
             process.currentDirectoryURL = directory
         }
-        // npm-installed CLIs start with `#!/usr/bin/env node`: their own folder leads PATH.
         var environment = ProcessInfo.processInfo.environment
         environment["PATH"] = executable.deletingLastPathComponent().path + ":" + (environment["PATH"] ?? "/usr/bin:/bin")
         process.environment = environment
@@ -54,7 +45,6 @@ public enum ExternalCommand {
         do {
             outcome = try await withTaskCancellationHandler {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CommandRun.Outcome, Error>) in
-                    // Cancelled before launch: nothing is started.
                     guard run.install(continuation) else { return }
                     stdout.fileHandleForReading.readabilityHandler = { handle in
                         run.receive(handle.availableData, stderr: false, handle: handle)
@@ -90,8 +80,6 @@ public enum ExternalCommand {
         }
     }
 
-    /// Collects one process's output; resumes once it exited and its pipes hit EOF (or shortly after
-    /// exit when a grandchild keeps them open), or right away on timeout or cancellation.
     private final class CommandRun: @unchecked Sendable {
         enum Outcome: Sendable {
             case finished(ExternalCommandResult)
@@ -129,7 +117,6 @@ public enum ExternalCommand {
             watchdog = item
             let stopped = stopReason != nil
             lock.unlock()
-            // Cancelled while launching: the stop found nothing running yet.
             if stopped { killTree(); return }
             let (seconds, attoseconds) = timeout.components
             let nanoseconds = max(0, seconds) * 1_000_000_000 + attoseconds / 1_000_000_000
@@ -180,7 +167,6 @@ public enum ExternalCommand {
             pending?.resume(throwing: error)
         }
 
-        /// Kills the process tree and reports `reason` without waiting for the pipes.
         private func stop(_ reason: Outcome) {
             lock.lock()
             guard stopReason == nil, continuation != nil || cancelledEarly else { lock.unlock(); return }
@@ -194,7 +180,6 @@ public enum ExternalCommand {
             guard process.isRunning else { return }
             let pid = process.processIdentifier
             let tree = ProcessTable.descendants(of: pid, parents: ProcessTable.parents())
-            // Children first, then the process itself; `Process` reaps it (termination handler).
             for member in tree.reversed() where member != pid { Darwin.kill(member, SIGKILL) }
             if process.isRunning { Darwin.kill(pid, SIGKILL) }
         }
@@ -231,7 +216,6 @@ public extension ExternalCommandResult {
 }
 
 public extension ExternalCommand {
-    /// Path form, for callers that resolved the CLI to a path string.
     static func run(_ executable: String, _ arguments: [String], directory: URL? = nil,
                     timeout: Duration) async throws(ExternalCommandError) -> ExternalCommandResult {
         try await run(URL(filePath: executable), arguments, directory: directory, timeout: timeout)

@@ -1,7 +1,5 @@
 import XCTest
 
-/// Project menu › Export Settings… / Import Settings… (P5-6): the items are there and open the
-/// system save/open panels. The file format and the change list are covered by the package tests.
 @MainActor
 final class ProjectSettingsTests: XCTestCase {
     override func setUp() async throws {

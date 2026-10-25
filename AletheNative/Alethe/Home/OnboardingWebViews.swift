@@ -6,10 +6,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-// Web OnboardingModal.module.css, onboarding/AgentsStep.module.css and onboarding/FeaturesStep.module.css,
-// drawn only when `metrics.isWebInterface` is true.
-
-/// Hover state for a view that cannot hold its own `@State` (button styles, row labels).
 private struct OnboardingHover<Content: View>: View {
     @ViewBuilder let content: (Bool) -> Content
     @State private var hovering = false
@@ -19,10 +15,6 @@ private struct OnboardingHover<Content: View>: View {
     }
 }
 
-// MARK: - Overlay
-
-/// `.overlay` and `.content`: a fixed 640-point dialog over a 55% black backdrop. The web dialog ignores Escape and
-/// outside clicks, so neither dismisses it; the sheet's own buttons close it.
 struct OnboardingWebOverlay<Content: View>: View {
     @ViewBuilder let content: () -> Content
     @Environment(\.metrics) private var metrics
@@ -51,9 +43,6 @@ struct OnboardingWebOverlay<Content: View>: View {
     }
 }
 
-// MARK: - Chrome
-
-/// `.button`, `.buttonGhost`, `.buttonPrimary`: 30 points tall, 13-point padding, 12.5-point text.
 struct OnboardingWebButtonStyle: ButtonStyle {
     enum Kind { case normal, ghost, primary }
     var kind: Kind = .normal
@@ -110,7 +99,6 @@ struct OnboardingWebButtonStyle: ButtonStyle {
     }
 }
 
-/// `.top`: brand mark, eyebrow, step dots and the language switch.
 struct OnboardingWebHeader: View {
     let count: Int
     let current: Int
@@ -169,7 +157,6 @@ struct OnboardingWebHeader: View {
     }
 }
 
-/// `.stepIntro` / AgentsStep `.intro`: an 18-point title over a 12.5-point muted line.
 struct OnboardingWebIntro: View {
     let title: LocalizedStringKey
     let subtitle: Text
@@ -186,9 +173,6 @@ struct OnboardingWebIntro: View {
     }
 }
 
-// MARK: - Profile step
-
-/// Step 0: avatar, question, name, photo field and the GitHub avatar shortcut.
 struct OnboardingWebProfileStep: View {
     @Binding var name: String
     @Binding var photo: String
@@ -362,7 +346,6 @@ struct OnboardingWebProfileStep: View {
         .frame(maxWidth: metrics.size(290))
     }
 
-    /// `applyGithubHandle`: the handle's public avatar becomes the photo link and, when empty, the name.
     private func apply() {
         var value = handle.trimmingCharacters(in: .whitespaces)
         if value.hasPrefix("@") { value.removeFirst() }
@@ -374,9 +357,6 @@ struct OnboardingWebProfileStep: View {
     }
 }
 
-// MARK: - Agents step
-
-/// Agents step: a three-column grid of cards (`AgentsStep.module.css`).
 struct OnboardingWebAgentsStep: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics
@@ -531,9 +511,6 @@ private struct OnboardingWebAgentCard: View {
     }
 }
 
-// MARK: - Features step
-
-/// Features step: search, grouped switch rows and the "show more" fold (`FeaturesStep.module.css`).
 struct OnboardingWebFeaturesStep: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics

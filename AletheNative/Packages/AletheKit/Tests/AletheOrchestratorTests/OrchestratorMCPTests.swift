@@ -3,7 +3,6 @@ import Testing
 import AletheIntegrations
 @testable import AletheOrchestrator
 
-/// Records tool calls and answers with a fixed value or error.
 private struct StubHandler: OrchestratorToolHandler {
     var answer: @Sendable (String, OrderedJSONObject, String?) throws -> OrderedJSON
 
@@ -31,7 +30,6 @@ private func toolNames(_ response: OrderedJSONObject) -> [String] {
 }
 
 @Suite struct OrchestratorMCPTests {
-    // Upstream `the_handshake_advertises_every_tool`.
     @Test func theHandshakeAdvertisesEveryTool() async throws {
         let initialized = try await rpc("initialize", id: 1)
         #expect(initialized["result"]?.objectValue?["serverInfo"]?.objectValue?["name"] == "alethe")
@@ -45,13 +43,11 @@ private func toolNames(_ response: OrderedJSONObject) -> [String] {
         }
     }
 
-    // Upstream `a_notification_gets_no_response_body`.
     @Test func aNotificationGetsNoResponseBody() async {
         let body = #"{"jsonrpc":"2.0","method":"notifications/initialized"}"#
         #expect(await OrchestratorMCP.handle(body: body, planner: nil, handler: refusing) == nil)
     }
 
-    // Upstream `the_delegate_schema_points_at_the_live_reading_instead_of_quoting_numbers`.
     @Test func theDelegateSchemaPointsAtTheLiveReadingInsteadOfQuotingNumbers() async throws {
         let listed = try await rpc("tools/list")
         let delegate = try #require(listed["result"]?.objectValue?["tools"]?.arrayValue?.first {
@@ -63,7 +59,6 @@ private func toolNames(_ response: OrderedJSONObject) -> [String] {
         )
         #expect(description.contains("fitness"))
         #expect(description.contains("headroom"))
-        // A description is a session-start snapshot on this transport, so a figure baked in would go stale.
         #expect(!description.contains("%"))
     }
 

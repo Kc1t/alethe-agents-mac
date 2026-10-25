@@ -3,8 +3,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// One open project: its header and its panes in the Auto layout, with live split resizing and
-/// drag-to-reorder.
 @MainActor
 final class ContainerView: NSView {
     let projectID: ProjectID
@@ -22,7 +20,6 @@ final class ContainerView: NSView {
     private lazy var animator = FrameAnimator(host: self)
     private var animateNextLayout = false
 
-    /// Track sizes while a divider is being dragged (not yet committed).
     private var liveColumns: [CGFloat]?
     private var liveRows: [CGFloat]?
     private var resizeBase: [CGFloat] = []
@@ -32,10 +29,8 @@ final class ContainerView: NSView {
         let pane: PaneID
         let base: CGRect
         var target: PaneID?
-        /// A free slot of a custom grid under the dragged pane (1-based column, row).
         var slot: (col: Int, row: Int)?
     }
-    /// Dashed placeholders for a custom grid's free slots.
     private var slotViews: [NSView] = []
     private var reorder: Reorder?
     private var lastProject: Project?
@@ -43,15 +38,11 @@ final class ContainerView: NSView {
     private var lastSelected = false
     private var isCollapsed = false
     private var isFullscreen = false
-    /// The one pane laid out (isolated); nil: all of them.
     private var isolatedPane: PaneID?
     private var onHeaderDrag: (CGSize?) -> Void = { _ in }
-    /// The narrow strip shown instead of header and panes while collapsed.
     private var strip: NSHostingView<AnyView>?
-    /// Flat workspace: no header, and each pane configured with its own project.
     private var owners: [PaneID: Project] = [:]
     private var showsHeader = true
-    /// Focus mode: the one pane shown, at this frame (container coordinates), over the backdrop.
     private var focus: (pane: PaneID, frame: CGRect)?
 
     init(projectID: ProjectID) {
@@ -193,7 +184,6 @@ final class ContainerView: NSView {
     private var gap: CGFloat {
         guard let context else { return 6 }
         guard context.metrics.isWebInterface else { return context.metrics.space(.s) }
-        // Custom grids are flush in both styles; split panels are flush only in Clean.
         return context.metrics.size(lastProject?.layout == .grid || context.metrics.style == .clean ? 0 : 10)
     }
     private var minimumPane: CGSize {
@@ -206,7 +196,6 @@ final class ContainerView: NSView {
         return CGRect(x: edge, y: top, width: max(0, bounds.width - edge * 2), height: max(0, bounds.height - top - edge))
     }
 
-    /// Enters or leaves focus mode for one of this container's panes.
     func setFocus(_ pane: PaneID?, frame: CGRect) {
         let next = pane.flatMap { panes[$0] != nil ? ($0, frame) : nil }
         guard next?.0 != focus?.pane || next?.1 != focus?.frame else { return }
@@ -300,8 +289,6 @@ final class ContainerView: NSView {
         layoutSlots(geometry.freeSlots)
     }
 
-    /// Free slots of a custom grid, drawn as dashed outlines (upstream `EmptyGridSlot`); the one under
-    /// a dragged pane is highlighted.
     private func layoutSlots(_ slots: [PaneGridGeometry.Slot]) {
         while slotViews.count > slots.count { slotViews.removeLast().removeFromSuperview() }
         while slotViews.count < slots.count {
@@ -350,8 +337,6 @@ final class ContainerView: NSView {
             strip = view
         }
     }
-
-    // MARK: - Split resizing
 
     private func layoutDividers(_ geometry: PaneGridGeometry) {
         for (kind, view) in dividers where geometry.dividers[kind] == nil {
@@ -445,7 +430,6 @@ final class ContainerView: NSView {
         layoutSubtreeIfNeeded()
     }
 
-    /// Settles a rubber-banded drag back to the minimum with a spring, then commits the weights.
     private func endResize(_ kind: PaneGridGeometry.Divider) {
         switch kind.track {
         case .column(let index):
@@ -464,8 +448,6 @@ final class ContainerView: NSView {
         needsLayout = true
         context?.setGridWeights(weights, for: projectID)
     }
-
-    // MARK: - Reorder
 
     private func reorderDrag(_ pane: PaneID, translation: CGSize?) {
         guard let view = panes[pane] else { return }
@@ -517,7 +499,6 @@ final class ContainerView: NSView {
                   context: context, onHeaderDrag: onHeaderDrag)
     }
 
-    /// A lifted pane casts the theme's large shadow (unclipped while it floats).
     private func lift(_ view: NSView, _ lifted: Bool) {
         guard let layer = view.layer else { return }
         let shadow = context?.theme.shadow(.lg)
@@ -530,7 +511,6 @@ final class ContainerView: NSView {
     }
 }
 
-/// The pane area of a project that has no terminals yet.
 private struct ProjectEmptyState: View {
     let project: Project
     @Environment(AppEnvironment.self) private var environment
@@ -609,7 +589,6 @@ private struct ProjectEmptyState: View {
 extension PaneGridGeometry.Divider {
     enum Track { case column(Int), row(Int) }
 
-    /// The track boundary a divider moves: Auto, Spotlight and Sidebar share one column boundary.
     var track: Track {
         switch self {
         case .column: .column(0)

@@ -1,6 +1,5 @@
 import XCTest
 
-/// Workspace tabs and history (P2-17): a tab per opened project, back/forward, close and reopen.
 @MainActor
 final class WorkspaceTabsTests: XCTestCase {
     override func setUp() async throws {
@@ -29,9 +28,6 @@ final class WorkspaceTabsTests: XCTestCase {
         element(app, "workspaceTabs.tab.alpha").click()
         XCTAssertTrue(element(app, "container.alpha").waitForExistence(timeout: 5), "clicking a tab shows it")
 
-        // The close button shows on hover (or on the active tab).
-        // The close button's accessibility frame is off screen (SwiftUI, inside the draggable tab):
-        // click where it is drawn, at the tab's trailing edge.
         let tab = element(app, "workspaceTabs.tab.alpha")
         tab.hover()
         tab.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0.5)).withOffset(CGVector(dx: tab.frame.width - 15, dy: 0)).click()

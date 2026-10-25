@@ -2,8 +2,6 @@ import AppKit
 import Foundation
 import Observation
 
-/// Native releases use disk images; opening the downloaded installer keeps macOS installation
-/// and code-signing checks in Finder instead of replacing a running signed bundle.
 @MainActor @Observable
 final class SettingsUpdateController {
     enum Phase { case idle, checking, current, available, downloading, ready, failed }

@@ -1,9 +1,6 @@
 import Foundation
 import AletheIntegrations
 
-/// The board canvas layout (upstream `lib/orchestratorGraph.ts`): one tree per run, the planner over
-/// its runs, each run over one row of its workers, a worker's promoted image in a card below it.
-/// Coordinates are canvas points; the view only draws what this returns.
 public enum BoardLayout {
     public static let nodeWidth: Double = 252
     public static let siblingGap: Double = 24
@@ -18,12 +15,8 @@ public enum BoardLayout {
 
     public static func rootNodeID(_ runID: String) -> String { "run:" + runID }
     public static func plannerNodeID(_ plannerID: String) -> String { "planner:" + plannerID }
-    /// A worker's promoted image gets one card, directly below it.
     public static func mediaNodeID(_ jobID: String) -> String { jobID + ":media" }
 
-    /// Upstream `layoutPlannerBoard`. `heights` holds measured card heights by node id; anything not
-    /// measured yet is `defaultNodeHeight`. The backend reports no relation between workers, so the
-    /// only edges are planner → run, run → worker and worker → its media card.
     public static func layout(
         runs: [BoardRun],
         heights: [String: Double] = [:],
@@ -51,7 +44,6 @@ public enum BoardLayout {
         let plannerHeight = plannerID.map { height(plannerNodeID($0)) } ?? 0
         let runTop = canvasPadding + (plannerID != nil ? plannerHeight + levelGap : 0)
         let runHeights = runs.map { height(rootNodeID($0.id)) }
-        // Every worker in the forest shares one baseline, so the levels read as levels.
         let workerTop = runTop + (runHeights.max() ?? 0) + levelGap
 
         let roots = runs.indices.map { index in
@@ -179,12 +171,10 @@ public enum BoardLayout {
         )
     }
 
-    /// The midpoint of a connector's horizontal run: the only stretch with room for a label.
     public static func connectorLabelPoint(from start: BoardPoint, to end: BoardPoint) -> BoardPoint {
         BoardPoint(x: (start.x + end.x) / 2, y: start.y + (end.y - start.y) / 2)
     }
 
-    /// A downward elbow with rounded corners: out of the parent's bottom, into the child's top.
     public static func connectorSteps(from start: BoardPoint, to end: BoardPoint) -> [ConnectorStep] {
         let dx = end.x - start.x
         if abs(dx) < 1 { return [.move(start), .vertical(end.y)] }
@@ -201,7 +191,6 @@ public enum BoardLayout {
         ]
     }
 
-    /// The connector as SVG path data, as upstream draws it.
     public static func connectorPath(from start: BoardPoint, to end: BoardPoint) -> String {
         connectorSteps(from: start, to: end).map(\.svg).joined(separator: " ")
     }
@@ -210,7 +199,6 @@ public enum BoardLayout {
         min(maxScale, max(minScale, scale))
     }
 
-    /// The whole graph in the viewport, centred, never enlarged past 1:1.
     public static func fitView(_ graph: BoardSize, in viewport: BoardSize) -> ViewTransform {
         guard graph.width > 0, graph.height > 0, viewport.width > 0, viewport.height > 0 else { return .identity }
         let scale = clampScale(min(1, viewport.width / graph.width, viewport.height / graph.height))
@@ -221,7 +209,6 @@ public enum BoardLayout {
         )
     }
 
-    /// Keeps the canvas point under `point` (viewport coordinates) fixed while scaling.
     public static func zoom(_ view: ViewTransform, by factor: Double, at point: BoardPoint) -> ViewTransform {
         let scale = clampScale(view.scale * factor)
         if scale == view.scale { return view }
@@ -233,7 +220,6 @@ public enum BoardLayout {
         )
     }
 
-    /// Centres any box on the board (a node or a whole run tree) without changing the scale.
     public static func focusView(_ box: BoardBox, view: ViewTransform, in viewport: BoardSize) -> ViewTransform {
         ViewTransform(
             scale: view.scale,
@@ -277,7 +263,6 @@ public struct BoardBox: Hashable, Sendable {
     }
 }
 
-/// Canvas → viewport: `viewport = canvas * scale + (x, y)`.
 public struct ViewTransform: Hashable, Sendable {
     public var scale: Double
     public var x: Double
@@ -292,7 +277,6 @@ public struct ViewTransform: Hashable, Sendable {
     }
 }
 
-/// One drawing command of a connector, in SVG's absolute terms.
 public enum ConnectorStep: Hashable, Sendable {
     case move(BoardPoint)
     case vertical(Double)
@@ -342,14 +326,10 @@ public struct GraphNode: Hashable, Sendable, Identifiable {
     public var box: BoardBox { BoardBox(x: x, y: y, width: width, height: height) }
 }
 
-/// What routing decided when one agent was running out as this worker was spawned, placed on its
-/// connector (upstream `GraphEdgeNote`).
 public struct GraphEdgeNote: Hashable, Sendable {
-    /// `chosen` (the worker went to the other agent) or `ignored` (the planner insisted).
     public var verdict: String
     public var agent: String
     public var window: String
-    /// How much of the window was used, in percent.
     public var used: Double
     public var x: Double
     public var y: Double
@@ -363,7 +343,6 @@ public struct GraphEdgeNote: Hashable, Sendable {
         self.y = y
     }
 
-    /// A job's `routing` object at the connector's label point; nil when it is not an object.
     init?(routing: OrderedJSON, at point: BoardPoint) {
         guard let object = routing.objectValue else { return nil }
         self.init(
@@ -384,7 +363,6 @@ public struct GraphEdge: Hashable, Sendable, Identifiable {
     public var lane: RunLane
     public var start: BoardPoint
     public var end: BoardPoint
-    /// Only when one agent was running out as this worker was spawned.
     public var note: GraphEdgeNote?
 
     public init(id: String, from: String, to: String, lane: RunLane, start: BoardPoint, end: BoardPoint, note: GraphEdgeNote?) {
@@ -398,12 +376,9 @@ public struct GraphEdge: Hashable, Sendable, Identifiable {
     }
 
     public var steps: [ConnectorStep] { BoardLayout.connectorSteps(from: start, to: end) }
-    /// Upstream's `d`.
     public var path: String { BoardLayout.connectorPath(from: start, to: end) }
 }
 
-/// The extent one run's tree occupies. Nothing is drawn around it: it keeps the trees apart and
-/// gives the rail a box to bring into view.
 public struct GraphTree: Hashable, Sendable, Identifiable {
     public var id: String
     public var label: String
@@ -426,7 +401,6 @@ public struct GraphTree: Hashable, Sendable, Identifiable {
     public var box: BoardBox { BoardBox(x: x, y: y, width: width, height: height) }
 }
 
-/// A forest laid out top-down (upstream `BoardGraph`).
 public struct BoardGraph: Hashable, Sendable {
     public var planner: GraphNode?
     public var trees: [GraphTree]
@@ -461,6 +435,5 @@ public struct BoardGraph: Hashable, Sendable {
 
     public var size: BoardSize { BoardSize(width: width, height: height) }
 
-    /// Every node, planner first, for hit-testing and focusing by id.
     public var nodes: [GraphNode] { (planner.map { [$0] } ?? []) + roots + workers + media }
 }

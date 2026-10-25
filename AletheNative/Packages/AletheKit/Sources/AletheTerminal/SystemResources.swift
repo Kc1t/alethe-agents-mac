@@ -1,12 +1,9 @@
 import Darwin
 import Foundation
 
-/// Memory of the Mac and of process trees, and scheduling priority of background terminals
-/// (upstream `stats.rs` memory sampling and `set_pty_priority`).
 public enum SystemResources {
     public struct Memory: Equatable, Sendable {
         public var totalMB: Double
-        /// What apps can still get without swapping: free, inactive, speculative and purgeable pages.
         public var availableMB: Double
 
         public init(totalMB: Double, availableMB: Double) {
@@ -32,7 +29,6 @@ public enum SystemResources {
         return Memory(totalMB: total, availableMB: Double(pages) * Double(sysconf(_SC_PAGESIZE)) / megabyte)
     }
 
-    /// A process's physical footprint (what Activity Monitor calls Memory), in MB; 0 when it is gone.
     public static func footprintMB(of pid: pid_t) -> Double {
         var info = rusage_info_v4()
         let result = withUnsafeMutablePointer(to: &info) { pointer in
@@ -43,15 +39,11 @@ public enum SystemResources {
         return result == 0 ? Double(info.ri_phys_footprint) / megabyte : 0
     }
 
-    /// Footprint of `root` and every descendant (agents run node, git, language servers below the
-    /// shell).
     public static func treeFootprintMB(of root: pid_t, parents: [pid_t: pid_t]) -> Double {
         guard root > 0 else { return 0 }
         return ProcessTree.descendants(of: root, parents: parents).reduce(0) { $0 + footprintMB(of: $1) }
     }
 
-    /// Puts a process tree in the background band (lower CPU and I/O priority) or back to normal.
-    /// Unlike `nice`, this can be undone without privileges.
     public static func setBackground(_ background: Bool, tree root: pid_t, parents: [pid_t: pid_t]) {
         guard root > 0 else { return }
         for pid in ProcessTree.descendants(of: root, parents: parents) {

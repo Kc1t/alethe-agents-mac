@@ -5,9 +5,6 @@ import AletheModel
 import Foundation
 import Observation
 
-/// The Playwright MCP server in agent launches and the shared browser it can attach to (P5-19;
-/// upstream `browser_session.rs`, `playwright_mcp_config_path`). The CDP web pane is not ported
-/// (BR-1), so the shared browser shows its own window unless it runs headless.
 @Observable
 @MainActor
 final class PlaywrightBrowser {
@@ -22,8 +19,6 @@ final class PlaywrightBrowser {
     @ObservationIgnored private var session: BrowserSession?
     @ObservationIgnored private var startTask: Task<Void, Never>?
 
-    /// Uses `profileDirectory` for the browser's own profile, and adds the Playwright server to
-    /// Claude Code, Codex and OpenCode launches while the feature is on.
     func start(profileDirectory: URL, wiring: McpLaunchWiring, environment: AppEnvironment) {
         session = BrowserSession(profileDirectory: profileDirectory)
         wiring.register(PlaywrightMcp.serverName) { [weak self, weak environment] _ in
@@ -37,8 +32,6 @@ final class PlaywrightBrowser {
         }
     }
 
-    /// Starts the shared browser (or finds it running). Agents launched afterwards attach to it;
-    /// ones already running keep what they were launched with.
     func launch(executable: String?, headless: Bool) {
         guard let session, startTask == nil else { return }
         state = .starting
@@ -57,14 +50,12 @@ final class PlaywrightBrowser {
         }
     }
 
-    /// Stops the shared browser and its processes (also on quit and when the feature is turned off).
     func stop() async {
         startTask?.cancel()
         await session?.stop()
         state = .stopped
     }
 
-    /// Picks up a browser the user quit or that exited on its own.
     func refresh() {
         guard startTask == nil, let session else { return }
         if let info = session.current {

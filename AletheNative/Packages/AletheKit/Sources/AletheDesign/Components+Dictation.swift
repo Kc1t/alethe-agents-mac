@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// PreferencesModal.module.css `.segmented` (3px inset, 110 × 34px buttons).
 public struct AletheDictationSegments<Value: Hashable, Label: View>: View {
     @Environment(\.metrics) private var metrics
     @Environment(\.theme) private var theme

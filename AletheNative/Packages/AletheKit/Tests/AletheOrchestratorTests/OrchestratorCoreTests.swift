@@ -5,23 +5,16 @@ import Testing
 import AletheIntegrations
 @testable import AletheOrchestrator
 
-// Upstream `tests/orchestrator.rs`, driven through the same MCP entry point a planner uses. The
-// workers are fake launchers (shell scripts); the real CLIs are never spawned.
-
 private func temporaryDirectory(_ tag: String) throws -> URL {
     let url = FileManager.default.temporaryDirectory.appending(path: "alethe-orch-\(tag)-\(UUID().uuidString)")
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     return url
 }
 
-/// A worker that starts, holds its pipes open and never speaks the protocol (upstream
-/// `silent_launcher`). Registered as `codex`, the agent a delegation defaults to.
 private func silentLauncher() -> Launcher {
     Launcher(kind: WorkerAgent.codex, program: URL(filePath: "/bin/sleep"), arguments: ["60"])
 }
 
-/// A fake `codex app-server`: answers `thread/start`, and runs every turn for `turnSeconds` before
-/// reporting and completing it. Stays alive (parked) between turns, like the real one.
 private func fakeCodexLauncher(in folder: URL, turnSeconds: Int = 1) throws -> Launcher {
     let script = folder.appending(path: "fake-codex.sh")
     try """
@@ -42,8 +35,6 @@ private func fakeCodexLauncher(in folder: URL, turnSeconds: Int = 1) throws -> L
     return Launcher(kind: WorkerAgent.codex, program: URL(filePath: "/bin/sh"), arguments: [script.path])
 }
 
-/// A fake Claude headless worker: every user line is one turn that ends in a `result`. It stays
-/// alive afterwards, so a settled job keeps a parked process.
 private func fakeClaudeLauncher() -> Launcher {
     let script = #"""
     while IFS= read -r line; do
@@ -70,7 +61,6 @@ private func makeCore(
     ))
 }
 
-/// One `tools/call` through the MCP transport (upstream `call`): the tool's JSON, or `{"error": …}`.
 private func call(_ core: OrchestratorCore, _ name: String, _ arguments: OrderedJSON, planner: String? = nil) async throws -> OrderedJSONObject {
     let body: OrderedJSON = [
         "jsonrpc": "2.0", "id": 10, "method": "tools/call",
@@ -87,7 +77,6 @@ private func deliveries(_ checked: OrderedJSONObject) -> [OrderedJSONObject] {
     checked["deliveries"]?.arrayValue?.compactMap(\.objectValue) ?? []
 }
 
-/// The highest running count seen while it samples (upstream `PeakWatcher`).
 private final class PeakWatcher: Sendable {
     private let peak = Mutex(0)
     private let task: Mutex<Task<Void, Never>?> = Mutex(nil)
@@ -113,9 +102,7 @@ private func gone(_ pid: pid_t) -> Bool {
     Darwin.kill(pid, 0) != 0 && errno == ESRCH
 }
 
-// Spawns real (fake-worker) processes: a hang must fail the test, not stall the run.
 @Suite(.timeLimit(.minutes(1))) struct OrchestratorCoreTests {
-    // Upstream `a_settled_worker_reports_its_own_outcome`.
     @Test func aSettledWorkerReportsItsOwnOutcome() async throws {
         let folder = try temporaryDirectory("report")
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -123,8 +110,6 @@ private func gone(_ pid: pid_t) -> Bool {
         _ = try await call(core, "alethe_delegate", [
             "tasks": ["do the thing"], "cwd": .string(folder.path), "timeoutSeconds": 1,
         ])
-        // The fake worker never speaks, so the watchdog is what settles it. Even then the job must
-        // carry a readable account of itself rather than the instruction it was given.
         _ = try await call(core, "alethe_check", ["wait": true, "timeoutMs": 20000])
         let job = try #require(await core.snapshot().jobs.first)
         #expect(job.status == .failed)
@@ -133,14 +118,12 @@ private func gone(_ pid: pid_t) -> Bool {
         await core.shutdown()
     }
 
-    // Upstream `delegating_nothing_is_an_error`.
     @Test func delegatingNothingIsAnError() async throws {
         let core = makeCore()
         let result = try await call(core, "alethe_delegate", ["tasks": []])
         #expect(result["error"]?.stringValue?.contains("at least one") == true, "\(result)")
     }
 
-    // Upstream `checking_with_no_work_returns_at_once`.
     @Test func checkingWithNoWorkReturnsAtOnce() async throws {
         let core = makeCore()
         let started = ContinuousClock.now
@@ -150,7 +133,6 @@ private func gone(_ pid: pid_t) -> Bool {
         #expect(ContinuousClock.now - started < .seconds(5))
     }
 
-    // Upstream `a_job_fails_cleanly_when_no_launcher_is_configured`.
     @Test func aJobFailsCleanlyWhenNoLauncherIsConfigured() async throws {
         let folder = try temporaryDirectory("nolauncher")
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -166,7 +148,6 @@ private func gone(_ pid: pid_t) -> Bool {
         #expect(checked["workersStillBusy"] == 0)
     }
 
-    // Upstream `the_observer_sees_every_state_change`.
     @Test func theObserverSeesEveryStateChange() async throws {
         let folder = try temporaryDirectory("observer")
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -184,7 +165,6 @@ private func gone(_ pid: pid_t) -> Bool {
         #expect(seen.contains { $0.jobs.first?.status == .queued }, "the queued job was published before it settled")
     }
 
-    // Upstream `two_workers_overlap_and_check_waits_for_both` (fake Codex instead of the real one).
     @Test func twoWorkersOverlapAndCheckWaitsForBoth() async throws {
         let folder = try temporaryDirectory("parallel")
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -206,7 +186,6 @@ private func gone(_ pid: pid_t) -> Bool {
         await core.shutdown()
     }
 
-    // Upstream `the_queue_never_breaches_the_concurrency_limit` (fake Codex instead of the real one).
     @Test func theQueueNeverBreachesTheConcurrencyLimit() async throws {
         let folder = try temporaryDirectory("queue")
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -230,7 +209,6 @@ private func gone(_ pid: pid_t) -> Bool {
         await core.shutdown()
     }
 
-    // Upstream `delegating_to_an_unconfigured_agent_fails_cleanly_like_any_other_agent`.
     @Test func delegatingToAnUnconfiguredAgentFailsCleanlyLikeAnyOtherAgent() async throws {
         let folder = try temporaryDirectory("claude-unconfigured")
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -247,7 +225,6 @@ private func gone(_ pid: pid_t) -> Bool {
         #expect(delivered.first?["text"]?.stringValue?.contains("claude") == true, "\(checked)")
     }
 
-    // Upstream `a_worker_that_never_finishes_is_stopped_by_its_budget`.
     @Test func aWorkerThatNeverFinishesIsStoppedByItsBudget() async throws {
         let folder = try temporaryDirectory("timeout")
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -267,7 +244,6 @@ private func gone(_ pid: pid_t) -> Bool {
         await core.shutdown()
     }
 
-    // Upstream `history_outlives_the_process_and_in_flight_work_is_not_reported_as_running`, on the core.
     @Test func historyOutlivesTheProcessAndInFlightWorkIsNotReportedAsRunning() async throws {
         let folder = try temporaryDirectory("persist")
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -288,7 +264,6 @@ private func gone(_ pid: pid_t) -> Bool {
         await first.shutdown()
     }
 
-    // Upstream `a_new_id_never_collides_with_a_restored_one`, on the core.
     @Test func aNewIDNeverCollidesWithARestoredOne() async throws {
         let folder = try temporaryDirectory("persist-ids")
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -305,8 +280,6 @@ private func gone(_ pid: pid_t) -> Bool {
         await first.shutdown()
         await second.shutdown()
     }
-
-    // MARK: Units
 
     @Test func pastTheParkedLimitTheEarliestFinishedWorkerIsReleased() async throws {
         let folder = try temporaryDirectory("parked")

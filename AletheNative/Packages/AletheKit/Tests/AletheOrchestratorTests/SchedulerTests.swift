@@ -17,7 +17,6 @@ private func temporaryFolder(_ label: String) throws -> URL {
     return url
 }
 
-/// A repository with one commit, like upstream's `temp_git_repo`.
 private func temporaryGitRepo(_ label: String) async throws -> URL {
     let root = try temporaryFolder(label)
     let git = GitRunner()
@@ -39,13 +38,11 @@ private func writeTaskList(_ content: String, in root: URL) throws {
 
 private struct ProvisionFailure: Error {}
 
-/// A scheduler that never touches git: worktrees are folders under `base`.
 private func stubScheduler(bus: EventBus? = nil, base: URL, failing: Bool = false) -> Scheduler {
     Scheduler(bus: bus, provision: { _, agentID, mode in
         if failing { throw ProvisionFailure() }
         let path = base.appending(path: agentID, directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: path, withIntermediateDirectories: true)
-        // `WorktreeInfo` has no public memberwise initializer; build it from its JSON.
         let json: [String: String] = ["agentId": agentID, "path": path.path,
                                       "branch": "alethe/agent-\(agentID)", "mode": mode.rawValue]
         return try JSONDecoder().decode(WorktreeInfo.self, from: JSONEncoder().encode(json))
@@ -57,7 +54,6 @@ private func next(_ iterator: inout AsyncStream<BusEvent>.AsyncIterator) async -
 }
 
 @Suite(.timeLimit(.minutes(1))) struct SchedulerGoldenTests {
-    // Upstream `derive_item_task_id_is_deterministic_and_namespaced_by_project`.
     @Test func derivedTaskIDsAreDeterministicAndNamespacedByProject() {
         let a1 = Scheduler.taskID(projectID: "proj-a", text: "Fazer login")
         let a2 = Scheduler.taskID(projectID: "proj-a", text: "Fazer login")
@@ -67,7 +63,6 @@ private func next(_ iterator: inout AsyncStream<BusEvent>.AsyncIterator) async -
         #expect(a1.hasPrefix("proj-a-gsd-"))
     }
 
-    // Upstream `load_gsd_tasks_reads_real_task_md_and_builds_sequential_chain`.
     @Test func loadReadsTaskListAndBuildsASequentialChain() async throws {
         let projectID = uniqueProjectID("chain")
         let root = try await temporaryGitRepo("chain")
@@ -90,7 +85,6 @@ private func next(_ iterator: inout AsyncStream<BusEvent>.AsyncIterator) async -
         #expect(c.dependencies == [b.id])
     }
 
-    // Upstream `load_gsd_tasks_reload_preserves_running_and_drops_stale_pending`.
     @Test func reloadKeepsRunningTasksAndDropsStalePendingOnes() async throws {
         let projectID = uniqueProjectID("reload")
         let root = try await temporaryGitRepo("reload")
@@ -117,7 +111,6 @@ private func next(_ iterator: inout AsyncStream<BusEvent>.AsyncIterator) async -
         #expect(tasks[Scheduler.taskID(projectID: projectID, text: "Item C")] != nil)
     }
 
-    // Upstream `run_scheduler_tick_completes_running_task_when_worktree_planning_is_done`.
     @Test func tickCompletesARunningTaskWhenItsWorktreePlanningIsDone() async throws {
         let projectID = uniqueProjectID("complete")
         let worktree = try temporaryFolder("wt")

@@ -1,7 +1,5 @@
 import Foundation
 
-/// The user's remote control choices pushed to the hub (upstream `useRemoteControlService` sync).
-/// Whether it is on is not part of it: remote control is off at every launch.
 public struct RemoteControlSettings: Equatable, Sendable {
     public var maxDevices: Int
     public var sessionExpirySecs: Int
@@ -19,9 +17,6 @@ public struct RemoteControlSettings: Equatable, Sendable {
     }
 }
 
-/// Remote control's commands (upstream `remote/commands.rs`) over one hub, its API and transport:
-/// on and off, settings, pairing and revoking. Nothing binds until `setEnabled(true)`; `stop`
-/// revokes every device and closes every connection.
 public actor RemoteControlService {
     public nonisolated let hub: RemoteHub
     private let transport: RemoteTransport
@@ -39,15 +34,12 @@ public actor RemoteControlService {
                                     configuration: configuration)
     }
 
-    /// Message, start-failed and auto-disabled events; one consumer.
     public nonisolated var events: AsyncStream<RemoteEvent> { hub.events }
 
     public func info() async -> RemoteInfo {
         await hub.info()
     }
 
-    /// Turns the listeners on or off (upstream `remote_control_set_enabled`). A failed start emits
-    /// `.startFailed` and reports remote control off.
     @discardableResult
     public func setEnabled(_ enabled: Bool) async -> RemoteInfo {
         if enabled {
@@ -58,9 +50,6 @@ public actor RemoteControlService {
         return await hub.info()
     }
 
-    /// Pushes the settings; returns whether the listeners were restarted, which happens only when
-    /// the reach mode changed while running (upstream `remote_control_set_reach_mode`: the sync
-    /// re-sends every setting, and a restart drops every device).
     @discardableResult
     public func apply(_ settings: RemoteControlSettings) async -> Bool {
         await hub.setMaxDevices(settings.maxDevices)
@@ -73,8 +62,6 @@ public actor RemoteControlService {
         return true
     }
 
-    /// Opens the 120 s pairing window on a freshly resolved host (upstream
-    /// `remote_control_open_pairing`); nothing while remote control is off.
     @discardableResult
     public func openPairing() async -> RemoteInfo {
         if await hub.isEnabled {
@@ -96,7 +83,6 @@ public actor RemoteControlService {
         return await hub.info()
     }
 
-    /// Every device loses access and pairing closes (upstream `remote_control_revoke`).
     @discardableResult
     public func revokeAll() async -> RemoteInfo {
         await hub.revokeAll()
@@ -104,7 +90,6 @@ public actor RemoteControlService {
         return await hub.info()
     }
 
-    /// Quitting: listeners and connections close, every device is revoked.
     public func stop() async {
         await transport.stop()
     }

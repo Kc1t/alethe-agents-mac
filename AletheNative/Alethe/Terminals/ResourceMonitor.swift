@@ -5,10 +5,6 @@ import Dispatch
 import Foundation
 import Observation
 
-/// Watches memory (upstream `useResourceSupervisor` + `resources.rs`): every 5 s — and at once when
-/// macOS reports memory pressure — it measures each terminal's process tree, rates the system's
-/// pressure, lowers the priority of terminals kept off screen and, when the user's policy allows,
-/// hibernates idle hidden ones.
 @Observable
 @MainActor
 final class ResourceMonitor {
@@ -16,14 +12,11 @@ final class ResourceMonitor {
         let tab: TabID
         let memoryMB: Double
         let pid: pid_t
-        /// An agent (Claude, Codex...) rather than a plain shell.
         let isAgent: Bool
-        /// What runs below the terminal's own process (dev servers, language servers...).
         let children: [ProcessNode]
         var id: TabID { tab }
     }
 
-    /// One supervision reading, kept for the memory analytics history (web `MemorySample`).
     struct Sample: Identifiable, Equatable {
         let timestamp: Date
         let appMB: Double
@@ -35,7 +28,6 @@ final class ResourceMonitor {
         var id: Date { timestamp }
     }
 
-    /// The latest readings, oldest first (web `MAX_MEMORY_HISTORY`).
     private(set) var history: [Sample] = []
     static let historyLimit = 720
 
@@ -44,13 +36,10 @@ final class ResourceMonitor {
     private(set) var pressure: MemoryPressure = .normal
     private(set) var system = SystemResources.Memory(totalMB: 0, availableMB: 0)
     private(set) var appMB: Double = 0
-    /// Running terminals, largest first.
     private(set) var terminals: [TerminalUsage] = []
-    /// Terminals that could be hibernated now under the current policy's idle limits.
     private(set) var candidateCount = 0
 
     var terminalsMB: Double { terminals.reduce(0) { $0 + $1.memoryMB } }
-    /// Running terminals that host an AI agent, for the `N | X MB` pill.
     var aiTerminalCount: Int { terminals.filter(\.isAgent).count }
 
     static let interval: Duration = .seconds(5)
@@ -61,9 +50,7 @@ final class ResourceMonitor {
     @ObservationIgnored private var sampling = false
     @ObservationIgnored private var background: Set<TabID> = []
     @ObservationIgnored private var lastUsed: [TabID: Date] = [:]
-    /// Pressure level changes so far (upstream `policy_trigger_count`).
     @ObservationIgnored private var pressureChanges = 0
-    /// `ResourceMetricsUpdated` after every pass (P6-19).
     @ObservationIgnored private let events = EventOutbox()
 
     func start(environment: AppEnvironment) {
@@ -84,7 +71,6 @@ final class ResourceMonitor {
         pressureSource = source
     }
 
-    /// One supervision pass (upstream `run_cycle`).
     func check() {
         guard !sampling, let environment, let workspace = environment.workspace else { return }
         sampling = true
@@ -130,9 +116,8 @@ final class ResourceMonitor {
 
         var runtimes: [TerminalRuntime] = []
         var usage: [TerminalUsage] = []
-        var processCount = 1  // the app, like upstream's walk
+        var processCount = 1
         for (tab, view) in running {
-            // A terminal spawned during sampling belongs to the next pass.
             guard view.processID <= 0 || sample.memory[view.processID] != nil else { continue }
             let memory = sample.memory[view.processID] ?? 0
             if view.processID > 0 { processCount += sample.counts[view.processID] ?? 0 }
@@ -147,7 +132,6 @@ final class ResourceMonitor {
                 lastOutput: now.timeIntervalSince1970 - quiet, startedAt: view.startedAt.timeIntervalSince1970,
                 lastUsed: (lastUsed[tab] ?? view.startedAt).timeIntervalSince1970, memoryMB: memory))
 
-            // Off-screen terminals run in the background band; shown again, they get full priority.
             let off = !mounted.contains(tab)
             if off != background.contains(tab) {
                 SystemResources.setBackground(off, tree: view.processID, parents: parents)
@@ -176,13 +160,11 @@ final class ResourceMonitor {
             policyTriggerCount: pressureChanges))
 
         guard ResourceSupervision.mayHibernate(pressure, policy: policy) else { return }
-        // Under pressure one per pass, like upstream; in idle mode every candidate.
         for tab in policy.mode == .idle ? candidates : Array(candidates.prefix(1)) {
             environment.terminals.hibernate(tab)
         }
     }
 
-    /// Upstream's level name for each of the three native levels.
     static func upstreamLevel(_ pressure: MemoryPressure) -> String {
         switch pressure {
         case .normal: "Ok"

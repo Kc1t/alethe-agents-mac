@@ -2,14 +2,11 @@ import AletheIntegrations
 import Foundation
 import Observation
 
-/// One Graphify pane's data (P5-23): the graph read and laid out off the main thread (a newer load
-/// cancels the older layout), the snapshots, and the diff against the selected one.
 @Observable
 @MainActor
 final class GraphifyPaneModel {
     enum State: Equatable {
         case loading
-        /// No `graphify-out/graph.json` yet.
         case empty
         case failed(String)
         case loaded
@@ -23,14 +20,11 @@ final class GraphifyPaneModel {
     private(set) var snapshots: [GraphSnapshot] = []
     private(set) var comparedSnapshot: String?
     private(set) var diff: GraphDiff?
-    /// Node and edge indices the diff marks as added since the compared snapshot.
     private(set) var addedNodes: Set<Int> = []
     private(set) var addedLinks: Set<Int> = []
-    /// A snapshot or rollback that failed, shown until the next action.
     private(set) var actionError: String?
     var selectedNode: Int?
     var query = ""
-    /// The controller revision last loaded, so a regenerated or rolled back graph reloads.
     private(set) var loadedRevision = 0
 
     @ObservationIgnored private let controller: GraphifyController
@@ -48,7 +42,6 @@ final class GraphifyPaneModel {
 
     var selectedNodeInfo: GraphNode? { selectedNode.flatMap { index in graph?.nodes.indices.contains(index) == true ? graph?.nodes[index] : nil } }
 
-    /// The nodes linked to the selected one, in edge order without repeats.
     var neighbors: [Int] {
         guard let selectedNode, let layout else { return [] }
         var seen = Set<Int>(), result: [Int] = []
@@ -119,14 +112,11 @@ final class GraphifyPaneModel {
         }
     }
 
-    /// Stops a layout still running (the pane closed).
     func cancel() {
         generation += 1
         layoutWork?.cancel()
         layoutWork = nil
     }
-
-    // MARK: - Generation
 
     var isGenerating: Bool { controller.isGenerating(root) }
     var generationFailure: String? { controller.failures[root] }
@@ -137,8 +127,6 @@ final class GraphifyPaneModel {
     }
 
     func cancelGeneration() { controller.cancelGeneration(root: root) }
-
-    // MARK: - Snapshots
 
     func takeSnapshot() {
         actionError = nil
@@ -161,7 +149,6 @@ final class GraphifyPaneModel {
         }
     }
 
-    /// Highlights what changed from `snapshot` to the current graph; nil stops comparing.
     func compare(with snapshot: String?) {
         comparedSnapshot = snapshot
         guard let snapshot else {
@@ -178,7 +165,6 @@ final class GraphifyPaneModel {
         }
     }
 
-    /// The caller has asked for confirmation: the current graph is replaced.
     func rollback(to snapshot: String) {
         actionError = nil
         Task {

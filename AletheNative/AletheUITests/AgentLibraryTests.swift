@@ -1,6 +1,5 @@
 import XCTest
 
-/// Project menu › Agent Library… (P5-16) on a project seeded with one agent Alethe did not write.
 @MainActor
 final class AgentLibraryTests: XCTestCase {
     override func setUp() async throws {
@@ -58,7 +57,6 @@ final class AgentLibraryTests: XCTestCase {
         economy.click()
         XCTAssertTrue(eventually { !self.element(app, "agentLibrary.status.haiku-summarizer").exists })
 
-        // The seeded agent was not written by Alethe: removing it asks once.
         let remove = element(app, "agentLibrary.remove.mine")
         XCTAssertTrue(remove.waitForExistence(timeout: 5))
         remove.click()

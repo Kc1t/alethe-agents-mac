@@ -3,13 +3,9 @@ import AletheModel
 import Foundation
 import Observation
 
-/// The project editor's background work (P5-5): what the chosen folder holds (a saved Alethe
-/// marker, a repository, a stack), Initialize Git, and cloning. File reads and git run off the main
-/// thread; everything is cancelable.
 @MainActor
 @Observable
 final class ProjectEditorModel {
-    /// What was found in the folder last inspected.
     struct Inspection: Equatable, Sendable {
         var marker: ProjectMarker?
         var isRepository = false
@@ -26,7 +22,6 @@ final class ProjectEditorModel {
     private(set) var cloneError: String?
     private var cloneTask: Task<Void, Never>?
 
-    /// Inspects `folder` after a short pause (typing into the field restarts it); call from `.task(id:)`.
     func inspect(_ folder: String) async {
         try? await Task.sleep(for: .milliseconds(250))
         guard !Task.isCancelled else { return }
@@ -49,7 +44,6 @@ final class ProjectEditorModel {
         initError = nil
     }
 
-    /// Initialize Git (upstream `git_init`): a first commit of the folder's files.
     func initializeGit(_ folder: String) {
         guard !initializing else { return }
         initializing = true
@@ -66,8 +60,6 @@ final class ProjectEditorModel {
         }
     }
 
-    /// Clones `url` into `target`; `completion` runs on success only. A failure is shown in the
-    /// sheet; a cancel removes the partial folder and leaves the sheet as it was.
     func clone(_ url: String, into target: URL, completion: @escaping @MainActor (URL) -> Void) {
         guard !cloning else { return }
         cloning = true

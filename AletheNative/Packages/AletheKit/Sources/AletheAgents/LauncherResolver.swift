@@ -1,9 +1,6 @@
 import Foundation
 import Synchronization
 
-/// Finds an agent's CLI on disk. Port of upstream `cli_resolver.rs` for macOS: an app started from
-/// Finder inherits Launch Services' minimal PATH (no `.zshrc`/`.zprofile`), so besides PATH it walks
-/// the default install roots of Homebrew and the Node/Rust version managers.
 public struct LauncherResolver: Sendable {
     public var environment: [String: String]
     public var homeDirectory: String
@@ -28,8 +25,6 @@ public struct LauncherResolver: Sendable {
         self.listDirectory = listDirectory
     }
 
-    /// The executable for `command`: a valid `override` wins, then the first hit in
-    /// `searchDirectories()`.
     public func resolve(_ command: String, override: String? = nil) -> String? {
         if let override = override.map(expandingTilde), !override.isEmpty, isExecutable(override) {
             return override
@@ -38,7 +33,6 @@ public struct LauncherResolver: Sendable {
         return searchDirectories().lazy.map { ($0 as NSString).appendingPathComponent(command) }.first(where: isExecutable)
     }
 
-    /// PATH first, then per-user install roots, then Homebrew; duplicates and empty entries dropped.
     public func searchDirectories() -> [String] {
         let home = homeDirectory
         func env(_ key: String) -> String? { environment[key].flatMap { $0.isEmpty ? nil : expandingTilde($0) } }
@@ -47,7 +41,6 @@ public struct LauncherResolver: Sendable {
         var directories = (environment["PATH"] ?? "").split(separator: ":").map(String.init)
         directories += [
             "\(home)/.local/bin",
-            // Claude Code's `claude migrate-installer` location.
             "\(home)/.claude/local",
             "\(home)/.opencode/bin",
             "\(home)/.cargo/bin",
@@ -68,14 +61,12 @@ public struct LauncherResolver: Sendable {
         return Self.deduplicated(directories)
     }
 
-    /// Default Homebrew prefixes: Apple Silicon, then Intel.
     public static let homebrewDirectories = ["/opt/homebrew/bin", "/opt/homebrew/sbin", "/usr/local/bin", "/usr/local/sbin"]
 
     private func nvmDirectories(root: String) -> [String] {
         versionDirectories(in: "\(root)/versions/node", suffix: "bin")
     }
 
-    /// One bin directory per installed Node release, newest first.
     private func versionDirectories(in parent: String, suffix: String) -> [String] {
         listDirectory(parent)
             .filter { !$0.hasPrefix(".") }
@@ -104,16 +95,12 @@ public struct LauncherResolver: Sendable {
         return path
     }
 
-    /// Whether a picked file looks like the agent's CLI rather than something else carrying the
-    /// vendor's name (upstream `cliPathMatchesAgent`).
     public static func path(_ path: String, matches descriptor: AgentDescriptor) -> Bool {
         guard let expected = descriptor.cliCommand else { return true }
         return (path as NSString).lastPathComponent.lowercased() == expected.lowercased()
     }
 }
 
-/// Remembers hits only, and drops a hit as soon as its file is gone: installing a CLI is picked up
-/// on the next lookup and uninstalling it is never answered from the cache.
 public final class LauncherCache: Sendable {
     private let resolver: LauncherResolver
     private let hits = Mutex<[String: String]>([:])
@@ -133,7 +120,6 @@ public final class LauncherCache: Sendable {
         return resolved
     }
 
-    /// Forgets every hit (after an install or an override change).
     public func invalidate() {
         hits.withLock { $0.removeAll() }
     }

@@ -1,8 +1,5 @@
 import XCTest
 
-/// The MCP tab and manager (P5-25) over a seeded throwaway home (`-AletheUITestSeed mcp` with
-/// `-AletheIntegrationsHome`): Claude Code has `alpha` (secret env), Codex has `beta`, Cursor an
-/// empty config. Never the user's real agent configs.
 @MainActor
 final class McpManagerTests: XCTestCase {
     override func setUp() async throws {
@@ -26,7 +23,6 @@ final class McpManagerTests: XCTestCase {
         return app
     }
 
-    /// The right sidebar's MCP tab, once the scan listed both seeded servers.
     private func openPanel(_ app: XCUIApplication) {
         XCTAssertTrue(element(app, "workspace.empty").waitForExistence(timeout: 5))
         let tabs = element(app, "rightSidebar.tabs")
@@ -37,7 +33,6 @@ final class McpManagerTests: XCTestCase {
         XCTAssertTrue(element(app, "mcp.panel.row.beta").exists)
     }
 
-    /// History › MCP Servers…, then a server picked in the list.
     private func openManager(_ app: XCUIApplication, server: String) {
         XCTAssertTrue(element(app, "workspace.empty").waitForExistence(timeout: 5))
         app.menuBars.menuBarItems["History"].click()
@@ -54,7 +49,6 @@ final class McpManagerTests: XCTestCase {
         openPanel(app)
         XCTAssertTrue(text(element(app, "mcp.panel.stats")).contains("2"))
 
-        // The agent filter keeps servers of the picked agent.
         element(app, "mcp.panel.agent.codex").click()
         XCTAssertTrue(eventually { !self.element(app, "mcp.panel.row.alpha").exists })
         XCTAssertTrue(element(app, "mcp.panel.row.beta").exists)
@@ -130,7 +124,6 @@ final class McpManagerTests: XCTestCase {
         XCTAssertTrue(path.waitForExistence(timeout: 5))
         XCTAssertTrue(text(path).hasSuffix(".cursor/mcp.json"))
         XCTAssertTrue(text(element(app, "mcp.manager.note")).contains("alpha copied to Cursor"))
-        // The secret travelled inside the store: Cursor's copy is masked too.
         XCTAssertFalse(app.staticTexts["sk-test-0123456789abcd"].exists)
         app.terminate()
     }
@@ -145,7 +138,6 @@ final class McpManagerTests: XCTestCase {
         XCTAssertTrue(eventually { !self.element(app, "mcp.manager.row.beta").exists })
         XCTAssertFalse(element(app, "mcp.manager.undo").exists, "a removal is taken back from Backups")
 
-        // Codex's file still exists; restore its backup through another server's record.
         element(app, "mcp.manager.add").click()
         XCTAssertTrue(element(app, "mcp.editor").waitForExistence(timeout: 5))
         app.buttons["Manual"].firstMatch.click()
@@ -161,7 +153,6 @@ final class McpManagerTests: XCTestCase {
         element(app, "mcp.detail.backups.codex").click()
         let restore = element(app, "mcp.backups.restore.0")
         XCTAssertTrue(restore.waitForExistence(timeout: 5))
-        // The newest backup is the file before delta was added: beta already removed.
         element(app, "mcp.backups.restore.1").click()
         let confirmRestore = element(app, "mcp.backups.confirm")
         XCTAssertTrue(confirmRestore.waitForExistence(timeout: 5), "asks once")
@@ -185,7 +176,6 @@ final class McpManagerTests: XCTestCase {
         relaunched.terminate()
     }
 
-    /// HT: at 120 % zoom the panel's controls take clicks where they are drawn.
     func testPanelControlsReceiveClicksWhenZoomed() {
         let app = launchWithMcp()
         XCTAssertTrue(element(app, "workspace.empty").waitForExistence(timeout: 5))

@@ -3,9 +3,6 @@ import Network
 import Testing
 @testable import AletheRemote
 
-// MARK: - Parsing (pure)
-
-/// Upstream `remote/http.rs` tests.
 struct RemoteHTTPGoldenTests {
     @Test func requestHeadersEndIsDetectedAcrossChunks() {
         #expect(RemoteHTTPReader.findHeadersEnd(Data("GET / HTTP/1.1\r\n\r\nbody".utf8)) == 14)
@@ -115,9 +112,6 @@ struct RemoteHTTPReaderTests {
     }
 }
 
-// MARK: - Loopback
-
-/// Real listeners on 127.0.0.1, one test at a time so the fixed port ranges never run out.
 @Suite(.serialized)
 struct RemoteTransportLoopbackTests {
     @Test func aRequestIsRoutedAndAnsweredWithUpstreamHeaders() async throws {
@@ -224,7 +218,6 @@ struct RemoteTransportLoopbackTests {
         #expect(await client.connect())
         let opened = ContinuousClock.now
 
-        // Frames that are not JSON do not authenticate and do not end the wait (upstream).
         await client.send("hello")
 
         #expect(await client.receive(timeout: .seconds(5)) == .closed)
@@ -379,7 +372,6 @@ struct RemoteTransportLoopbackTests {
         #expect(await !fixture.hub.isEnabled)
     }
 
-    /// Pair over HTTP, authenticate and subscribe over the WebSocket, then stream 1 MB of output.
     @Test func loopbackRoundTripStreamsOneMegabyteOfOutput() async throws {
         let fixture = try await Fixture.started()
         defer { fixture.finish() }
@@ -422,8 +414,6 @@ struct RemoteTransportLoopbackTests {
     }
 }
 
-// MARK: - Fixture
-
 private let loopback = RemoteHostResolver(lanAddress: { "127.0.0.1" }, tailscaleAddress: { nil })
 
 private struct Fixture {
@@ -448,13 +438,11 @@ private struct Fixture {
         return fixture
     }
 
-    /// Pairs a device through the hub (the API's `/api/pair` is P7-8's).
     func pairDirectly() async throws -> RemotePairing {
         await hub.openPairingWindow()
         return try await hub.pair(token: await hub.pairingToken, name: "Phone", address: "127.0.0.1:1")
     }
 
-    /// Sends `request` raw and returns everything the server wrote before closing.
     func http(_ request: String) async throws -> String {
         let client = TestTCPClient(port: await hub.httpPort)
         try #require(await client.connect())
@@ -553,10 +541,6 @@ private struct StubWorkspace: RemoteWorkspaceSource {
     func activeQuestions(for tab: RemoteSharedTab) async -> RemoteQuestionSet? { nil }
 }
 
-// MARK: - Helpers
-
-/// The hub's next event, or `nil` after `timeout`. The event stream has one consumer, so a test
-/// waits on it once.
 private func nextEvent(_ hub: RemoteHub, timeout: Duration = .seconds(5)) async -> RemoteEvent? {
     await withTaskGroup(of: RemoteEvent?.self) { group in
         group.addTask {
@@ -582,7 +566,6 @@ private func eventually(timeout: Duration = .seconds(5), _ condition: @Sendable 
     return await condition()
 }
 
-/// Runs a callback-based call; `fallback` (after `onTimeout`) when it does not answer in time.
 private func callback<Value: Sendable>(
     timeout: Duration,
     fallback: Value,
@@ -639,7 +622,6 @@ private final class TestTCPClient: @unchecked Sendable {
         }
     }
 
-    /// Everything received until the server closes (or resets); `nil` on timeout.
     func readToEnd(timeout: Duration) async -> Data? {
         let connection = connection
         let buffer = LockedData()
@@ -710,7 +692,6 @@ private final class TestWebSocketClient: @unchecked Sendable {
         }
     }
 
-    /// The next text frame. A timeout cancels the client.
     func receive(timeout: Duration = .seconds(5)) async -> TestFrame {
         let connection = connection
         return await callback(timeout: timeout, fallback: .timedOut, onTimeout: { connection.cancel() }) { done in
@@ -731,7 +712,6 @@ private final class TestWebSocketClient: @unchecked Sendable {
         }
     }
 
-    /// Skips frames until the server closes; false on timeout.
     func receiveUntilClosed(timeout: Duration) async -> Bool {
         let deadline = ContinuousClock.now + timeout
         while ContinuousClock.now < deadline {
@@ -747,7 +727,6 @@ private final class TestWebSocketClient: @unchecked Sendable {
     func cancel() { connection.cancel() }
 }
 
-/// A plain listener holding a loopback port, to make a port range busy.
 private final class TestListener: @unchecked Sendable {
     let listener: NWListener
     let port: UInt16

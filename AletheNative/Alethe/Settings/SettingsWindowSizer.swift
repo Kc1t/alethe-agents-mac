@@ -1,9 +1,6 @@
 import AppKit
 import SwiftUI
 
-/// The `Settings` scene sizes its window to the content's minimum, ignoring the ideal size, and
-/// restores whatever small frame it last had. Grows the window to the web size when it opens and
-/// keeps it resizable.
 struct SettingsWindowSizer: NSViewRepresentable {
     let size: CGSize
 
@@ -21,7 +18,6 @@ struct SettingsWindowSizer: NSViewRepresentable {
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             guard window != nil else { return }
-            // SwiftUI re-fits the window after the first layout, so apply again once it settles.
             for delay in [0.0, 0.25] {
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in self?.grow() }
             }

@@ -1,15 +1,10 @@
 import Foundation
 
-/// Which 9router install runs (upstream `Router9Source`).
 public enum Router9Source: String, Codable, CaseIterable, Hashable, Sendable {
-    /// The install Alethe manages in the profile folder.
     case managed
-    /// The user's own `9router` on PATH.
     case external
 }
 
-/// The local 9router proxy (upstream `Router9Preferences`). Off by default: nothing is installed or
-/// started until the user asks. The API key is a Keychain item, never a field here.
 public struct Router9Preferences: Codable, Hashable, Sendable {
     public static let defaultPort = 20128
 
@@ -30,7 +25,6 @@ public struct Router9Preferences: Codable, Hashable, Sendable {
         self.defaultForNewAgents = defaultForNewAgents
     }
 
-    /// Upstream `normalizePort`: anything outside 1…65535 is the default port.
     public static func normalizedPort(_ port: Int) -> Int {
         (1...65535).contains(port) ? port : defaultPort
     }
@@ -39,7 +33,6 @@ public struct Router9Preferences: Codable, Hashable, Sendable {
         case enabled, autoStart, source, port, defaultForNewAgents
     }
 
-    /// Missing or unknown values fall back to the defaults, as upstream's normalization does.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.init(
@@ -52,11 +45,8 @@ public struct Router9Preferences: Codable, Hashable, Sendable {
     }
 }
 
-/// Remote control settings (upstream `remoteMaxDevices`, `remoteSessionExpirySecs`,
-/// `remoteReadOnly`, `remoteAllowShellInput`, `remoteUseTailscale`; limits from `remote/mod.rs`).
 public struct RemotePreferences: Codable, Hashable, Sendable {
     public static let maxDevicesRange = 1...4
-    /// 5 min … 24 h.
     public static let sessionExpiryRange = (5 * 60)...(24 * 60 * 60)
     public static let defaultSessionExpiry = 60 * 60
 
@@ -66,11 +56,8 @@ public struct RemotePreferences: Codable, Hashable, Sendable {
     public var sessionExpirySecs: Int {
         didSet { sessionExpirySecs = Self.clamp(sessionExpirySecs, Self.sessionExpiryRange) }
     }
-    /// Paired devices read terminals but never send input; upstream defaults it on.
     public var readOnly: Bool
-    /// Input is also accepted on plain shell tabs, not only agent tabs.
     public var allowShellInput: Bool
-    /// Bind to the Mac's Tailscale address instead of its LAN address.
     public var useTailscale: Bool
 
     public init(maxDevices: Int = 1, sessionExpirySecs: Int = defaultSessionExpiry, readOnly: Bool = true,
@@ -90,7 +77,6 @@ public struct RemotePreferences: Codable, Hashable, Sendable {
         case maxDevices, sessionExpirySecs, readOnly, allowShellInput, useTailscale
     }
 
-    /// Missing keys take the defaults; out-of-range numbers are clamped.
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.init(

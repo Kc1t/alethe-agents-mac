@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheAgents
 
-/// Open in VS Code resolution (P5-7).
 struct VSCodeLauncherTests {
     private func resolver(_ files: Set<String>, path: String = "/usr/bin:/bin") -> LauncherResolver {
         LauncherResolver(environment: ["PATH": path], homeDirectory: "/Users/me",

@@ -2,19 +2,14 @@ import AletheFoundation
 import AppKit
 import Foundation
 
-/// The system calls the Spotify service makes, replaceable in tests.
 public struct SpotifyDependencies: Sendable {
     public var session: URLSession
     public var environment: @Sendable () -> [String: String]
-    /// Opens the authorize URL in the default browser; false when nothing could open it.
     public var openURL: @Sendable (URL) async -> Bool
-    /// Waits for the OAuth redirect carrying `state` and returns its `code`. Calls `ready` once it is
-    /// listening (the service opens the browser then); `ready` returning false aborts.
     public var awaitCallback: @Sendable (_ state: String, _ ready: @escaping @Sendable () async -> Bool)
         async throws(SpotifyError) -> String
     public var now: @Sendable () -> Date
     public var makeState: @Sendable () -> String
-    /// Trace lines; they never carry tokens, codes or secrets.
     public var log: @Sendable (String) -> Void
 
     public init(session: URLSession,
@@ -49,9 +44,6 @@ public struct SpotifyDependencies: Sendable {
     }
 }
 
-/// Spotify for one profile (upstream `spotify.rs`): login through the loopback redirect, tokens in
-/// the Keychain (`spotifyTokens`), refresh, and the current track. Nothing runs on its own; every call
-/// is a user action or the Now Playing poll. Off the main thread; cancel the calling task to stop.
 public actor SpotifyService {
     public nonisolated let profile: String
     private let secrets: any SecretStore
@@ -64,7 +56,6 @@ public actor SpotifyService {
         self.dependencies = dependencies
     }
 
-    /// `clientID` comes from preferences; the secret from the Keychain; the environment fills blanks.
     public func credentials(clientID: String?) throws(SpotifyError) -> SpotifyCredentials {
         let secret = try secretStore { () throws -> String? in
             try secrets.string(for: .spotifyClientSecret, profile: profile)
@@ -73,13 +64,10 @@ public actor SpotifyService {
                                               environment: dependencies.environment())
     }
 
-    /// Upstream `spotify_status`: tokens are stored.
     public func isConnected() -> Bool {
         (try? storedTokens()) != nil
     }
 
-    /// Upstream `spotify_login`: opens the authorize page, waits (5 min) for the redirect on
-    /// `127.0.0.1:8888`, exchanges the code and stores the tokens.
     public func login(clientID: String?) async throws(SpotifyError) {
         let credentials = try credentials(clientID: clientID)
         guard !loggingIn else { throw .loginInProgress }
@@ -109,14 +97,11 @@ public actor SpotifyService {
         dependencies.log("spotify: connected")
     }
 
-    /// Upstream `spotify_logout`: deletes the stored tokens.
     public func logout() throws(SpotifyError) {
         try secretStore { try secrets.delete(.spotifyTokens, profile: profile) }
         dependencies.log("spotify: disconnected")
     }
 
-    /// Upstream `spotify_get_current`: nil when not configured or not connected; a `204` (nothing
-    /// playing) or an empty item falls back to the most recently played track, shown paused.
     public func current(clientID: String?) async throws(SpotifyError) -> SpotifyNowPlaying? {
         guard let credentials = try? credentials(clientID: clientID) else { return nil }
         guard let access = try await freshAccessToken(credentials) else { return nil }
@@ -133,10 +118,6 @@ public actor SpotifyService {
         return try await recentlyPlayed(access)
     }
 
-    // MARK: - Tokens
-
-    /// Upstream `ensure_fresh_access_token`: refreshes 30 s before expiry; nil when not connected. A
-    /// rejected refresh token deletes the tokens (the profile is disconnected).
     func freshAccessToken(_ credentials: SpotifyCredentials) async throws(SpotifyError) -> String? {
         guard let tokens = try storedTokens() else { return nil }
         if tokens.expiresAt.timeIntervalSince(dependencies.now()) > Spotify.refreshMargin {
@@ -199,8 +180,6 @@ public actor SpotifyService {
         }
     }
 
-    // MARK: - Requests
-
     private func recentlyPlayed(_ access: String) async throws(SpotifyError) -> SpotifyNowPlaying? {
         let (data, status) = try await send(bearer(Spotify.recentlyPlayedURL, access))
         guard (200..<300).contains(status) else {
@@ -229,7 +208,6 @@ public actor SpotifyService {
         return (data, http.statusCode)
     }
 
-    /// A log-safe name for an error: the case only, never an associated value that came from outside.
     static func label(_ error: SpotifyError) -> String {
         switch error {
         case .authorizationDenied: "authorizationDenied"

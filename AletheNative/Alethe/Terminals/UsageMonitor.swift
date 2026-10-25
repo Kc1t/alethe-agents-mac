@@ -3,9 +3,6 @@ import AletheModel
 import Foundation
 import Observation
 
-/// AI usage of Claude Code, Codex and Antigravity (upstream `*UsageCache.ts`, `limitResetWatch.ts`):
-/// fetched every 5 minutes for the providers the user shows, and whenever the AI Usage sheet opens. A
-/// window that was at its limit and has reset raises a notification.
 @Observable
 @MainActor
 final class UsageMonitor {
@@ -46,7 +43,6 @@ final class UsageMonitor {
         }
     }
 
-    /// The persisted toolbar choice also gates credential discovery and network access.
     var shownProviders: [AgentKind] {
         let shown = Set(environment?.preferences?.document.usagePillProviders ?? [])
         return Self.providers.filter { shown.contains($0.rawValue) }
@@ -104,7 +100,6 @@ final class UsageMonitor {
                     body: String(format: String(localized: "usage.limitReset.body"), window.label), agent: fresh.agent.rawValue)
             }
         }
-        // A failed refresh keeps the last good figures.
         usage[fresh.agent] = AIUsage.retainedReading(previous: usage[fresh.agent], fresh: fresh)
     }
 }

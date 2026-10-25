@@ -3,9 +3,7 @@ import Foundation
 import Testing
 @testable import AletheTerminal
 
-// Spawns real processes: a rare intermittent hang must fail the test, not stall the run.
 @Suite(.timeLimit(.minutes(1))) struct PTYProcessTests {
-    /// Clipboard CRLF/LF/CR must submit exactly three lines to a real canonical PTY.
     @Test func normalizedClipboardLinesReachShellInOrder() async throws {
         let launch = PTYLaunch(
             executable: "/bin/sh",
@@ -66,7 +64,7 @@ import Testing
             size: PTYSize(columns: 80, rows: 24)
         ), spawnNow: false)
         #expect(!process.isSpawned)
-        process.write(Data("typed\n".utf8))  // before the child exists
+        process.write(Data("typed\n".utf8))
         let collected = Collected()
         let code: Int32 = try await withCheckedThrowingContinuation { continuation in
             process.onOutput = { collected.append($0) }
@@ -89,7 +87,6 @@ import Testing
     }
 
     @Test func focusReportsAreDroppedWhileTheTTYEchoes() async throws {
-        // `cat` in cooked mode echoes whatever arrives; the focus report must not reach it.
         let launch = PTYLaunch(
             executable: "/bin/sh",
             arguments: ["sh", "-c", "head -c 6"],
@@ -106,7 +103,7 @@ import Testing
             process.onExit = { continuation.resume(returning: $0) }
             process.start()
             process.write(Data("\u{1b}[I".utf8))
-            process.write(Data("abcdef\n".utf8))  // cooked mode: `head` sees the line at the newline
+            process.write(Data("abcdef\n".utf8))
         }
         #expect(!collected.string.contains("^[[I"))
         #expect(collected.string.contains("abcdef"))
@@ -172,7 +169,6 @@ import Testing
     }
 
     @Test func childIsASessionLeaderWithTheTerminalAsControllingTTY() async throws {
-        // `ps -o tpgid` is the controlling terminal's foreground group; -1 means no controlling TTY.
         let launch = PTYLaunch(
             executable: "/bin/sh",
             arguments: ["sh", "-c", "ps -o sess=,tpgid= -p $$"],
@@ -185,7 +181,6 @@ import Testing
     }
 
     @Test func aMissingExecutableFailsTheSpawnWithItsErrno() {
-        // posix_spawn reports a missing binary synchronously (TerminalPaneView shows it and ends with 127).
         let launch = PTYLaunch(
             executable: "/nonexistent/binary",
             arguments: ["x"],

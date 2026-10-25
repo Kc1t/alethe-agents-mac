@@ -1,12 +1,8 @@
 import Foundation
 
-/// Session arguments for one launch. Port of upstream `buildAgentLaunch` (`sessionLaunch.ts`):
-/// every pane resumes only its own session, so stale resume flags from saved arguments are dropped.
 public struct AgentArguments: Equatable, Sendable {
     public var arguments: [String]
-    /// The session the process will use, when known before it starts.
     public var sessionID: String?
-    /// True when this launch minted `sessionID` (Claude accepts one up front).
     public var createdSession: Bool
 
     public init(arguments: [String], sessionID: String? = nil, createdSession: Bool = false) {
@@ -39,10 +35,8 @@ public struct AgentArguments: Equatable, Sendable {
             let clean = stripping(base, flagsWithValue: ["--conversation"], flags: ["--continue", "-c"])
             return AgentArguments(arguments: sessionID.map { ["--conversation", $0] + clean } ?? clean, sessionID: sessionID)
         case .kiro:
-            // kiro-cli takes flags such as --trust-all-tools only under `chat`; bare, it rejects them.
             return AgentArguments(arguments: ["chat"] + base)
         case .cursor:
-            // Cursor mints its own chat ids; a pane only ever attaches one it already holds.
             let clean = stripping(base, flagsWithValue: ["--resume"], flags: ["--continue"])
                 .filter { !$0.hasPrefix("--resume=") }
             return AgentArguments(arguments: sessionID.map { ["--resume", $0] + clean } ?? clean, sessionID: sessionID)
@@ -66,7 +60,6 @@ public struct AgentArguments: Equatable, Sendable {
         return clean
     }
 
-    /// `codex resume [--last | <id>] …` → the arguments after the resume target.
     private static func strippingCodexResume(_ arguments: [String]) -> [String] {
         guard arguments.first == "resume" else { return arguments }
         var rest = Array(arguments.dropFirst())

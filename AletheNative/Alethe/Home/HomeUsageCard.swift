@@ -3,7 +3,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// UsageStrip.tsx's provider cards, backed exclusively by UsageMonitor readings.
 struct WebHomeUsageCard: View {
     let provider: AgentKind
     @Environment(AppEnvironment.self) private var environment
@@ -224,7 +223,6 @@ struct WebHomeUsageCard: View {
     }
 }
 
-/// Matches iconBtn, including disabled refresh and hover feedback.
 struct HomeBottomRefreshButton: View {
     let refreshing: Bool
     let refresh: () async -> Void

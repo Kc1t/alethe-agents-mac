@@ -1,7 +1,5 @@
 import XCTest
 
-/// After-crash notice and Help › Diagnostics… (P5-11), with an unclean session marker seeded by
-/// `-AletheUITestCrashMarker`.
 @MainActor
 final class CrashNoticeTests: XCTestCase {
     override func setUp() async throws {
@@ -18,7 +16,6 @@ final class CrashNoticeTests: XCTestCase {
         app.buttons["crash.dismiss"].firstMatch.click()
         XCTAssertTrue(eventually { !notice.exists })
 
-        // The unclean exit is recorded as a warning and listed in Diagnostics.
         app.menuBars.menuBarItems["Help"].click()
         app.menuItems["Diagnostics…"].click()
         let sheet = app.descendants(matching: .any)["diagnostics"].firstMatch

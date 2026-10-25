@@ -6,7 +6,6 @@ extension EnvironmentValues {
     @Entry var gitWebHasPresentationLayer = false
 }
 
-/// Modal.module.css chrome; presentation owners supply the existing window-local overlay.
 struct GitWebModal<Header: View, Body: View, Footer: View>: View {
     let close: () -> Void
     var closeIdentifier = "editor.cancel"
@@ -78,8 +77,6 @@ struct GitWebOverlay<Content: View>: View {
     }
 }
 
-/// Requests bubble to the window's presentation layer, so a sidebar or a nested modal cannot
-/// constrain the overlay's backdrop, drag bounds or resize handles.
 struct GitWebPresentation {
     let width: CGFloat
     let close: () -> Void
@@ -104,7 +101,6 @@ private struct GitWebPresentationLayer: ViewModifier {
     }
 }
 
-/// Nested Git dialogs preserve their system sheet in the native interface.
 private struct GitWebSheet<Sheet: View>: ViewModifier {
     @Binding var isPresented: Bool
     let width: CGFloat
@@ -137,11 +133,9 @@ extension View {
         modifier(GitWebSheet(isPresented: isPresented, width: width, sheet: content))
     }
 
-    /// Install once on the window content, alongside the editor overlay.
     func gitWebModalLayer() -> some View { modifier(GitWebPresentationLayer()) }
 }
 
-/// Identifiable settings/configuration editors use the same window layer as Boolean presentations.
 private struct GitWebItemSheet<Item: Identifiable, Sheet: View>: ViewModifier {
     @Binding var item: Item?
     let width: CGFloat

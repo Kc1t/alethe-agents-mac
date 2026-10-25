@@ -6,20 +6,14 @@ import ExtensionFoundation
 import Foundation
 import Observation
 
-/// Third-party ExtensionKit extensions (P4-19, ADR-9): discovery through `AppExtensionPoint.Monitor`,
-/// the consent-gated enable state, one XPC process per extension (manifest, commands, host storage)
-/// and the sidebar tabs of the active ones.
 @Observable
 @MainActor
 final class ExtensionManager {
     struct Entry: Identifiable {
         enum Status: Equatable {
-            /// Asking the extension for its manifest.
             case loading
             case ready
-            /// The manifest was invalid or could not be read.
             case failed(String)
-            /// The extension's process exited or crashed.
             case stopped
         }
 
@@ -27,13 +21,11 @@ final class ExtensionManager {
         var payload: ExtensionManifestPayload?
         var manifest: PluginManifest?
         var status: Status = .loading
-        /// Reply of the last command run from Settings.
         var lastReply: String?
 
         var id: String { identity.bundleIdentifier }
     }
 
-    /// A pending consent prompt.
     struct ConsentRequest: Identifiable {
         let manifest: PluginManifest
         let capabilities: Set<PluginCapability>
@@ -42,12 +34,9 @@ final class ExtensionManager {
 
     private(set) var entries: [Entry] = []
     private(set) var state = ExtensionHostState()
-    /// Extensions discovered but not yet approved or enabled in System Settings.
     private(set) var awaitingSystemApproval = 0
-    /// Set when discovery could not start (for example, the point is not declared in this build).
     private(set) var discoveryError: String?
     var pendingConsent: ConsentRequest?
-    /// Load failures (`PluginFailed`) for the app's event bus (P6-19); held until a bus is attached.
     @ObservationIgnored let events = EventOutbox()
 
     private let stateURL: URL
@@ -63,11 +52,8 @@ final class ExtensionManager {
         state = ExtensionHostState.load(from: stateURL)
     }
 
-    /// Starts discovery. Failure is reported in Settings, never fatal.
     func start() async {
         #if DEBUG
-        // `-AletheRegisterExtensionApp <path>`: registers a containing app with LaunchServices so
-        // UI tests find the sample extension without launching it first.
         if let path = UserDefaults.standard.string(forKey: "AletheRegisterExtensionApp") {
             LSRegisterURL(URL(filePath: path) as CFURL, true)
         }
@@ -81,7 +67,6 @@ final class ExtensionManager {
         }
     }
 
-    /// Re-syncs whenever the monitor's identities change.
     private func observe() {
         guard let monitor else { return }
         withObservationTracking {
@@ -104,10 +89,6 @@ final class ExtensionManager {
         entries.sort { $0.identity.localizedName.localizedStandardCompare($1.identity.localizedName) == .orderedAscending }
     }
 
-    // MARK: - Process and XPC
-
-    /// Launches the extension's process and asks for its manifest. The process is sandboxed and
-    /// gets no host service until the user enables it (checked on every request).
     private func connect(_ identity: AppExtensionIdentity) {
         let id = identity.bundleIdentifier
         let configuration = AppExtensionProcess.Configuration(appExtensionIdentity: identity) { [weak self] in
@@ -118,8 +99,6 @@ final class ExtensionManager {
             let connection = try process.makeXPCConnection()
             configureHostSide(of: connection, for: id)
             connection.remoteObjectInterface = .aletheExtension()
-            // XPC calls these on its own queue: `@Sendable` keeps them off the main actor (an inferred
-            // main-actor closure traps there, taking the app down when an extension crashes).
             connection.interruptionHandler = { @Sendable [weak self] in Task { @MainActor in self?.processStopped(id) } }
             connection.resume()
             processes[id] = process
@@ -133,7 +112,6 @@ final class ExtensionManager {
         }
     }
 
-    /// Exports the host service on a connection to extension `id` (its process or a sidebar scene).
     func configureHostSide(of connection: NSXPCConnection, for id: String) {
         connection.exportedInterface = .aletheHost()
         connection.exportedObject = ExtensionHostService(bundleIdentifier: id, manager: self)
@@ -176,7 +154,6 @@ final class ExtensionManager {
         processes.removeValue(forKey: id)?.invalidate()
     }
 
-    /// Relaunches a stopped extension's process (Settings and the sidebar's Reload).
     func reload(_ id: String) {
         guard let entry = entries.first(where: { $0.id == id }) else { return }
         teardown(id)
@@ -193,14 +170,11 @@ final class ExtensionManager {
         }
     }
 
-    // MARK: - Enablement
-
     func isActive(_ entry: Entry) -> Bool {
         guard let manifest = entry.manifest else { return false }
         return state.isActive(manifest)
     }
 
-    /// The Settings toggle. Turning on may present the consent prompt instead.
     func setEnabled(_ enabled: Bool, for id: String) {
         guard let manifest = entries.first(where: { $0.id == id })?.manifest else { return }
         if enabled {
@@ -226,8 +200,6 @@ final class ExtensionManager {
         try? state.save(to: stateURL)
     }
 
-    // MARK: - Services
-
     func runCommand(_ commandID: String, of id: String) {
         guard let entry = entries.first(where: { $0.id == id }), isActive(entry) else { return }
         proxy(id)?.runCommand(commandID) { [weak self] reply in
@@ -235,7 +207,6 @@ final class ExtensionManager {
         }
     }
 
-    /// Serves a request from extension `id`, checked with the consent ledger.
     func handle(_ request: HostRequest, from id: String) async -> HostResponse {
         let storage = storages[id] ?? PluginStorage(root: dataRoot, pluginID: ExtensionRequestRouter.storageID(for: id))
         storages[id] = storage
@@ -243,7 +214,6 @@ final class ExtensionManager {
         return await ExtensionRequestRouter.handle(request, isAllowed: { state.isAllowed($0, for: id) }, storage: storage)
     }
 
-    /// Right-sidebar tabs of the active extensions that provide one.
     var sidebarTabs: [SidebarTabContribution] {
         entries.compactMap { entry in
             guard isActive(entry), let tab = entry.payload?.sidebarTab else { return nil }
@@ -266,8 +236,6 @@ final class ExtensionManager {
     }
 }
 
-/// The object the host exports to an extension; each connection is bound to one bundle id, so an
-/// extension cannot act as another.
 final class ExtensionHostService: NSObject, AletheHostXPC, @unchecked Sendable {
     private let bundleIdentifier: String
     private weak var manager: ExtensionManager?

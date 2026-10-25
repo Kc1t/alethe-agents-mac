@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheGit
 
-/// Clone URL handling and `git clone` of a local bare repository (P5-5).
 struct GitCloneTests {
     @Test(arguments: [
         ("owner/repo", "https://github.com/owner/repo"),

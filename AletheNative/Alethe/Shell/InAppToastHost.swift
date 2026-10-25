@@ -1,7 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// One in-app banner (upstream `InAppToast`). A toast that carries actions waits longer.
 struct InAppToast: Identifiable {
     struct Action: Identifiable {
         let id = UUID()
@@ -16,11 +15,9 @@ struct InAppToast: Identifiable {
     var agent: String?
     var actions: [Action] = []
 
-    /// 20 s with actions, 6.5 s without (InAppNotifications.tsx).
     var lifetime: Duration { actions.isEmpty ? .milliseconds(6500) : .seconds(20) }
 }
 
-/// `InAppNotifications.tsx` + `.module.css`: a centred stack of pills 14 points from the top.
 struct InAppToastHost: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics
@@ -100,7 +97,6 @@ private struct InAppToastPill: View {
         .task(id: hovering) { await countDown() }
     }
 
-    /// Hovering pauses the timer; leaving resumes with what was left.
     private func countDown() async {
         guard !hovering else { return }
         let clock = ContinuousClock()
@@ -141,7 +137,6 @@ private struct InAppToastPill: View {
         .padding(.leading, metrics.size(2))
     }
 
-    /// `color-mix(in srgb, a pct%, b)`.
     private static func mix(_ a: Color, _ b: Color, _ amount: Double) -> Color {
         b.mix(with: a, by: amount, in: .device)
     }

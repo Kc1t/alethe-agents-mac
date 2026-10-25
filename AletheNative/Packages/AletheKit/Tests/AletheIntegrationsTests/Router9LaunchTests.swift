@@ -4,8 +4,6 @@ import Foundation
 import Testing
 @testable import AletheIntegrations
 
-/// U (P7-17): 9router variables reaching a routed tab's launch (upstream `useXtermSession`
-/// `router9EnvFor`), the sheet's availability rule, and repeat last keeping the choice.
 @Suite(.timeLimit(.minutes(1))) struct Router9LaunchTests {
     static let launcher = AgentLauncher(launchers: LauncherCache(stillExists: { _ in true }),
                                         overrides: ["claude": "/bin/echo", "codex": "/bin/echo", "opencode": "/bin/echo",

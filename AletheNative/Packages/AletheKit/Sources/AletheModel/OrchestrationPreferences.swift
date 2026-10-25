@@ -1,6 +1,5 @@
 import Foundation
 
-/// The web `preferences.orchestration` shape. Optional profile fields need no schema migration.
 public struct OrchestrationPreferences: Codable, Hashable, Sendable {
     public var roles: [OrchestrationRole] = []
     public var maxConcurrent = 4

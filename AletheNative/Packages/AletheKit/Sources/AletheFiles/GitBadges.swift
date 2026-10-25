@@ -1,11 +1,9 @@
 import AletheGit
 import Foundation
 
-/// Git state shown next to an explorer entry (upstream `fileExplorerGit.ts`).
 public enum GitBadge: String, Hashable, Sendable, CaseIterable {
     case conflict, modified, stagedModified, added, untracked, renamed, deleted
 
-    /// Higher wins when several changes land on the same file or folder.
     public var priority: Int {
         switch self {
         case .conflict: 100
@@ -30,8 +28,6 @@ public enum GitBadge: String, Hashable, Sendable, CaseIterable {
     }
 }
 
-/// File and folder badges for one repository; folders aggregate the strongest child badge.
-/// Keys are repo-relative, case-insensitive paths (as upstream).
 public struct GitBadgeIndex: Hashable, Sendable {
     public let repoRoot: String
     public private(set) var files: [String: GitBadge] = [:]
@@ -51,7 +47,6 @@ public struct GitBadgeIndex: Hashable, Sendable {
         case .unmerged: return .conflict
         case .untracked: return .untracked
         case .ordinary, .renamed:
-            // Staged and unstaged sides both count; the stronger one wins (as upstream).
             let staged: GitBadge? = switch entry.index {
             case .added?: .added
             case .deleted?: .deleted
@@ -72,7 +67,7 @@ public struct GitBadgeIndex: Hashable, Sendable {
     private mutating func register(_ path: String, _ badge: GitBadge) {
         var key = path.replacingOccurrences(of: "\\", with: "/").lowercased()
         while key.hasPrefix("/") { key.removeFirst() }
-        while key.hasSuffix("/") { key.removeLast() } // untracked directories end with "/"
+        while key.hasSuffix("/") { key.removeLast() }
         if files[key].map({ badge.priority > $0.priority }) ?? true { files[key] = badge }
         var parts = key.split(separator: "/").dropLast()
         folders[""] = Self.stronger(folders[""], badge)

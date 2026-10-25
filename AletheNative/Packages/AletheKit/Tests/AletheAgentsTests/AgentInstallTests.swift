@@ -1,7 +1,6 @@
 import Testing
 @testable import AletheAgents
 
-/// Agent CLI install catalog (P3-3; upstream `agentInstall.test.ts`, `agentVersions.ts`).
 @Suite struct AgentInstallTests {
     private let everything = InstallToolchain(node: "22.1.0", npm: true, brew: true)
 

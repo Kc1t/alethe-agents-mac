@@ -4,9 +4,6 @@ import AppKit
 import AVFoundation
 import Observation
 
-/// Dictation (upstream PER-6, with Apple's on-device speech instead of Parakeet): ⌥⌘E pressed starts and
-/// pressed again stops, held it stops on release; Esc cancels. Final text goes into what had focus when
-/// it started — a terminal (typed, no Enter) or a text field — in the interface language.
 @Observable
 @MainActor
 final class DictationController {
@@ -17,7 +14,6 @@ final class DictationController {
     @ObservationIgnored private var deactivation: NSObjectProtocol?
     @ObservationIgnored private var generation = 0
     private(set) var machine = DictationMachine()
-    /// The words not final yet.
     private(set) var liveText = ""
     private(set) var downloadingModel = false
     @ObservationIgnored private weak var environment: AppEnvironment?
@@ -25,7 +21,6 @@ final class DictationController {
     @ObservationIgnored private var target: Target?
     @ObservationIgnored private var lastInserted = ""
     @ObservationIgnored private var monitor: Any?
-    /// The engine is listening (its start finished).
     @ObservationIgnored private var ready = false
 
     private enum Target {
@@ -49,7 +44,6 @@ final class DictationController {
         }
     }
 
-    /// ⌥⌘E down/up, and Esc while dictating. (⌥⌘D is macOS's Dock hiding shortcut and never reaches the app.)
     private func handle(_ event: NSEvent) -> Bool {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting([.capsLock, .numericPad, .function])
         if environment?.interfaceStyle == .web {
@@ -101,7 +95,6 @@ final class DictationController {
                 return true
             }
             if event.type == .flagsChanged { return false }
-            // Retain the legacy chord, subject to the same web enable preference.
             if !settings.enabled { return false }
         }
         guard event.type != .flagsChanged else { return false }
@@ -118,7 +111,6 @@ final class DictationController {
         return true
     }
 
-    /// Edit › Dictate (a click, no hold).
     func toggle() {
         if environment?.interfaceStyle == .web, !settings.enabled { return }
         if jev.open { cancelSession() }
@@ -216,7 +208,6 @@ final class DictationController {
         }
     }
 
-    /// Stops listening; while the engine is still starting, `begin` calls this once it is up.
     private func end() async {
         guard let engine else {
             if machine.phase == .finishing, !downloadingModel {

@@ -8,7 +8,6 @@ public enum QueueLimit {
                 "hit your limit", "limit reached"].contains { lower.contains($0) }
     }
 
-    /// Only protocol error fields are inspected; prompts and successful replies can quote limits.
     public static func workerMessage(_ message: OrderedJSON) -> String? {
         guard let object = message.objectValue else { return nil }
         let params = object["params"]?.objectValue
@@ -20,8 +19,6 @@ public enum QueueLimit {
         return errors.map { $0.stringValue ?? $0.compactRendered() }.first { detected(in: $0) }
     }
 
-    /// Explicit ISO timestamps or vendor clock messages ("try again at 5:47 PM").
-    /// Unknown reset times wait for a healthy fitness reading, never an immediate retry loop.
     public static func reset(in text: String, now: Date = Date(), calendar: Calendar = .current) -> Date? {
         let iso = #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})"#
         if let range = text.range(of: iso, options: .regularExpression) {

@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheModel
 
-/// Backup, import, reset and erase (P5-10). Every case runs in its own temporary data root.
 @Suite struct ProfileBackupTests {
     private let root: URL
     private let locations: DataLocations
@@ -23,7 +22,6 @@ import Testing
         (try? Data(contentsOf: folder.appending(path: relative))).map { String(decoding: $0, as: UTF8.self) }
     }
 
-    /// A profile with two projects, three tabs, scrollback and runtime leftovers.
     private func seedProfile() throws -> URL {
         let folder = locations.profileDirectory(profile)
         var document = WorkspaceDocument.initial
@@ -65,7 +63,6 @@ import Testing
         #expect(staged.contents.manifest?.createdAt == Date(timeIntervalSince1970: 1_000))
         #expect(!FileManager.default.fileExists(atPath: staged.folder.appending(path: BackupManifest.fileName).path))
 
-        // The profile changes after the export; the import brings the exported state back.
         try write("changed", "scrollback/tab.bin", in: folder)
         try write("new", "scrollback/other.bin", in: folder)
         try DataMaintenance.schedule(.importProfile(profile, stagedFolder: staged.folder.path), in: locations)
@@ -129,7 +126,6 @@ import Testing
     @Test func aFolderArchiveIsUnwrapped() throws {
         defer { cleanup() }
         let folder = try seedProfile()
-        // Finder's Compress keeps the folder itself as the archive's top level.
         let archive = root.appending(path: "finder.zip")
         try ProfileBackup.run("/usr/bin/ditto", ["-c", "-k", "--keepParent", folder.path, archive.path])
         let staged = try ProfileBackup.stage(archive, into: locations.importStaging.appending(path: "finder"))
@@ -156,7 +152,6 @@ import Testing
         #expect(throws: BackupError.targetInsideSource) {
             try ProfileBackup.export(folder, to: folder.appending(path: "scrollback/self.zip"), profileName: nil)
         }
-        // The data root's own safety-backups folder is fine: it is left out of the archive.
         let archive = try ProfileBackup.safetyBackup(of: root, label: "all-data", into: locations.safetyBackups,
                                                      profileName: nil, skipping: DataMaintenance.maintenanceEntries(locations))
         #expect(!(try ProfileBackup.entries(of: archive)).contains { $0.hasPrefix("safety-backups") })

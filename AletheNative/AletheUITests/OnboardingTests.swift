@@ -1,7 +1,5 @@
 import XCTest
 
-/// The first-run sheet (P5-26). UI tests see it only with `-AletheUITestOnboarding YES`; agent
-/// configs are read from a throwaway home (`-AletheIntegrationsHome`), never the Mac's own.
 @MainActor
 final class OnboardingTests: XCTestCase {
     override func setUp() async throws {
@@ -35,7 +33,6 @@ final class OnboardingTests: XCTestCase {
         enterName("Ada", in: app)
         XCTAssertEqual(element(app, "onboarding.progress").label, "Step 1 of 5", "no import step without Tauri data")
 
-        // Return goes on, step by step: name, appearance, agents, features, MCP.
         app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(element(app, "onboarding.style").waitForExistence(timeout: 5))
         XCTAssertFalse(element(app, "onboarding.import.open").exists)
@@ -48,7 +45,6 @@ final class OnboardingTests: XCTestCase {
         XCTAssertTrue(element(app, "onboarding.mcp.note").exists, "an empty home has nothing to sync")
         element(app, "onboarding.next").click()
 
-        // Finishing hands over to the setup steps on Home.
         XCTAssertTrue(eventually { !sheet.exists })
         XCTAssertTrue(element(app, "setup").waitForExistence(timeout: 5))
         element(app, "profiles.menu").click()
@@ -56,12 +52,10 @@ final class OnboardingTests: XCTestCase {
         app.typeKey(.escape, modifierFlags: [])
         app.terminate()
 
-        // Only once.
         app = launch(dataRoot: root)
         XCTAssertTrue(element(app, "workspace.empty").waitForExistence(timeout: 5))
         XCTAssertFalse(element(app, "onboarding").waitForExistence(timeout: 2))
 
-        // Help reopens it.
         app.menuBars.menuBarItems["Help"].click()
         app.menuItems["Show Onboarding…"].click()
         XCTAssertTrue(element(app, "onboarding").waitForExistence(timeout: 5))

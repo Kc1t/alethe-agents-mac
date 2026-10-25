@@ -4,7 +4,6 @@ import Testing
 
 @Suite struct MotionTests {
     @Test func projectionMatchesApplesFormula() {
-        // 1000 pt/s with d = 0.998 projects 499 pt forward.
         #expect(abs(Motion.projectedOffset(velocity: 1000) - 499) < 0.001)
         #expect(Motion.projectedOffset(velocity: 0) == 0)
     }
@@ -18,7 +17,6 @@ import Testing
     }
 
     @Test func snapUsesProjectionNotReleasePoint() {
-        // Released near 0 but flicked toward 400: lands on 400.
         #expect(Motion.snapTarget(current: 50, velocity: 800, candidates: [0, 400]) == 400)
         #expect(Motion.snapTarget(current: 50, velocity: 0, candidates: [0, 400]) == 0)
     }

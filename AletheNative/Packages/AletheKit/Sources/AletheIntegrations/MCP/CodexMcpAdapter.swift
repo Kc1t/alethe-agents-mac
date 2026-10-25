@@ -1,13 +1,10 @@
 import AletheFoundation
 import Foundation
 
-/// Codex: `[mcp_servers.<name>]` in `~/.codex/config.toml` or `<repo>/.codex/config.toml`, edited
-/// through `TOMLDocument` so comments and every other table keep their bytes (upstream `toml_edit`).
 public struct CodexMcpAdapter: McpAdapter {
     public init() {}
     public var agent: McpAgent { .codex }
 
-    /// Keys rewritten on every upsert; `enabled`, `env` and `env_vars` are handled on their own.
     static let managedKeys = [
         "command", "args", "cwd", "url", "bearer_token_env_var", "startup_timeout_sec", "tool_timeout_sec",
     ]
@@ -60,7 +57,6 @@ public struct CodexMcpAdapter: McpAdapter {
         )
     }
 
-    /// Integer or float seconds; negative or non-finite values are ignored, large ones saturate.
     static func seconds(_ value: TOMLValue?) -> UInt32? {
         switch value {
         case .integer(let number)?: return UInt32(exactly: number)
@@ -94,8 +90,6 @@ public struct CodexMcpAdapter: McpAdapter {
         return document.text
     }
 
-    /// A new `env` is written inline; an existing one keeps its container (a hand-written
-    /// `[mcp_servers.x.env]` section stays a section).
     static func setEnv(_ entry: inout TOMLTable, _ env: McpEnvMap) {
         let sorted = env.sorted { $0.key < $1.key }
         let literals = sorted.compactMap { key, item in item.literal.map { (key, TOMLValue.string($0)) } }

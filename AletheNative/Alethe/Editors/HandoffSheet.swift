@@ -4,9 +4,6 @@ import AletheFoundation
 import AletheModel
 import SwiftUI
 
-/// Continue a Claude Code conversation in Codex or the other way round (upstream `HandoffModal`):
-/// the capsule is prepared, shown for review and editing, then written to the profile and handed to a
-/// new terminal of the other agent in the same project, whose first prompt tells it to read it.
 struct HandoffSheet: View {
     let workspace: WorkspaceModel
     let undoManager: UndoManager?

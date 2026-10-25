@@ -1,8 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// The toolbar's `remote` item (upstream TitleBar remote pill): shown only while remote control is on,
-/// with the connected device count (or "Remote control on" when none); opens the pairing sheet.
 struct RemoteToolbarItem: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme
@@ -30,7 +28,6 @@ struct RemoteToolbarItem: View {
             .buttonStyle(.plain)
             .help(Text(Self.label(count)))
             .accessibilityIdentifier("remote.toolbarPill")
-            // Devices connect and leave on their own; upstream polls every 2 s while on.
             .task {
                 while !Task.isCancelled {
                     remote.refresh()

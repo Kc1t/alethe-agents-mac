@@ -5,9 +5,6 @@ import AletheIntegrations
 import AppKit
 import SwiftUI
 
-/// The skills of every agent (upstream `SkillsBrowser`, EXT-2): list with agent filter and search,
-/// detail with where it is installed, frontmatter, install source, files and the rendered `SKILL.md`;
-/// uninstall asks once. Embedded by the MCP manager (P5-25) and shown alone by `SkillsSheet`.
 struct SkillsBrowser: View {
     @State var model: SkillsBrowserModel
     @State private var removal: SkillsBrowserModel.Removal?
@@ -41,8 +38,6 @@ struct SkillsBrowser: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("skills.browser")
     }
-
-    // MARK: List
 
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: metrics.space(.s)) {
@@ -131,8 +126,6 @@ struct SkillsBrowser: View {
         .font(metrics.isWebInterface ? metrics.font(size: 12.5) : metrics.font(.body))
         .accessibilityIdentifier("skills.row.\(group.name)")
     }
-
-    // MARK: Detail
 
     @ViewBuilder private var detailPane: some View {
         if let group = model.activeGroup {
@@ -252,7 +245,6 @@ struct SkillsBrowser: View {
                         .buttonStyle(.borderless)
                         .help(Text("skills.reveal"))
                         .accessibilityLabel(Text("skills.reveal"))
-                        // The shared copy goes only when no agent links it; otherwise remove the links.
                         if !entry.bundled && (entry.agent != .shared || group.agents.isEmpty) {
                             Button {
                                 removal = .init(group: group.name, entries: [entry])
@@ -360,7 +352,6 @@ struct SkillsBrowser: View {
     }
 }
 
-/// The browser on its own (History › Skills…); the MCP manager (P5-25) embeds it too.
 struct SkillsSheet: View {
     let store: SkillStore
     @Environment(\.dismiss) private var dismiss
@@ -402,7 +393,6 @@ struct SkillsSheet: View {
 
 @MainActor @Observable
 final class SkillsBrowserModel {
-    /// Entries of one skill to uninstall together, confirmed once.
     struct Removal: Hashable {
         var group: String
         var entries: [SkillSummary]
@@ -416,7 +406,6 @@ final class SkillsBrowserModel {
     private(set) var busy = false
     private(set) var error: String? { didSet { if error != oldValue { AppLog.shown(error, .integrations) } } }
     private(set) var detailError: String? { didSet { if detailError != oldValue { AppLog.shown(detailError, .integrations) } } }
-    /// Outcome of the last removal.
     private(set) var note: String?
     var query = "" { didSet { loadDetail() } }
     var agentFilter: SkillAgent? { didSet { loadDetail() } }
@@ -424,7 +413,6 @@ final class SkillsBrowserModel {
 
     @ObservationIgnored private var loadTask: Task<Void, Never>?
     @ObservationIgnored private var detailTask: Task<Void, Never>?
-    /// The skill copy `detail` shows or is loading.
     @ObservationIgnored private var detailKey: String?
 
     init(store: SkillStore) { self.store = store }
@@ -433,7 +421,6 @@ final class SkillsBrowserModel {
         groups.filter { $0.matches(query) && $0.isInstalled(for: agentFilter) }
     }
 
-    /// The selected skill, or the first one shown.
     var activeGroup: SkillGroup? {
         let visible = visibleGroups
         return visible.first { $0.name == selection } ?? visible.first
@@ -460,14 +447,12 @@ final class SkillsBrowserModel {
         await task.value
     }
 
-    /// Stops pending reads; the next `load` starts them again.
     func cancel() {
         loadTask?.cancel()
         detailTask?.cancel()
         detailKey = nil
     }
 
-    /// Reads the active skill from wherever it lives (every copy is the same folder).
     private func loadDetail() {
         guard let source = activeGroup?.entries.first else {
             detailTask?.cancel()
@@ -550,7 +535,6 @@ final class SkillsBrowserModel {
 }
 
 extension SkillAgent {
-    /// Product names stay as they are; only the shared store is translated.
     var label: String {
         switch self {
         case .claude: "Claude Code"
@@ -573,6 +557,5 @@ extension SkillAgent {
 }
 
 extension SkillNode {
-    /// Nil for files, so `OutlineGroup` shows no disclosure triangle.
     var childrenIfFolder: [SkillNode]? { isDirectory ? children : nil }
 }

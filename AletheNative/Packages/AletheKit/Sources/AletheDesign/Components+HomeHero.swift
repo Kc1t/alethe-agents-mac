@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// HomeView.module.css quick fields; the Agent summary uses the inherited sans font.
 public struct HomeQuickFieldStyle: ButtonStyle {
     private let sans: Bool
     public init(sans: Bool = false) { self.sans = sans }

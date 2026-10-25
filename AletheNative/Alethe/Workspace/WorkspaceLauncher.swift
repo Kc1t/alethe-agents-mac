@@ -4,9 +4,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// What the workspace shows when nothing is open (upstream `WorkspaceEmptyState` and the "no project"
-/// card): quick actions with their shortcuts, or — before the first project exists — an agent
-/// picker that opens a folder as a project and starts a terminal in it.
 struct WorkspaceLauncher: View {
     let workspace: WorkspaceModel
     @Environment(AppEnvironment.self) private var environment
@@ -39,8 +36,6 @@ struct WorkspaceLauncher: View {
             agent = last.flatMap { agents.contains($0) ? $0 : nil } ?? agents.first ?? .shell
         }
     }
-
-    // MARK: - Quick actions
 
     private var actions: some View {
         VStack(spacing: metrics.space(.xs)) {
@@ -101,8 +96,6 @@ struct WorkspaceLauncher: View {
         .accessibilityIdentifier(id)
     }
 
-    // MARK: - First project
-
     private var firstProject: some View {
         VStack(spacing: metrics.space(.l)) {
             VStack(spacing: metrics.space(.xs)) {
@@ -153,7 +146,6 @@ struct WorkspaceLauncher: View {
         }
     }
 
-    /// Opens a folder as a project (or the project already using it) and starts the chosen agent.
     private func openFolder() {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
@@ -176,7 +168,6 @@ struct WorkspaceLauncher: View {
     }
 }
 
-/// Launcher rows dim slightly while pressed.
 private struct LauncherButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label.opacity(configuration.isPressed ? 0.7 : 1)

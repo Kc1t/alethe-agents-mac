@@ -49,7 +49,6 @@ import Testing
         #expect(session.modelID == "mimo-v2.5-free")
         #expect(session.totalTokens == 1500)
         #expect(session.updatedAt == Date(timeIntervalSince1970: 1_700_000_060))
-        // The message with an unknown role is dropped.
         #expect(session.messages.map(\.id) == ["msg_1", "msg_2"])
         #expect(session.messages[0].role == .user)
         #expect(session.messages[0].parts == [.text("Sync the planning folder")])

@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Web TerminalPane actions: 20-point floating or 22-point pinned targets, 12-point icons.
 public struct AletheTerminalHeaderActionStyle: ButtonStyle {
     let pinned: Bool
     let active: Bool
@@ -41,7 +40,6 @@ private struct TerminalHeaderActionBody: View {
     }
 }
 
-/// The exited terminal's web `.restartBtn`.
 public struct AletheTerminalRestartStyle: ButtonStyle {
     public init() {}
     public func makeBody(configuration: Configuration) -> some View {

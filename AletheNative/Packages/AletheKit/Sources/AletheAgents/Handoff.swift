@@ -1,14 +1,9 @@
 import Foundation
 
-/// Claude Code ↔ Codex handoff (upstream `handoff.rs`): a conversation of one agent becomes a context
-/// capsule the other reads to continue. User messages are the task; assistant and tool output are
-/// evidence to verify.
 public enum Handoff {
     public static let draftCharacterLimit = 48_000
     public static let materializedByteLimit = 64 * 1024
 
-    /// One transferable event of a transcript. Encodes as upstream's `HandoffEvent` (the remote chat
-    /// view reads these).
     public struct Event: Equatable, Sendable, Encodable {
         public enum Role: String, Sendable, Encodable {
             case user, assistant, tool, question
@@ -16,7 +11,6 @@ public enum Handoff {
         }
         public var role: Role
         public var text: String
-        /// The agent's tool call id when the event asks interactive questions.
         public var questionSetID: String?
         public var questions: [RemoteQuestion]?
 
@@ -33,8 +27,6 @@ public enum Handoff {
         }
     }
 
-    /// An interactive question from Claude Code `AskUserQuestion` or Codex `request_user_input`
-    /// (upstream `RemoteQuestion`).
     public struct RemoteQuestion: Equatable, Sendable, Codable {
         public struct Option: Equatable, Sendable, Codable {
             public var label: String
@@ -60,19 +52,14 @@ public enum Handoff {
         }
     }
 
-    /// The questions the agent is waiting on: its last event asked them (upstream
-    /// `ActiveRemoteQuestions`).
     public struct ActiveQuestions: Equatable, Sendable {
         public var id: String
         public var questions: [RemoteQuestion]
     }
 
-    /// A conversation for the remote chat view (upstream `TranscriptSnapshot`).
     public struct TranscriptSnapshot: Equatable, Sendable, Encodable {
         public var sessionID: String?
-        /// The transcript's modification time in ms; 0 when there is none.
         public var revision: UInt64
-        /// The caller already has this revision, so nothing was parsed.
         public var unchanged: Bool
         public var messages: [Event]
 
@@ -82,7 +69,6 @@ public enum Handoff {
         }
     }
 
-    /// What the review sheet shows before anything is written (upstream `HandoffDraft`).
     public struct Draft: Equatable, Sendable {
         public var source: AgentKind
         public var target: AgentKind
@@ -93,7 +79,6 @@ public enum Handoff {
         public var includedEvents: Int
         public var omittedEvents: Int
         public var redactions: Int
-        /// No session was given, so the folder's newest conversation was used.
         public var usedNewest: Bool
     }
 
@@ -103,7 +88,6 @@ public enum Handoff {
 
     public static func supports(_ kind: AgentKind) -> Bool { kind == .claude || kind == .codex }
 
-    /// The other agent of the pair.
     public static func counterpart(of kind: AgentKind) -> AgentKind? {
         switch kind {
         case .claude: .codex
@@ -112,14 +96,11 @@ public enum Handoff {
         }
     }
 
-    // MARK: - Events
-
     static func clipped(_ text: String, _ limit: Int) -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.count <= limit ? trimmed : String(trimmed.prefix(limit - 1)) + "…"
     }
 
-    /// Text blocks of a content value (upstream `content_text`).
     static func contentText(_ content: Any?) -> String {
         if let text = content as? String { return text }
         guard let blocks = content as? [[String: Any]] else { return "" }
@@ -139,14 +120,11 @@ public enum Handoff {
         return clipped("\(name): \(rendered)", 1_200)
     }
 
-    /// A JSON boolean (not a number that happens to bridge to one).
     static func jsonBool(_ value: Any?) -> Bool? {
         guard let number = value as? NSNumber, CFGetTypeID(number) == CFBooleanGetTypeID() else { return nil }
         return number.boolValue
     }
 
-    /// Interactive questions of a tool call (upstream `remote_questions`): up to 3 questions of up to 8
-    /// options; the input may be a JSON string (Codex arguments).
     public static func remoteQuestions(toolName name: String, input: Any?) -> [RemoteQuestion]? {
         guard name.caseInsensitiveCompare("AskUserQuestion") == .orderedSame
                 || name.caseInsensitiveCompare("request_user_input") == .orderedSame else { return nil }
@@ -175,19 +153,16 @@ public enum Handoff {
         return result.isEmpty ? nil : result
     }
 
-    /// One line per question with its option labels (upstream `question_text`).
     static func questionText(_ questions: [RemoteQuestion]) -> String {
         questions.map { "\($0.header): \($0.question) (\($0.options.map(\.label).joined(separator: ", ")))" }
             .joined(separator: "\n")
     }
 
-    /// A tool call event, or a question event when the call asks interactive questions.
     static func toolCallEvent(name: String, input: Any?, callID: String?, fallbackID: String) -> Event {
         guard let questions = remoteQuestions(toolName: name, input: input) else { return Event(.tool, toolText(name, input)) }
         return Event(.question, questionText(questions), questionSetID: clipped(callID ?? fallbackID, 160), questions: questions)
     }
 
-    /// Claude Code transcript events; side chains (subagents) are left out (upstream `claude_events`).
     public static func claudeEvents(atPath path: String) -> [Event] {
         var events: [Event] = []
         JSONLReader.forEachLine(atPath: path) { line in
@@ -217,7 +192,6 @@ public enum Handoff {
         return events
     }
 
-    /// Codex rollout events (upstream `codex_events`).
     public static func codexEvents(atPath path: String) -> [Event] {
         var events: [Event] = []
         JSONLReader.forEachLine(atPath: path) { line in
@@ -247,11 +221,6 @@ public enum Handoff {
         return events
     }
 
-    // MARK: - Capsule
-
-    /// The capsule text and how many events it left out (upstream `render_capsule`): original and
-    /// latest request first, up to 12 more user instructions, the last 18 events, the workspace, and
-    /// what was lost.
     public static func capsule(source: AgentKind, target: AgentKind, sessionID: String, cwd: String,
                                events: [Event], workspace: String) -> (text: String, omitted: Int) {
         let users = events.filter { $0.role == .user }
@@ -301,7 +270,6 @@ public enum Handoff {
         return (output, omitted)
     }
 
-    /// Secrets that must not travel in a capsule (upstream `redaction_patterns`).
     static let redactions: [NSRegularExpression] = [
         #"(?i)\b(?:sk-(?:proj-|ant-)?|gh[pousr]_|AKIA|AIza)[A-Za-z0-9_\-]{8,}"#,
         #"\beyJ[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}\b"#,
@@ -320,10 +288,6 @@ public enum Handoff {
         return (result, count)
     }
 
-    // MARK: - Preparing
-
-    /// The source transcript: the requested session, or the folder's newest (upstream
-    /// `resolve_source_file`).
     static func sourceFile(_ kind: AgentKind, cwd: String, sessionID: String?, homeDirectory: String) -> (id: String, path: String, newest: Bool)? {
         if let sessionID, !sessionID.isEmpty {
             return SessionCosts.transcript(kind, sessionID: sessionID, cwd: cwd, homeDirectory: homeDirectory).map { (sessionID, $0, false) }
@@ -333,14 +297,10 @@ public enum Handoff {
         return (newest.id, path, true)
     }
 
-    // MARK: - Remote
-
     static func events(_ kind: AgentKind, atPath path: String) -> [Event] {
         kind == .claude ? claudeEvents(atPath: path) : codexEvents(atPath: path)
     }
 
-    /// The session's transcript, else the folder's newest (upstream falls back when the session is
-    /// not found).
     static func remoteSource(_ kind: AgentKind, folder: String, session: String?, homeDirectory: String) -> (id: String, path: String)? {
         var isDirectory: ObjCBool = false
         guard supports(kind), FileManager.default.fileExists(atPath: folder, isDirectory: &isDirectory),
@@ -350,9 +310,6 @@ public enum Handoff {
         return file.map { ($0.id, $0.path) }
     }
 
-    /// The conversation for the remote chat view (upstream `transcript_snapshot`). `since` is the
-    /// last revision the caller saw: an unchanged transcript is not parsed, so the phone polls
-    /// cheaply. Keeps the newest `limit` events, with secrets redacted. Run it off the main thread.
     public static func transcriptSnapshot(agent: AgentKind, folder: String, session: String?, since: UInt64?,
                                           limit: Int = 160, homeDirectory: String = NSHomeDirectory()) -> TranscriptSnapshot {
         guard let source = remoteSource(agent, folder: folder, session: session, homeDirectory: homeDirectory) else {
@@ -367,7 +324,6 @@ public enum Handoff {
         return TranscriptSnapshot(sessionID: source.id, revision: revision, unchanged: false, messages: Array(messages))
     }
 
-    /// Redacts an event's visible text; ids and option counts stay, so answers still navigate.
     static func redacted(_ event: Event) -> Event {
         var event = event
         event.text = redact(event.text).text
@@ -381,8 +337,6 @@ public enum Handoff {
         return event
     }
 
-    /// The questions the agent waits on: those its last event asked (upstream
-    /// `active_remote_questions`). Run it off the main thread.
     public static func activeQuestions(agent: AgentKind, folder: String, session: String?,
                                        homeDirectory: String = NSHomeDirectory()) -> ActiveQuestions? {
         guard let source = remoteSource(agent, folder: folder, session: session, homeDirectory: homeDirectory),
@@ -390,7 +344,6 @@ public enum Handoff {
         return ActiveQuestions(id: last.questionSetID ?? "", questions: questions)
     }
 
-    /// Git state of the folder for the capsule (upstream `workspace_context`).
     public static func workspaceContext(cwd: String) -> String {
         func git(_ arguments: [String]) -> String? {
             let process = Process()
@@ -413,7 +366,6 @@ public enum Handoff {
         return "- Repository root: \(root)\n- Branch: \(branch)\n- HEAD: \(head)\n- Working tree:\n```text\n\(status)\n```\n- Diff stat:\n```text\n\(stat)\n```\n"
     }
 
-    /// Builds the draft (upstream `prepare_agent_handoff`); run it off the main thread.
     public static func prepare(source: AgentKind, target: AgentKind, sessionID: String?, cwd: String,
                                homeDirectory: String = NSHomeDirectory()) -> Result<Draft, Failure> {
         guard supports(source), supports(target) else { return .failure(.unsupported) }
@@ -436,8 +388,6 @@ public enum Handoff {
                               omittedEvents: rendered.omitted, redactions: redactions, usedNewest: file.newest))
     }
 
-    /// Writes the reviewed capsule as `<root>/<id>/context.md` (atomically) and returns its path
-    /// (upstream `materialize_agent_handoff`).
     public static func materialize(_ content: String, in root: URL) throws -> URL {
         guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               content.utf8.count <= materializedByteLimit else { throw CocoaError(.fileWriteInvalidFileName) }
@@ -448,7 +398,6 @@ public enum Handoff {
         return file
     }
 
-    /// Removes capsules older than `age` (their agents read them long ago).
     public static func pruneOld(in root: URL, olderThan age: TimeInterval = 7 * 86_400, now: Date = Date()) {
         let folders = (try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
         for folder in folders {

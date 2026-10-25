@@ -1,8 +1,6 @@
 import AletheFoundation
 import Foundation
 
-/// Per-key generation counters for trailing debounce (upstream autocommit `GENERATIONS`): each
-/// change bumps its key; a delayed action runs only if its generation is still the latest.
 public struct DebounceGenerations: Sendable {
     private var latest: [String: UInt64] = [:]
 
@@ -19,10 +17,6 @@ public struct DebounceGenerations: Sendable {
     }
 }
 
-/// Event-driven, opt-in audit commits of `.planning/` (upstream `start_planning_autocommit_loop`):
-/// on `PlanningUpdated`, once `delay` has passed since the last change of that planning folder, its
-/// repository is recorded as `auto-commit`. Off until enabled, and never persisted, so it is off at
-/// every launch like upstream.
 public actor PlanningAutocommit {
     public typealias Commit = @Sendable (_ root: URL, _ projectID: String?) async -> Void
 
@@ -42,7 +36,6 @@ public actor PlanningAutocommit {
         self.commit = commit
     }
 
-    /// Commits through `audit` with upstream's `auto-commit` reason; failures are logged, not raised.
     public init(bus: EventBus, audit: PlanningAudit, delay: Duration = defaultDelay) {
         self.init(bus: bus, delay: delay) { root, projectID in
             do {
@@ -58,7 +51,6 @@ public actor PlanningAutocommit {
         if !enabled { cancelPending() }
     }
 
-    /// Subscribes to the bus; idempotent.
     public func start() async {
         guard loop == nil else { return }
         let events = await bus.subscribe()

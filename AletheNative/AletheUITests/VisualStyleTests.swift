@@ -1,6 +1,5 @@
 import XCTest
 
-/// Clean style and reduced motion (P2-27).
 @MainActor
 final class VisualStyleTests: XCTestCase {
     override func setUp() async throws {
@@ -33,7 +32,6 @@ final class VisualStyleTests: XCTestCase {
         relaunched.terminate()
     }
 
-    /// HT: the style controls are clicked where they are drawn at 90 %, 100 % and 120 %.
     func testStyleControlsReceiveClicksAtThreeZoomLevels() {
         for (label, keys) in [("90 %", ["-"]), ("100 %", []), ("120 %", ["+", "+"])] {
             let (app, _) = launchAlethe()

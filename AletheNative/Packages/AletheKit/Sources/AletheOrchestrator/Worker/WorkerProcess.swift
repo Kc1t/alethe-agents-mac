@@ -7,7 +7,6 @@ public enum WorkerProcessError: Error, Hashable, Sendable, CustomStringConvertib
     case pipe(errno: Int32)
     case spawn(errno: Int32)
 
-    /// Upstream's wording (`worker spawn failed: …`).
     public var description: String {
         switch self {
         case .pipe(let code): "worker spawn failed: \(String(cString: strerror(code)))"
@@ -16,14 +15,7 @@ public enum WorkerProcessError: Error, Hashable, Sendable, CustomStringConvertib
     }
 }
 
-/// One worker CLI (upstream: the `Child` a job holds). Started in the job's folder as the leader of
-/// its own process group, stdin and stdout on close-on-exec pipes, stderr discarded like upstream.
-/// Its stdout arrives as `lines`, one JSON value per line (invalid lines skipped, EOF ends it); its
-/// stdin is `writer`, which never blocks the caller's isolation. `terminate()` always ends and reaps
-/// the whole group; a process dropped without it is killed as a last resort.
 public actor WorkerProcess {
-    /// SIGTERM, then SIGKILL after this long (upstream kills at once; the grace lets a CLI save its
-    /// session so an interrupted job can resume).
     public static let terminationGrace: Duration = .seconds(2)
 
     public nonisolated let pid: pid_t
@@ -34,7 +26,6 @@ public actor WorkerProcess {
 
     private let registry: WorkerRegistry?
     private let grace: Duration
-    /// The leader's wait status once reaped.
     public private(set) var exitStatus: Int32?
     private var stopping = false
     private var stopped = false
@@ -53,7 +44,6 @@ public actor WorkerProcess {
 
     deinit {
         guard !stopped, exitStatus == nil else { return }
-        // Dropped without `terminate()`: nothing may outlive its owner. Reaped off-thread.
         WorkerProcessTable.killTree(leader: pid, leaderAlive: true)
         let pid = pid
         DispatchQueue.global(qos: .utility).async {
@@ -63,9 +53,6 @@ public actor WorkerProcess {
         registry?.remove(pid: pid)
     }
 
-    /// Starts `launcher` in `directory`. `arguments` defaults to the launcher's own; `environment` is
-    /// the whole environment of the child (see `WorkerEnvironment.make`). The spawn is recorded in the
-    /// spawn log with variable names only, and in `registry` so a crash never leaves it running.
     public static func spawn(
         _ launcher: Launcher,
         in directory: URL,
@@ -78,7 +65,6 @@ public actor WorkerProcess {
         let arguments = arguments ?? launcher.arguments
         let program = launcher.program.path(percentEncoded: false)
         let cwd = directory.path(percentEncoded: false)
-        // Names only: values may be tokens.
         let names = launcher.environment.keys.sorted().joined(separator: ",")
         let summary = "kind=\(launcher.kind) job=\(jobID ?? "-") cwd=\(cwd) executable=\(program) "
             + "args=[\(arguments.joined(separator: " "))] env=[\(names)]"
@@ -104,7 +90,6 @@ public actor WorkerProcess {
         }
         let pid = spawned.pid
         let lines = WorkerLineReader.stream(descriptor: spawned.stdout, label: "\(pid)") { [registry] in
-            // By its first line the CLI has settled into its final image (a shebang script is node now).
             if let registry, let executable = WorkerProcessTable.executable(of: pid) {
                 registry.noteExecutable(executable, for: pid)
             }
@@ -114,16 +99,11 @@ public actor WorkerProcess {
                              registry: registry, grace: grace)
     }
 
-    /// Whether the leader still runs (reaps it once it exited). Other members of its group may
-    /// outlive it; `terminate()` ends them too.
     public var isRunning: Bool {
         reapIfExited()
         return exitStatus == nil
     }
 
-    /// SIGTERM to the group, SIGKILL to the whole tree after the grace period, then the leader is
-    /// reaped (upstream `teardown`: kill + wait). Runs to the end even when the calling task is
-    /// cancelled; concurrent calls wait for the same teardown.
     public func terminate() async {
         if stopped { return }
         if stopping {
@@ -131,10 +111,6 @@ public actor WorkerProcess {
             return
         }
         stopping = true
-        // An unstructured task does not inherit the caller's cancellation. Not
-        // `withTaskCancellationShield`: the compiler references its runtime entry points
-        // (`swift_task_cancellationShieldPush/Pop`) strongly, so even behind `#available` the app
-        // fails to launch on macOS 26, whose Swift runtime lacks them.
         await Task { await self.teardown() }.value
         stopped = true
         let pending = waiters
@@ -155,12 +131,10 @@ public actor WorkerProcess {
                 if exitStatus != nil, !groupAlive { break }
             }
         }
-        // Survivors: a leader that ignored SIGTERM, or children that outlived it or left the group.
         if exitStatus == nil || groupAlive {
             WorkerProcessTable.killTree(leader: pid, leaderAlive: exitStatus == nil)
         }
         if exitStatus == nil {
-            // Right after SIGKILL: this wait is brief.
             var status: Int32 = 0
             var result: pid_t
             repeat { result = waitpid(pid, &status, 0) } while result < 0 && errno == EINTR
@@ -171,7 +145,6 @@ public actor WorkerProcess {
                                        domain: .orchestrator)
     }
 
-    /// Anyone left in the group once the leader is gone.
     private var groupAlive: Bool {
         Darwin.kill(-pid, 0) == 0
     }
@@ -187,9 +160,6 @@ public actor WorkerProcess {
         }
     }
 
-    /// `posix_spawn` with a new process group led by the child, stdin/stdout on pipes whose parent
-    /// ends are close-on-exec (and never raise SIGPIPE), stderr on `/dev/null`, no other inherited
-    /// descriptor, default signal dispositions and an empty mask.
     static func spawnGroupLeader(program: String, arguments: [String], directory: String,
                                  environment: [String: String]) throws(WorkerProcessError) -> (pid: pid_t, stdin: Int32, stdout: Int32) {
         var input: [Int32] = [-1, -1]
@@ -241,8 +211,6 @@ public actor WorkerProcess {
     }
 }
 
-/// Reads a worker's stdout on its own thread: one JSON value per line, blank and invalid lines
-/// skipped, the stream finished at EOF. `onFirstLine` runs once, before the first value is yielded.
 enum WorkerLineReader {
     static func stream(descriptor: Int32, label: String,
                        onFirstLine: @escaping @Sendable () -> Void) -> AsyncStream<OrderedJSON> {
@@ -284,7 +252,6 @@ enum WorkerLineReader {
     }
 }
 
-/// Calls `body` with a NULL-terminated C array of `strings`, valid for the call's duration.
 private func withCStrings<R>(_ strings: [String], _ body: ([UnsafeMutablePointer<CChar>?]) -> R) -> R {
     let pointers = strings.map { strdup($0) } + [nil]
     defer { pointers.forEach { free($0) } }

@@ -2,8 +2,6 @@ import AletheModel
 import AppKit
 import UniformTypeIdentifiers
 
-/// Project menu › Export Settings… / Import Settings… (P5-6; upstream `sidebarMenus.tsx`). The file
-/// holds settings only; an import lists what it changes, asks once and applies with undo.
 @MainActor
 enum ProjectSettingsTransfer {
     static func export(_ project: Project) {

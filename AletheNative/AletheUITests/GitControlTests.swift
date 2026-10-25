@@ -1,7 +1,5 @@
 import XCTest
 
-/// Git Control (P4-5), opened through the built-in plugin's contribution on a seeded repository:
-/// grouped changes, stage, and branch creation with name validation.
 @MainActor
 final class GitControlTests: XCTestCase {
     override func setUp() async throws {
@@ -12,7 +10,6 @@ final class GitControlTests: XCTestCase {
         app.descendants(matching: .any)[identifier].firstMatch
     }
 
-    /// Launches on the `git` seed and opens Git Control from the project's context menu.
     private func openGitControl() -> XCUIApplication {
         let (app, _) = launchAlethe(arguments: ["-AletheUITestSeed", "git"])
         let project = element(app, "sidebar.project.repo")

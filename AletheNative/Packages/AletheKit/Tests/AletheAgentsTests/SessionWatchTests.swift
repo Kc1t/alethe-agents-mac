@@ -14,7 +14,6 @@ import Testing
                                 startedAt: start, claimedByOthers: []) == nil)
         #expect(watch.reconcile(sessions: [session("first", 11), session("second", 12)], currentID: "first",
                                 startedAt: start, claimedByOthers: []) == "second")
-        // The workspace acknowledges the discovered id, which is authoritative for this poll.
         _ = watch.reconcile(sessions: [session("first", 11), session("second", 12)], currentID: "second",
                             startedAt: start, claimedByOthers: [])
         #expect(watch.reconcile(sessions: [session("first", 13), session("second", 12)], currentID: "second",

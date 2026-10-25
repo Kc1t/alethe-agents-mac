@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheModel
 
-/// Golden tests over anonymized `projects.json` files in the shapes upstream migrations accept.
 @Suite struct TauriImportTests {
     private static let context = TauriImport.Context(
         agents: ["claude", "codex", "opencode", "cursor", "shell"],
@@ -28,13 +27,11 @@ import Testing
     @Test func importsVersion9() throws {
         let (doc, prefs, report) = try imported("v9")
 
-        // Groups: the tree, colors and collapsed state.
         let work = try #require(doc.childGroups(of: nil).first)
         #expect(work.name == "Work" && work.color == .purple && !work.isCollapsed)
         let clients = try #require(doc.childGroups(of: work.id).first)
         #expect(clients.name == "Clients" && clients.color == .orange && clients.isCollapsed)
 
-        // Projects in sidebar order, in their groups.
         let api = try #require(doc.projects.first { $0.name == "api" })
         #expect(api.folder == "/Users/example/code/api" && api.color == .blue)
         #expect(work.projectIDs == [api.id])
@@ -43,7 +40,6 @@ import Testing
         let notes = try #require(doc.projects.first { $0.name == "notes" })
         #expect(doc.ungroupedProjectIDs == [notes.id] && notes.color == .green)
 
-        // Terminals become panes; tabs keep sessions, arguments, titles and their own folders.
         #expect(api.panes.count == 4)
         let first = api.panes[0]
         #expect(first.tabs.map(\.agent) == ["claude", "shell"])
@@ -67,7 +63,6 @@ import Testing
             .projectWithoutFolder(project: "windows-only"),
         ])
 
-        // Preferences: known theme, zoom on the native step, native agents, and only CLI paths that exist here.
         #expect(prefs.themeID == "nord")
         #expect(prefs.uiScale == 1.2)
         #expect(prefs.enabledAgents == ["claude", "cursor", "opencode", "shell"])
@@ -80,7 +75,6 @@ import Testing
         #expect(!prefs.showsToolbarItem(.memory) && prefs.showsToolbarItem(.profile))
         #expect(prefs.toolbarItems == ["usage.claude": false, "usage.antigravity": false, "memory": false], "usage pills default to shown")
         #expect(prefs.mcpDefaultScope == "project" && prefs.mcpOnboardingSeen == true)
-        // The Phase 7 preferences are covered by `TauriImportPeripheralsTests`.
         #expect(report.preferences == Set(TauriImport.Preference.allCases).subtracting([.integrations, .router9, .remote]))
         #expect(report.language == "pt-BR")
     }
@@ -111,7 +105,6 @@ import Testing
         #expect(report.projects == 3)
     }
 
-    /// The shape an older macOS install of the Tauri app leaves behind.
     @Test func importsVersion7() throws {
         let (doc, prefs, report) = try imported("v7")
         let personal = try #require(doc.childGroups(of: nil).first)
@@ -131,7 +124,6 @@ import Testing
         #expect(v5.projects.first?.panes.first?.tabs.first?.agent == "claude")
         #expect(prefs5.themeID == "dracula")
 
-        // v2 groups have no `parentGroupId`: they are top-level.
         let (v2, prefs2, report2) = try imported("v2")
         let group = try #require(v2.childGroups(of: nil).first)
         #expect(group.name == "Old group" && group.color == .orange)
@@ -180,8 +172,6 @@ import Testing
         #expect(TauriDataLocation.profiles(root: root.appending(path: "missing")).isEmpty)
     }
 
-    /// Upstream `createOrchestratorPane` boards (P6-13): imported as `orchestrator` panes, in place and
-    /// grid, instead of being skipped.
     @Test func mapsOrchestratorPanes() throws {
         let json = #"""
         {"version":9,"projects":[{"id":"p1","name":"orch","defaultCwd":"/Users/example/orch",
@@ -207,7 +197,6 @@ import Testing
         #expect(report.panes == 3 && report.tabs == 1)
     }
 
-    /// Upstream's job history beside `projects.json` is copied once into a profile that has none.
     @Test func copiesTheOrchestratorHistoryOnlyWhenTheProfileHasNone() throws {
         let root = FileManager.default.temporaryDirectory.appending(path: "alethe-tauri-jobs-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: root) }

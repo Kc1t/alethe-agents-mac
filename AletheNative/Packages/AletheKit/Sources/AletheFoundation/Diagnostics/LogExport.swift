@@ -1,7 +1,6 @@
 import Foundation
 import OSLog
 
-/// Facts about the build and the machine that head every export.
 public struct DiagnosticsContext: Codable, Equatable, Sendable {
     public var appVersion: String
     public var build: String
@@ -22,7 +21,6 @@ public struct DiagnosticsContext: Codable, Equatable, Sendable {
     }
 }
 
-/// Help › Diagnostics… › Export (upstream `AuditModal` "export JSON", SET-11).
 public struct DiagnosticsReport: Codable, Equatable, Sendable {
     public var exportedAt: Date
     public var context: DiagnosticsContext
@@ -34,7 +32,6 @@ public struct DiagnosticsReport: Codable, Equatable, Sendable {
         self.events = events
     }
 
-    /// Pretty JSON with every message redacted again (events recorded before a rule existed).
     public func json() throws -> Data {
         var copy = self
         copy.events = events.map { event in
@@ -49,13 +46,10 @@ public struct DiagnosticsReport: Codable, Equatable, Sendable {
     }
 }
 
-/// Help › Export Logs… (upstream `export_logs`): the files that go into the archive, each redacted.
 public enum LogExport {
     public struct Input: Sendable {
         public var context: DiagnosticsContext
-        /// This run's OSLog lines (`currentRunLines`).
         public var currentRun: [String]
-        /// The rotating warnings-and-errors file: this and earlier runs.
         public var journal: [DiagnosticEvent]
         public var spawnLog: String
         public var session: SessionMarker?
@@ -74,7 +68,6 @@ public enum LogExport {
     public static let currentRunName = "current-run.log"
     public static let journalName = "warnings-and-errors.log"
 
-    /// File name → contents, in a stable order.
     public static func files(_ input: Input) -> [(name: String, data: Data)] {
         let about = """
             \(AppIdentity.productName) \(input.context.appVersion) (\(input.context.build))
@@ -98,8 +91,6 @@ public enum LogExport {
         return files.map { name, text in (name, Data(SecretRedactor.redact(text).utf8)) }
     }
 
-    /// This process's entries in the unified log (`OSLogStore`), subsystem only. Values logged as
-    /// `.private` may read `<private>`; the warnings-and-errors file has them, redacted.
     public static func currentRunLines(subsystem: String = AppLog.subsystem) throws -> [String] {
         let store = try OSLogStore(scope: .currentProcessIdentifier)
         let predicate = NSPredicate(format: "subsystem == %@", subsystem)
@@ -109,7 +100,6 @@ public enum LogExport {
         }
     }
 
-    /// Writes `files` into `folder` (created), for zipping.
     public static func write(_ files: [(name: String, data: Data)], into folder: URL) throws {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         for file in files {

@@ -3,7 +3,6 @@ import AletheDocuments
 import Observation
 import SwiftUI
 
-/// `git diff` of a project or a file, loaded off the main actor.
 @Observable
 @MainActor
 final class DiffModel {
@@ -50,8 +49,6 @@ final class DiffModel {
     }
 }
 
-/// Diff pane (upstream `DiffPane`): changes colored by line with old/new line numbers, unified or
-/// side by side, working tree or staged.
 struct DiffPaneView: View {
     let model: DiffModel
     let isFocused: Bool

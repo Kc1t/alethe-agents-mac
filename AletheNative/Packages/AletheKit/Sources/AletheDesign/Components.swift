@@ -1,17 +1,11 @@
 import AppKit
 import SwiftUI
 
-// Shared controls drawn with theme tokens, mirroring the web app's primitives
-// (`modals/controls.module.css`, `ui/Dropdown.module.css`, `TitleBar.module.css`). Sizes are the
-// web's px values passed through `Metrics`, so they follow the UI scale and the Clean style.
-
 extension Metrics {
-    /// A UI font at an exact design size (the web uses sizes such as 12.5 that no text style covers).
     public func font(size: CGFloat, weight: Font.Weight = .regular) -> Font {
         .system(size: size * scale, weight: weight)
     }
 
-    /// CSS numeric font weights, including the sidebar headers' intermediate 650 weight.
     public func font(size: CGFloat, weight: Int) -> Font {
         let stops: [(Int, NSFont.Weight)] = [
             (100, .ultraLight), (200, .thin), (300, .light), (400, .regular), (500, .medium),
@@ -30,9 +24,6 @@ extension Metrics {
     }
 }
 
-// MARK: - Buttons
-
-/// Text button (`.btn`, `.btnPrimary`, `.btnDanger`, `.btnSm`).
 public struct AletheButtonStyle: ButtonStyle {
     public enum Kind: Sendable { case secondary, primary, danger }
     public enum Size: Sendable { case regular, small }
@@ -99,8 +90,6 @@ private struct AletheButtonBody: View {
     }
 }
 
-/// Square icon-only button (title bar `iconBtn` 28, header actions 24, pane actions 20).
-/// `isOn` draws the pressed-in state the web uses for toggles (sunken with an inset strong border).
 public struct AletheIconButtonStyle: ButtonStyle {
     let side: CGFloat
     let isOn: Bool
@@ -148,7 +137,6 @@ private struct AletheIconButtonBody: View {
 }
 
 extension View {
-    /// Pressed feedback on mouse-down (web `button:active { scale(.97) }`); Clean style stays flat.
     fileprivate func pressFeedback(_ pressed: Bool, metrics: Metrics) -> some View {
         let lifts = metrics.style == .normal && !metrics.reducesMotion
         return scaleEffect(pressed && lifts ? 0.97 : 1)
@@ -156,10 +144,6 @@ extension View {
     }
 }
 
-// MARK: - Select
-
-/// The themed select trigger (`ui/Dropdown`): a sunken 32pt field with a chevron. The menu itself
-/// is the system menu, which already matches the platform.
 public struct AletheSelect<Value: Hashable, Label: View>: View {
     @Binding var selection: Value
     let options: [Value]
@@ -207,9 +191,6 @@ public struct AletheSelect<Value: Hashable, Label: View>: View {
     }
 }
 
-// MARK: - Surfaces
-
-/// A content card: card surface, subtle border, large radius (web home and panel cards).
 public struct AletheCard: ViewModifier {
     let padding: Metrics.Space
     @Environment(\.theme) private var theme
@@ -230,8 +211,6 @@ extension View {
     }
 }
 
-/// A row that highlights on hover and when selected (sidebar project and terminal rows:
-/// 28pt, `radius-md`, `panel-hover`).
 public struct AletheRowBackground: ViewModifier {
     let isSelected: Bool
     @Environment(\.theme) private var theme
@@ -254,9 +233,6 @@ extension View {
     }
 }
 
-// MARK: - Labels and badges
-
-/// Uppercase section label (`PROJECTS`: 11pt bold, 0.08em tracking, muted).
 public struct AletheSectionLabel: View {
     let title: Text
     let tracking: CGFloat
@@ -280,7 +256,6 @@ public struct AletheSectionLabel: View {
     }
 }
 
-/// Small count pill (tab counts: min 18×14, radius 7, panel fill, 9pt bold faint).
 public struct AletheCountPill: View {
     let count: Int
     let monospaced: Bool
@@ -302,7 +277,6 @@ public struct AletheCountPill: View {
     }
 }
 
-/// Status dot (8pt). `glows` adds the soft halo the web pulses on working terminals.
 public struct AletheStatusDot: View {
     let color: ThemeToken
     let side: CGFloat
@@ -325,8 +299,6 @@ public struct AletheStatusDot: View {
     }
 }
 
-/// Project monogram (`normalSidebarPrimitives`): project color tile, two lowercase initials in the
-/// mono font at 0.46× the tile, radius 6, with a faint inner highlight.
 public struct AletheMonogram: View {
     let initials: String
     let color: Color
@@ -353,7 +325,6 @@ public struct AletheMonogram: View {
             .accessibilityHidden(true)
     }
 
-    /// First letters of the first two words, else the first two characters.
     static func initials(of name: String) -> String {
         let words = name.split { !$0.isLetter && !$0.isNumber }
         let letters = words.count >= 2
@@ -363,10 +334,6 @@ public struct AletheMonogram: View {
     }
 }
 
-// MARK: - Activity
-
-/// The working-terminal spinner (`DotmCircular2`): a 14pt 4×4 dot grid whose 12 perimeter dots
-/// light in turn over 1.8s, with a short fading tail. Reduce Motion shows a steady dot.
 public struct AletheActivitySpinner: View {
     let color: ThemeToken
     @Environment(\.theme) private var theme
@@ -374,7 +341,6 @@ public struct AletheActivitySpinner: View {
 
     public init(_ color: ThemeToken = .statusWorking) { self.color = color }
 
-    /// Perimeter cells of a 4×4 grid, clockwise from the top-left.
     static let perimeter: [(Int, Int)] = [
         (0, 0), (1, 0), (2, 0), (3, 0), (3, 1), (3, 2), (3, 3), (2, 3), (1, 3), (0, 3), (0, 2), (0, 1),
     ]
@@ -437,8 +403,6 @@ public struct AletheActivitySpinner: View {
     }
 }
 
-/// Left sidebar icon tabs and the compact layout switch (`NormalProjectSidebar.module.css`: the active
-/// tab gets a 1px border on `panel-hover`).
 public struct AletheSidebarTabStyle: ButtonStyle {
     let isSelected: Bool
     let width: CGFloat
@@ -484,7 +448,6 @@ private struct LeftSidebarTabBody: View {
     }
 }
 
-/// Compact title-bar pill (`TitleBar.module.css`: 22pt high, 8pt radius, 11pt mono).
 public struct AletheTitleBarPillStyle: ButtonStyle {
     private let iconOnly: Bool
 
@@ -516,8 +479,6 @@ private struct AletheTitleBarPillBody: View {
     }
 }
 
-/// Right sidebar tab and utility button (`RightSidebar.module.css`: the active tab sits on `panel`
-/// with a strong border and a small shadow).
 public struct AletheRightSidebarTabStyle: ButtonStyle {
     public var selected: Bool
     public var width: CGFloat
@@ -568,7 +529,6 @@ private struct RightSidebarTabBody: View {
     }
 }
 
-/// Small bordered actions in sidebar cards (PR actions and worker approval answers).
 public struct AlethePanelActionStyle: ButtonStyle {
     public var approval: Bool
     public var accented: Bool
@@ -612,7 +572,6 @@ private struct PanelActionBody: View {
     }
 }
 
-/// Compact Home quick-launch field, matching `.quickProject` and `.quickMode summary`.
 public struct AletheQuickFieldStyle: ButtonStyle {
     public init() {}
     public func makeBody(configuration: Configuration) -> some View {
@@ -641,7 +600,6 @@ private struct AletheQuickFieldBody: View {
     }
 }
 
-/// Secondary Home actions from the web hero composition.
 public struct AletheHomeActionStyle: ButtonStyle {
     @Environment(\.theme) private var theme
     @Environment(\.metrics) private var metrics
@@ -673,7 +631,6 @@ private struct AletheHomeActionLabelStyle: LabelStyle {
     }
 }
 
-/// Quiet action row from `WorkspaceEmptyState.module.css`.
 public struct AletheWorkspaceActionStyle: ButtonStyle {
     public init() {}
     public func makeBody(configuration: Configuration) -> some View {
@@ -697,7 +654,6 @@ private struct WorkspaceActionBody: View {
     }
 }
 
-/// The web sidebar uses unboxed shell and document glyphs in a 15-point lead slot.
 public struct AletheSidebarItemIcon: View {
     let symbol: String
     let shell: Bool
@@ -727,7 +683,6 @@ public struct AletheSidebarItemIcon: View {
     }
 }
 
-/// Home usage-card refresh control (`HomeView.module.css`, `.iconBtn`).
 public struct AletheHomeRefreshStyle: ButtonStyle {
     @Environment(\.theme) private var theme
     @Environment(\.metrics) private var metrics

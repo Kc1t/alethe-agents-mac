@@ -1,7 +1,5 @@
 import Foundation
 
-/// A unified diff as rows a view can draw, unified or side by side (upstream `DiffPane` colors each
-/// line; the split view is native).
 public struct DiffDocument: Hashable, Sendable {
     public var files: [DiffFile]
 
@@ -14,9 +12,7 @@ public struct DiffDocument: Hashable, Sendable {
 
 public struct DiffFile: Hashable, Sendable, Identifiable {
     public var id: Int
-    /// The path after the change (before it, for a deletion).
     public var path: String
-    /// `diff --git`, `index`, `---`, `+++`, rename and mode lines.
     public var header: [String]
     public var hunks: [DiffHunk]
 }
@@ -34,7 +30,6 @@ public struct DiffLine: Hashable, Sendable {
     public var newNumber: Int?
 }
 
-/// One row of the side-by-side view: the old line on the left, the new one on the right.
 public struct DiffSplitRow: Hashable, Sendable {
     public var left: DiffLine?
     public var right: DiffLine?
@@ -58,7 +53,6 @@ public enum DiffParser {
         }
 
         var lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
-        // The final newline is not an empty context line.
         if lines.last == "" { lines.removeLast() }
         for line in lines {
             if line.hasPrefix("diff --git ") {
@@ -91,7 +85,6 @@ public enum DiffParser {
         return DiffDocument(files: files)
     }
 
-    /// Pairs removals with the additions that follow them; context lines sit on both sides.
     public static func split(_ hunk: DiffHunk) -> [DiffSplitRow] {
         var rows: [DiffSplitRow] = []
         var removed: [DiffLine] = [], added: [DiffLine] = []
@@ -116,7 +109,6 @@ public enum DiffParser {
         return rows
     }
 
-    /// `@@ -12,7 +12,9 @@` → (12, 12).
     static func hunkStarts(_ header: String) -> (Int, Int) {
         let parts = header.split(separator: " ")
         func start(_ prefix: Character) -> Int {
@@ -126,7 +118,6 @@ public enum DiffParser {
         return (start("-"), start("+"))
     }
 
-    /// `diff --git a/x b/y` → `y`.
     static func gitPath(_ line: String) -> String {
         guard let range = line.range(of: " b/", options: .backwards) else { return line }
         return String(line[range.upperBound...])
@@ -141,9 +132,7 @@ public enum GitDiffError: Error, Equatable, Sendable {
     case failed(String)
 }
 
-/// Runs `git diff` (upstream `git_diff` in `git_control.rs`, plus a whole-repository variant).
 public enum GitDiff {
-    /// Upstream refuses diffs over 2 MiB (they freeze the renderer).
     public static let maxBytes = 2 * 1024 * 1024
 
     public static func run(folder: String, path: String?, staged: Bool,
@@ -167,7 +156,6 @@ public enum GitDiff {
             } catch {
                 return .failure(.failed(error.localizedDescription))
             }
-            // Read before waiting: a large diff fills the pipe and would block git forever.
             let data = output.fileHandleForReading.readDataToEndOfFile()
             let errorText = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
             process.waitUntilExit()

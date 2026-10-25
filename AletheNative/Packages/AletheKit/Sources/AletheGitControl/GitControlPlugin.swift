@@ -1,9 +1,6 @@
 import AlethePluginKit
 import Foundation
 
-/// Built-in Git Control plugin (upstream `plugins/git-control`; ADR-9 dogfooding): contributes the
-/// "Git Control…" command and the sheet the app renders for `viewID`. Disabling it removes both, so
-/// the app hides its menu entries.
 @MainActor
 public final class GitControlPlugin: AlethePlugin {
     public static let manifest = PluginManifest(
@@ -17,7 +14,6 @@ public final class GitControlPlugin: AlethePlugin {
     public static let viewID = "gitControl"
     public static let openCommandID = "gitControl.open"
 
-    /// Set by the app to present the sheet for the selected project.
     public static var onOpen: (@MainActor () -> Void)?
 
     public init() {}

@@ -6,8 +6,6 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// What a pane shows over its terminal when the process ended or could not start; nothing while it
-/// runs. Hosted by `PaneView` only when needed, so it never sits over a live terminal.
 struct TerminalOverlay: View {
     let tab: PaneTab
     let project: Project
@@ -100,7 +98,6 @@ struct TerminalOverlay: View {
             .accessibilityIdentifier("terminal.overlay")
     }
 
-    /// Points the agent at a CLI the resolver missed (upstream `configurePath`).
     private func chooseCLI(command: String) {
         let panel = NSOpenPanel()
         panel.canChooseFiles = true
@@ -126,16 +123,12 @@ struct TerminalOverlay: View {
     }
 }
 
-/// A catalog string with `%1$@`-style placeholders filled in.
 func format(_ key: String.LocalizationValue, _ arguments: any CVarArg...) -> String {
     String(format: String(localized: key), arguments: arguments)
 }
 
-/// Over a disabled pane (upstream disabled terminal): nothing runs until it is enabled; the saved
-/// output comes back with it.
 struct DisabledPaneOverlay: View {
     var agent: String = "shell"
-    /// Web: the terminal name under the icon and its working directory (both optional).
     var name: String?
     var cwd: String?
     let onEnable: () -> Void
@@ -146,7 +139,6 @@ struct DisabledPaneOverlay: View {
         if metrics.isWebInterface { webBody } else { nativeBody }
     }
 
-    /// TerminalPane.module.css `.disabledOverlay`: gap 10, padding 24, 64 icon box with a 56 logo at 0.85.
     private var webBody: some View {
         VStack(spacing: metrics.size(10)) {
             AgentLogo(agent: agent, size: 56, templateColor: theme[AgentTokens.accent(for: agent)])

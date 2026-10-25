@@ -2,8 +2,6 @@ import Foundation
 import Testing
 @testable import AletheFoundation
 
-/// Golden cases ported from upstream `mcp_agents.rs` (Codex adapter, `toml_edit`) and
-/// `graphify.rs` (`graphify_codex_config_write`), plus `toml_edit`-style round trips.
 @Suite struct TOMLDocumentTests {
     private func fixture(_ name: String) throws -> String {
         let url = try #require(Bundle.module.url(forResource: name, withExtension: "toml",
@@ -19,7 +17,6 @@ import Testing
 
     private func server(_ name: String) -> [String] { ["mcp_servers", name] }
 
-    /// The line of a parse failure, or `nil` when the source parses.
     private func malformedLine(_ raw: String) -> Int? {
         do {
             _ = try TOMLDocument(parsing: raw)
@@ -30,8 +27,6 @@ import Testing
             return nil
         }
     }
-
-    // MARK: Reading (upstream parse_codex cases)
 
     @Test func readsEveryCodexTableShape() throws {
         let document = try codex()
@@ -127,8 +122,6 @@ import Testing
         #expect(document.text == raw)
     }
 
-    // MARK: Editing (upstream codex_upsert / codex_remove / codex_set_enabled cases)
-
     @Test func upsertAddsATableAfterItsSiblingsAndLeavesTheRestUntouched() throws {
         var document = try codex()
         try document.upsertTable(probe, at: server("alethe-probe"))
@@ -223,8 +216,6 @@ import Testing
         #expect(document.table(at: ["mcp_servers"])?.count == 2)
     }
 
-    // MARK: graphify_codex_config_write
-
     @Test func graphifyWriteCreatesAndReplacesOnlyItsOwnTable() throws {
         let original = "model = \"gpt-5\"\n\n[mcp_servers.other]\ncommand = \"other-cmd\"\n"
         let graphify: TOMLTable = ["command": "graphify", "args": [#"/Users/me/repo"#, "--mcp"]]
@@ -238,8 +229,6 @@ import Testing
         #expect(document.text.components(separatedBy: "[mcp_servers.graphify]").count == 2)
         #expect(document.text.components(separatedBy: "[mcp_servers.other]").count == 2)
     }
-
-    // MARK: Round trips (toml_edit-style)
 
     @Test func tableAddedThenRemovedRestoresTheFile() throws {
         let original = try fixture("codex-config")
@@ -292,8 +281,6 @@ import Testing
         try document.setValue("gpt-5.6-sol", forKey: "model")
         #expect(document.text == original)
     }
-
-    // MARK: Layouts
 
     @Test func editsInlineServerForms() throws {
         var document = try TOMLDocument(parsing: "[mcp_servers]\nfoo = { command = \"x\" } # hand-written\n")
@@ -351,8 +338,6 @@ import Testing
         #expect(TOMLValue.string("a\"b\n").tomlText == #""a\"b\n""#)
         #expect(TOMLValue.float(2).tomlText == "2.0")
     }
-
-    // MARK: Malformed input
 
     @Test func malformedInputReportsALineAndNoContent() throws {
         let raw = "[mcp_servers.broken\ntoken = \"secret-value\""

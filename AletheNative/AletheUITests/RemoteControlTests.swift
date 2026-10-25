@@ -1,7 +1,5 @@
 import XCTest
 
-/// Remote control's app service (P7-12): with the `remoteMessage` seed, remote control is on (bound
-/// to 127.0.0.1) and a stub device sends a message to the shared terminal.
 @MainActor
 final class RemoteControlTests: XCTestCase {
     func testADeviceMessageShowsInTheNotificationList() {

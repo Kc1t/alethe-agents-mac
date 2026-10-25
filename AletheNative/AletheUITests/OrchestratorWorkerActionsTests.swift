@@ -1,8 +1,5 @@
 import XCTest
 
-/// Worker actions on the board (P6-15) over live stub workers (`-AletheUITestSeed orchestratorWorker`:
-/// project `workers`, planner tab `tab-lead`, job-01 and job-02 interrupted on their threads, job-03
-/// done in a worktree; Codex is a stub script, see `TestSeeds+OrchestratorWorker`).
 @MainActor
 final class OrchestratorWorkerActionsTests: XCTestCase {
     override func setUp() async throws {
@@ -48,9 +45,6 @@ final class OrchestratorWorkerActionsTests: XCTestCase {
         element(app, "orchestrator.worker.\(job).mode.\(mode)")
     }
 
-    /// A stub worker blocked on an approval: the ask shows what, where (outside its folder) and why,
-    /// nothing is answered until a click, and Approve once lets it carry on. Its diff opens with the
-    /// Diff pane's lines.
     func testApprovalIsAnsweredFromTheBoard() {
         let app = launchBoard()
         select(app, "job-01")
@@ -64,7 +58,6 @@ final class OrchestratorWorkerActionsTests: XCTestCase {
         for decision in ["accept", "acceptForSession", "decline", "abort"] {
             XCTAssertTrue(element(app, "orchestrator.worker.job-01.answer.\(decision)").exists)
         }
-        // Nothing answers by itself.
         RunLoop.current.run(until: Date().addingTimeInterval(2))
         XCTAssertTrue(ask.exists)
         XCTAssertFalse(report(app, "job-01", contains: "answered", timeout: 0.5))
@@ -85,8 +78,6 @@ final class OrchestratorWorkerActionsTests: XCTestCase {
         app.terminate()
     }
 
-    /// A running worker is steered (the correction lands on its turn); an idle one takes the message
-    /// as its next turn.
     func testSteerVersusSend() {
         let app = launchBoard()
         select(app, "job-02")
@@ -102,8 +93,6 @@ final class OrchestratorWorkerActionsTests: XCTestCase {
         app.terminate()
     }
 
-    /// Cancel asks once while the worker runs (keeping it is a no-op); Release lets a finished worker
-    /// go and a message would start it again.
     func testCancelAsksOnceAndReleaseIsReversible() {
         let app = launchBoard()
         select(app, "job-02")
@@ -134,8 +123,6 @@ final class OrchestratorWorkerActionsTests: XCTestCase {
         app.terminate()
     }
 
-    /// Hit targets at three zoom levels: the message field, send, the diff toggle and Release react
-    /// where they are drawn.
     func testActionsReceiveClicksAtThreeZoomLevels() {
         for (steps, label) in [(-1, "90%"), (0, "100%"), (2, "120%")] {
             let app = launchBoard()

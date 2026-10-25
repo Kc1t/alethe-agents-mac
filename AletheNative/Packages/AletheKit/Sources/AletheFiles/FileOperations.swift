@@ -9,16 +9,12 @@ public enum FileOperationError: Error, Hashable, Sendable {
     case failed(String)
 }
 
-/// Result of `moveToTrash`: when the volume has no Trash the UI confirms a permanent delete.
 public enum TrashOutcome: Hashable, Sendable {
     case trashed(URL?)
     case trashUnavailable
 }
 
-/// Explorer file operations (upstream `rename_filesystem_entry` / `delete_filesystem_entry`).
 public enum FileOperations {
-    /// Returns the trimmed name, or throws when it is empty, `.`/`..`, holds a separator or NUL,
-    /// or exceeds the 255-byte APFS limit.
     public static func validateName(_ name: String) throws(FileOperationError) -> String {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, trimmed != ".", trimmed != "..",
@@ -43,7 +39,6 @@ public enum FileOperations {
             || (try? FileManager.default.destinationOfSymbolicLink(atPath: url.path)) != nil
     }
 
-    /// Renames in place; a case-only rename of the same entry is allowed.
     @discardableResult
     public static func rename(_ url: URL, to newName: String) throws(FileOperationError) -> URL {
         let target = try existing(url)
@@ -92,13 +87,11 @@ public enum FileOperations {
         }
     }
 
-    /// Errors meaning the volume has no Trash (network or read-only-for-trash volumes).
     public static func isTrashUnavailable(_ error: Error) -> Bool {
         let ns = error as NSError
         return ns.domain == NSCocoaErrorDomain && ns.code == NSFeatureUnsupportedError
     }
 
-    /// Permanent delete, used only after the user confirms when the Trash is unavailable.
     public static func deletePermanently(_ url: URL) throws(FileOperationError) {
         let target = try existing(url)
         do {

@@ -1,9 +1,6 @@
 import AletheAgents
 import Foundation
 
-// Port of upstream `mcp_health.rs`: each agent's `mcp list` read per server. Only a name and a status
-// leave this file; the command, URL and arguments the CLIs print can carry tokens.
-
 public enum McpHealthStatus: String, Hashable, Sendable, Codable {
     case connected
     case failed
@@ -23,7 +20,6 @@ public struct McpHealth: Hashable, Sendable, Codable {
 }
 
 public enum McpHealthError: Error, Hashable, Sendable {
-    /// Antigravity and Cursor are config-only: no CLI output to read a status from.
     case unsupportedAgent
     case cliNotFound
     case cliFailed
@@ -32,8 +28,6 @@ public enum McpHealthError: Error, Hashable, Sendable {
 }
 
 public enum McpHealthParser {
-    /// `claude mcp list` renders one line per server, health-checked, as
-    /// `name: <target> - <marker> <label>`. Only the marker is read.
     public static func parseClaude(_ stdout: String) -> [McpHealth] {
         stdout.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline).compactMap { raw in
             let line = String(raw)
@@ -56,8 +50,6 @@ public enum McpHealthParser {
         }
     }
 
-    /// `codex mcp list --json` reports configuration, not a live probe: it can only say that a
-    /// server is disabled or unauthenticated.
     public static func parseCodex(_ stdout: String) -> [McpHealth] {
         guard let items = (try? JSONSerialization.jsonObject(with: Data(stdout.utf8))) as? [Any] else { return [] }
         return items.compactMap { raw in
@@ -76,7 +68,6 @@ public enum McpHealthParser {
         }
     }
 
-    /// `opencode mcp list` draws a box; each server line is `●  ✓ <name> <state>`.
     public static func parseOpencode(_ stdout: String) -> [McpHealth] {
         let decoration: Set<Character> = ["┌", "│", "└", "●", "─", " "]
         return stdout.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline).compactMap { raw in
@@ -95,13 +86,11 @@ public enum McpHealthParser {
         }
     }
 
-    /// The CLI and arguments that list an agent's servers; nil when the agent has none to read.
     public static func cli(for agent: McpAgent) -> (binary: String, arguments: [String])? {
         switch agent {
         case .claude: ("claude", ["mcp", "list"])
         case .codex: ("codex", ["mcp", "list", "--json"])
         case .opencode: ("opencode", ["mcp", "list"])
-        // `agy` has no mcp subcommand, and `cursor-agent mcp list` has no stable output contract.
         case .antigravity, .cursor: nil
         }
     }
@@ -116,8 +105,6 @@ public enum McpHealthParser {
     }
 }
 
-/// Upstream `mcp_health_check`: opt-in and one agent at a time, since `claude mcp list` connects to
-/// every server it knows. Runs off the main thread, cancelable, with a 45 s timeout.
 public struct McpHealthChecker: Sendable {
     public typealias Runner = @Sendable (_ executable: String, _ arguments: [String], _ timeout: Duration)
         async throws(ExternalCommandError) -> ExternalCommandResult
@@ -140,8 +127,6 @@ public struct McpHealthChecker: Sendable {
         self.run = run
     }
 
-    /// Upstream reads stdout whatever the exit status: `claude mcp list` exits non-zero when a
-    /// server fails to connect and still lists every server.
     @concurrent
     public func check(_ agent: McpAgent) async throws(McpHealthError) -> [McpHealth] {
         guard let cli = McpHealthParser.cli(for: agent) else { throw .unsupportedAgent }

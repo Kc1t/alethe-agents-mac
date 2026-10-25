@@ -1,16 +1,11 @@
 import Foundation
 
-/// Fuzzy matching for Find/Jump (P2-25). Upstream `FindJumpModal` filters by substring; the native
-/// jump ranks instead: every query character must appear in order, and matches score higher when
-/// they are consecutive, start a word, start the text or match case.
 public enum FuzzyMatch {
     public struct Result: Equatable, Sendable {
         public var score: Int
-        /// Offsets (in `Character`s) of the matched characters, for highlighting.
         public var positions: [Int]
     }
 
-    /// Nil when `query` does not match `text`; an empty query matches everything with score 0.
     public static func match(_ query: String, in text: String) -> Result? {
         let needle = Array(query.lowercased().filter { !$0.isWhitespace })
         guard !needle.isEmpty else { return Result(score: 0, positions: []) }
@@ -18,8 +13,6 @@ public enum FuzzyMatch {
         let haystack = Array(text.lowercased())
         guard haystack.count == original.count else { return substringFallback(needle, haystack) }
 
-        // Greedy forward pass finds a match; a backward pass from its end tightens it to the
-        // shortest window, which is what scores consecutive runs well.
         var positions: [Int] = []
         var index = 0
         for character in needle {
@@ -48,7 +41,6 @@ public enum FuzzyMatch {
             }
             if original[position] == Array(query.filter { !$0.isWhitespace })[offset] { score += 1 }
         }
-        // Tighter and earlier matches win; shorter texts break ties.
         score -= (positions.last! - positions.first!) - (positions.count - 1)
         score -= positions.first! / 4
         score -= haystack.count / 16
@@ -66,8 +58,6 @@ public enum FuzzyMatch {
         String(haystack).contains(String(needle)) ? Result(score: 1, positions: []) : nil
     }
 
-    /// Items ranked by their best field; items that match nothing are dropped. Stable for equal
-    /// scores, so an empty query keeps the given order.
     public static func rank<Item>(_ items: [Item], query: String, fields: (Item) -> [String]) -> [(item: Item, score: Int)] {
         items.enumerated()
             .compactMap { offset, item -> (Int, Item, Int)? in

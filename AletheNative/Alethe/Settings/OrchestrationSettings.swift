@@ -2,7 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// OrchestrationPage.tsx: the web interface alone exposes the portable worker preferences.
 struct OrchestrationSettings: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics

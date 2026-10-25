@@ -4,8 +4,6 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// ProfilesModal.tsx / ProfilesModal.module.css: the standalone accounts modal, with the typed-name
-/// deletion confirmation that follows a per-profile backup. Rendered only in the web interface.
 struct ProfilesWebModal: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.modalsM2Close) private var closeOverlay
@@ -59,8 +57,6 @@ struct ProfilesWebModal: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("settings.profiles")
     }
-
-    // MARK: Sections
 
     private var intro: some View {
         HStack(alignment: .top, spacing: metrics.size(12)) {
@@ -307,8 +303,6 @@ struct ProfilesWebModal: View {
         return date.formatted(date: .abbreviated, time: .omitted)
     }
 
-    // MARK: Actions
-
     private func load() async {
         busy = .load
         summaries = await environment.profileSummaries()
@@ -398,7 +392,6 @@ struct ProfilesWebModal: View {
     }
 }
 
-/// Icon and title side by side at the web button's 6-point gap.
 private struct WebProfileActionLabelStyle: LabelStyle {
     @Environment(\.metrics) private var metrics
     func makeBody(configuration: Configuration) -> some View {

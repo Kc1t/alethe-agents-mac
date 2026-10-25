@@ -1,6 +1,5 @@
 import XCTest
 
-/// Custom grid (P2-19): the designer applies a preset and saves; the panes follow it.
 @MainActor
 final class CustomGridTests: XCTestCase {
     override func setUp() async throws {
@@ -37,7 +36,6 @@ final class CustomGridTests: XCTestCase {
         let picker = element(app, "container.layout.api")
         picker.click()
         picker.menuItems["Design Grid…"].click()
-        // Auto: one, two on the first row; three alone on the second, with a free slot beside it.
         element(app, "layoutDesigner.box.three").click()
         XCTAssertTrue(element(app, "layoutDesigner.grow.right").waitForExistence(timeout: 5))
         element(app, "layoutDesigner.grow.right").click()

@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheAgents
 
-/// Claude Code ↔ Codex handoff (P3-12; upstream `handoff.rs` tests).
 @Suite struct HandoffTests {
     @Test func redactsCommonSecrets() {
         let (output, count) = Handoff.redact("Authorization: Bearer abcdefgh\nOPENAI_API_KEY=sk-proj-abcdefghijklmnop\n")
@@ -51,7 +50,6 @@ import Testing
             Issue.record("no draft"); return
         }
         #expect(draft.title.hasPrefix("Add login") && !draft.usedNewest)
-        // The request appears in more than one section of the capsule; each copy is redacted.
         #expect(draft.redactions >= 1)
         #expect(!draft.content.contains("supersecretvalue"))
     }
@@ -65,8 +63,6 @@ import Testing
         Handoff.pruneOld(in: root, now: Date().addingTimeInterval(8 * 86_400))
         #expect(!FileManager.default.fileExists(atPath: file.path))
     }
-
-    // MARK: - Remote questions and transcript snapshots (P7-3)
 
     @Test func parsesCodexAndClaudeQuestions() throws {
         let codex = try #require(Handoff.remoteQuestions(
@@ -144,7 +140,6 @@ import Testing
         return path
     }
 
-    /// A temporary home with one Claude Code session `s1` for a temporary repository.
     private static func claudeSession(lines: [String]) throws -> (home: String, repo: String) {
         let home = FileManager.default.temporaryDirectory.appending(path: "alethe-remote-home-\(UUID().uuidString)").path
         let repo = FileManager.default.temporaryDirectory.appending(path: "alethe-remote-repo-\(UUID().uuidString)").path

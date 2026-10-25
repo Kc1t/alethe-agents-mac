@@ -1,11 +1,8 @@
 import Foundation
 
-/// Reads a JSONL file line by line without loading it: transcripts run to many MB, and a single
-/// line (a pasted file, a tool result) can be huge. Lines past `maxLineBytes` are skipped whole.
 public enum JSONLReader {
     public static let maxLineBytes = 4 << 20
 
-    /// Calls `body` with each line's data until it returns false or `maxLines` lines were read.
     public static func forEachLine(atPath path: String, maxLines: Int = .max, _ body: (Data) -> Bool) {
         guard let handle = FileHandle(forReadingAtPath: path) else { return }
         defer { try? handle.close() }
@@ -16,7 +13,6 @@ public enum JSONLReader {
             var start = chunk.startIndex
             while let newline = chunk[start...].firstIndex(of: UInt8(ascii: "\n")) {
                 if !oversized { pending.append(chunk[start..<newline]) }
-                // The limit is checked at the end of each chunk too; a line can finish just past it.
                 if pending.count > maxLineBytes { oversized = true }
                 if !oversized, !pending.isEmpty {
                     lines += 1
@@ -42,13 +38,10 @@ public enum JSONLReader {
     }
 }
 
-/// One past conversation, as the history sheet lists it (upstream `ClaudeSessionMeta`).
 public struct ConversationSummary: Hashable, Sendable, Identifiable {
     public var id: String
-    /// Claude Code's generated title (`ai-title`); nil for Codex.
     public var title: String?
     public var firstPrompt: String?
-    /// User and assistant messages; nil when not counted (Codex).
     public var messageCount: Int?
     public var modifiedAt: Date
     public var sizeBytes: Int64
@@ -63,7 +56,6 @@ public struct ConversationSummary: Hashable, Sendable, Identifiable {
         self.sizeBytes = sizeBytes
     }
 
-    /// What a row shows first.
     public var displayTitle: String? { title ?? firstPrompt }
 }
 
@@ -75,7 +67,6 @@ public enum ConversationHistory {
         return trimmed.count > promptLimit ? String(trimmed.prefix(promptLimit - 1)) + "…" : trimmed
     }
 
-    /// Claude Code conversations of a folder, newest first (upstream `list_claude_sessions`).
     public static func claude(cwd: String, homeDirectory: String = NSHomeDirectory()) -> [ConversationSummary] {
         let projects = "\(homeDirectory)/.claude/projects"
         let names = Set([cwd, SessionPaths.normalize(cwd)].filter { !$0.isEmpty }.map(ClaudeSessions.projectFolderName(for:)))
@@ -94,14 +85,12 @@ public enum ConversationHistory {
         return result.sorted { $0.modifiedAt > $1.modifiedAt }
     }
 
-    /// One Claude transcript: its title, first prompt and message count.
     public static func claudeSummary(id: String, path: String) -> ConversationSummary {
         let attributes = try? FileManager.default.attributesOfItem(atPath: path)
         var title: String?, prompt: String?, count = 0
         let userType = Data(#""type":"user""#.utf8), assistantType = Data(#""type":"assistant""#.utf8)
         let titleType = Data(#""type":"ai-title""#.utf8)
         JSONLReader.forEachLine(atPath: path) { line in
-            // Byte probes first: a full parse of every record would allocate the whole transcript.
             if line.range(of: assistantType) != nil {
                 count += 1
             } else if line.range(of: userType) != nil {
@@ -121,15 +110,12 @@ public enum ConversationHistory {
                                    sizeBytes: (attributes?[.size] as? NSNumber)?.int64Value ?? 0)
     }
 
-    /// The first text of a message's content (a string or blocks).
     static func firstText(of message: Any?) -> String? {
         let content = (message as? [String: Any])?["content"]
         if let text = content as? String { return text }
         return (content as? [[String: Any]])?.lazy.compactMap { $0["text"] as? String }.first
     }
 
-    /// Codex conversations of a folder, newest first, titled by their first real user turn (upstream
-    /// `get_codex_session_title`: injected `<tag>` blocks are skipped; 200 lines at most).
     public static func codex(cwd: String, homeDirectory: String = NSHomeDirectory()) -> [ConversationSummary] {
         let target = SessionPaths.normalize(cwd)
         let root = "\(homeDirectory)/.codex/sessions"
@@ -166,8 +152,6 @@ public enum ConversationHistory {
             .first { !$0.isEmpty && !$0.hasPrefix("<") }
     }
 
-    /// A conversation's title for the sidebar and tabs (upstream `get_claude_session_title`,
-    /// `get_codex_session_title`): Claude's generated title or first prompt, Codex's first prompt.
     public static func title(_ kind: AgentKind, sessionID: String, cwd: String,
                              homeDirectory: String = NSHomeDirectory()) -> String? {
         guard !sessionID.isEmpty, !sessionID.contains("/"),
@@ -179,7 +163,6 @@ public enum ConversationHistory {
         }
     }
 
-    /// Conversations of an agent in a folder (Claude Code and Codex keep readable transcripts).
     public static func list(_ kind: AgentKind, cwd: String) -> [ConversationSummary] {
         switch kind {
         case .claude: claude(cwd: cwd)

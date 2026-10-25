@@ -4,9 +4,6 @@ import AletheModel
 import Foundation
 import Observation
 
-/// GitHub gist sync in the app (SET-5; upstream `SyncModal` GitHub card) over the profile's
-/// `GistSyncService`. Nothing is sent until the user connects and pushes; a pull only stages files
-/// until the user confirms (a native gist) or imports it (a Tauri gist).
 @Observable
 @MainActor
 final class GistSyncController {
@@ -18,16 +15,13 @@ final class GistSyncController {
         case pushed
     }
 
-    /// Where to create a token with the `gist` scope (upstream `CREATE_TOKEN_URL`).
     static let createTokenURL = URL(string: "https://github.com/settings/tokens/new?scopes=gist&description=Alethe%20Sync")!
 
     private(set) var status: GistSyncStatus?
     private(set) var busy: Action?
     private(set) var notice: Notice?
     private(set) var error: String?
-    /// A validated native pull waiting for the user's confirmation; nothing has changed yet.
     private(set) var confirmingPull: StagedGistPull?
-    /// A pulled Tauri gist, shown in the Tauri import sheet.
     private(set) var tauriPull: TauriGistPull?
 
     @ObservationIgnored private weak var environment: AppEnvironment?
@@ -42,7 +36,6 @@ final class GistSyncController {
     }
 
     #if DEBUG
-    /// UI tests: a stub GitHub instead of the real one.
     func useEndpoint(session: URLSession, apiBase: URL) {
         makeService(session: session, apiBase: apiBase)
     }
@@ -54,9 +47,6 @@ final class GistSyncController {
                                   session: session, apiBase: apiBase)
     }
 
-    // MARK: - Actions
-
-    /// Reads the status again (the sheet appearing).
     func refresh() {
         guard let service, busy == nil else { return }
         error = nil
@@ -80,7 +70,6 @@ final class GistSyncController {
         }
     }
 
-    /// Saves the open documents first, so the gist gets what is on screen.
     func push() {
         run(.push) { service in
             await self.environment?.saveDocuments()
@@ -89,8 +78,6 @@ final class GistSyncController {
         }
     }
 
-    /// Downloads and validates the gist without changing anything; a native gist then waits for
-    /// `confirmPull`, a Tauri gist goes to the Tauri import sheet.
     func pull() {
         run(.pull) { service in
             switch try await service.pull() {
@@ -102,7 +89,6 @@ final class GistSyncController {
         }
     }
 
-    /// The one confirmation given: a safety backup, the pull scheduled, and a relaunch.
     func confirmPull() {
         guard let staged = confirmingPull, let environment else { return }
         confirmingPull = nil
@@ -122,7 +108,6 @@ final class GistSyncController {
         service?.discard(.replacesProfile(staged))
     }
 
-    /// The Tauri import sheet closed (imported or not): its staged copy is dropped.
     func finishTauriPull() {
         guard let staged = tauriPull else { return }
         tauriPull = nil
@@ -135,7 +120,6 @@ final class GistSyncController {
         }
     }
 
-    /// The sheet closed: work in flight stops and an unconfirmed pull is dropped.
     func close() {
         task?.cancel()
         cancelPull()
@@ -158,9 +142,6 @@ final class GistSyncController {
         }
     }
 
-    // MARK: - Errors
-
-    /// Upstream's error strings; the token never appears in them.
     static func message(for error: any Error) -> String {
         switch error {
         case let failure as GistSyncError:

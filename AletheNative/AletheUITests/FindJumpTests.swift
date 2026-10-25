@@ -1,6 +1,5 @@
 import XCTest
 
-/// Find/Jump ⌘K (P2-25).
 @MainActor
 final class FindJumpTests: XCTestCase {
     override func setUp() async throws {
@@ -40,7 +39,6 @@ final class FindJumpTests: XCTestCase {
         app.terminate()
     }
 
-    /// HT: result rows are clicked where they are drawn at 90 %, 100 % and 120 %.
     func testRowsReceiveClicksAtThreeZoomLevels() {
         for (label, keys) in [("90 %", ["-"]), ("100 %", []), ("120 %", ["+", "+"])] {
             let (app, _) = launchAlethe(arguments: ["-AletheUITestSeed", "sidebar"])

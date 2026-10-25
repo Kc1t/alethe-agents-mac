@@ -3,7 +3,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// Menu labels need their own style: AppKit menus do not inherit an icon button's label style.
 struct SidebarMenuAppearance: ViewModifier {
     var size: CGFloat = 14
     @Environment(\.metrics) private var metrics
@@ -17,7 +16,6 @@ struct SidebarMenuAppearance: ViewModifier {
     }
 }
 
-/// Keep the macOS interface's text menus while giving the web interface Lucide-equivalent icons.
 struct SidebarMenuButton: View {
     let title: LocalizedStringKey
     let symbol: String
@@ -57,7 +55,6 @@ struct SidebarMenuButton: View {
     }
 }
 
-/// Compact web empty state, without a surrounding card in the sidebar.
 struct SidebarWebEmptyState: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics
@@ -143,7 +140,6 @@ struct SidebarSymbolAppearance: ViewModifier {
     }
 }
 
-/// Keep native tooltips intact when supplying web row titles.
 struct SidebarWebHelp: ViewModifier {
     let text: String
     @Environment(\.metrics) private var metrics
@@ -154,7 +150,6 @@ struct SidebarWebHelp: ViewModifier {
     }
 }
 
-/// A double click opens only this group, matching NormalGroupNode's header gesture.
 struct SidebarWebGroupOpen: ViewModifier {
     let open: () -> Void
     @Environment(\.metrics) private var metrics
@@ -168,7 +163,6 @@ struct SidebarWebGroupOpen: ViewModifier {
     }
 }
 
-/// Explicit web gestures handle repeated selections and ignore row modifier keys.
 struct SidebarWebClick: ViewModifier {
     let single: () -> Void
     var double: (() -> Void)? = nil

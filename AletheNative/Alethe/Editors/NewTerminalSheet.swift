@@ -6,11 +6,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// New Terminal sheet (⌘T): agent, project, folder, unrestricted mode and an optional first prompt.
-/// Upstream: `NewTerminalModal`. With a `targetPane` it is upstream's `NewSubTabModal`: the tab joins
-/// that pane, in the folder of the pane's active tab. Orchestration mode (upstream `SessionMode`,
-/// P6-13) opens a Claude Code or Codex planner with the orchestrator board beside it. "Route through
-/// 9router" (P7-17) is offered only when routing can apply to the chosen agent.
 struct NewTerminalSheet: View {
     let workspace: WorkspaceModel
     let undoManager: UndoManager?
@@ -22,10 +17,8 @@ struct NewTerminalSheet: View {
     @Environment(\.theme) private var theme
     @Environment(\.metrics) private var metrics
 
-    /// Upstream `SessionMode`: a plain terminal, or a planner with the orchestrator board.
     enum SessionMode: Hashable { case terminal, orchestration }
 
-    /// Upstream `PLANNER_AGENTS`: the agents that can drive the orchestrator's tools.
     static let plannerAgents: [AgentKind] = [.claude, .codex]
 
     @State private var mode: SessionMode = .terminal
@@ -34,18 +27,14 @@ struct NewTerminalSheet: View {
     @State private var folder = ""
     @State private var unrestricted = false
     @State private var prompt = ""
-    /// Named grid the new terminal joins (P3-4); nil is the main grid.
     @State private var gridID: ProjectGridID?
-    /// Model passed with the agent's model flag (P3-5); empty is the agent's default.
     @State private var model = ""
     @State private var models: [String] = []
     @State private var modelsLoading = false
-    /// Run the agent in its own worktree (P4-9); shells never get one.
     @State private var ownWorktree = false
     @State private var worktreeMode: WorktreeMode = .gitWorktree
     @State private var provisioning = false
     @State private var worktreeError: String?
-    /// Launch through 9router (P7-17); starts from `defaultForNewAgents`.
     @State private var useRouter9 = false
 
     private var registry: AgentRegistry { environment.agentRegistry }
@@ -53,7 +42,6 @@ struct NewTerminalSheet: View {
     private var project: Project? { projectID.flatMap { workspace.document.project($0) } }
     private var descriptor: AgentDescriptor? { registry.descriptor(for: agent) }
     private var plannerAgents: [AgentKind] { agents.filter(Self.plannerAgents.contains) }
-    /// Offered for a new pane when a planner agent is enabled; choosing it turns the feature on.
     private var canOrchestrate: Bool { targetPane == nil && !plannerAgents.isEmpty }
     private var orchestrating: Bool { canOrchestrate && mode == .orchestration }
     private var modeAgents: [AgentKind] { orchestrating ? plannerAgents : agents }
@@ -231,7 +219,6 @@ struct NewTerminalSheet: View {
         }
         .navigationTitle(Text(targetPane == nil ? LocalizedStringKey("newTerminal.title") : "newSubTab.title"))
         .onAppear(perform: loadInitial)
-        // Keeps 9router's install and running state current while the sheet is open.
         .task { if router9.preferences.enabled { await router9.watch() } }
         .onChange(of: agent) { _, _ in
             unrestricted = startsUnrestricted
@@ -594,13 +581,11 @@ struct NewTerminalSheet: View {
         loadWorktreeDefaults()
     }
 
-    /// The worktree toggle starts from the project's settings (upstream `autoWorktree` / `worktreeMode`).
     private func loadWorktreeDefaults() {
         ownWorktree = project?.usesAutoWorktree ?? false
         worktreeMode = project?.effectiveWorktreeMode == .localCopy ? .localCopy : .gitWorktree
     }
 
-    /// The agent's models, looked up off the main thread; never blocks the sheet.
     private func discoverModels() async {
         modelsLoading = true
         defer { modelsLoading = false }
@@ -627,7 +612,6 @@ struct NewTerminalSheet: View {
         guard let project else { return }
         worktreeError = nil
         guard descriptor?.isShell == false, ownWorktree else { return add(in: project, worktree: nil) }
-        // Provision before the tab exists, so the agent starts inside the worktree.
         let repo = URL(filePath: expanded(folder)).standardizedFileURL
         let tabID = TabID.make()
         let mode = worktreeMode
@@ -663,7 +647,6 @@ struct NewTerminalSheet: View {
             worktreeAgentID: worktree?.agentId,
             worktreeBranch: worktree?.branch
         )
-        // Stored only when it can apply, like upstream; nil keeps older files unchanged.
         tab.useRouter9 = routingAvailable && useRouter9 ? true : nil
         if let targetPane {
             workspace.update(undoManager: undoManager, actionName: String(localized: "undo.newSubTab")) {
@@ -673,19 +656,15 @@ struct NewTerminalSheet: View {
             let grid = gridID
             let orchestration = orchestrating
             let web = metrics.isWebInterface
-            // The planner's launch reads the feature (its MCP wiring): turn it on before the tab exists.
             if orchestration, environment.features.isOn(.orchestrator) == false {
                 environment.preferences?.update { $0.features.set(.orchestrator, on: true) }
             }
             let actionName = orchestration ? String(localized: "undo.newOrchestration") : String(localized: "undo.newTerminal")
             workspace.update(undoManager: undoManager, actionName: actionName) {
-                // New panes join the shown grid: show the chosen one first.
                 if grid != $0.project(project.id)?.shownGridID { $0.activateGrid(grid, in: project.id) }
                 let planner = $0.addPane(to: project.id, tab: tab)
-                // Mac: the board goes right after the planner, beside it, and the planner keeps the keyboard.
                 if orchestration, let planner {
                     let board = $0.addPane(to: project.id, content: .orchestrator)
-                    // Web: terminal and board form one "Orchestration" stack (upstream `groupPanes`).
                     if web, let board {
                         $0.updateProject(project.id) {
                             $0.groupPanes([planner, board], kind: "orchestration", plannerId: planner)

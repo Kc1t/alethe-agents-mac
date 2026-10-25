@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheAgents
 
-/// Resume Previous Conversations (P2-26; upstream `resetLastSession` `pickSessionId`).
 @Suite struct PreviousSessionTests {
     private let sessions = [
         SessionSnapshot(id: "current", modifiedAt: Date(timeIntervalSince1970: 300)),

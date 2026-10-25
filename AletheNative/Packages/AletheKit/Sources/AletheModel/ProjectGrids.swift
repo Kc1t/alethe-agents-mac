@@ -3,7 +3,6 @@ import Foundation
 public enum ProjectGridTag {}
 public typealias ProjectGridID = Identifier<ProjectGridTag>
 
-/// How one grid of a project arranges its panes.
 public struct PaneArrangement: Hashable, Sendable {
     public var layoutMode: PaneLayoutMode?
     public var gridLayout: CustomGrid?
@@ -17,8 +16,6 @@ public struct PaneArrangement: Hashable, Sendable {
     }
 }
 
-/// A named set of a project's panes with its own layout (upstream `ProjectGrid`, 1.7). The panes
-/// with no `gridID` form the project's main grid, whose layout is the project's own fields.
 public struct ProjectGrid: Codable, Hashable, Sendable, Identifiable {
     public var id: ProjectGridID
     public var name: String
@@ -37,15 +34,12 @@ public struct ProjectGrid: Codable, Hashable, Sendable, Identifiable {
 }
 
 extension Project {
-    /// The named grids (the main grid is not listed).
     public var namedGrids: [ProjectGrid] { grids ?? [] }
 
-    /// The grid shown in the workspace; nil is the main grid.
     public var shownGridID: ProjectGridID? {
         activeGridID.flatMap { id in namedGrids.contains { $0.id == id } ? id : nil }
     }
 
-    /// The panes of the shown grid, in order.
     public var visiblePanes: [Pane] {
         let shown = shownGridID
         return panes.filter { pane in pane.gridID.flatMap { id in namedGrids.contains { $0.id == id } ? id : nil } == shown }
@@ -55,7 +49,6 @@ extension Project {
         panes.filter { $0.gridID == grid || (grid == nil && $0.gridID.map { id in !namedGrids.contains { $0.id == id } } == true) }
     }
 
-    /// The shown grid's layout, read and written in place.
     public var activeArrangement: PaneArrangement {
         get {
             if let id = shownGridID, let grid = namedGrids.first(where: { $0.id == id }) {
@@ -77,7 +70,6 @@ extension Project {
         }
     }
 
-    /// Key of the shown grid's track sizes in `WorkspaceState.gridWeights`.
     public var weightsKey: String {
         shownGridID.map { "\(id.rawValue):\($0.rawValue)" } ?? id.rawValue
     }
@@ -92,11 +84,8 @@ extension WorkspaceDocument {
         case empty, taken, reserved
     }
 
-    /// Names the main grid goes by, in every language; a named grid cannot take them.
     public static let reservedGridNames: Set<String> = ["main", "principal", "default", "padrão"]
 
-    /// Why `name` cannot name a grid of the project (nil: it can). Case-insensitive; `except` is the
-    /// grid being renamed (upstream `validGridName`).
     public func gridNameProblem(_ name: String, in projectID: ProjectID, except: ProjectGridID? = nil) -> GridNameProblem? {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return .empty }
@@ -106,7 +95,6 @@ extension WorkspaceDocument {
         return taken ? .taken : nil
     }
 
-    /// Adds an empty named grid and shows it (upstream `createProjectGrid`).
     @discardableResult
     public mutating func createGrid(named name: String, in projectID: ProjectID) -> ProjectGridID? {
         guard project(projectID) != nil, gridNameProblem(name, in: projectID) == nil else { return nil }
@@ -127,7 +115,6 @@ extension WorkspaceDocument {
         }
     }
 
-    /// Shows a grid of the project (nil: the main grid) in its container.
     public mutating func activateGrid(_ gridID: ProjectGridID?, in projectID: ProjectID) {
         guard let project = project(projectID), gridID == nil || project.namedGrids.contains(where: { $0.id == gridID }) else { return }
         if project.activeGridID != gridID { updateProject(projectID) { $0.activeGridID = gridID } }
@@ -139,8 +126,6 @@ extension WorkspaceDocument {
         if let isolated = workspace.isolatedPaneID, self.pane(isolated)?.project.id == projectID { workspace.isolatedPaneID = nil }
     }
 
-    /// Moves a pane to another grid of its project (nil: the main grid); its cell is dropped so it
-    /// lands in the first free slot there (upstream `moveTerminalToGrid`).
     public mutating func movePane(_ paneID: PaneID, toGrid gridID: ProjectGridID?) {
         guard let (project, pane) = pane(paneID), pane.gridID != gridID,
               gridID == nil || project.namedGrids.contains(where: { $0.id == gridID }) else { return }
@@ -158,8 +143,6 @@ extension WorkspaceDocument {
         }
     }
 
-    /// Deletes a named grid. Its panes move to the main grid, or are closed when `closingPanes`
-    /// (upstream `deleteProjectGrid` keep / delete).
     public mutating func deleteGrid(_ gridID: ProjectGridID, in projectID: ProjectID, closingPanes: Bool) {
         guard let project = project(projectID), project.namedGrids.contains(where: { $0.id == gridID }) else { return }
         for pane in project.panes where pane.gridID == gridID {
@@ -173,7 +156,6 @@ extension WorkspaceDocument {
         workspace.gridWeights.removeValue(forKey: "\(projectID.rawValue):\(gridID.rawValue)")
     }
 
-    /// Shows the grid holding a pane, so focusing or isolating it never lands on a hidden pane.
     mutating func reveal(_ paneID: PaneID) {
         guard let (project, pane) = pane(paneID) else { return }
         let grid = pane.gridID.flatMap { id in project.namedGrids.contains { $0.id == id } ? id : nil }

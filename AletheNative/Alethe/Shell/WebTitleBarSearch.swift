@@ -2,7 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// FindJumpModal.tsx: 520-point overlay, 32-point input and a 320-point results viewport.
 struct WebTitleBarSearch: View {
     let workspace: WorkspaceModel
     let undoManager: UndoManager?
@@ -106,7 +105,6 @@ struct WebTitleBarSearch: View {
     }
 
     private func jump(_ hit: Hit) {
-        // Clear the editor synchronously before a command may open its next modal.
         environment.editorRequest = nil
         if let tab = hit.tab {
             workspace.update { document in

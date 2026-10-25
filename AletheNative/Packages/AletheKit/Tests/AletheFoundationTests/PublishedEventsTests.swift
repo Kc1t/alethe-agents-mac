@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheFoundation
 
-/// The event as upstream would serialize it (`EventBusPayload`).
 private func upstreamJSON(_ event: BusEvent) throws -> [String: Any] {
     let data = try JSONEncoder().encode(event)
     return try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
@@ -14,8 +13,6 @@ private func dataKeys(_ event: BusEvent) -> Set<String> {
 
 @Suite("Published events (P6-19)")
 struct PublishedEventsTests {
-    // MARK: Merge Center
-
     @Test func mergeAnalysisIsCleanOrConflict() throws {
         let clean = BusEvent.mergeAnalyzed(projectID: "p1", source: "feature", target: "main", clean: true,
                                            conflictCount: 0, classes: [])
@@ -74,8 +71,6 @@ struct PublishedEventsTests {
         #expect(aborted.data == .object([:]))
     }
 
-    // MARK: Graphify
-
     @Test func graphGenerationAndRollbackAreGraphUpdated() throws {
         let generated = BusEvent.graphGenerated(repository: "/repo")
         #expect(generated.type == "GraphUpdated")
@@ -89,8 +84,6 @@ struct PublishedEventsTests {
         #expect(rolledBack.data == .object(["action": .string("rollback"), "snapshot_id": .string("1700000000000")]))
     }
 
-    // MARK: Plugins
-
     @Test func pluginEventsAreKeyedByPlugin() {
         let enabled = BusEvent.pluginEnabledChanged(id: "alethe.todos", enabled: true)
         #expect(enabled.type == "PluginEnabled")
@@ -103,8 +96,6 @@ struct PublishedEventsTests {
         #expect(failed.correlationID == "plugin-x")
         #expect(failed.data == .object(["id": .string("x"), "error": .string("incompatibleAPI")]))
     }
-
-    // MARK: Resources
 
     @Test func resourceMetricsHaveUpstreamKeys() throws {
         let event = BusEvent.resourceMetrics(memoryPressure: "Ok", systemAvailableMB: 4096, systemTotalMB: 16384,

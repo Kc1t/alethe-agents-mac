@@ -1,7 +1,5 @@
 import SwiftUI
 
-/// Lays children out at their natural size in rows that wrap, each row centered (chips), or
-/// flush left with `leading`.
 struct FlowLayout: Layout {
     var spacing: CGFloat
     var lineSpacing: CGFloat

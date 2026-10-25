@@ -10,7 +10,6 @@ final class TerminalTests: XCTestCase {
         app.descendants(matching: .any)[identifier].firstMatch
     }
 
-    /// New shell from the sidebar → `exit` shows the ended overlay → Restart → Close Terminal (+ undo).
     func testShellLifecycle() {
         let (app, _) = launchAlethe(arguments: ["-AletheUITestSeed", "sidebar"])
         let project = element(app, "sidebar.project.scratch")
@@ -42,7 +41,6 @@ final class TerminalTests: XCTestCase {
         app.terminate()
     }
 
-    /// Two ⌃C in a row kill the shell and offer a restart (P2-2); one alone does not.
     func testDoubleInterruptForceKills() {
         let (app, _) = launchAlethe(arguments: ["-AletheUITestSeed", "sidebar"])
         let project = element(app, "sidebar.project.scratch")
@@ -69,7 +67,6 @@ final class TerminalTests: XCTestCase {
         app.terminate()
     }
 
-    /// ⌘T: folder validation, creation, and the last agent remembered for next time.
     func testNewTerminalSheet() {
         let (app, _) = launchAlethe(arguments: ["-AletheUITestSeed", "sidebar"])
         XCTAssertTrue(element(app, "sidebar.project.scratch").waitForExistence(timeout: 5))

@@ -3,8 +3,6 @@ import AletheDocuments
 import AppKit
 import SwiftUI
 
-/// Lays out parsed Markdown with the theme's tokens. Text is selectable; links open through the
-/// environment's `openURL` (browser, or the default app for local files).
 struct MarkdownBlocksView: View {
     let blocks: [MarkdownBlock]
     @Environment(\.metrics) private var metrics
@@ -140,7 +138,6 @@ private struct MarkdownBlockView: View {
     }
 }
 
-/// A local image loaded from disk, a remote one fetched; the description when it cannot be shown.
 private struct MarkdownImage: View {
     let source: URL?
     let alt: String

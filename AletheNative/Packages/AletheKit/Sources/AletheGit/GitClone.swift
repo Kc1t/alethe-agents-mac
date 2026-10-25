@@ -1,9 +1,6 @@
 import Foundation
 
-/// Clone URLs as the New Project sheet takes them (upstream `projects.rs`).
 public enum GitCloneURL {
-    /// `owner/repo` and `github.com/owner/repo` become https GitHub URLs; full URLs, `git@` remotes
-    /// and local paths are kept (upstream `normalize_github_url`, plus local paths for bare repos).
     public static func normalize(_ raw: String) -> String {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         let kept = ["http://", "https://", "git@", "ssh://", "git://", "file://", "/", "~/"]
@@ -13,8 +10,6 @@ public enum GitCloneURL {
         return trimmed
     }
 
-    /// Whether git may be handed `url`: known transports only (no `ext::` helpers) and nothing that
-    /// reads as an option.
     public static func isCloneable(_ url: String) -> Bool {
         guard !url.isEmpty, !url.hasPrefix("-"), !url.contains("\n"), !url.contains("::") else { return false }
         if url.hasPrefix("/") { return true }
@@ -27,7 +22,6 @@ public enum GitCloneURL {
         }
     }
 
-    /// The folder a clone lands in: the repository's name, sanitized (upstream `repo_folder_name`).
     public static func folderName(for url: String) -> String {
         var name = url
         while name.hasSuffix("/") { name.removeLast() }
@@ -37,8 +31,6 @@ public enum GitCloneURL {
         return sanitized.isEmpty || sanitized == "." || sanitized == ".." ? "repo" : sanitized
     }
 
-    /// Where to clone: the chosen folder is the parent, unless it is already named after the
-    /// repository; nothing chosen means `~/Alethe` (upstream `resolve_clone_target`).
     public static func target(requested: String, url: String, home: URL = FileManager.default.homeDirectoryForCurrentUser) -> URL {
         let folder = folderName(for: url)
         let trimmed = requested.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -56,8 +48,6 @@ public enum GitCloneURL {
             : standardized.appending(path: folder, directoryHint: .isDirectory)
     }
 
-    /// The web page of a hosted remote (`git@host:owner/repo.git`, `ssh://git@host/owner/repo`,
-    /// `https://user@host/owner/repo.git`), without credentials or `.git`; nil for local remotes.
     public static func webURL(forRemote remote: String) -> URL? {
         let trimmed = remote.trimmingCharacters(in: .whitespacesAndNewlines)
         var host: String
@@ -84,13 +74,11 @@ public enum GitCloneURL {
 }
 
 extension GitCloneURL {
-    /// The page Open in Browser shows for a project (P5-5 clone URL first, else its `origin`).
     public static func projectWebURL(cloneURL: String?, originRemote: String?) -> URL? {
         cloneURL.flatMap(webURL(forRemote:)) ?? originRemote.flatMap(webURL(forRemote:))
     }
 }
 
-/// One line of `git clone --progress` (`Receiving objects:  45% (450/1000)`).
 public struct GitCloneProgress: Equatable, Sendable {
     public var phase: String
     public var percent: Int?
@@ -115,12 +103,9 @@ public struct GitCloneProgress: Equatable, Sendable {
 
 public enum GitCloneError: Error, Equatable, Sendable {
     case invalidURL(String)
-    /// The target folder exists and is not empty.
     case targetExists(String)
 }
 
-/// `git clone` with progress (upstream `clone_github_repo`, shallow as upstream). A failed or
-/// cancelled clone removes the partial folder it created.
 public struct GitCloner: Sendable {
     public var runner: GitRunner
 
@@ -144,7 +129,6 @@ public struct GitCloner: Sendable {
         let parent = target.deletingLastPathComponent()
         try fm.createDirectory(at: parent, withIntermediateDirectories: true)
         var arguments = ["clone", "--progress"]
-        // A local path ignores --depth with a warning; the file:// form honors it but is slower.
         if shallow, !url.hasPrefix("/") { arguments += ["--depth", "1"] }
         arguments += ["--", url, target.path]
         var lineHandler: (@Sendable (String) -> Void)?
@@ -157,7 +141,6 @@ public struct GitCloner: Sendable {
             _ = try await runner.run(arguments, in: parent, onProgress: lineHandler)
         } catch {
             if existed {
-                // Keep the (empty) folder the user chose; drop what git wrote into it.
                 for item in (try? fm.contentsOfDirectory(at: target, includingPropertiesForKeys: nil)) ?? [] {
                     try? fm.removeItem(at: item)
                 }

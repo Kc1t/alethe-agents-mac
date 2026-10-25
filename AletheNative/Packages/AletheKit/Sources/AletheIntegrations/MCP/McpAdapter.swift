@@ -1,26 +1,15 @@
 import AletheFoundation
 import Foundation
 
-// Port of upstream `mcp_agents.rs`: where each agent keeps its MCP servers and how to read and edit
-// that file as text. Adapters are pure text-in, text-out; reading, backups and atomic writes belong to
-// the MCP store (P5-21) through `ConfigFileWriter`.
-
-/// Errors carry a position and never a snippet of the file: these configs hold live credentials.
 public enum McpConfigError: Error, Hashable, Sendable, CustomStringConvertible {
     case unparsableJSON(line: Int, column: Int)
     case unparsableTOML(line: Int, column: Int)
     case rootNotAnObject
-    /// A key on the way to the server holds something other than an object or table; it is never
-    /// replaced blindly.
     case layoutConflict(path: [String])
     case notFound
-    /// The agent's config has no way to switch a server off (Claude Code, Cursor, Antigravity).
     case unsupportedDisable
-    /// `.jsonc` files are read but never written: their comments would be lost.
     case jsoncUnsupported
-    /// The edit did not produce the expected document; nothing was changed.
     case invalidEdit
-    /// The file exists but could not be read.
     case unreadable
 
     public var description: String {
@@ -38,8 +27,6 @@ public enum McpConfigError: Error, Hashable, Sendable, CustomStringConvertible {
     }
 }
 
-/// One file an agent reads its servers from. `projectKey` selects Claude's `projects.<folder>` entry
-/// inside `~/.claude.json` for the `local` source.
 public struct McpSource: Hashable, Sendable {
     public var url: URL
     public var kind: McpSourceKind
@@ -54,8 +41,6 @@ public struct McpSource: Hashable, Sendable {
     var isJSONC: Bool { url.pathExtension.lowercased() == "jsonc" }
 }
 
-/// The home the global configs are looked up in. `ALETHE_MCP_HOME` redirects every global lookup to a
-/// scratch copy (upstream's test hook), which also ignores `XDG_CONFIG_HOME`.
 public struct McpHome: Hashable, Sendable {
     public var home: URL
     public var xdgConfigHome: URL?
@@ -78,7 +63,6 @@ public struct McpHome: Hashable, Sendable {
         segments.reduce(home) { $0.appending(path: $1, directoryHint: .notDirectory) }
     }
 
-    /// OpenCode's global config folder: `$XDG_CONFIG_HOME/opencode` or `~/.config/opencode`.
     var opencodeConfigDirectory: URL {
         (xdgConfigHome ?? home.appending(path: ".config", directoryHint: .isDirectory))
             .appending(path: "opencode", directoryHint: .isDirectory)
@@ -87,11 +71,8 @@ public struct McpHome: Hashable, Sendable {
 
 public protocol McpAdapter: Sendable {
     var agent: McpAgent { get }
-    /// The files serving `scope`, in the order they are read and preferred for writes.
     func configSources(scope: McpScope, repository: URL?, home: McpHome) -> [McpSource]
-    /// Servers sorted by name; an empty file or one without servers is an empty list.
     func parse(_ text: String, source: McpSource) throws(McpConfigError) -> [McpServer]
-    /// Writes `server` under its name, rewriting only the keys this adapter owns.
     func upsert(_ text: String, source: McpSource, server: McpServer) throws(McpConfigError) -> String
     func remove(_ text: String, source: McpSource, name: String) throws(McpConfigError) -> String
     func setEnabled(_ text: String, source: McpSource, name: String, enabled: Bool) throws(McpConfigError) -> String
@@ -109,9 +90,6 @@ public enum McpAdapters {
     }
 }
 
-// MARK: - Claude Code
-
-/// Keys the Claude-shaped adapters (Claude Code, Cursor, Antigravity) own on a server entry.
 let claudeManagedKeys = ["type", "command", "args", "cwd", "env", "url", "headers", "disabled"]
 let openCodeManagedKeys = ["type", "command", "cwd", "environment", "url", "headers", "enabled"]
 
@@ -119,8 +97,6 @@ public struct ClaudeMcpAdapter: McpAdapter {
     public init() {}
     public var agent: McpAgent { .claude }
 
-    /// Global: `~/.claude.json` `mcpServers`. Project: the `local` servers in `~/.claude.json`
-    /// `projects.<folder>`, then the shareable `<repo>/.mcp.json`.
     public func configSources(scope: McpScope, repository: URL?, home: McpHome) -> [McpSource] {
         let userConfig = home.path(".claude.json")
         switch scope {
@@ -135,7 +111,6 @@ public struct ClaudeMcpAdapter: McpAdapter {
         }
     }
 
-    /// Claude keys `projects` by the folder path with forward slashes.
     public static func projectKey(for repository: URL) -> String {
         projectKey(forPath: repository.path(percentEncoded: false))
     }
@@ -163,10 +138,6 @@ public struct ClaudeMcpAdapter: McpAdapter {
     }
 }
 
-// MARK: - Cursor
-
-/// Cursor reads `mcpServers` in the Claude shape from `~/.cursor/mcp.json` and per repository from
-/// `<repo>/.cursor/mcp.json`, the file it writes when a server is added from inside the IDE.
 public struct CursorMcpAdapter: McpAdapter {
     public init() {}
     public var agent: McpAgent { .cursor }
@@ -198,9 +169,6 @@ public struct CursorMcpAdapter: McpAdapter {
     }
 }
 
-// MARK: - Antigravity
-
-/// Antigravity: `~/.gemini/config/mcp_config.json` in the Claude shape, global only.
 public struct AntigravityMcpAdapter: McpAdapter {
     public init() {}
     public var agent: McpAgent { .antigravity }
@@ -212,13 +180,10 @@ public struct AntigravityMcpAdapter: McpAdapter {
         }
     }
 
-    /// The plugin import manifest next to the config.
     public static func importManifestURL(home: McpHome) -> URL {
         home.path(".gemini", "config", "import_manifest.json")
     }
 
-    /// Import names from `import_manifest.json` (`{"imports": [{"name": …}]}`); an unreadable manifest
-    /// has none.
     public static func importNames(manifest text: String) -> [String] {
         guard case .object(let root)? = try? OrderedJSON.parse(text),
               let imports = root["imports"]?.arrayValue else { return [] }
@@ -226,8 +191,6 @@ public struct AntigravityMcpAdapter: McpAdapter {
             .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 
-    /// The manifest does not name the servers an import added, so one is matched by name prefix
-    /// (case-insensitive).
     public static func importOwner(of serverName: String, imports: [String]) -> String? {
         let needle = serverName.lowercased()
         return imports.first { needle.hasPrefix($0.lowercased()) }
@@ -250,10 +213,6 @@ public struct AntigravityMcpAdapter: McpAdapter {
     }
 }
 
-// MARK: - OpenCode
-
-/// OpenCode: `mcp` in `opencode.json` (or `opencode.jsonc` when only that exists) in the global config
-/// folder or the repository root. Commands are one array; `{env:NAME}` late-binds a host variable.
 public struct OpenCodeMcpAdapter: McpAdapter {
     public init() {}
     public var agent: McpAgent { .opencode }
@@ -329,11 +288,7 @@ public struct OpenCodeMcpAdapter: McpAdapter {
     }
 }
 
-// MARK: - Shared JSON shape
-
 enum McpJSON {
-    /// The parsed root object; nil when the file is empty or its root is not an object (read as no
-    /// servers, as upstream does).
     static func root(_ text: String, allowComments: Bool) throws(McpConfigError) -> OrderedJSONObject? {
         let source = allowComments ? JSONC.strip(text) : text
         guard !source.allSatisfy(\.isWhitespace) else { return nil }
@@ -361,7 +316,6 @@ enum McpJSON {
         }
     }
 
-    /// Upstream `normalized_project_key`: slashes unified, no trailing slash, case-insensitive.
     static func normalizedProjectKey(_ raw: String) -> String {
         var key = raw.replacingOccurrences(of: "\\", with: "/")
         while key.hasSuffix("/") { key.removeLast() }
@@ -373,8 +327,6 @@ enum McpJSON {
         return projects.keys.first { normalizedProjectKey($0) == needle }
     }
 
-    /// The key path of the object holding the servers, or nil when a `local` source's project entry
-    /// does not exist yet.
     static func containerPath(in root: OrderedJSONObject, rootKey: String, source: McpSource) -> [String]? {
         guard source.kind == .local, let wanted = source.projectKey else { return [rootKey] }
         guard let projects = root["projects"]?.objectValue,
@@ -391,7 +343,6 @@ enum McpJSON {
         }.sorted { $0.name < $1.name }
     }
 
-    /// Claude, Cursor and Antigravity: env values are literal (`{env:X}` is not interpolated).
     static func claudeShapedServer(_ name: String, _ object: OrderedJSONObject) -> McpServer {
         let declared = object["type"]?.stringValue ?? ""
         let transport: McpTransport
@@ -427,7 +378,6 @@ enum McpJSON {
         return out
     }
 
-    /// OpenCode late-binds a host variable with `{env:NAME}`; everywhere else the value is literal.
     static func entry(_ raw: String, interpolate: Bool) -> McpEnvEntry {
         if interpolate, raw.hasPrefix("{env:"), raw.hasSuffix("}"), raw.count >= 6 {
             let name = raw.dropFirst(5).dropLast().trimmingCharacters(in: .whitespaces)
@@ -448,7 +398,6 @@ enum McpJSON {
         return members.isEmpty ? nil : .object(OrderedJSONObject(members))
     }
 
-    /// The managed values of an entry in upstream's insertion order.
     static func entryValues(_ server: McpServer, opencode: Bool) -> [(String, OrderedJSON)] {
         var values: [(String, OrderedJSON)] = []
         if let env = envObject(server.env, interpolate: opencode) {
@@ -486,7 +435,6 @@ enum McpJSON {
         return values
     }
 
-    /// Rewrites only the keys the adapter owns, so anything the user added to the entry survives.
     static func upsert(_ text: String, rootKey: String, managedKeys: [String], opencode: Bool,
                        source: McpSource, server: McpServer) throws(McpConfigError) -> String {
         guard !source.isJSONC else { throw .jsoncUnsupported }

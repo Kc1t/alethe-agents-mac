@@ -37,7 +37,6 @@ private func job() -> Job {
         #expect(JobStatus.allCases.filter(\.settled) == [.done, .failed, .cancelled, .released, .interrupted])
     }
 
-    // The snapshot in upstream's `Job::snapshot` JSON, key for key and in order.
     @Test func theSnapshotMatchesUpstreamJSON() throws {
         let snapshot = job().snapshot(nowMs: 9_999)
         let expected = """
@@ -77,7 +76,6 @@ private func job() -> Job {
         #expect(long.snapshot(nowMs: 0).summary == String(repeating: "z", count: 1200))
     }
 
-    // The record in upstream's `Job::record` JSON.
     @Test func theRecordMatchesUpstreamJSON() {
         let expected = """
         {"id":"job-03","plannerId":"tab-1","agent":"codex","runId":"run-02","runLabel":"a run",\
@@ -100,7 +98,6 @@ private func job() -> Job {
         #expect(restored.costUSD == 0.25)
         #expect(restored.startedAt == 1_000 && restored.endedAt == 3_500)
         #expect(restored.approvalPolicyValue == "never")
-        // Live-only state does not survive.
         #expect(restored.diff == nil && restored.pending == nil && restored.reply.isEmpty)
 
         var queued = job()

@@ -3,7 +3,6 @@ import AlethePluginKit
 import AppKit
 import SwiftUI
 
-/// PluginMarketplaceModal.tsx and its CSS: header, 196px rail, 68px rows, inline detail.
 struct PluginMarketplaceWebView: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics

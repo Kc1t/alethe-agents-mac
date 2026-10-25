@@ -2,7 +2,6 @@ import AletheDesign
 import AppKit
 import SwiftUI
 
-/// Web PreferencesModal's two-column shell. The native Settings TabView stays independent.
 struct WebSettingsView: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics

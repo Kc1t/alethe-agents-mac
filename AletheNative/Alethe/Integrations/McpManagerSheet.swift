@@ -4,10 +4,6 @@ import AletheIntegrations
 import AppKit
 import SwiftUI
 
-/// The MCP manager (upstream `McpManagerModal`, EXT-1): servers grouped by name with their detail —
-/// per-agent records, enable with undo, sync to the agents that lack a server, masked env with an
-/// explicit reveal, edit, remove (asks once), backups with restore (asks once) — and the Skills
-/// browser (P5-15).
 struct McpManagerSheet: View {
     let route: McpManagerRoute
     @Environment(AppEnvironment.self) private var environment
@@ -36,7 +32,6 @@ struct McpManagerSheet: View {
     }
 }
 
-/// A record to act on in a nested sheet.
 struct McpRecordTarget: Identifiable {
     let record: McpServerRecord
     var id: String { "\(record.agent.rawValue):\(record.sourceKind.rawValue):\(record.sourceURL.path):\(record.server.name)" }
@@ -230,8 +225,6 @@ private struct McpManagerContent: View {
         return String(localized: "mcp.scope.globalNote")
     }
 
-    // MARK: List
-
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: metrics.space(.s)) {
             TextField(text: $query, prompt: Text("mcp.search")) { Text("mcp.search") }
@@ -275,8 +268,6 @@ private struct McpManagerContent: View {
         .padding(metrics.space(.m))
     }
 
-    // MARK: Detail
-
     @ViewBuilder private var detail: some View {
         if let group = active {
             McpServerDetail(model: model, group: group,
@@ -292,8 +283,6 @@ private struct McpManagerContent: View {
             }
         }
     }
-
-    // MARK: Footer
 
     private var footer: some View {
         HStack(spacing: metrics.space(.m)) {
@@ -341,7 +330,6 @@ private struct McpManagerContent: View {
     }
 }
 
-/// One server across agents.
 private struct McpServerDetail: View {
     let model: McpManagerModel
     let group: McpServerGroup
@@ -546,7 +534,6 @@ private struct McpServerDetail: View {
     }
 }
 
-/// Env values or headers, masked; a literal is read from the file only when Reveal is pressed.
 private struct McpEnvTable: View {
     let model: McpManagerModel
     let record: McpServerRecord
@@ -610,7 +597,6 @@ private struct McpEnvTable: View {
     }
 }
 
-/// A file's backups, newest first; restoring asks once and backs up the current contents first.
 private struct McpBackupsSheet: View {
     let model: McpManagerModel
     let record: McpServerRecord
@@ -770,7 +756,6 @@ extension McpHealthError {
     }
 }
 
-/// Upstream `McpIntroModal`: offered once to someone with an agent config (`mcpOnboardingSeen`).
 struct McpIntroSheet: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.dismiss) private var dismiss

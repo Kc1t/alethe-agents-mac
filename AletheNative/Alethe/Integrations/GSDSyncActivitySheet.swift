@@ -2,9 +2,7 @@ import AletheDesign
 import AletheIntegrations
 import SwiftUI
 
-/// Which child session the activity sheet reads.
 struct GSDSyncActivityTarget: Hashable {
-    /// The checkout `opencode export` runs in.
     var directory: URL
     var sessionID: String
     var title: String
@@ -16,9 +14,6 @@ struct GSDSyncActivityTarget: Hashable {
     }
 }
 
-/// The GSD Sync child session's activity, read-only (upstream `GsdSyncActivityView`): `opencode export`
-/// every 5 s, user instructions collapsed, the agent's text, reasoning and tool parts expanded; the
-/// feed follows new output while the reader is at the bottom.
 struct GSDSyncActivitySheet: View {
     let target: GSDSyncActivityTarget
     @Environment(AppEnvironment.self) private var environment
@@ -34,7 +29,6 @@ struct GSDSyncActivitySheet: View {
     @State private var position = ScrollPosition(edge: .bottom)
     @State private var atBottom = true
 
-    /// How close to the end still counts as reading the latest (upstream 80 px).
     private static let stickThreshold: CGFloat = 80
 
     var body: some View {
@@ -137,7 +131,6 @@ struct GSDSyncActivitySheet: View {
             .accessibilityIdentifier("gsdActivity.error")
     }
 
-    /// Exports until the sheet closes (the task is cancelled with it).
     private func poll() async {
         while !Task.isCancelled {
             await load()
@@ -177,8 +170,6 @@ struct GSDSyncActivitySheet: View {
     }
 }
 
-/// One exported message: an instruction sent to the agent collapsed (typically a long repeated
-/// preamble), the agent's reply expanded with an accent rail.
 private struct GSDActivityMessage: View {
     let message: OpenCodeExportMessage
     @Environment(\.theme) private var theme
@@ -275,7 +266,6 @@ private struct GSDActivityPart: View {
                 .font(metrics.font(.footnote))
                 .foregroundStyle(theme[.textSecondary])
         case .other:
-            // step-start/step-finish and future types are not shown (upstream ignores them too).
             EmptyView()
         }
     }

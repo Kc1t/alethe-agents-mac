@@ -1,13 +1,9 @@
 import Darwin
 import Foundation
 
-/// What detection found for the `ai-memory` CLI (upstream `AiMemoryStatus`).
 public struct AiMemoryStatus: Equatable, Sendable {
-    /// The executable probed; nil when none was found on disk.
     public var executable: String?
-    /// `--version` ran and exited 0.
     public var installed: Bool
-    /// The loopback endpoint accepts connections.
     public var running: Bool
     public var version: String?
 
@@ -19,47 +15,34 @@ public struct AiMemoryStatus: Equatable, Sendable {
     }
 }
 
-/// The MCP server an agent launch gets for ai-memory.
 public struct AiMemoryServer: Equatable, Sendable {
     public var name: String
     public var command: String
     public var arguments: [String]
 }
 
-/// Port of upstream `ai_memory.rs`: detection and the `ai-memory mcp` stdio server that Claude Code,
-/// Codex and OpenCode launches get while the aiMemory feature is on.
 public enum AiMemory {
     public static let defaultCommand = "ai-memory"
-    /// Key under `mcpServers` / `mcp_servers` (upstream `MCP_KEY`).
     public static let serverName = "ai-memory"
-    /// The server's health endpoint (upstream `DEFAULT_ENDPOINT`); only "running" is derived from it.
     public static let endpointHost = "127.0.0.1"
     public static let endpointPort: UInt16 = 49374
     public static var endpoint: String { "\(endpointHost):\(endpointPort)" }
     public static let documentation = URL(string: "https://github.com/akitaonrails/ai-memory")!
 
-    /// The trimmed `--version` output when the CLI exited 0 (upstream keeps stdout as is, e.g.
-    /// "ai-memory 0.9.2"); nil for a failure or an empty answer.
     public static func parseVersion(output: String, exitCode: Int32) -> String? {
         guard exitCode == 0 else { return nil }
         let text = output.trimmingCharacters(in: .whitespacesAndNewlines)
         return text.isEmpty ? nil : text
     }
 
-    /// Whether `--version` counts as installed: upstream only needs a zero exit.
     public static func isInstalled(exitCode: Int32?) -> Bool { exitCode == 0 }
 
-    /// The server for one launch: only with the feature on and an executable on disk, and not when
-    /// detection of that same executable already found it broken (a launch before detection finishes
-    /// is still wired, as the CLI is there).
     public static func server(enabled: Bool, executable: String?, status: AiMemoryStatus?) -> AiMemoryServer? {
         guard enabled, let executable, !executable.isEmpty else { return nil }
         if let status, status.executable == executable, !status.installed { return nil }
         return AiMemoryServer(name: serverName, command: executable, arguments: ["mcp"])
     }
 
-    /// Runs `--version` and checks the endpoint, off the caller's thread; both are bounded by
-    /// `timeout`. A nil `executable` reports not installed without running anything.
     public static func detect(executable: String?, timeout: Duration = .seconds(5),
                               endpointTimeout: Duration = .milliseconds(250)) async -> AiMemoryStatus {
         async let running = LoopbackProbe.isListening(host: endpointHost, port: endpointPort, timeout: endpointTimeout)
@@ -77,8 +60,6 @@ public enum AiMemory {
     }
 }
 
-/// A short CLI call: stdout and the exit code, nil when it cannot start. Killed past `timeout` or
-/// when the calling task is cancelled; a killed call reports SIGKILL's non-zero status.
 enum ShortCommand {
     static func run(_ executable: String, _ arguments: [String], timeout: Duration) async -> (output: String, exitCode: Int32)? {
         do {
@@ -93,7 +74,6 @@ enum ShortCommand {
     }
 }
 
-/// Whether something accepts TCP connections on an IPv4 loopback port (upstream `endpoint_alive`).
 enum LoopbackProbe {
     static func isListening(host: String, port: UInt16, timeout: Duration) async -> Bool {
         await Task.detached { connects(host: host, port: port, timeout: timeout) }.value

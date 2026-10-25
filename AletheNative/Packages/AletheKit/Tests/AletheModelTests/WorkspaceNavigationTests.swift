@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheModel
 
-/// Port of upstream `workspaceNavigation.test.ts`, plus the tab operations of the store.
 @Suite struct WorkspaceNavigationTests {
     private func sample() -> (WorkspaceDocument, [ProjectID]) {
         var doc = WorkspaceDocument()

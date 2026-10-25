@@ -2,9 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// "localhost:5173 is ready" over a terminal whose output announced a local page: open it in a web
-/// pane beside the terminal (while the browser feature is on), in the browser, or dismiss. Leaving
-/// it be is a fine answer too.
 struct PageOfferBar: View {
     let url: URL
     let onOpenInPane: () -> Void

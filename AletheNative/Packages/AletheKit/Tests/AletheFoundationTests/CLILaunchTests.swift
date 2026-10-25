@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheFoundation
 
-/// Upstream `cli_launch.rs` cases, plus macOS user-default arguments.
 @Suite struct CLILaunchTests {
     private func temporaryRoot() throws -> URL {
         let root = FileManager.default.temporaryDirectory.appending(path: "alethe-cli-\(UUID().uuidString)")

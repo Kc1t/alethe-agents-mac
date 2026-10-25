@@ -4,7 +4,6 @@ import AletheOrchestrator
 import AlethePluginKit
 import SwiftUI
 
-/// Compact worker status, sharing the board's snapshots and native subagent tracker.
 struct AgentsView: View {
     static let tabID = "agents"
     static let tab = SidebarTabContribution(id: tabID, title: "Agents", symbol: "person.3", side: .right, viewID: tabID)

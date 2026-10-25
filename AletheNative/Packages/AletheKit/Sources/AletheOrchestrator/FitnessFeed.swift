@@ -1,9 +1,6 @@
 import Foundation
 import AletheAgents
 
-/// A board header's quota warning chip for one agent (upstream `useOrchestratorQuotaWarnings`'s
-/// `QuotaWarning`): shown at `AgentFitness.headroomThreshold` or when rate-limited, the same line
-/// the planner's `headroomHint` uses, so the person and the planner never disagree.
 public struct QuotaWarning: Hashable, Sendable {
     public var agent: String
     public var used: Int
@@ -17,19 +14,15 @@ public struct QuotaWarning: Hashable, Sendable {
         self.rateLimited = rateLimited
     }
 
-    /// Nil while the agent still has headroom.
     public init?(agent: String, fitness: AgentFitness) {
         guard fitness.isStrained else { return nil }
         self.init(agent: agent, used: fitness.used, resetsAt: fitness.resetsAt, rateLimited: fitness.rateLimited)
     }
 
-    /// One chip per strained agent, by agent name (Claude before Codex, as upstream checks them).
     public static func warnings(_ readings: [String: AgentFitness]) -> [QuotaWarning] {
         FitnessRouting(readings).entries.compactMap { QuotaWarning(agent: $0.agent, fitness: $0.fitness) }
     }
 
-    /// Time left until the window resets (upstream `formatReset`): `2h5m`, or `5m` under an hour;
-    /// nil once it is due, which the chip says as "now".
     public static func countdown(to resetsAt: Date, now: Date = Date()) -> String? {
         let milliseconds = (resetsAt.timeIntervalSince(now) * 1000).rounded(.down)
         guard milliseconds > 0 else { return nil }
@@ -39,10 +32,6 @@ public struct QuotaWarning: Hashable, Sendable {
     }
 }
 
-/// While at least one board is open, reads the planner agents' usage every `interval` (upstream
-/// `USAGE_POLL_MS`), pushes each reading into the core as fitness and publishes the quota
-/// warnings, so the planner and the person read the same numbers. The last board to close stops
-/// the loop. Runs on this actor, off the main thread; `read` owns how usage is fetched.
 public actor FitnessFeed {
     public typealias Read = @Sendable () async -> [ProviderUsage]
     public typealias Push = @Sendable (_ agent: String, _ fitness: AgentFitness) async -> Void
@@ -56,7 +45,6 @@ public actor FitnessFeed {
     private let publish: Publish
     private var boards: Set<UUID> = []
     private var loop: Task<Void, Never>?
-    /// The last good reading per agent: a failed read keeps it, as the core does.
     private var readings: [String: AgentFitness] = [:]
 
     public init(interval: Duration = FitnessFeed.defaultInterval, read: @escaping Read,
@@ -70,7 +58,6 @@ public actor FitnessFeed {
     public var isRunning: Bool { loop != nil }
     public var openBoards: Int { boards.count }
 
-    /// A board appeared; the first one starts the loop, which reads right away.
     public func open(_ board: UUID) {
         boards.insert(board)
         guard loop == nil else { return }
@@ -84,7 +71,6 @@ public actor FitnessFeed {
         }
     }
 
-    /// A board went away; with none left the loop stops.
     public func close(_ board: UUID) {
         boards.remove(board)
         guard boards.isEmpty else { return }

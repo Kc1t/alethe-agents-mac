@@ -1,8 +1,5 @@
 import XCTest
 
-/// 9router routing for new terminals (P7-17): the New Terminal sheet offers "Route through 9router"
-/// only when routing can apply, and a routed tab launches (and repeats) with 9router's variables. The
-/// seeded `claude` is a stub that prints `ROUTED <host:port>` or `UNROUTED`; 9router is a stub install.
 @MainActor
 final class Router9RoutingTests: XCTestCase {
     override func setUp() async throws {
@@ -53,7 +50,6 @@ final class Router9RoutingTests: XCTestCase {
         let (app, _) = launchAlethe(arguments: ["-AletheUITestSeed", "router9RouteKeyless"])
         let agents = openSheet(app)
         agents.radioButtons["Claude Code"].click()
-        // Give the install probe time to finish before asserting absence.
         RunLoop.current.run(until: Date().addingTimeInterval(2))
         XCTAssertFalse(element(app, "newTerminal.router9").exists)
         app.terminate()

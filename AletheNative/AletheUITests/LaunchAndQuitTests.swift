@@ -1,6 +1,5 @@
 import XCTest
 
-/// Start clean and quit confirmation (P2-26).
 @MainActor
 final class LaunchAndQuitTests: XCTestCase {
     override func setUp() async throws {
@@ -27,7 +26,6 @@ final class LaunchAndQuitTests: XCTestCase {
         let (app, root) = launchAlethe(arguments: ["-AletheUITestSeed", "panes"])
         XCTAssertTrue(element(app, "container.api").waitForExistence(timeout: 5))
         app.typeKey(",", modifierFlags: .command)
-        // Settings reopens on the last tab it showed.
         app.toolbars.buttons["General"].firstMatch.click()
         let toggle = element(app, "settings.startClean")
         XCTAssertTrue(toggle.waitForExistence(timeout: 5))

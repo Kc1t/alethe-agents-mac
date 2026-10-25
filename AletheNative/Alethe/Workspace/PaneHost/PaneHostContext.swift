@@ -3,8 +3,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// What the AppKit pane host needs from the SwiftUI side: the environment, the current look, and
-/// the undoable edits it triggers.
 @MainActor
 struct PaneHostContext {
     let environment: AppEnvironment
@@ -14,11 +12,8 @@ struct PaneHostContext {
 
     var workspace: WorkspaceModel? { environment.workspace }
 
-    /// Focused pane border: the focus ring in Normal (upstream `.pane.focused`), a strong neutral
-    /// border in Clean (upstream `--clean-focus-border`).
     var focusBorder: ThemeToken { metrics.style == .clean ? .borderStrong : .focusRing }
 
-    /// A SwiftUI view with the environment every Alethe view expects.
     func hosted(_ view: some View) -> AnyView {
         AnyView(view
             .environment(environment)
@@ -44,7 +39,6 @@ struct PaneHostContext {
         }
     }
 
-    /// Switching sub-tabs is navigation, not an edit: not undoable.
     func activateTab(_ tab: TabID) {
         workspace?.update { $0.activateTab(tab) }
     }
@@ -61,7 +55,6 @@ struct PaneHostContext {
         workspace?.update { $0.setLaneVisible(visible, for: pane) }
     }
 
-    /// What a file pane shows changed (a diff's staged toggle): a view setting, not undoable.
     func setContent(_ content: PaneContent, for pane: PaneID) {
         workspace?.update { $0.updatePane(pane) { $0.content = content } }
     }
@@ -72,7 +65,6 @@ struct PaneHostContext {
         }
     }
 
-    /// Clicking a pane focuses it and selects its project; not undoable (navigation, not an edit).
     func focus(_ pane: PaneID, in project: ProjectID) {
         guard let doc = workspace?.document,
               doc.workspace.focusedPaneID != pane || doc.workspace.selectedProjectID != project else { return }
@@ -82,7 +74,6 @@ struct PaneHostContext {
         }
     }
 
-    /// Layout changes (order, collapse, fullscreen, isolation) are view settings: not undoable.
     func moveContainer(_ project: ProjectID, to index: Int) {
         workspace?.update { $0.moveContainer(project, to: index) }
     }
@@ -99,7 +90,6 @@ struct PaneHostContext {
         workspace?.update { $0.setLayoutMode(mode, for: project) }
     }
 
-    /// Disabling ends the pane's processes (their output is kept); undoable.
     func setDisabled(_ pane: PaneID, _ disabled: Bool) {
         workspace?.update(undoManager: undoManager(),
                           actionName: String(localized: disabled ? "undo.disableTerminal" : "undo.enableTerminal")) {
@@ -111,7 +101,6 @@ struct PaneHostContext {
         workspace?.update { $0.isolate(pane) }
     }
 
-    /// Resizes are committed once, on release; not undoable (like upstream).
     func setContainerWeights(_ weights: [Double]) {
         workspace?.update { $0.workspace.containerWeights = weights }
     }
@@ -124,7 +113,6 @@ struct PaneHostContext {
         workspace?.update { $0.setTrackWeights(weights, for: project) }
     }
 
-    /// Focus mode is a momentary view, not saved (upstream keeps it in the UI store).
     func setFocusMode(_ pane: PaneID?) {
         if let pane, let project = workspace?.document.pane(pane)?.project.id {
             focus(pane, in: project)
@@ -132,7 +120,6 @@ struct PaneHostContext {
         environment.focusModePaneID = pane
     }
 
-    /// Dropping a grid pane on another pane or a free slot.
     func moveGridCell(_ pane: PaneID, toCol col: Int, row: Int) {
         workspace?.update(undoManager: undoManager(), actionName: String(localized: "undo.move")) {
             $0.moveGridCell(pane, toCol: col, row: row)
@@ -144,8 +131,6 @@ struct PaneHostContext {
             $0.fillFreeSpace(pane)
         }
     }
-
-    // MARK: - Named grids (P2-20)
 
     func activateGrid(_ grid: ProjectGridID?, in project: ProjectID) {
         workspace?.update { $0.activateGrid(grid, in: project) }

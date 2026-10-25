@@ -18,7 +18,6 @@ struct MergeValidateFinishTests {
         try await runner.run(args, in: dir).text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    /// `main` checked out, `feature` one commit ahead with a new file.
     static func repo() async throws -> URL {
         let root = try tempDir("alethe-finish")
         _ = try await git(root, "init", "-b", "main")
@@ -35,7 +34,6 @@ struct MergeValidateFinishTests {
         return root
     }
 
-    /// Mirrors upstream `merge_prepare` for a clean merge.
     static func prepare(_ root: URL) async throws -> MergeEnvHandle {
         let env = MergeEnvHandle(id: "t\(UUID().uuidString.prefix(8).lowercased())", source: "feature", target: "main")
         try FileManager.default.createDirectory(at: MergeAnalyzer.mergeEnvsDirectory(root: root), withIntermediateDirectories: true)
@@ -45,8 +43,6 @@ struct MergeValidateFinishTests {
     }
 
     static func finisher(_ root: URL) -> MergeFinisher { MergeFinisher(root: root, runner: runner) }
-
-    // MARK: G — validation runner
 
     @Test func validationRunnerPassesAndCapturesOutput() async throws {
         let dir = try Self.tempDir("alethe-validate")
@@ -108,8 +104,6 @@ struct MergeValidateFinishTests {
         #expect(ValidationSettings.suggested(for: dir).commands == ["npm run build", "cargo check --manifest-path src-tauri/Cargo.toml"])
     }
 
-    // MARK: G — finish
-
     @Test func finalizeCleanBranchFastForwardsAndTearsDown() async throws {
         let root = try await Self.repo()
         let env = try await Self.prepare(root)
@@ -147,7 +141,7 @@ struct MergeValidateFinishTests {
         let env = try await Self.prepare(root)
         let finisher = Self.finisher(root)
         try await finisher.preflightAbort(env)
-        try await finisher.preflightAbort(env) // nothing in progress: still a no-op
+        try await finisher.preflightAbort(env)
         try await finisher.abort(env)
         #expect(!FileManager.default.fileExists(atPath: env.directory(root: root).path))
         #expect(try await Self.git(root, "rev-parse", "main") == before)
@@ -187,8 +181,6 @@ struct MergeValidateFinishTests {
             try await finisher.removeWorktree(at: root.appendingPathComponent("elsewhere"))
         }
     }
-
-    // MARK: U — health probe parsing
 
     @Test func healthProbeURLNormalizesPath() {
         #expect(HealthProbe.probeURL(port: 4000, path: nil)?.absoluteString == "http://127.0.0.1:4000/")

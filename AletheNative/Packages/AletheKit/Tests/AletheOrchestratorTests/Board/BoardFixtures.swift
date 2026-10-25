@@ -2,7 +2,6 @@ import Foundation
 import AletheIntegrations
 @testable import AletheOrchestrator
 
-/// The upstream tests' `job()` builder: a running Codex worker with nothing reported yet.
 func boardJob(
     _ id: String,
     run runID: String,

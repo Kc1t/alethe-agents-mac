@@ -4,10 +4,6 @@ import AletheAgents
 import AletheIntegrations
 @testable import AletheOrchestrator
 
-// Ported from upstream `src/lib/orchestratorMedia.test.ts` (5 cases; the Windows path is rewritten
-// as POSIX) and `src/lib/orchestratorSubagents.test.ts` (2 cases), plus units for the POSIX paths,
-// the promoted image and the card readings.
-
 @Suite struct ExtractMediaItemsTests {
     @Test func findsALocalImagePath() {
         #expect(BoardMedia.extract("Saved the chart at /repo/out/chart.png for review.")
@@ -35,7 +31,6 @@ import AletheIntegrations
         #expect(BoardMedia.extract("Read the config files, nothing else to report.") == [])
     }
 
-    // POSIX specifics: a URL's own path, relative paths and non-images never count as local images.
     @Test func matchesOnlyAbsoluteOrHomeImagePaths() {
         let text = "Wrote ~/shots/a.PNG and (/tmp/b.jpeg), not out/c.png, ./d.png or /repo/notes.md; see https://host/e.png"
         #expect(BoardMedia.extract(text) == [

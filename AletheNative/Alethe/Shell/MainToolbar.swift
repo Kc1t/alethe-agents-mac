@@ -2,9 +2,6 @@ import AletheAgents
 import AletheModel
 import SwiftUI
 
-/// The main window's customizable toolbar (UI-7, upstream `TopbarSettingsModal`): View › Customize
-/// Toolbar… arranges and removes items (AppKit keeps that per window), and Settings › Appearance ›
-/// Toolbar shows or hides each one (the profile's preferences, shared with AI Usage's pill toggles).
 struct MainToolbar: ViewModifier {
     static let id = "main"
 
@@ -52,7 +49,6 @@ struct MainToolbar: ViewModifier {
         }
     }
 
-    /// Usage pills overflow first; on macOS 27 below every other low-priority item (ADR-7a).
     @available(macOS 26.1, *)
     static func priority(_ rank: ToolbarOverflowRank) -> ToolbarItemVisibilityPriority {
         switch rank {

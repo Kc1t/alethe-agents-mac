@@ -2,7 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// Scene restoration keeps the pane and profile identity, never a second writable workspace copy.
 struct DetachedBoardID: Hashable, Codable {
     var profile: ProfileID?
     var pane: PaneID

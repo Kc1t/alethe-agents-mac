@@ -3,7 +3,6 @@ import AletheModel
 import AletheOrchestrator
 import SwiftUI
 
-/// Shortcuts type a draft into the lead's terminal; sending remains the user's action.
 struct OrchestrationShortcuts: View {
     let job: JobSnapshot
     let project: ProjectID

@@ -3,7 +3,6 @@ import Foundation
 import Testing
 @testable import AletheModel
 
-/// Toolbar configuration (P5-13): item visibility and the v1 → v2 migration of P3-13's `usagePills`.
 @Suite struct ToolbarLayoutTests {
     private func migrated(_ json: String) async throws -> (PreferencesDocument, DocumentLoadOutcome, JSONObject) {
         let directory = FileManager.default.temporaryDirectory.appending(path: "alethe-toolbar-\(UUID().uuidString)")

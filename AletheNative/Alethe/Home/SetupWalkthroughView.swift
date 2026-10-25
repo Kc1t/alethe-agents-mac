@@ -3,9 +3,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// First-run steps on Home (upstream `SetupWalkthrough`): an agent installed, a first project, a first
-/// terminal, a look at the themes. Steps complete from what exists; the card can be hidden and comes
-/// back from Help › Show Setup Steps.
 struct SetupWalkthroughView: View {
     let workspace: WorkspaceModel
     @Environment(AppEnvironment.self) private var environment
@@ -163,7 +160,6 @@ struct SetupWalkthroughView: View {
         case .terminal:
             environment.editorRequest = workspace.document.projects.isEmpty ? .newProject(.ungrouped) : .newTerminal(nil)
         case .appearance where metrics.isWebInterface:
-            // The web opens its theme picker modal here; Done marks the step.
             environment.editorRequest = .themePicker
         case .appearance:
             environment.preferences?.update { preferences in
@@ -176,7 +172,6 @@ struct SetupWalkthroughView: View {
         }
     }
 
-    /// Whether any enabled agent's CLI resolves (the launcher cache re-checks hits on disk).
     private func findAgents() async {
         let overrides = environment.preferences?.document.cliPaths ?? [:]
         agentsFound = AgentRegistry.builtin.enabledKinds(environment.preferences?.document.enabledAgents).contains { kind in

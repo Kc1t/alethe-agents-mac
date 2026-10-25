@@ -1,7 +1,6 @@
 import Foundation
 import SQLite3
 
-/// Tokens and cost of one model within a session (upstream `ModelCost`, `agent_cost.rs`).
 public struct ModelCost: Hashable, Sendable, Identifiable {
     public var model: String
     public var input: Int = 0
@@ -9,8 +8,6 @@ public struct ModelCost: Hashable, Sendable, Identifiable {
     public var cacheRead: Int = 0
     public var cacheWrite5m: Int = 0
     public var cacheWrite1h: Int = 0
-    /// Known cost in USD: reported by the agent (OpenCode) or priced from the table; nil when the
-    /// model has no known price.
     public var costUSD: Double?
 
     public var id: String { model }
@@ -28,12 +25,9 @@ public struct ModelCost: Hashable, Sendable, Identifiable {
     }
 }
 
-/// A session's totals (upstream `SessionCost`).
 public struct SessionCost: Hashable, Sendable {
     public var byModel: [ModelCost]
-    /// Sum of the known costs; nil when no model could be priced.
     public var costUSD: Double?
-    /// The model that wrote the most output.
     public var model: String?
 
     public var input: Int { byModel.reduce(0) { $0 + $1.input } }
@@ -42,7 +36,6 @@ public struct SessionCost: Hashable, Sendable {
     public var cacheWrite: Int { byModel.reduce(0) { $0 + $1.cacheWrite5m + $1.cacheWrite1h } }
     public var totalTokens: Int { byModel.reduce(0) { $0 + $1.totalTokens } }
 
-    /// Prices every model and adds them up (upstream `aggregate`).
     public init(byModel: [ModelCost]) {
         let priced = byModel.map { cost -> ModelCost in
             var cost = cost
@@ -56,8 +49,6 @@ public struct SessionCost: Hashable, Sendable {
     }
 }
 
-/// USD per million tokens by Claude model family (upstream `pricing_for`); cache writes cost 1.25×
-/// (5 minutes) or 2× (1 hour) the input price, cache reads 0.1×.
 public enum ModelPricing {
     public struct Rate: Hashable, Sendable {
         public var family: String
@@ -90,7 +81,6 @@ public enum ModelPricing {
 }
 
 public enum SessionCosts {
-    /// Every `message.usage` of a Claude Code transcript, per model (upstream `parse_claude_cost`).
     public static func claude(transcript path: String) -> SessionCost {
         var models: [String: ModelCost] = [:]
         let usageKey = Data(#""usage""#.utf8)
@@ -120,8 +110,6 @@ public enum SessionCosts {
         return SessionCost(byModel: models.values.sorted { $0.model < $1.model })
     }
 
-    /// The last cumulative `token_count` of a Codex rollout (upstream `parse_codex_cost`); Codex
-    /// prices are not in the table, so it has tokens without a cost.
     public static func codex(rollout path: String) -> SessionCost {
         var cost = ModelCost(model: "codex")
         let marker = Data(#""token_count""#.utf8)
@@ -138,8 +126,6 @@ public enum SessionCosts {
         return SessionCost(byModel: [cost])
     }
 
-    /// An OpenCode session from its SQLite database, opened read-only (upstream reads the `session`
-    /// row: model, token counts and the cost OpenCode computed).
     public static func openCode(sessionID: String, database: String) -> SessionCost? {
         var handle: OpaquePointer?
         guard sqlite3_open_v2(database, &handle, SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX, nil) == SQLITE_OK else {
@@ -155,7 +141,6 @@ public enum SessionCosts {
         sqlite3_bind_text(statement, 1, sessionID, -1, transient)
         guard sqlite3_step(statement) == SQLITE_ROW else { return nil }
         let rawModel = sqlite3_column_text(statement, 0).map { String(cString: $0) } ?? ""
-        // The model column may hold JSON ({"id": …}) or a bare id.
         let model = (try? JSONSerialization.jsonObject(with: Data(rawModel.utf8)) as? [String: Any])?["id"] as? String ?? rawModel
         return SessionCost(byModel: [ModelCost(
             model: model.isEmpty ? "opencode" : model,
@@ -164,7 +149,6 @@ public enum SessionCosts {
             costUSD: sqlite3_column_double(statement, 5))])
     }
 
-    /// Where OpenCode keeps its database: what `opencode db path` answers, else its data folders.
     public static func openCodeDatabase(executable: String?, homeDirectory: String = NSHomeDirectory()) async -> String? {
         if let executable, let answer = await CLIOutput.run(executable, ["db", "path"], timeout: .seconds(5)) {
             let path = answer.trimmingCharacters(in: .whitespacesAndNewlines).split(whereSeparator: \.isNewline).last.map(String.init) ?? ""
@@ -175,7 +159,6 @@ public enum SessionCosts {
             .first { FileManager.default.fileExists(atPath: $0) }
     }
 
-    /// The transcript file of a session, for the agents with readable ones.
     public static func transcript(_ kind: AgentKind, sessionID: String, cwd: String,
                                   homeDirectory: String = NSHomeDirectory()) -> String? {
         switch kind {
@@ -189,7 +172,6 @@ public enum SessionCosts {
             let root = "\(homeDirectory)/.codex/sessions"
             guard let enumerator = FileManager.default.enumerator(atPath: root) else { return nil }
             while let relative = enumerator.nextObject() as? String {
-                // The id ends the file name (`rollout-<time>-<id>.jsonl`): no need to open each file.
                 if relative.hasSuffix("\(sessionID).jsonl") { return "\(root)/\(relative)" }
             }
             return nil
@@ -198,7 +180,6 @@ public enum SessionCosts {
         }
     }
 
-    /// A session's cost for any agent that records one (Claude Code, Codex, OpenCode).
     public static func cost(_ kind: AgentKind, sessionID: String, cwd: String, openCodeExecutable: String?) async -> SessionCost? {
         switch kind {
         case .claude: return transcript(.claude, sessionID: sessionID, cwd: cwd).map { claude(transcript: $0) }

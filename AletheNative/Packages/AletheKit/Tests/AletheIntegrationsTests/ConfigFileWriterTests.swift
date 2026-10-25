@@ -9,7 +9,6 @@ private func temporaryDirectory() -> URL {
     return url
 }
 
-/// A clock that advances one second per call, so backups get distinct, ordered names.
 private final class SteppingClock: @unchecked Sendable {
     private let lock = NSLock()
     private var current = Date(timeIntervalSince1970: 1_700_000_000)
@@ -112,7 +111,6 @@ private let slot = ConfigBackupSlot(agent: "claude", kind: "user")
         }
         let backups = writer.backups(in: slot)
         #expect(backups.count == ConfigFileWriter.maxBackups)
-        // Newest first: the last write backed up "13", the oldest kept is "4".
         #expect(try String(contentsOf: backups[0].url, encoding: .utf8) == "13")
         #expect(try String(contentsOf: backups[9].url, encoding: .utf8) == "4")
         #expect(backups.map(\.createdAt) == backups.map(\.createdAt).sorted(by: >))

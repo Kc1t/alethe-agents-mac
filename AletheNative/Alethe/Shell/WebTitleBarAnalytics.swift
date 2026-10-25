@@ -151,7 +151,6 @@ struct WebTitleBarUsage: View {
         .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.borderSubtle], lineWidth: metrics.size(1)))
     }
 
-    /// `HomeView.module.css` resetCreditBox: opens the nested credit dialog.
     private func resetCreditBox(count: Int) -> some View {
         HStack(spacing: metrics.size(8)) {
             Text("usage.web.credit.heading").font(metrics.font(size: 12, weight: .semibold))

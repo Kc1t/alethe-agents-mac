@@ -1,6 +1,5 @@
 import XCTest
 
-/// Disable and enable a terminal (P2-23).
 @MainActor
 final class DisableTests: XCTestCase {
     override func setUp() async throws {

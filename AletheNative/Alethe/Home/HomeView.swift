@@ -4,8 +4,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// Home (upstream `HomeView`): greeting, quick launch, recent projects and actions, usage, activity,
-/// time analytics and notifications — real data only. ⇧⌘H switches between Home and the workspace.
 struct HomeView: View {
     let workspace: WorkspaceModel
     @Environment(AppEnvironment.self) private var environment
@@ -125,10 +123,7 @@ struct HomeView: View {
     }
 }
 
-// MARK: - Shared pieces
-
 extension View {
-    /// Home's staggered entrance: three steps at most, none under reduced motion.
     func entrance(_ appeared: Bool, step: Int, reduced: Bool, rise: CGFloat) -> some View {
         opacity(appeared || reduced ? 1 : 0)
             .offset(y: appeared || reduced ? 0 : rise)
@@ -172,8 +167,6 @@ enum HomeFormat {
         return Duration.seconds(minutes * 60).formatted(.units(allowed: units, width: .narrow))
     }
 }
-
-// MARK: - Hero
 
 private struct HomeHero: View {
     @AppStorage("sidebar.web.avatarImages") private var avatarImages = "{}"
@@ -306,10 +299,6 @@ private struct HomeHero: View {
     }
 }
 
-// MARK: - Quick launch
-
-/// The mini-terminal (upstream quick launch): a prompt, the agent, the project and the permission
-/// mode; sending opens a new terminal of that agent in the project with the prompt as its first input.
 private struct QuickLaunch: View {
     let workspace: WorkspaceModel
     var compactToolbar = false
@@ -595,8 +584,6 @@ private struct QuickLaunch: View {
     }
 }
 
-// MARK: - Recent projects and actions
-
 private struct RecentProjects: View {
     let workspace: WorkspaceModel
     @Environment(AppEnvironment.self) private var environment
@@ -786,8 +773,6 @@ private struct HomeActions: View {
     }
 }
 
-// MARK: - Footer
-
 private struct HomeFooter: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme
@@ -816,14 +801,12 @@ private struct HomeFooter: View {
     }
 }
 
-/// Toolbar: Home ↔ workspace.
 struct HomeButton: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme
 
     var body: some View {
         Button { environment.toggleHome() } label: {
-            // The label's content never changes; only its tint marks Home as shown (see `icon`).
             Image(nsImage: Self.icon).webProfileSized(16)
                 .foregroundStyle(environment.showingHome ? theme[.accent] : theme[.textSecondary])
         }
@@ -833,10 +816,6 @@ struct HomeButton: View {
         .accessibilityIdentifier("home.button")
     }
 
-    // On macOS 27 the toolbar can hold this label in a 0×0 host (e.g. while its toolbar is hidden).
-    // Swapping the glyph there made CoreUI rasterize `house.fill` at 0×0 and throw, crashing the
-    // app; a swapped bitmap instead got laid out at 0×0 and vanished. So the label keeps one
-    // pre-rendered bitmap for good: no content change to re-measure, no vector rasterization.
     private static let icon = templateBitmap("house")
 
     private static func templateBitmap(_ symbol: String) -> NSImage {
@@ -864,7 +843,6 @@ struct HomeButton: View {
     }
 }
 
-// Shared by the toolbar and left sidebar Home controls.
 extension AppEnvironment {
     func toggleHome() { showingHome.toggle() }
 }

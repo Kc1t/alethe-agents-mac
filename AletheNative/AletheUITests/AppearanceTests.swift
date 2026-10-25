@@ -1,6 +1,5 @@
 import XCTest
 
-/// Settings › Appearance (P1-11): theme, app icon (P5-12), UI zoom and language.
 @MainActor
 final class AppearanceTests: XCTestCase {
     override func setUp() async throws {
@@ -27,7 +26,6 @@ final class AppearanceTests: XCTestCase {
         tile(app, "nord").click()
         XCTAssertTrue(eventually { self.tile(app, "nord").value as? String == "1" })
         XCTAssertEqual(tile(app, "elite-indigo").value as? String, "0")
-        // The screen, not `app.windows.firstMatch`: that can be an invisible helper window with no image.
         let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         shot.name = "appearance-nord"
         shot.lifetime = .keepAlways
@@ -41,8 +39,6 @@ final class AppearanceTests: XCTestCase {
         relaunched.terminate()
     }
 
-    /// Hit targets at three zoom levels: every Appearance control is clicked where it is drawn and
-    /// its effect checked.
     func testAppearanceControlsReceiveClicksAtThreeZoomLevels() {
         for (steps, label) in [(-1, "90%"), (0, "100%"), (2, "120%")] {
             let (app, _) = launchAlethe()
@@ -51,7 +47,6 @@ final class AppearanceTests: XCTestCase {
             openAppearance(app)
 
             let value = app.staticTexts["settings.zoom.value"].firstMatch
-            // A static text reports its string as the value; the label stays empty.
             var shown: String { value.value as? String ?? "" }
             XCTAssertTrue(eventually { shown == label }, "zoom shows \(shown)")
 
@@ -73,15 +68,12 @@ final class AppearanceTests: XCTestCase {
             app.menuItems["Português (Brasil)"].click()
             let note = app.descendants(matching: .any)["settings.language.restartNote"].firstMatch
             XCTAssertTrue(note.waitForExistence(timeout: 5), "language picker missed at \(label)")
-            // Back to System: the choice is stored in the app's real defaults domain.
             language.click()
             app.menuItems["System"].click()
             XCTAssertTrue(eventually { !note.exists }, "restart note stayed at \(label)")
             app.terminate()
         }
     }
-    /// App icon picker (P5-12) at three zoom levels: every tile selects where it is drawn, and the
-    /// choice survives a relaunch.
     func testAppIconPickerReceivesClicksAtThreeZoomLevels() {
         for (steps, label) in [(-1, "90%"), (0, "100%"), (2, "120%")] {
             let (app, root) = launchAlethe()

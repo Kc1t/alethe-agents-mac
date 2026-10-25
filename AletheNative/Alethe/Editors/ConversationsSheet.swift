@@ -4,9 +4,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// Past conversations (upstream `ClaudeHistoryModal` + `RecentChatsModal`): Claude Code or Codex, for
-/// one project or all of them, newest first, filterable. Opening one shows the tab that already holds
-/// it, or starts a new terminal that resumes it.
 struct ConversationsSheet: View {
     let workspace: WorkspaceModel
     let undoManager: UndoManager?
@@ -40,7 +37,6 @@ struct ConversationsSheet: View {
             ?? workspace.document.projects.first
     }
 
-    /// The terminal tab "Open here" restarts: the active tab of the project's focused terminal pane.
     private var targetTab: (pane: Pane, tab: PaneTab)? {
         guard let project else { return nil }
         let focused = workspace.document.workspace.focusedPaneID
@@ -112,8 +108,6 @@ struct ConversationsSheet: View {
             }
             Spacer()
             Button("editor.cancel", action: dismiss)
-            // RecentChatsModal.tsx: "Open here" restarts the focused pane on the chat, "New pane" resumes it
-            // in a pane of its own.
             Button("recentChats.openHere") { selection.flatMap { id in visible.first { $0.id == id } }.map(openHere) }
                 .disabled(selection == nil || targetTab == nil)
                 .help(Text(targetTab == nil ? "recentChats.openHereDisabled" : "recentChats.openHereTooltip"))
@@ -239,8 +233,6 @@ struct ConversationsSheet: View {
         .accessibilityIdentifier("conversations.row.\(summary.id)")
     }
 
-    // MARK: - Loading and opening
-
     private func load() async {
         rows = nil
         selection = nil
@@ -253,7 +245,6 @@ struct ConversationsSheet: View {
         rows = loaded
     }
 
-    /// The selected conversation's tokens and cost, read off the main thread.
     private func loadCost() async {
         cost = nil
         guard let id = selection, let row = visible.first(where: { $0.id == id }),
@@ -268,7 +259,6 @@ struct ConversationsSheet: View {
         workspace.document.projects.contains { $0.panes.contains { $0.tabs.contains { $0.sessionID == row.summary.id } } }
     }
 
-    /// Restarts the target pane's active tab on the conversation (upstream `resumeSessionInPane`).
     private func openHere(_ row: Row) {
         guard let (_, tab) = targetTab, let project else { return }
         let kind = agent
@@ -286,7 +276,6 @@ struct ConversationsSheet: View {
         dismiss()
     }
 
-    /// The tab that holds the conversation, or a new terminal resuming it.
     private func open(_ row: Row) {
         let id = row.summary.id
         if let tab = workspace.document.projects.lazy.flatMap(\.panes).flatMap(\.tabs).first(where: { $0.sessionID == id }) {

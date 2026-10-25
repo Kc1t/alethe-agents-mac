@@ -2,21 +2,15 @@ import AletheFoundation
 import Foundation
 import Observation
 
-/// Which plugins the user enabled or disabled (`plugins.json`). Plugins without an entry follow
-/// their manifest's `enabledByDefault`.
 public struct PluginHostState: VersionedDocument {
     public static let currentVersion = 1
     public static let migrations: [Int: @Sendable (inout JSONObject) throws -> Void] = [:]
     public static let initial = PluginHostState(schemaVersion: 1, enabled: [:], viewPlacements: nil)
     public var schemaVersion: Int
     public var enabled: [String: Bool]
-    /// Sidebar placement of contributed tabs (P4-2); absent until the user moves one.
     public var viewPlacements: ViewPlacements?
 }
 
-/// Loads the statically registered plugins, activates the enabled ones and keeps their
-/// contributions. A plugin that fails (invalid manifest, incompatible API, `activate` throwing) is
-/// marked failed with its error; the others are unaffected.
 @MainActor
 @Observable
 public final class PluginHost {
@@ -34,11 +28,8 @@ public final class PluginHost {
     }
 
     public private(set) var records: [Record] = []
-    /// Contributions of every active plugin, in registration order.
     public private(set) var contributions = PluginContributions()
     private var placements = ViewPlacements.empty
-    /// `PluginEnabled`/`PluginDisabled` and load failures for the app's event bus (P6-19); held
-    /// until the app attaches its bus.
     @ObservationIgnored public let events = EventOutbox()
 
     @ObservationIgnored private let pluginTypes: [any AlethePlugin.Type]
@@ -52,9 +43,6 @@ public final class PluginHost {
     @ObservationIgnored private var contexts: [String: PluginContext] = [:]
     @ObservationIgnored private var storages: [String: PluginStorage] = [:]
 
-    /// - Parameters:
-    ///   - plugins: the built-in plugin types, registered statically.
-    ///   - dataRoot: holds `plugins.json` and `plugin-data/<id>.json`.
     public init(
         plugins: [any AlethePlugin.Type],
         dataRoot: URL,
@@ -68,7 +56,6 @@ public final class PluginHost {
         self.stateStore = DocumentStore(url: dataRoot.appending(path: "plugins.json"))
     }
 
-    /// Reads the persisted enabled state and activates every enabled, valid plugin.
     public func load() async {
         hostState = (try? await stateStore.load().document) ?? .initial
         placements = hostState.viewPlacements ?? .empty
@@ -97,7 +84,6 @@ public final class PluginHost {
         records.first { $0.id == id }
     }
 
-    /// The live instance of an active plugin.
     public func instance(for id: String) -> (any AlethePlugin)? {
         instances[id]
     }
@@ -106,7 +92,6 @@ public final class PluginHost {
         contexts[id]?.contributions
     }
 
-    /// Enables or disables a plugin and persists the choice. Enabling a failed plugin retries it.
     public func setEnabled(_ enabled: Bool, for id: String) async throws {
         guard let index = records.firstIndex(where: { $0.id == id }) else { throw PluginError.unknownPlugin(id) }
         records[index].isEnabled = enabled
@@ -130,17 +115,14 @@ public final class PluginHost {
         rebuildContributions()
     }
 
-    /// The user's placement of contributed sidebar tabs.
     public var viewPlacements: ViewPlacements { placements }
 
-    /// Moves a contributed sidebar tab to a side and position, and persists it.
     public func moveSidebarTab(_ id: String, to side: SidebarSide, at index: Int) async throws {
         var updated = placements
         updated.move(id, to: side, at: index, in: contributions.sidebarTabs)
         try await savePlacements(updated)
     }
 
-    /// Returns every contributed sidebar tab to its default side and order.
     public func resetViewPlacements() async throws {
         try await savePlacements(.empty)
     }
@@ -153,7 +135,6 @@ public final class PluginHost {
         try await stateStore.save(hostState, revision: stateRevision)
     }
 
-    /// Deactivates every plugin and flushes their storage (call on quit).
     public func shutdown() async {
         for index in records.indices where records[index].state == .active {
             await deactivate(at: index)

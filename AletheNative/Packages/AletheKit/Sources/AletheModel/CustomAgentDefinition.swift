@@ -1,6 +1,5 @@
 import Foundation
 
-/// Schema-compatible with the web's CustomAgentDefinition and discriminated iconSpec.
 public struct CustomAgentDefinition: Codable, Hashable, Sendable, Identifiable {
     public var id = ""
     public var label = ""

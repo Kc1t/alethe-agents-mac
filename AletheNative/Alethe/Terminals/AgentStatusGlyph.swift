@@ -3,8 +3,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// A tab's agent state at a glance (upstream sidebar busy/done glyph): the dot-matrix spinner while
-/// working, a question bubble when it waits for an answer, a check when it finished unseen.
 struct AgentStatusGlyph: View {
     let tab: TabID
     @Environment(AppEnvironment.self) private var environment

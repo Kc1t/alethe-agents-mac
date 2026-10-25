@@ -3,8 +3,6 @@ import AletheGit
 import Foundation
 import Observation
 
-/// Commit graph of Git Control (P4-6; upstream `GitGraphList`): paginated log laid out by
-/// `GitGraphLayout`, the selected commit's detail and the per-commit actions.
 @MainActor @Observable
 final class GitHistoryModel {
     static let pageSize = 200
@@ -19,7 +17,6 @@ final class GitHistoryModel {
     private(set) var detailFiles: [GitFileChange] = []
 
     private let repository: GitRepository
-    /// Called after an action changes the repository, so the Changes tab refreshes too.
     private let onChange: @MainActor () async -> Void
     private var layout = GitGraphLayout()
     private var generation = 0
@@ -29,7 +26,6 @@ final class GitHistoryModel {
         self.onChange = onChange
     }
 
-    /// Reloads from the first page.
     func reload() async {
         generation += 1
         layout = GitGraphLayout()
@@ -39,7 +35,6 @@ final class GitHistoryModel {
         await loadMore()
     }
 
-    /// Loads the next page; called when the list nears its end.
     func loadMore() async {
         guard hasMore, !loading else { return }
         loading = true
@@ -87,7 +82,6 @@ final class GitHistoryModel {
 
     func dismissError() { error = nil }
 
-    /// Runs one action, then reloads the graph and the Changes state; failures show inline.
     private func perform(_ body: @escaping @Sendable (GitRepository) async throws -> Void) {
         guard !busy else { return }
         busy = true

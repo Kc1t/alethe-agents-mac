@@ -3,15 +3,11 @@ import Testing
 import AletheAgents
 @testable import AletheOrchestrator
 
-// P6-17: the board header's quota warnings (upstream `useOrchestratorQuotaWarnings`) and the usage
-// feed that pushes fitness into the core while a board is open.
-
 private func usage(_ agent: AgentKind, _ percent: Double, rateLimited: Bool = false, resetsAt: Date? = nil) -> ProviderUsage {
     ProviderUsage(agent: agent, status: .ready, windows: [UsageWindow(label: "5h", usedPercent: percent, resetsAt: resetsAt)],
                   rateLimited: rateLimited)
 }
 
-/// What the feed read, pushed and published, shared with its closures.
 private actor Recorder {
     var reads = 0
     var pushed: [String] = []
@@ -120,7 +116,6 @@ private func waitUntil(_ condition: @Sendable () async -> Bool) async {
 
         await feed.close(second)
         #expect(await !feed.isRunning)
-        // A tick already under way may finish; after that nothing more is read.
         try await Task.sleep(for: .milliseconds(50))
         let stopped = await recorder.reads
         try await Task.sleep(for: .milliseconds(150))

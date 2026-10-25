@@ -1,8 +1,5 @@
 import XCTest
 
-/// The board canvas (P6-14) over a seeded jobs file (`-AletheUITestSeed orchestratorBoard`: project
-/// `board` with a disabled Claude Code planner tab `tab-lead` and a board pane; run-01 holds done,
-/// failed and interrupted workers, run-02 one finished worker, run-03 comes from outside a terminal).
 @MainActor
 final class OrchestratorBoardTests: XCTestCase {
     override func setUp() async throws {
@@ -31,7 +28,6 @@ final class OrchestratorBoardTests: XCTestCase {
         XCTAssertTrue(element(app, "orchestrator.tab.none").exists, "work from outside a terminal gets its own tab")
         XCTAssertTrue(element(app, "orchestrator.node.planner").exists)
 
-        // Runs: the one needing the person first and open; the finished one folded.
         let first = element(app, "orchestrator.rail.run.run-01")
         let second = element(app, "orchestrator.rail.run.run-02")
         XCTAssertTrue(first.waitForExistence(timeout: 5))
@@ -41,14 +37,12 @@ final class OrchestratorBoardTests: XCTestCase {
         second.click()
         XCTAssertTrue(element(app, "orchestrator.rail.worker.job-04").waitForExistence(timeout: 5))
 
-        // Workers inside a run by lane (upstream `RUN_LANE_ORDER`): interrupted, failed, finished.
         let interrupted = element(app, "orchestrator.rail.worker.job-03").frame.minY
         let failed = element(app, "orchestrator.rail.worker.job-02").frame.minY
         let done = element(app, "orchestrator.rail.worker.job-01").frame.minY
         XCTAssertLessThan(interrupted, failed)
         XCTAssertLessThan(failed, done)
 
-        // Selecting a worker opens its detail with its report and plan.
         element(app, "orchestrator.rail.worker.job-01").click()
         let detail = element(app, "orchestrator.worker.job-01.detail")
         XCTAssertTrue(detail.waitForExistence(timeout: 5), "the rail selects the worker")
@@ -57,11 +51,9 @@ final class OrchestratorBoardTests: XCTestCase {
         XCTAssertTrue(report.label.contains("All tests pass") || (report.value as? String ?? "").contains("All tests pass"))
         XCTAssertTrue(element(app, "orchestrator.rail.worker.job-01").isSelected)
 
-        // Clicking the card again closes the detail.
         element(app, "orchestrator.worker.job-01.card").click()
         XCTAssertTrue(eventually { !detail.exists }, "the card toggles its detail")
 
-        // The other tab: its run, no planner node.
         element(app, "orchestrator.tab.none").click()
         XCTAssertTrue(element(app, "orchestrator.rail.run.run-03").waitForExistence(timeout: 5))
         XCTAssertTrue(eventually { !self.element(app, "orchestrator.node.planner").exists })
@@ -90,8 +82,6 @@ final class OrchestratorBoardTests: XCTestCase {
         app.terminate()
     }
 
-    /// Hit targets at three zoom levels: planner tabs, rail rows, worker cards and zoom controls
-    /// react where they are drawn.
     func testControlsReceiveClicksAtThreeZoomLevels() {
         for (steps, label) in [(-1, "90%"), (0, "100%"), (2, "120%")] {
             let app = launchBoard()
@@ -118,7 +108,6 @@ final class OrchestratorBoardTests: XCTestCase {
         }
     }
 
-    /// P: a board of 100 workers (five runs) laid out and redrawn through zoom and fit.
     func testLayoutAndRedrawWith100Workers() {
         let app = launchBoard("orchestratorLarge")
         XCTAssertTrue(element(app, "orchestrator.rail.run.run-05").waitForExistence(timeout: 10))

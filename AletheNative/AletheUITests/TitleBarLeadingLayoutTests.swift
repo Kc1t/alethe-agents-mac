@@ -37,7 +37,6 @@ final class TitleBarLeadingLayoutTests: XCTestCase {
         let sidebar = app.buttons["chrome.toggleSidebar"].firstMatch
         XCTAssertTrue(menu.waitForExistence(timeout: 10))
 
-        // Exercise native fullscreen through this app's shortcut, without global key events.
         app.typeKey("f", modifierFlags: [.command, .control])
         XCTAssertTrue(eventually(timeout: 10) { abs(menu.frame.minX - window.frame.minX - 6) < 1 })
         for (scale, steps) in [(0.8, -2), (1.0, 0), (1.5, 5)] {

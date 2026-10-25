@@ -1,9 +1,6 @@
 import Foundation
 import AletheIntegrations
 
-/// Talking to a worker after delegation (upstream `alethe_steer`, `alethe_send`, `alethe_answer`,
-/// `alethe_diff`, `Core::answer`, `Core::job_diff`). Every write to a worker goes through its own
-/// line writer, so none of these waits on a worker's pipe.
 extension OrchestratorCore {
     func followUpTool(name: String, arguments: OrderedJSONObject) throws(OrchestratorToolError) -> OrderedJSON {
         switch name {
@@ -31,11 +28,6 @@ extension OrchestratorCore {
         return job
     }
 
-    // MARK: alethe_steer
-
-    /// Corrects the running turn, context kept. Codex takes it into the turn (`turn/steer`); Claude
-    /// has no mid-turn steer, so its turn is interrupted and the correction starts next. A Claude
-    /// worker that is not running a turn takes it as its next one.
     public func steer(job jobID: String, message: String) throws(OrchestratorToolError) -> OrderedJSON {
         var job = try existingJob(jobID)
         guard job.threadID != nil else { throw OrchestratorToolError("job \(jobID) has no thread yet") }
@@ -57,18 +49,10 @@ extension OrchestratorCore {
         return ["steered": .string(jobID), "turnId": .string(turnID)]
     }
 
-    // MARK: alethe_send
-
-    /// A follow-up on the worker's own thread. A busy worker takes it as its next turn (its inbox),
-    /// a parked one at once, and one whose process is gone (released, interrupted, stopped) is
-    /// started again on its thread with the message as its first turn.
     public func send(job jobID: String, message: String) throws(OrchestratorToolError) -> OrderedJSON {
         var job = try existingJob(jobID)
         guard let threadID = job.threadID else { throw OrchestratorToolError("job \(jobID) has no thread") }
 
-        // Waiting beats both alternatives: refusing makes the lead babysit the worker, and steering
-        // would bend the turn in flight instead of adding to it. A job already queued or spawning
-        // picks the message up the same way.
         let live = workers[jobID] != nil || spawning[jobID] != nil
         if (live && !job.settled) || job.status == .queued {
             job.inbox.append(message)
@@ -78,7 +62,6 @@ extension OrchestratorCore {
         }
 
         guard live else {
-            // Its thread survives on disk, so the worker is started again and picks up from there.
             job.inbox.append(message)
             job.status = .queued
             jobs[jobID] = job
@@ -94,7 +77,6 @@ extension OrchestratorCore {
         }
         let turn: OrderedJSON
         if job.agent == WorkerAgent.claude {
-            // Claude's process is multi-turn: the next user line is the next turn.
             turn = ClaudeWorkerProtocol.userTurn(message)
         } else {
             guard var session = workers[jobID]?.codex else { throw OrchestratorToolError("job \(jobID) has no live worker") }
@@ -115,10 +97,6 @@ extension OrchestratorCore {
         return ["sent": .string(jobID)]
     }
 
-    // MARK: alethe_answer
-
-    /// Answers what the worker is stopped on, on the id it waits for, and lets it carry on. Only
-    /// an explicit decision of the planner or the person reaches here; nothing answers by itself.
     public func answer(job jobID: String, decision: CodexApprovalDecision) throws(OrchestratorToolError) -> OrderedJSON {
         var job = try existingJob(jobID)
         guard job.pending != nil else { throw OrchestratorToolError("job \(jobID) is not waiting on anything") }
@@ -134,7 +112,6 @@ extension OrchestratorCore {
         return ["answered": .string(jobID), "decision": .string(decision.rawValue)]
     }
 
-    /// The tool's form: the decision is checked before the job, as upstream does.
     public func answer(job jobID: String, decision: String) throws(OrchestratorToolError) -> OrderedJSON {
         guard let parsed = CodexApprovalDecision(rawValue: decision) else {
             let names = CodexApprovalDecision.allCases.map(\.rawValue).joined(separator: ", ")
@@ -143,10 +120,6 @@ extension OrchestratorCore {
         return try answer(job: jobID, decision: parsed)
     }
 
-    // MARK: alethe_diff
-
-    /// The worker's unified diff so far (Codex: its `turn/diff/updated` reports; Claude: its
-    /// uncommitted changes after a turn). Empty when it has none yet.
     public func jobDiff(_ jobID: String) throws(OrchestratorToolError) -> String {
         try existingJob(jobID).diff ?? ""
     }

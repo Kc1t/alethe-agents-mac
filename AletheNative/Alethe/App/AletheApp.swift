@@ -17,7 +17,6 @@ struct AletheApp: App {
     }
 
     var body: some Scene {
-        // A single main window: ⌘N belongs to "New Project", not to a second workspace window.
         Window(AppIdentity.displayName, id: "main") {
             MainWindow()
                 .environment(environment)
@@ -79,7 +78,6 @@ struct AletheApp: App {
     }
 }
 
-/// File menu: adding projects and groups (undoable through the key window's undo manager).
 private struct FileCommands: Commands {
     let environment: AppEnvironment
 
@@ -109,8 +107,6 @@ private struct FileCommands: Commands {
         }
     }
 
-    /// Repeats the last New Terminal choice in the selected project without the sheet (upstream
-    /// Ctrl+Alt+T); with nothing to repeat, the sheet opens.
     @MainActor private func newTerminalLikeLast() {
         guard let workspace = environment.workspace,
               let project = workspace.document.workspace.selectedProjectID ?? workspace.document.projects.first?.id,
@@ -130,8 +126,6 @@ private struct FileCommands: Commands {
     }
 }
 
-/// View menu additions: UI zoom (font and metric scale only — never `scaleEffect`, plan lesson 1),
-/// and showing one pane or one project alone.
 private struct ViewCommands: Commands {
     let environment: AppEnvironment
 
@@ -144,7 +138,6 @@ private struct ViewCommands: Commands {
         }
     }
 
-    /// The selected project's layout.
     @MainActor private var layout: Binding<PaneLayoutMode> {
         Binding {
             environment.workspace.flatMap { doc in doc.document.workspace.selectedProjectID.flatMap(doc.document.project) }?.layout ?? .auto
@@ -223,8 +216,6 @@ private struct ViewCommands: Commands {
     }
 }
 
-/// History menu (Safari's idiom): back/forward through visited workspace views, switching and
-/// reopening workspace tabs (upstream Alt+←/→, Ctrl+Tab, Ctrl+Shift+T).
 private struct HistoryCommands: Commands {
     let environment: AppEnvironment
 

@@ -3,8 +3,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// A toolbar usage pill (upstream topbar pills): the provider's busiest window, tinted as it fills;
-/// clicking opens AI Usage. Signed-in providers retain a placeholder while usage is unavailable.
 struct UsagePill: View {
     let provider: AgentKind
     @Environment(AppEnvironment.self) private var environment
@@ -48,7 +46,6 @@ struct UsagePill: View {
     }
 }
 
-/// Toolbar: opens AI Usage.
 struct AIUsageButton: View {
     @Environment(AppEnvironment.self) private var environment
 
@@ -67,8 +64,6 @@ enum UsageLevel {
     }
 }
 
-/// AI Usage (upstream `AiUsageModal` + `ResetCreditModal`): every provider's windows with when they
-/// reset, Codex's plan and reset credits, and which providers show a pill.
 struct AIUsageSheet: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.dismiss) private var dismiss
@@ -169,7 +164,6 @@ struct AIUsageSheet: View {
         }
     }
 
-    /// The same choice as Settings › Toolbar.
     private func pill(_ provider: AgentKind) -> Binding<Bool> {
         let item = ToolbarItemKind.usagePill(for: provider.rawValue)
         return Binding {

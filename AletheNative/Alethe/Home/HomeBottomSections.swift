@@ -3,7 +3,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// HomeView.module.css's overviewGrid, including its pane-relative breakpoints.
 struct WebHomeOverview: View {
     let workspace: WorkspaceModel
     @Environment(AppEnvironment.self) private var environment
@@ -142,7 +141,6 @@ private struct WebHomeProjectCard: View {
     }
 }
 
-/// Local controls keep the shared Components.swift untouched.
 struct HomeBottomCardStyle: ButtonStyle {
     var project = false
     @Environment(\.theme) private var theme

@@ -1,23 +1,16 @@
 import Foundation
 
-/// The kind of a conflicted path; each class carries its resolution strategy (upstream
-/// `merge_analyzer.rs`, RFC-006). Raw values match upstream's camelCase serialization.
 public enum ConflictClass: String, Sendable, Hashable, Codable, CaseIterable {
     case rust, typeScript, ui, cargo, package, json, config, asset, planning
-    /// Ephemeral machine state (e.g. `.gsd-child-session`): an opaque value, not mergeable prose.
     case sentinel
     case graph, other
 
-    /// Upstream's variant name; the order of `MergeAnalysis.classes` sorts by it.
     public var variantName: String { rawValue.prefix(1).uppercased() + rawValue.dropFirst() }
 
-    /// Classifies by path and extension. Lockfiles and manifests get their own class because the
-    /// strategy differs from regular code (regenerate rather than hand-edit).
     public static func classify(_ path: String) -> ConflictClass {
         let lower = path.replacingOccurrences(of: "\\", with: "/").lowercased()
         let fileName = lower.split(separator: "/", omittingEmptySubsequences: false).last.map(String.init) ?? lower
 
-        // Sentinels come before the `.planning/` fallback: merging both values breaks the spawn.
         if [".gsd-child-session", ".gsd-child-busy", ".gsd-child-error"].contains(fileName) {
             return .sentinel
         }
@@ -42,8 +35,6 @@ public enum ConflictClass: String, Sendable, Hashable, Codable, CaseIterable {
         }
     }
 
-    /// Strategy text handed to the resolution agent as minimal context (verbatim from upstream so the
-    /// classifier and the prompt never diverge).
     public var strategy: String {
         switch self {
         case .rust:

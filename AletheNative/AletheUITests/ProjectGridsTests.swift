@@ -1,6 +1,5 @@
 import XCTest
 
-/// Named project grids (P2-20): create one, switch between grids, move a pane into it.
 @MainActor
 final class ProjectGridsTests: XCTestCase {
     override func setUp() async throws {

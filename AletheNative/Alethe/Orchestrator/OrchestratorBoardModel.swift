@@ -2,30 +2,21 @@ import AletheOrchestrator
 import Foundation
 import Observation
 
-/// One board's state (upstream `OrchestratorPane`'s hooks): the selected planner and worker, the
-/// rail's open runs, the view transform, and the groups and layout derived off the main thread from
-/// the orchestrator's snapshot plus the planners' subagents. Transforms are in UI points (screen
-/// points divided by the UI scale), so the P6-12 fit, zoom and focus math applies unchanged.
 @Observable
 @MainActor
 final class OrchestratorBoardModel {
     private(set) var groups: [PlannerGroup] = []
     private(set) var activeKey: String?
     private(set) var graph = BoardGraph.empty
-    /// Promoted image per job id.
     private(set) var media: [String: MediaItem] = [:]
     private(set) var jobsByID: [String: JobSnapshot] = [:]
     private(set) var visibleJobs: [JobSnapshot] = []
     private(set) var view = ViewTransform.identity
     private(set) var selectedWorker: String?
-    /// The rail's explicit open/closed choices; runs without one follow `BoardData.opensByDefault`.
     var openRuns: [String: Bool] = [:]
     var summaryOpen = true
-    /// Advanced every second while a worker runs, so elapsed times move between snapshots.
     private(set) var now = Date()
-    /// When the current snapshot arrived: a running worker's elapsed time counts on from it.
     private(set) var receivedAt = Date()
-    /// True once the first derivation landed (the empty state waits for it).
     private(set) var isReady = false
 
     @ObservationIgnored var reducesMotion = false
@@ -33,7 +24,6 @@ final class OrchestratorBoardModel {
     @ObservationIgnored private var selectedPlanner: String?
     @ObservationIgnored private var heights: [String: Double] = [:]
     @ObservationIgnored private var viewport = BoardSize(width: 0, height: 0)
-    /// Set by any pan, zoom or focus: from then on new work no longer refits the view.
     @ObservationIgnored private var moved = false
     @ObservationIgnored private var generation = 0
     @ObservationIgnored private var deriving: Task<Void, Never>?
@@ -50,8 +40,6 @@ final class OrchestratorBoardModel {
 
     var selectedJob: JobSnapshot? { selectedWorker.flatMap { jobsByID[$0] } }
 
-    // MARK: Input
-
     func update(_ next: BoardSource) {
         guard next != source else { return }
         source = next
@@ -62,8 +50,6 @@ final class OrchestratorBoardModel {
         busy ? startTicking() : stopTicking()
     }
 
-    /// A node's rendered height, in screen points at `unit` screen points per canvas unit. The
-    /// layout is redone once per batch of changes, off main.
     func reportHeight(_ id: String, screenHeight: Double, unit: Double) {
         guard unit > 0, screenHeight > 0 else { return }
         let height = screenHeight / unit
@@ -78,7 +64,6 @@ final class OrchestratorBoardModel {
         }
     }
 
-    /// The canvas size in UI points.
     func setViewport(_ size: BoardSize) {
         guard size != viewport else { return }
         viewport = size
@@ -112,19 +97,14 @@ final class OrchestratorBoardModel {
         if sizeChanged, !moved { fit(animated: false) }
     }
 
-    // MARK: Selection
-
     func openPlanner(_ key: String) {
         guard key != activeKey else { return }
-        // The tab switches when its layout lands, so the canvas never pairs one planner's runs
-        // with another's layout.
         selectedPlanner = key
         selectedWorker = nil
         moved = false
         derive()
     }
 
-    /// A card click: opens the worker's detail, or closes it when it is already open.
     func toggleWorker(_ id: String) {
         selectedWorker = selectedWorker == id ? nil : id
     }
@@ -133,7 +113,6 @@ final class OrchestratorBoardModel {
         selectedWorker = nil
     }
 
-    /// A rail click: selects the worker and brings its card into view.
     func reveal(worker id: String) {
         selectedWorker = id
         focus(nodeID: id)
@@ -155,13 +134,10 @@ final class OrchestratorBoardModel {
         setView(BoardLayout.focusView(tree.box, view: view, in: viewport), animated: true)
     }
 
-    // MARK: View transform
-
     func fit(animated: Bool = true) {
         setView(BoardLayout.fitView(graph.size, in: viewport), animated: animated)
     }
 
-    /// The fit button: fits and lets new work refit again.
     func fitFromButton() {
         moved = false
         fit()
@@ -186,7 +162,6 @@ final class OrchestratorBoardModel {
         setView(BoardLayout.focusView(node.box, view: animationTarget, in: viewport), animated: true)
     }
 
-    /// Where an animation in flight is going, so repeated clicks compound from the end state.
     @ObservationIgnored private var target: ViewTransform?
     private var animationTarget: ViewTransform { target ?? view }
 
@@ -216,8 +191,6 @@ final class OrchestratorBoardModel {
         }
     }
 
-    // MARK: Live tick
-
     private func startTicking() {
         guard ticker == nil else { return }
         ticker = Task { [weak self] in
@@ -234,14 +207,12 @@ final class OrchestratorBoardModel {
         ticker = nil
     }
 
-    /// A running worker's elapsed seconds as of the last tick.
     func elapsed(_ job: JobSnapshot) -> Double? {
         guard let seconds = job.seconds else { return nil }
         guard job.status == .running else { return seconds }
         return seconds + max(0, now.timeIntervalSince(receivedAt))
     }
 
-    /// The pane is shown again: elapsed times move again while anything runs.
     func resume() {
         if source.jobs.contains(where: { $0.status == .running }) { startTicking() }
     }

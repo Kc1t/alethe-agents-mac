@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheModel
 
-/// Port of upstream `resources.rs` tests, plus the native idle mode and mounted tabs (P2-24).
 @Suite struct ResourcePolicyTests {
     private func runtime(_ id: String, shell: Bool = false, lastOutput: TimeInterval = 1, started: TimeInterval = 1,
                          used: TimeInterval = 1, memory: Double = 100) -> TerminalRuntime {

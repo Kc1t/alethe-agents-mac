@@ -3,7 +3,6 @@ import Foundation
 import Testing
 @testable import AletheMerge
 
-/// Merge tree grouping (U) and resuming a prepared environment from its metadata (U + G).
 struct MergeTreeTests {
     static let runner = GitRunner(environment: ["GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1"])
 
@@ -15,8 +14,6 @@ struct MergeTreeTests {
         ConflictFile(path: "package.json"),
         ConflictFile(path: "src/app/main.ts"),
     ]
-
-    // MARK: U — grouping
 
     @Test func groupsByFolderRootFirstAndDropsDuplicates() {
         let groups = MergeTree.groups(conflicts, by: .folder)
@@ -42,17 +39,12 @@ struct MergeTreeTests {
         #expect(MergeTree.fileName(of: "a/b/c.txt") == "c.txt")
     }
 
-    // MARK: U — resume point
-
     @Test func resumeStageFromMetadata() {
-        // No record: conflicts decide.
         #expect(MergeResumePoint.stage(recorded: nil, conflictPaths: ["a.ts"]) == .prepare)
         #expect(MergeResumePoint.stage(recorded: nil, conflictPaths: []) == .validate)
         #expect(MergeResumePoint.stage(recorded: .analyze, conflictPaths: []) == .validate)
-        // The recorded stage wins.
         #expect(MergeResumePoint.stage(recorded: .finish, conflictPaths: ["a.ts"]) == .finish)
         #expect(MergeResumePoint.stage(recorded: .validate, conflictPaths: ["a.ts"], unresolved: []) == .validate)
-        // Unmerged files send it back to Prepare.
         #expect(MergeResumePoint.stage(recorded: .finish, conflictPaths: [], unresolved: ["a.ts"]) == .prepare)
     }
 
@@ -63,8 +55,6 @@ struct MergeTreeTests {
         #expect(MergeSessionSummary(meta: meta).stage == .prepare)
         #expect(MergeSessionSummary(meta: meta).conflicts == [ConflictFile(path: "a.ts")])
     }
-
-    // MARK: G — scanning and resuming
 
     func repo() async throws -> URL {
         let root = FileManager.default.temporaryDirectory
@@ -98,7 +88,6 @@ struct MergeTreeTests {
         #expect(resolution.inProgress().isEmpty)
 
         let env = try await resolution.prepare(source: "agent-b", target: "agent-a")
-        // Stray files are ignored: metadata without a worktree and non-JSON entries.
         let envs = MergeAnalyzer.mergeEnvsDirectory(root: root)
         try Data("{}".utf8).write(to: envs.appendingPathComponent("orphan.json"))
         try Data().write(to: envs.appendingPathComponent("notes.txt"))

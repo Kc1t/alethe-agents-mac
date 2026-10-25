@@ -1,8 +1,5 @@
 import Foundation
 
-/// The running session, written at launch with `cleanExit: false` and flipped on a normal quit
-/// (upstream `crash_watch.rs`, `last_session.json`). Finding `false` at the next launch means the
-/// previous run crashed, was killed or lost power.
 public struct SessionMarker: Codable, Equatable, Hashable, Sendable {
     public var startedAt: Date
     public var appVersion: String
@@ -22,9 +19,7 @@ public struct SessionMarker: Codable, Equatable, Hashable, Sendable {
     }
 }
 
-/// What the previous run left behind.
 public enum PreviousSession: Equatable, Sendable {
-    /// No marker (first launch) or one that cannot be read.
     case none
     case clean(SessionMarker)
     case unclean(SessionMarker)
@@ -50,7 +45,6 @@ public struct SessionMarkerStore: Sendable {
         return try? Self.decoder.decode(SessionMarker.self, from: data)
     }
 
-    /// Reports the previous run and records `current` (not yet clean) in its place.
     @discardableResult
     public func begin(_ current: SessionMarker) -> PreviousSession {
         let previous: PreviousSession = switch read() {
@@ -65,7 +59,6 @@ public struct SessionMarkerStore: Sendable {
         return previous
     }
 
-    /// Marks the current run as ended normally; nothing when no run was begun.
     public func markCleanExit(at date: Date = .now) {
         guard var marker = read() else { return }
         marker.cleanExit = true

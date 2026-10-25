@@ -1,7 +1,5 @@
 import XCTest
 
-/// Pairing sheet and remote toolbar pill (P7-19). The `remote` seed turns remote control on, bound to
-/// 127.0.0.1 only.
 @MainActor
 final class RemotePairingTests: XCTestCase {
     override func setUp() async throws {
@@ -27,7 +25,6 @@ final class RemotePairingTests: XCTestCase {
         XCTAssertTrue(pill.waitForExistence(timeout: 10))
         XCTAssertTrue(eventually { self.label(pill).contains("Remote control on") }, "idle with no device")
 
-        // Turning it off from the sheet removes the pill.
         pill.click()
         let toggle = element(app, "remote.pairing.toggle")
         XCTAssertTrue(toggle.waitForExistence(timeout: 5))
@@ -63,7 +60,6 @@ final class RemotePairingTests: XCTestCase {
         app.terminate()
     }
 
-    /// HT: the pill and the sheet's buttons are clicked where they are drawn at 90 %, 100 % and 120 %.
     func testControlsReceiveClicksAtThreeZoomLevels() {
         for (zoom, keys) in [("90 %", ["-"]), ("100 %", []), ("120 %", ["+", "+"])] {
             let (app, _) = launchAlethe(arguments: ["-AletheUITestSeed", "remote"])

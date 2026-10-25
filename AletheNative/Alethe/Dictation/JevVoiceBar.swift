@@ -2,7 +2,6 @@ import AppKit
 import AletheDesign
 import SwiftUI
 
-/// VoiceCommand.module.css: 58px microphone orb, 21px icon, 12px caption gap, 44px bottom inset.
 struct JevVoiceBar: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics

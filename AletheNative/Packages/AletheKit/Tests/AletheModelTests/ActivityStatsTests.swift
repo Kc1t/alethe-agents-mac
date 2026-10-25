@@ -25,7 +25,6 @@ struct ActivityStatsTests {
                                  activeProjectID: "p", activeTerminalID: "a",
                                  agents: [agent("claude", "p", "a"), agent("codex", "p", "b", working: false)]))
         day.apply(ActivitySample(date: "2026-06-20", durationMS: 5_000, appFocused: true, userActive: false, activeProjectID: "p"))
-        // Capped at 15 s per sample.
         #expect(day.totals.appOpenMs == 20_000)
         #expect(day.totals.userActiveMs == 15_000)
         #expect(day.totals.userIdleMs == 5_000)
@@ -53,7 +52,6 @@ struct ActivityStatsTests {
         try ActivityStats.append([ActivitySample(date: "2026-06-20", durationMS: 1_000, appFocused: true, userActive: true)], to: url)
         let loaded = try ActivityStats.load(from: url)
         #expect(loaded.days["2026-06-20"]?.totals.appFocusedMs == 2_000)
-        // Upstream's camelCase keys.
         let raw = try String(contentsOf: url, encoding: .utf8)
         #expect(raw.contains("\"appOpenMs\""))
     }
@@ -61,7 +59,7 @@ struct ActivityStatsTests {
     @Test func days() {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC")!
-        let now = Date(timeIntervalSince1970: 1_782_950_400) // 2026-07-02 00:00 UTC
+        let now = Date(timeIntervalSince1970: 1_782_950_400)
         #expect(ActivityStats.lastDays(3, until: now, calendar: calendar) == ["2026-06-30", "2026-07-01", "2026-07-02"])
     }
 }

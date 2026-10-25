@@ -1,6 +1,5 @@
 import XCTest
 
-/// New Terminal Like Last ⌥⌘T (P3-4).
 @MainActor
 final class NewTerminalLikeLastTests: XCTestCase {
     override func setUp() async throws {

@@ -3,8 +3,6 @@ import AletheDesign
 import AppKit
 import SwiftUI
 
-/// Title bar of a file pane (Markdown, image, video): icon, file name, the pane's own actions, Show in
-/// Finder and Close. Dragging it reorders the pane, like a terminal's header.
 struct ContentPaneHeader<Actions: View>: View {
     let symbol: String
     let url: URL
@@ -133,7 +131,6 @@ struct ContentPaneHeader<Actions: View>: View {
 
 }
 
-/// An icon button in a file pane's header.
 struct ContentPaneButton: View {
     let symbol: String
     let label: LocalizedStringKey

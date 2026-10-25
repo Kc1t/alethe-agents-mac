@@ -2,9 +2,6 @@ import AletheDesign
 import AppKit
 import QuartzCore
 
-/// Moves views to new frames along a critically damped spring (`Motion.standard`), driven by the
-/// host's display link. Retargeting mid-flight starts from where the view is drawn, so motion is
-/// interruptible. Reduce Motion (or `animated: false`) jumps straight to the frame.
 @MainActor
 final class FrameAnimator {
     private struct Item {
@@ -18,8 +15,6 @@ final class FrameAnimator {
     private var items: [ObjectIdentifier: Item] = [:]
     private var link: CADisplayLink?
     private let spring = Motion.standard
-    /// Reduced motion (preference or macOS setting): frames change without animation. Set by the
-    /// pane host from its metrics.
     static var reducesMotion = false
 
     init(host: NSView) {
@@ -42,7 +37,6 @@ final class FrameAnimator {
         startLink()
     }
 
-    /// Where `view` is headed (its final frame), even while it is still moving.
     func target(of view: NSView) -> CGRect {
         items[ObjectIdentifier(view)]?.to ?? view.frame
     }
@@ -63,7 +57,6 @@ final class FrameAnimator {
                 continue
             }
             let t = now - item.start
-            // Critically damped, starting at rest: remaining = (1 + ωt)·e^(−ωt).
             let remaining = CGFloat((1 + omega * t) * exp(-omega * t))
             if remaining < 0.002 {
                 view.frame = item.to

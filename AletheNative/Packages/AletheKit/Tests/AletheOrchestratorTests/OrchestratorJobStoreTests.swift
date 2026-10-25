@@ -10,7 +10,6 @@ private func workspace(_ tag: String) throws -> URL {
     return directory
 }
 
-/// A job as the core creates it on `alethe_delegate`.
 private func delegated(_ number: UInt64, run: UInt64, spec: String, cwd: URL, label: String? = nil, status: JobStatus) -> Job {
     Job(
         id: OrchestratorID.job(number),
@@ -25,8 +24,6 @@ private func delegated(_ number: UInt64, run: UInt64, spec: String, cwd: URL, la
 }
 
 @Suite(.timeLimit(.minutes(1))) struct OrchestratorJobStoreTests {
-    // Upstream `history_outlives_the_process_and_in_flight_work_is_not_reported_as_running`: the first
-    // process writes the record as work is created; a new one restores it as interrupted.
     @Test func historyOutlivesTheProcessAndInFlightWorkIsNotReportedAsRunning() async throws {
         let directory = try workspace("persist")
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -46,7 +43,6 @@ private func delegated(_ number: UInt64, run: UInt64, spec: String, cwd: URL, la
         #expect(second.jobs.filter { $0.status == .running }.isEmpty, "restored work holds no slot")
     }
 
-    // Upstream `a_new_id_never_collides_with_a_restored_one`.
     @Test func aNewIDNeverCollidesWithARestoredOne() async throws {
         let directory = try workspace("persist-ids")
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -131,7 +127,6 @@ private func delegated(_ number: UInt64, run: UInt64, spec: String, cwd: URL, la
         #expect(!FileManager.default.fileExists(atPath: store.url.path))
         #expect(try String(contentsOf: store.backupURL, encoding: .utf8) == "{\"version\": 2, \"jobs\": [")
 
-        // A root that is not an object is unreadable too.
         try Data("[]".utf8).write(to: store.url)
         #expect(store.restore().outcome == .setAside(movedTo: store.backupURL))
         #expect(try String(contentsOf: store.backupURL, encoding: .utf8) == "[]")
@@ -164,7 +159,6 @@ private func delegated(_ number: UInt64, run: UInt64, spec: String, cwd: URL, la
         #expect(restored.jobs.count == 50)
         #expect(restored.nextJobID == "job-51")
 
-        // Nothing pending: a flush writes nothing more.
         await store.flush()
         #expect(store.writeCount == 1)
     }

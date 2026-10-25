@@ -1,8 +1,6 @@
 import Darwin
 import Foundation
 
-/// A running 9router, started as the leader of its own process group so the Next.js workers it
-/// forks go with it.
 final class Router9Process: @unchecked Sendable {
     let pid: pid_t
     private let lock = NSLock()
@@ -12,8 +10,6 @@ final class Router9Process: @unchecked Sendable {
         self.pid = pid
     }
 
-    /// `executable arguments…` in `directory` with exactly `environment`; stdin on `/dev/null`,
-    /// stdout and stderr appended to `logFile`, no inherited descriptors, default signals.
     static func spawn(_ executable: String, arguments: [String], directory: String?,
                       environment: [String: String], logFile: String) throws(Router9Error) -> Router9Process {
         var actions: posix_spawn_file_actions_t?
@@ -47,7 +43,6 @@ final class Router9Process: @unchecked Sendable {
         return Router9Process(pid: pid)
     }
 
-    /// Whether the leader still runs (reaps it once it exited).
     var isRunning: Bool {
         lock.lock()
         defer { lock.unlock() }
@@ -61,8 +56,6 @@ final class Router9Process: @unchecked Sendable {
         return true
     }
 
-    /// SIGTERM to the group, then after `grace` SIGKILL to every descendant and the group; the
-    /// leader is reaped. Blocking: call off the main thread.
     func terminate(grace: TimeInterval = 1.5) {
         if isRunning {
             Darwin.kill(-pid, SIGTERM)
@@ -70,7 +63,6 @@ final class Router9Process: @unchecked Sendable {
             while isRunning, Date() < deadline { usleep(50_000) }
         }
         let running = isRunning
-        // Once reaped the leader's pid may be reused: only its group (kept by any survivor) is signalled.
         let tree = ProcessTable.descendants(of: pid, parents: ProcessTable.parents())
         for member in tree.reversed() where member != pid || running {
             Darwin.kill(member, SIGKILL)
@@ -91,7 +83,6 @@ final class Router9Process: @unchecked Sendable {
 enum Router9PortProbe {
     static let timeout: Duration = .milliseconds(400)
 
-    /// Whether something accepts a TCP connection on `127.0.0.1:port` within `timeout`. Blocking.
     static func isInUse(_ port: Int, timeout: Duration = timeout) -> Bool {
         guard port > 0, port < 65536 else { return false }
         let fd = Darwin.socket(AF_INET, SOCK_STREAM, 0)
@@ -126,7 +117,6 @@ enum Router9PortProbe {
     }
 }
 
-/// Calls `body` with a NULL-terminated C array of `strings`, valid for the call's duration.
 private func withRouter9CStrings<R>(_ strings: [String], _ body: ([UnsafeMutablePointer<CChar>?]) -> R) -> R {
     let pointers = strings.map { strdup($0) } + [nil]
     defer { pointers.forEach { free($0) } }

@@ -1,6 +1,5 @@
 import Foundation
 
-/// The agent library (upstream `lib/agentLibrary.ts` `AGENT_LIBRARY`), translated to English.
 public enum AgentLibraryCatalog {
     public static let templates: [AgentTemplate] = [orchestrator, frontendDev, backendDev, qaReviewer, docsWriter]
 
@@ -141,26 +140,17 @@ public enum AgentLibraryCatalog {
     )
 }
 
-/// A file economy mode writes into `.claude/agents` (upstream `economy_agents.rs` `AGENTS`).
 public struct EconomyAgentFile: Hashable, Sendable {
     public let fileName: String
     public let content: String
-    /// The agent the file defines; `nil` for the guard script.
     public let template: AgentTemplate?
 }
 
-/// Economy mode (upstream `economy_agents.rs`): cheap Haiku workers Claude Code delegates bulk
-/// reading and mechanical edits to, plus an experimental Codex proxy fenced by a hook script.
-/// Names and text are English; the Tauri app's Portuguese files are recognized as legacy.
 public enum EconomyAgents {
     public static let guardFileName = "codex-only-guard.cjs"
-    /// Upstream's agent file names, replaced by the English ones when economy mode is turned on.
     public static let legacyFileNames = ["haiku-resumidor.md", "haiku-mecanico.md"]
-    /// Upstream's guard carries no marker; this sentence of its message identifies it.
     static let legacyGuardSignature = "o codex-executor só pode rodar"
 
-    /// The files for a scope: the guard is referenced relative to the project or, for `~/.claude`,
-    /// through `$HOME`, since hooks run in the session's working directory.
     public static func files(for scope: AgentLibraryScope) -> [EconomyAgentFile] {
         let guardPath = switch scope {
         case .project: ".claude/agents/\(guardFileName)"
@@ -175,10 +165,8 @@ public enum EconomyAgents {
         ]
     }
 
-    /// The agents economy mode installs, for listing.
     public static let templates: [AgentTemplate] = [summarizer, mechanic, codexExecutor(guardPath: ".claude/agents/\(guardFileName)")]
 
-    /// Whether economy mode may remove the file without asking: the marker, or upstream's guard.
     public static func isOwned(_ text: String) -> Bool {
         AletheAgentMarker.isAletheGenerated(text) || text.contains(legacyGuardSignature)
     }
@@ -271,8 +259,6 @@ public enum EconomyAgents {
         """
     }
 
-    /// The PreToolUse hook that blocks every Bash command but `codex exec` (upstream validated that
-    /// the executor otherwise runs find/grep itself); exit 2 hands the reason back to the model.
     static let guardScript = """
     // \(AletheAgentMarker.economy.replacingOccurrences(of: "<!-- ", with: "").replacingOccurrences(of: " -->", with: ""))
     let raw = ''

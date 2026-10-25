@@ -5,13 +5,11 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// New Project / Edit Project sheet (upstream `NewProjectModal`, `EditProjectModal`).
 struct ProjectEditor: View {
     let workspace: WorkspaceModel
     let undoManager: UndoManager?
     let editing: ProjectID?
     let initialLocation: ProjectLocation
-    /// Folder filled in for a new project (an `alethe` open request for an unknown folder).
     var initialFolder: String? = nil
     var closeOverlay: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
@@ -21,7 +19,6 @@ struct ProjectEditor: View {
     @Environment(\.theme) private var theme
     @Environment(AppEnvironment.self) private var environment
 
-    /// Where a new project's folder comes from (P5-5).
     enum Source: Hashable { case folder, clone }
 
     @State private var source: Source = .folder
@@ -32,15 +29,12 @@ struct ProjectEditor: View {
     @State private var color: ProjectColor? = .blue
     @State private var location: ProjectLocation = .ungrouped
     @State private var nameEdited = false
-    /// Agent worktree defaults of the New Terminal sheet (P4-9).
     @State private var autoWorktree = false
     @State private var worktreeMode: ProjectWorktreeMode = .gitWorktree
-    /// A saved `.alethe/project.json` the user chose to restore; its agents come back on create.
     @State private var restored: ProjectMarker?
     @State private var model = ProjectEditorModel()
 
     private var isCloning: Bool { editing == nil && source == .clone }
-    /// Graphify MCP server for the project's agents (P5-17).
     @State private var advanced = ProjectAdvancedDraft()
     @State private var graphifyEnabled = false
 
@@ -252,7 +246,6 @@ struct ProjectEditor: View {
         return isCloning ? "editor.project.clone" : "editor.project.create"
     }
 
-    /// The saved marker offer, the repository and the detected stack of the chosen folder.
     @ViewBuilder
     private var folderDetails: some View {
         if let inspection = model.inspection, model.inspectedFolder == expanded(folder) {
@@ -293,7 +286,6 @@ struct ProjectEditor: View {
         }
     }
 
-    /// Progress of a running clone, or why the last one failed.
     @ViewBuilder
     private var cloneStatus: some View {
         if model.cloning {
@@ -318,7 +310,6 @@ struct ProjectEditor: View {
         }
     }
 
-    /// Why the form cannot be saved yet, or nil.
     private var problem: LocalizedStringKey? {
         if isCloning { return cloneProblem }
         let path = expanded(folder)
@@ -385,7 +376,6 @@ struct ProjectEditor: View {
         if panel.runModal() == .OK, let url = panel.url { folder = url.path }
     }
 
-    /// Fills the form from a saved marker (upstream `restoreDetected`); its agents come back on create.
     private func restore(_ marker: ProjectMarker) {
         restored = marker
         if !marker.name.isEmpty {
@@ -438,7 +428,6 @@ struct ProjectEditor: View {
         }
     }
 
-    /// Defaults stay absent in the file, as upstream leaves them undefined.
     private var worktreeSettings: (Bool?, ProjectWorktreeMode?) {
         (autoWorktree ? true : nil, worktreeMode == .gitWorktree ? nil : worktreeMode)
     }
@@ -469,15 +458,12 @@ struct ProjectEditor: View {
         close()
     }
 
-    /// Mirrors the project into its folder's `.alethe/project.json` (upstream `write_project_marker`),
-    /// off the main thread; a folder that cannot be written is left alone, as upstream does.
     private func writeMarker(_ id: ProjectID) {
         guard let project = workspace.document.project(id) else { return }
         Task.detached(priority: .utility) { try? ProjectMarker.write(project) }
     }
 }
 
-/// Catalog keys of the detected stacks.
 enum ProjectStackLabel {
     static func key(_ stack: ProjectStack) -> LocalizedStringKey {
         switch stack {

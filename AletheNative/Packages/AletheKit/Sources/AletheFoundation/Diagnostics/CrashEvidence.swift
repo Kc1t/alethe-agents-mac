@@ -1,11 +1,8 @@
 import Foundation
 
-/// A crash record the after-crash notice offers to view or export.
 public struct CrashArtifact: Equatable, Hashable, Sendable, Identifiable {
     public enum Kind: String, Sendable {
-        /// macOS's crash report (`~/Library/Logs/DiagnosticReports/Alethe-*.ips`).
         case systemReport
-        /// A MetricKit diagnostic payload with crash diagnostics, saved by the app.
         case metricKit
     }
 
@@ -21,18 +18,14 @@ public struct CrashArtifact: Equatable, Hashable, Sendable, Identifiable {
     }
 }
 
-/// Finds the crash records of a run that did not exit cleanly.
 public enum CrashEvidence {
     public static let metricKitFolder = "metrickit"
 
-    /// Where macOS writes the user's crash reports.
     public static var systemReportDirectories: [URL] {
         let logs = FileManager.default.homeDirectoryForCurrentUser.appending(path: "Library/Logs/DiagnosticReports")
         return [logs, logs.appending(path: "Retired")]
     }
 
-    /// The newest `<processName>-*.ips` written since `since`, then the saved MetricKit crash
-    /// payloads written since then, newest first.
     public static func find(processName: String = AppIdentity.productName, since: Date?,
                             reportDirectories: [URL] = systemReportDirectories,
                             metricKitDirectory: URL?) -> [CrashArtifact] {
@@ -50,7 +43,6 @@ public enum CrashEvidence {
         return (reports.map { [$0] } ?? []) + metricKit
     }
 
-    /// File dates can round below the marker's; a second of slack.
     private static func isRecent(_ date: Date, since: Date?) -> Bool {
         guard let since else { return true }
         return date >= since.addingTimeInterval(-1)
@@ -65,4 +57,3 @@ public enum CrashEvidence {
         }
     }
 }
-

@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheModel
 
-/// Project settings export/import (P5-6).
 struct ProjectSettingsFileTests {
     private func project() -> Project {
         var project = Project(name: "Storefront", color: .purple, folder: "/work/storefront")

@@ -1,10 +1,6 @@
 import Foundation
 import Network
 
-/// Remote control's two listeners (upstream `remote/http.rs` `run_http`, `remote/websocket.rs`), on
-/// Network.framework: HTTP requests go to a `RemoteRouter`, WebSocket clients authenticate with a
-/// session token and stream a terminal's output through the `RemoteHub`. Both bind only the host the
-/// hub resolved — never a wildcard — and the transport decides no policy beyond the limits.
 public final class RemoteTransport: @unchecked Sendable {
     public struct Configuration: Sendable {
         public var httpPorts: ClosedRange<UInt16>
@@ -12,10 +8,8 @@ public final class RemoteTransport: @unchecked Sendable {
         public var maxConnections: Int
         public var socketTimeout: Duration
         public var webSocketAuthTimeout: Duration
-        /// Upstream's 4 h; 0 disables the idle check.
         public var idleThreshold: TimeInterval
         public var idleCheckInterval: Duration
-        /// How often an open WebSocket checks that its session is still alive.
         public var sessionCheckInterval: Duration
 
         public init(
@@ -41,7 +35,6 @@ public final class RemoteTransport: @unchecked Sendable {
         public static let standard = Configuration()
     }
 
-    /// One start…stop cycle, tied to the hub generation it runs under.
     private final class Run: @unchecked Sendable {
         let generation: UInt64
         var listeners: [NWListener] = []
@@ -76,14 +69,8 @@ public final class RemoteTransport: @unchecked Sendable {
         self.configuration = configuration
     }
 
-    /// Whether listeners of this transport are up.
     public var isRunning: Bool { lock.withLock { run != nil } }
 
-    // MARK: Start and stop
-
-    /// Starts both listeners (upstream `remote::start`). Returns false when a listener could not
-    /// bind — remote control then stops and the hub emits `.startFailed` — or when the hub was
-    /// already running under another owner.
     @discardableResult
     public func start() async -> Bool {
         guard let generation = await hub.start() else { return isRunning }
@@ -118,7 +105,6 @@ public final class RemoteTransport: @unchecked Sendable {
         RemoteLog.logger.info("remote WebSocket listener on port \(ws.port, privacy: .public)")
 
         guard await hub.isActive(generation: generation) else {
-            // Stopped while binding.
             teardown(run)
             return false
         }
@@ -138,8 +124,6 @@ public final class RemoteTransport: @unchecked Sendable {
         return true
     }
 
-    /// Stops remote control (upstream `remote::stop`): every device is revoked, pairing closes, both
-    /// listeners and every open connection are closed.
     public func stop() async {
         await hub.stop()
         if let run = lock.withLock({ run }) { teardown(run) }
@@ -166,8 +150,6 @@ public final class RemoteTransport: @unchecked Sendable {
         tasks.forEach { $0.cancel() }
     }
 
-    /// Turns everything off after `idleThreshold` with no paired device (upstream's check in the
-    /// HTTP accept loop), and winds down when the hub was stopped from elsewhere.
     private func watchIdle(_ run: Run) async {
         while !Task.isCancelled {
             try? await Task.sleep(for: configuration.idleCheckInterval)
@@ -186,9 +168,6 @@ public final class RemoteTransport: @unchecked Sendable {
         }
     }
 
-    // MARK: Listeners
-
-    /// A literal, non-wildcard IP address, or `nil` (the empty host of a missing Tailscale).
     static func bindableHost(_ host: String) -> String? {
         guard let ip = RemoteHost.normalizedIP(host), ip != "0.0.0.0", ip != "::" else { return nil }
         return ip
@@ -198,7 +177,6 @@ public final class RemoteTransport: @unchecked Sendable {
         let parameters = NWParameters.tcp
         let options = NWProtocolWebSocket.Options()
         options.autoReplyPing = true
-        // Larger frames fail the connection (upstream closes the socket past `MAX_MESSAGE`).
         options.maximumMessageSize = RemoteLimits.maxMessage
         options.setClientRequestHandler(queue) { _, headers in
             let origin = headers.first { $0.name.caseInsensitiveCompare("Origin") == .orderedSame }?.value
@@ -210,7 +188,6 @@ public final class RemoteTransport: @unchecked Sendable {
         return parameters
     }
 
-    /// Binds the first free port of `ports` on `host` (upstream `bind_listener`).
     private func bind(
         host: String,
         ports: ClosedRange<UInt16>,
@@ -286,8 +263,6 @@ public final class RemoteTransport: @unchecked Sendable {
         }
     }
 
-    // MARK: HTTP
-
     private func serveHTTP(_ socket: RemoteSocket, _ run: Run) async {
         guard await hub.isActive(generation: run.generation),
               await hub.tryAcquireConnection(max: configuration.maxConnections) else {
@@ -300,7 +275,6 @@ public final class RemoteTransport: @unchecked Sendable {
     private func serveHTTPRequest(_ socket: RemoteSocket) async {
         guard await socket.start(timeout: configuration.socketTimeout) else { return }
         let address = socket.peerAddress
-        // Checked before reading anything, so a locked-out address costs no parsing.
         if await hub.authBlocked(address) {
             await respond(socket, .error(429, "Too many failed attempts"))
             return
@@ -326,8 +300,6 @@ public final class RemoteTransport: @unchecked Sendable {
         await respond(socket, response)
     }
 
-    /// Reads one request within `RemoteLimits` (upstream `read_request`); `.needMore` when the
-    /// connection failed or timed out.
     private func readRequest(_ socket: RemoteSocket) async -> RemoteHTTPReader.Outcome {
         var reader = RemoteHTTPReader()
         while true {
@@ -345,8 +317,6 @@ public final class RemoteTransport: @unchecked Sendable {
     private func respond(_ socket: RemoteSocket, _ response: RemoteResponse) async {
         try? await socket.send(Data(response.head().utf8) + response.body, timeout: configuration.socketTimeout)
     }
-
-    // MARK: WebSocket
 
     private func serveWebSocket(_ socket: RemoteSocket, _ run: Run) async {
         guard await hub.isActive(generation: run.generation),
@@ -371,7 +341,6 @@ public final class RemoteTransport: @unchecked Sendable {
         await hub.releaseConnection()
     }
 
-    /// Per-socket state; touched only by that socket's tasks.
     private final class WebSocketSession: @unchecked Sendable {
         let socket: RemoteSocket
         let address: String
@@ -398,7 +367,6 @@ public final class RemoteTransport: @unchecked Sendable {
         }
     }
 
-    /// Reads frames until the socket closes or a frame ends it (upstream `handle_websocket`).
     private func receiveCommands(_ session: WebSocketSession) async {
         let socket = session.socket
         while !Task.isCancelled {
@@ -421,7 +389,6 @@ public final class RemoteTransport: @unchecked Sendable {
         }
     }
 
-    /// Handles one text frame; false ends the connection.
     private func handleCommand(_ data: Data, _ session: WebSocketSession) async -> Bool {
         guard let command = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
             return true
@@ -429,8 +396,6 @@ public final class RemoteTransport: @unchecked Sendable {
         let provided = command["sessionToken"] as? String ?? ""
         let matched = await hub.sessionID(for: provided)
         guard let id = matched, session.id == nil || session.id == id else {
-            // A session expiring mid-connection is not a failed attempt: counting it would lock the
-            // paired device out.
             if session.id == nil { await hub.recordAuthFailure(session.address) }
             await send(RemoteFrame.unauthorized, on: session)
             return false
@@ -449,7 +414,6 @@ public final class RemoteTransport: @unchecked Sendable {
                 for await frame in stream {
                     guard let self, await self.send(frame, on: session) else { return }
                 }
-                // The hub ended this device's stream: revoked, expired or replaced by a newer socket.
                 guard !Task.isCancelled else { return }
                 await self?.send(RemoteFrame.expired, on: session)
                 session.socket.closeWebSocket()
@@ -469,7 +433,6 @@ public final class RemoteTransport: @unchecked Sendable {
             await hub.setSubscription(id, terminalID: nil)
             return
         }
-        // Only a tab the user shared may be followed (the scrollback route enforces the same).
         guard await workspace.sharedTab(terminalID) != nil else {
             await hub.setSubscription(id, terminalID: nil)
             return
@@ -480,8 +443,6 @@ public final class RemoteTransport: @unchecked Sendable {
         await send(RemoteFrame.scrollback(terminalID: terminalID, text: text, size: size), on: session)
     }
 
-    /// Closes an unauthenticated socket at `webSocketAuthTimeout`, and an authenticated one whose
-    /// session expired (after the expired frame) or whose run ended.
     private func watch(_ session: WebSocketSession) async {
         let authDeadline = session.openedAt + configuration.webSocketAuthTimeout
         while !Task.isCancelled {

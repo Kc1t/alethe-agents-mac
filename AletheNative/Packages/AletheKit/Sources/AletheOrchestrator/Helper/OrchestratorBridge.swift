@@ -1,9 +1,6 @@
 import Foundation
 import AletheIntegrations
 
-/// What a Codex planner's stdio helper needs to reach the app: the loopback endpoint, its token and
-/// the planner id. Written per launch by the app into a private (0600) file whose path is the only
-/// thing in the helper's arguments, so the token never shows in a process listing.
 public struct OrchestratorBridgeFile: Codable, Equatable, Sendable, CustomStringConvertible {
     public var endpoint: String
     public var token: String
@@ -17,19 +14,16 @@ public struct OrchestratorBridgeFile: Codable, Equatable, Sendable, CustomString
 
     public enum ReadError: Error, Equatable, Sendable {
         case unreadable
-        /// Readable by others than its owner: a leaked token is not used.
         case notPrivate
         case malformed
     }
 
-    /// The app's `POST /mcp`.
     public var mcpURL: URL? {
         let base = endpoint.hasSuffix("/") ? String(endpoint.dropLast()) : endpoint
         guard let url = URL(string: "\(base)/mcp"), url.scheme == "http" else { return nil }
         return url
     }
 
-    /// Never prints the token.
     public var description: String { "OrchestratorBridgeFile(endpoint: \(endpoint), planner: \(planner))" }
 
     public static func read(from url: URL) throws(ReadError) -> OrchestratorBridgeFile {
@@ -46,7 +40,6 @@ public struct OrchestratorBridgeFile: Codable, Equatable, Sendable, CustomString
         return file
     }
 
-    /// Atomic (tmp → rename) 0600 write; the folder is created 0700 when missing.
     public func write(to url: URL) throws {
         let manager = FileManager.default
         let folder = url.deletingLastPathComponent()
@@ -65,14 +58,9 @@ public struct OrchestratorBridgeFile: Codable, Equatable, Sendable, CustomString
     }
 }
 
-/// Bridge mode of `alethe-orchestrator-mcp` (replaces upstream's generated PowerShell bridge,
-/// `write_codex_mcp_bridge`): each stdin line is posted to the app's `/mcp` as the planner and the
-/// answer written back as one line. A notification is forwarded and gets no line. Where upstream
-/// swallowed a failed post, a request here gets a JSON-RPC error so the client never waits forever.
 public struct OrchestratorBridge: Sendable {
     public typealias Post = @Sendable (_ body: Data) async throws -> (status: Int, body: Data)
 
-    /// JSON-RPC internal error, for an app that cannot answer.
     public static let unavailableCode = -32603
 
     private let post: Post
@@ -81,7 +69,6 @@ public struct OrchestratorBridge: Sendable {
         self.post = post
     }
 
-    /// Posts over loopback with the token and planner as headers.
     public init(file: OrchestratorBridgeFile, session: URLSession = OrchestratorBridge.session) {
         self.init { body in
             guard let request = Self.request(for: file, body: body) else { throw URLError(.badURL) }
@@ -90,7 +77,6 @@ public struct OrchestratorBridge: Sendable {
         }
     }
 
-    /// No proxies, no caches or cookies; long enough for `alethe_check`'s longest wait.
     public static let session: URLSession = {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.connectionProxyDictionary = [:]
@@ -111,8 +97,6 @@ public struct OrchestratorBridge: Sendable {
         return request
     }
 
-    /// One stdin line in, the line to write back out (nil: nothing to write — a blank line, a body
-    /// that is not a JSON object, or a notification).
     public func handle(line: String) async -> String? {
         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, let message = (try? OrderedJSON.parse(trimmed))?.objectValue else { return nil }
@@ -134,7 +118,6 @@ public struct OrchestratorBridge: Sendable {
         }
     }
 
-    /// The answer as exactly one line (the app's replies are compact already).
     static func singleLine(_ body: Data) -> String? {
         let text = String(decoding: body, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return nil }

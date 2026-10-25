@@ -2,8 +2,6 @@ import Foundation
 import Testing
 @testable import AletheModel
 
-/// What remote control may see (P7-12, upstream `remote/workspace.rs`): only tabs of panes the user
-/// shared one by one.
 @Suite struct RemoteSharingTests {
     private struct Seeded {
         var doc = WorkspaceDocument()

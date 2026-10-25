@@ -3,7 +3,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// Web TerminalInspector: selection details, pane actions and the sub-tab switcher.
 struct TerminalInspector: View {
     let workspace: WorkspaceModel
     let pane: Pane

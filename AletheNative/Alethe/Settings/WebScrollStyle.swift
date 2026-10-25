@@ -3,7 +3,6 @@ import AppKit
 import SwiftUI
 
 extension View {
-    /// Applies only to the web interface; the native scroller preferences remain untouched.
     func webScrollStyle() -> some View { modifier(WebScrollStyle()) }
 }
 
@@ -20,7 +19,6 @@ private struct WebScrollStyle: ViewModifier {
     }
 }
 
-/// reset.css: a transparent 10px track, 2px thumb inset, and 18/35/55% muted ink.
 @MainActor
 enum WebScrollConfigurator {
     static func configure(_ scroll: NSScrollView, tint: NSColor, scale: CGFloat) {
@@ -69,8 +67,6 @@ private struct WebScrollProbe: NSViewRepresentable {
 
         override func layout() {
             super.layout()
-            // The probe is a background sibling of SwiftUI's scroll host. Search its containing
-            // Settings subtree, including nested Lists, after AppKit has installed the hosts.
             var ancestor: NSView? = superview
             while let root = ancestor {
                 let scrolls = descendants(root)

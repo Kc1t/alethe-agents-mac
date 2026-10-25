@@ -1,7 +1,6 @@
 import SwiftUI
 
 extension Image {
-    /// Give web artwork explicit layout bounds without changing the native interface's image path.
     public func webProfileSized(_ size: CGFloat) -> some View {
         WebProfileImage(image: self, size: size)
     }
@@ -22,7 +21,6 @@ private struct WebProfileImage: View {
     }
 }
 
-/// Flat profile rows use the web menu's padding, hover fill and small radius.
 public struct AletheProfileMenuStyle: ButtonStyle {
     public init() {}
 
@@ -52,7 +50,6 @@ private struct ProfileMenuRow: View {
     }
 }
 
-/// SwiftUI's automatic label style reserves native icon spacing; web rows use an eight-point gap.
 public struct AletheProfileMenuLabelStyle: LabelStyle {
     @Environment(\.metrics) private var metrics
     public init() {}

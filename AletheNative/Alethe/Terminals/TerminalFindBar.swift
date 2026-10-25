@@ -2,9 +2,6 @@ import AletheDesign
 import AletheTerminal
 import SwiftUI
 
-/// Find bar over a terminal's top trailing corner (⌘F): search as you type, match position, previous
-/// and next (↩ / ⇧↩, ⌘G / ⇧⌘G), Esc to close. Ghostty matches case-insensitively and highlights every
-/// match; this bar only drives it.
 struct TerminalFindBar: View {
     let terminal: TerminalPaneView
     @State private var text = ""
@@ -62,7 +59,6 @@ struct TerminalFindBar: View {
             fieldFocused = true
         }
         .onChange(of: search.focusRequest) { _, _ in fieldFocused = true }
-        // A search started by Ghostty (⌘E, search selection) fills the field.
         .onChange(of: search.needle) { _, needle in if needle != text { text = needle } }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("find.bar")

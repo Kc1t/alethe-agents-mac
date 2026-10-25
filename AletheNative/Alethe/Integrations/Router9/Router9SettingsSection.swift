@@ -4,9 +4,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// Settings › Integrations › 9router (upstream `Router9Settings`): enable, source, port, the API key
-/// (Keychain only, never shown again after it is saved), auto-start, default for new agents, status,
-/// Start/Stop, Open Dashboard, the log, and the advisories and docs links.
 struct Router9SettingsSection: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme
@@ -74,8 +71,6 @@ struct Router9SettingsSection: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("settings.router9")
     }
-
-    // MARK: Rows
 
     private var statusRow: some View {
         LabeledContent {
@@ -209,8 +204,6 @@ struct Router9SettingsSection: View {
         .font(metrics.font(.footnote))
     }
 
-    // MARK: State
-
     private enum State { case probing, off, ready, running }
 
     private var state: State {
@@ -268,8 +261,6 @@ struct Router9SettingsSection: View {
         return String(format: String(localized: "router9.update"), status.pinnedVersion)
     }
 
-    // MARK: Actions
-
     private func saveKey() {
         let key = keyDraft
         keyDraft = ""
@@ -295,7 +286,6 @@ struct Router9SettingsSection: View {
 }
 
 extension Router9Controller.Failure {
-    /// A user-facing sentence; never includes the API key.
     var message: String {
         switch self {
         case .keychain: String(localized: "router9.error.keychain")

@@ -1,8 +1,6 @@
 import Foundation
 import GhosttyTerminal
 
-/// Opt-in diagnostics for terminal sizing: `defaults write com.kc1t.alethe.mac debug.terminalResize -bool YES`
-/// writes the Ghostty metrics and every PTY winsize to ~/Library/Logs/Alethe-terminal-resize.log.
 enum TerminalResizeLog {
     private static let path = NSString(string: "~/Library/Logs/Alethe-terminal-resize.log").expandingTildeInPath
     private static let queue = DispatchQueue(label: "alethe.terminal.resizelog")

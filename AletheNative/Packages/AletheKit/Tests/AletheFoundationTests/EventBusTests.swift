@@ -9,7 +9,6 @@ private func temporaryDirectory() -> URL {
 
 @Suite("Event bus")
 struct EventBusTests {
-    /// Upstream `event_bus.rs` `test_event_bus_publish_subscribe`.
     @Test func eventBusPublishSubscribe() async {
         let bus = EventBus()
         let stream = await bus.subscribe()
@@ -79,7 +78,6 @@ struct EventBusTests {
 
 @Suite("Telemetry")
 struct TelemetryTests {
-    /// Upstream `telemetry.rs` `test_telemetry_metrics_and_traces`.
     @Test func telemetryMetricsAndTraces() async throws {
         let telemetry = Telemetry()
         let first = BusEvent(type: "TaskStarted", timestampMS: 1000, correlationID: "corr-123", taskID: "task-1",

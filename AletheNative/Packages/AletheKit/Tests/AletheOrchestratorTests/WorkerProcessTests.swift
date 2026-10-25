@@ -16,7 +16,6 @@ private func temporaryDirectory() throws -> URL {
     return url
 }
 
-/// The next value; a worker that never answers fails the suite's time limit.
 private func next(_ iterator: inout AsyncStream<OrderedJSON>.Iterator) async -> OrderedJSON? {
     await iterator.next()
 }
@@ -29,7 +28,6 @@ private func groupGone(_ pid: pid_t) -> Bool {
     Darwin.kill(-pid, 0) != 0 && errno == ESRCH
 }
 
-// Spawns real processes: a hang must fail the test, not stall the run.
 @Suite(.timeLimit(.minutes(1))) struct WorkerProcessTests {
     @Test func linesAreJSONValuesAndEOFEndsTheStream() async throws {
         let worker = try WorkerProcess.spawn(
@@ -51,7 +49,6 @@ private func groupGone(_ pid: pid_t) -> Bool {
         var iterator = worker.lines.makeAsyncIterator()
         let line = try #require(await next(&iterator))
         let object = try #require(line.objectValue)
-        // `pwd -P` prints the real path (`/private/var/…`); `resolvingSymlinksInPath()` strips `/private`.
         let real = try #require(realpath(folder.path, nil))
         defer { free(real) }
         #expect(object["cwd"]?.stringValue == String(cString: real))
@@ -71,7 +68,6 @@ private func groupGone(_ pid: pid_t) -> Bool {
         #expect(ContinuousClock.now - started >= .milliseconds(400), "SIGKILL only after the grace period")
         #expect(await worker.exitStatus != nil, "the leader was reaped")
         #expect(gone(worker.pid), "no zombie is left")
-        // The group's other members die right after the leader's SIGKILL; give the kernel a moment to reap them.
         var groupDeadline = 100
         while !groupGone(worker.pid), groupDeadline > 0 {
             try await Task.sleep(for: .milliseconds(50))
@@ -101,7 +97,6 @@ private func groupGone(_ pid: pid_t) -> Bool {
     }
 
     @Test func aFullPipeDoesNotBlockAnotherWorker() async throws {
-        // Never reads its stdin: its pipe fills and every further write to it blocks.
         let stuck = try WorkerProcess.spawn(shell("sleep 60"), in: URL(filePath: "/tmp"), environment: environment)
         let echo = try WorkerProcess.spawn(
             Launcher(kind: "test", program: URL(filePath: "/bin/cat"), arguments: []),
@@ -161,7 +156,6 @@ private func groupGone(_ pid: pid_t) -> Bool {
         #expect(WorkerRegistry(profileDirectory: folder).leftovers().isEmpty)
     }
 
-    /// P: spawn to first line.
     @Test func spawnToFirstLineIsQuick() async throws {
         let started = ContinuousClock.now
         let worker = try WorkerProcess.spawn(shell(#"echo '{"hello":1}'; sleep 5"#), in: URL(filePath: "/tmp"),

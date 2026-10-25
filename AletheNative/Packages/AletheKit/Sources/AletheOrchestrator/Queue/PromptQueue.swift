@@ -1,6 +1,5 @@
 import Foundation
 
-/// Dispatches deferred prompts through the same delegate path as immediate work.
 public actor PromptQueue {
     public struct Context: Sendable {
         public var fitness: [String: AgentFitness]
@@ -50,7 +49,6 @@ public actor PromptQueue {
     }
 
     public func list() -> [QueueItem] {
-        // Array position is the explicit drag/reorder order, and breaks equal-priority ties.
         items.enumerated().sorted {
             $0.element.priority == $1.element.priority ? $0.offset < $1.offset : $0.element.priority > $1.element.priority
         }.map(\.element)
@@ -116,7 +114,6 @@ public actor PromptQueue {
         await tick()
     }
 
-    /// Explicit order overrides earlier priorities; unspecified items retain their relative order.
     public func reorder(_ ids: [String]) {
         let positions = Dictionary(uniqueKeysWithValues: items.enumerated().map { ($0.element.id, $0.offset) })
         var seen: Set<String> = []
@@ -129,7 +126,6 @@ public actor PromptQueue {
         publish()
     }
 
-    /// Fitness updates, job transitions and the nearest release/reset timer all arrive here.
     public func tick(now: Date = Date()) async {
         guard !stopped else { return }
         guard !dispatching else { needsTick = true; return }
@@ -145,8 +141,6 @@ public actor PromptQueue {
                 guard let index = items.firstIndex(where: { $0.id == candidate.id }), items[index].state.pending else { continue }
                 let forcedRun = forced.contains(candidate.id)
                 guard forcedRun || candidate.isEligible(now: now, fitness: context.fitness[candidate.agent], settledJobs: settled) else { continue }
-                // Persist before invoking a side effect. Unknown in-flight launches after a crash
-                // fail closed rather than automatically duplicating a prompt's writes.
                 items[index].state = .running("")
                 guard save() else { items[index].state = candidate.state; break }
                 starting = candidate.id
@@ -208,7 +202,6 @@ public actor PromptQueue {
         }
     }
 
-    /// The earliest future date, shared by the dispatcher and deterministic timer tests.
     public func nextWake(now: Date = Date()) -> Date? {
         items.filter { $0.state.pending }.flatMap { item -> [Date] in
             var dates: [Date] = []

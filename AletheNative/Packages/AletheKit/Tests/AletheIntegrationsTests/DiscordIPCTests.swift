@@ -4,7 +4,6 @@ import Synchronization
 import Testing
 @testable import AletheIntegrations
 
-// Golden cases: upstream `discord_presence.rs` and the payloads the `discord-rich-presence` 1.1.0 crate writes.
 @Suite struct DiscordIPCGoldenTests {
     @Test func applicationIDIsNumeric() {
         #expect(UInt64(DiscordIPC.applicationID) != nil)
@@ -56,8 +55,6 @@ import Testing
     }
 }
 
-/// A fake Discord: listens on a Unix socket, answers the handshake with READY and records every frame.
-/// Each thread closes its own descriptor, so `stop()` never races a reused descriptor number.
 private final class FakeDiscordServer: Sendable {
     private struct State {
         var frames: [DiscordIPC.Frame] = []
@@ -133,10 +130,8 @@ private final class FakeDiscordServer: Sendable {
         }
     }
 
-    /// Discord quitting: the socket path and every connection go away.
     func stop() {
         unlink(path)
-        // Wakes each blocked reader; the serving thread closes its own descriptor.
         state.withLock { state in
             state.stopped = true
             for client in state.clients { shutdown(client, SHUT_RDWR) }
@@ -157,7 +152,6 @@ private final class FakeClock: Sendable {
     func advance(_ seconds: TimeInterval) { value.withLock { $0 += seconds } }
 }
 
-/// A short directory: `sun_path` holds 104 bytes, and the test temporary directory can be long.
 private func makeSocketDirectory() throws -> String {
     let path = "/tmp/adipc-\(UUID().uuidString.prefix(8))"
     try FileManager.default.createDirectory(atPath: path, withIntermediateDirectories: true)
@@ -196,7 +190,6 @@ private let sample = DiscordActivity(details: "Working with Alethe", state: "Vie
         #expect((activity["timestamps"] as? [String: Any])?["start"] as? Int64 == 1_700_000_000)
         #expect((activity["assets"] as? [String: Any])?["large_image"] as? String == "alethe")
 
-        // A second update reuses the connection.
         #expect(await client.setActivity(sample))
         _ = await server.waitForFrames(3)
         #expect(server.connections == 1)
@@ -270,7 +263,6 @@ private let sample = DiscordActivity(details: "Working with Alethe", state: "Vie
         #expect(await client.setActivity(sample) == false)
         await client.clearActivity()
 
-        // Discord starts inside the backoff window: no attempt until it elapses.
         let server = try #require(FakeDiscordServer(path: "\(dir)/discord-ipc-0"))
         defer { server.stop() }
         #expect(await client.setActivity(sample) == false)
@@ -282,7 +274,6 @@ private let sample = DiscordActivity(details: "Working with Alethe", state: "Vie
     @Test func staleSocketFileIsSkipped() async throws {
         let dir = try makeSocketDirectory()
         defer { try? FileManager.default.removeItem(atPath: dir) }
-        // A leftover socket file from a Discord that quit: exists, refuses connections.
         FileManager.default.createFile(atPath: "\(dir)/discord-ipc-0", contents: Data())
         let server = try #require(FakeDiscordServer(path: "\(dir)/discord-ipc-1"))
         defer { server.stop() }

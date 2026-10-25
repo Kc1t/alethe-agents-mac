@@ -2,7 +2,6 @@ import AppKit
 import AletheDesign
 import SwiftUI
 
-/// `RowSelect.module.css`: keep the brand artwork inside the same 20-point icon slot.
 struct NewTerminalRowSelect<Selection: Hashable, Icon: View>: View {
     @Binding var selection: Selection
     let options: [Selection]
@@ -162,7 +161,6 @@ struct NewTerminalRowSelect<Selection: Hashable, Icon: View>: View {
     }
 }
 
-/// A window-local overlay; the `.mac` presentation continues to use the existing system sheet.
 struct NewTerminalWebOverlay<Content: View>: View {
     let onClose: () -> Void
     @ViewBuilder let content: (@escaping () -> Void) -> Content
@@ -171,7 +169,6 @@ struct NewTerminalWebOverlay<Content: View>: View {
     @State private var visible = false
     @State private var closing = false
 
-    // CSS has no minimum: keep the footer usable, then let the body scroll.
     var defaultWidth: CGFloat = 500
     var minimumWidth: CGFloat = 440
     var minimumHeight: CGFloat = 240
@@ -299,13 +296,11 @@ struct NewTerminalWebOverlay<Content: View>: View {
     }
 }
 
-// Lift menus out of the scrolling modal body, as the web's RowSelect portal does.
 struct NewTerminalDropdown {
     let anchor: Anchor<CGRect>
     let content: AnyView
     let height: CGFloat
     let dismiss: () -> Void
-    /// Width clamp in points before zoom (the web `Dropdown` menu is 220...320 wide).
     var minimumWidth: CGFloat = 0
     var maximumWidth: CGFloat = .infinity
 }
@@ -357,7 +352,6 @@ extension EnvironmentValues {
     @Entry var newTerminalModalHeight: CGFloat = 600
 }
 
-/// Apply to a modal header; the existing overlay supplies window-local movement and reset.
 private struct WebModalHeader: ViewModifier {
     @Environment(\.webModalMove) private var move
     @Environment(\.webModalEndMove) private var endMove
@@ -382,7 +376,6 @@ extension EnvironmentValues {
     @Entry var webModalReset: () -> Void = {}
 }
 
-/// Match the web modal's capture-phase Escape handling even when an AppKit text editor consumes it.
 private struct WebModalEscapeHandler: NSViewRepresentable {
     let action: () -> Void
     func makeNSView(context: Context) -> WebModalEscapeView { WebModalEscapeView(action: action) }

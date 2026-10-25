@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheAgents
 
-/// Per-launch MCP wiring (P5-4).
 @Suite struct McpLaunchTests {
     static let launcher = AgentLauncher(launchers: LauncherCache(stillExists: { _ in true }),
                                         overrides: ["claude": "/bin/echo", "codex": "/bin/echo", "opencode": "/bin/echo"])
@@ -66,8 +65,6 @@ import Testing
         #expect(without.environment["OPENCODE_CONFIG"] == nil)
     }
 
-    /// P7-17: added variables win over a scrubbed name, stay out of the command line, and the
-    /// launcher's own (OpenCode's config file) still win over them.
     @Test func addedEnvironmentIsMergedAfterTheScrubbedOnes() throws {
         let command = try Self.command(AgentLaunchRequest(kind: .opencode, mcpServers: [Self.memory], mcpConfigPath: "/tmp/o.json",
                                                           environment: ["OPENAI_API_KEY": "k1", "CLAUDECODE": "kept",
@@ -112,8 +109,6 @@ import Testing
         let kiro = try launcher.command(for: AgentLaunchRequest(kind: .kiro, mcpServers: [Self.graphify], mcpConfigPath: "/tmp/m.json"))
         #expect(kiro.shellCommand?.hasSuffix("'/bin/echo' 'chat'") == true)
     }
-
-    // MARK: HTTP servers (P6-9)
 
     static let orchestrator = McpLaunchServer.http(name: "alethe", url: "http://127.0.0.1:4000/mcp",
                                                    headers: ["X-Alethe-Token": "tok", "X-Alethe-Planner": "tab1"])

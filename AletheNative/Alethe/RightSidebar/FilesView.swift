@@ -10,7 +10,6 @@ import PDFKit
 import Quartz
 import SwiftUI
 
-/// File explorer for the selected project's folder (P4-8): lazy tree, git badges, live refresh.
 struct FilesView: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics
@@ -275,8 +274,6 @@ private struct FileTreeList: View {
         Button(role: .destructive) { trash(node.url) } label: { Label("files.moveToTrash", systemImage: "trash") }
     }
 
-    // MARK: Rows
-
     @ViewBuilder
     private func rowView(_ row: FileTreeRow) -> some View {
         let node = row.node
@@ -327,8 +324,6 @@ private struct FileTreeList: View {
         }
     }
 
-    // MARK: Menus
-
     @ViewBuilder
     private func menu(for node: FileNode) -> some View {
         if !node.isDirectory {
@@ -353,8 +348,6 @@ private struct FileTreeList: View {
         Button("files.newFolder") { create(in: directory, folder: true) }
     }
 
-    // MARK: Actions
-
     private func activate(_ node: FileNode) {
         if node.isDirectory {
             attempt { try tree.toggle(node.url) }
@@ -363,7 +356,6 @@ private struct FileTreeList: View {
         }
     }
 
-    /// Opens a file in the pane its kind maps to; plain text goes to the default app.
     private func open(_ node: FileNode) {
         let path = node.url.path
         let content: PaneContent? = switch node.paneKind {
@@ -388,7 +380,6 @@ private struct FileTreeList: View {
         }
     }
 
-    /// Creates `untitled` (numbered when taken), then starts renaming it inline.
     private func create(in directory: URL, folder: Bool) {
         let base = String(localized: folder ? "files.untitledFolder" : "files.untitledFile")
         var name = base
@@ -441,9 +432,6 @@ private struct FileTreeList: View {
         }
     }
 
-    // MARK: Live refresh
-
-    /// Loads the tree and git badges, then refreshes both on every watcher signal until cancelled.
     private func follow() async {
         try? tree.reload()
         let repository: GitRepository? = if let root = try? await GitRepository.discover(tree.root) {
@@ -452,8 +440,6 @@ private struct FileTreeList: View {
             nil
         }
         await refreshBadges(repository)
-        // With the folder below the repository root, `.git` lies outside the tree watcher: watch it
-        // too, so commits, stages and checkouts refresh the badges.
         let gitWatcher = repository.flatMap { Self.gitDirectoryWatcher(repoRoot: $0.root, tree: tree.root) }
         gitWatcher?.start()
         let gitRefresh = gitWatcher.map { watcher in
@@ -474,13 +460,11 @@ private struct FileTreeList: View {
         }
     }
 
-    /// A watcher on the repository's `.git` when it is not inside the watched folder.
     private static func gitDirectoryWatcher(repoRoot: URL, tree: URL) -> GitWatcher? {
         let root = repoRoot.standardizedFileURL.resolvingSymlinksInPath()
         let folder = tree.standardizedFileURL.resolvingSymlinksInPath()
         guard root.path != folder.path else { return nil }
         var gitDirectory = root.appending(path: ".git", directoryHint: .isDirectory)
-        // A worktree or submodule has a `.git` file pointing at its git directory.
         if let text = try? String(contentsOf: root.appending(path: ".git"), encoding: .utf8), text.hasPrefix("gitdir:") {
             let path = text.dropFirst("gitdir:".count).trimmingCharacters(in: .whitespacesAndNewlines)
             gitDirectory = URL(filePath: path, directoryHint: .isDirectory, relativeTo: root).standardizedFileURL
@@ -505,11 +489,9 @@ private struct FileTreeList: View {
     }
 }
 
-/// Shows one file in the shared Quick Look panel (Space in the explorer).
 @MainActor
 private final class QuickLook: NSObject, QLPreviewPanelDataSource {
     static let shared = QuickLook()
-    /// Only touched on the main thread (Quick Look queries its data source there).
     nonisolated(unsafe) private var url: URL?
 
     func show(_ url: URL) {
@@ -548,7 +530,6 @@ private struct WebFileDrag: ViewModifier {
     }
 }
 
-/// FileExplorer.module.css preview: original media, source text and the same 2 MiB text gate.
 private struct SidebarFilePreview: View {
     let url: URL
     let close: () -> Void

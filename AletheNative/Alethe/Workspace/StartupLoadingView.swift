@@ -1,7 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// Decorative boot animation; the accessible status stays stable as the cells cycle.
 struct StartupLoadingView: View {
     @Environment(\.theme) private var theme
     @Environment(\.metrics) private var metrics

@@ -1,6 +1,5 @@
 import XCTest
 
-/// Every upstream agent is offered for a new terminal (P3-1).
 @MainActor
 final class AgentRosterTests: XCTestCase {
     override func setUp() async throws {

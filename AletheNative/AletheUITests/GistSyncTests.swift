@@ -1,7 +1,5 @@
 import XCTest
 
-/// GitHub Sync (P7-15) over the in-process stub GitHub of `-AletheUITestSeed gistSync` (token
-/// `ghp_uitest`); never the real API. Confirming a pull relaunches the app, which UI tests never do.
 @MainActor
 final class GistSyncTests: XCTestCase {
     override func setUp() async throws {
@@ -39,12 +37,10 @@ final class GistSyncTests: XCTestCase {
         let app = launchSeeded()
         openSheet(app)
 
-        // A refused token is reported and nothing is stored.
         connect(app, token: "ghp_wrong")
         XCTAssertTrue(element(app, "gistSync.error").waitForExistence(timeout: 10))
         XCTAssertTrue(element(app, "gistSync.token").exists)
 
-        // A valid one connects; the token is not shown anywhere afterwards.
         connect(app, token: "ghp_uitest")
         let connectedAs = element(app, "gistSync.connectedAs")
         XCTAssertTrue(connectedAs.waitForExistence(timeout: 10))
@@ -52,17 +48,14 @@ final class GistSyncTests: XCTestCase {
         XCTAssertFalse(element(app, "gistSync.token").exists)
         XCTAssertEqual(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'ghp_uitest'")).count, 0)
 
-        // Pull before any push: nothing to download.
         element(app, "gistSync.pull").click()
         XCTAssertTrue(element(app, "gistSync.error").waitForExistence(timeout: 10))
 
-        // Push creates the gist.
         element(app, "gistSync.push").click()
         XCTAssertTrue(element(app, "gistSync.notice").waitForExistence(timeout: 10))
         XCTAssertFalse(text(element(app, "gistSync.lastPush")).contains("never"))
         XCTAssertTrue(element(app, "gistSync.openGist").exists)
 
-        // Pull asks first; cancelling changes nothing.
         element(app, "gistSync.pull").click()
         let confirm = element(app, "gistSync.pullConfirm")
         XCTAssertTrue(confirm.waitForExistence(timeout: 10), "a pull asks before replacing data")
@@ -71,7 +64,6 @@ final class GistSyncTests: XCTestCase {
         XCTAssertTrue(text(element(app, "gistSync.lastPull")).contains("never"))
         XCTAssertFalse(element(app, "gistSync.error").exists)
 
-        // Disconnect forgets the token.
         element(app, "gistSync.disconnect").click()
         XCTAssertTrue(element(app, "gistSync.token").waitForExistence(timeout: 10))
         element(app, "gistSync.done").click()
@@ -95,7 +87,6 @@ final class GistSyncTests: XCTestCase {
         app.terminate()
     }
 
-    /// HT: at 120 % zoom the sheet's controls take clicks where they are drawn.
     func testSheetControlsReceiveClicksWhenZoomed() {
         let app = launchSeeded()
         for _ in 0..<2 {

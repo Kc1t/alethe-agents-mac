@@ -1,12 +1,8 @@
 import Foundation
 
-/// One part of an exported OpenCode message (upstream `OpenCodeExportPart`). Types the activity
-/// view does not show (`step-start`, `step-finish`, future ones) are kept as `other`.
 public enum OpenCodeExportPart: Hashable, Sendable {
     case text(String)
     case reasoning(String)
-    /// `input` is the tool's `description` argument when it has one, else its arguments as JSON
-    /// (upstream `formatToolInput`).
     case tool(name: String, status: String, input: String?, output: String?)
     case patch
     case other(type: String)
@@ -25,7 +21,6 @@ public struct OpenCodeExportMessage: Hashable, Sendable, Identifiable {
     public var parts: [OpenCodeExportPart]
 }
 
-/// A session as `opencode export <id>` prints it (upstream `OpenCodeExportSession`).
 public struct OpenCodeExportSession: Hashable, Sendable {
     public var id: String
     public var title: String?
@@ -35,7 +30,6 @@ public struct OpenCodeExportSession: Hashable, Sendable {
     public var updatedAt: Date?
     public var messages: [OpenCodeExportMessage]
 
-    /// Input plus output, as the activity view's header shows it; nil without token counts.
     public var totalTokens: Int? {
         guard inputTokens != nil || outputTokens != nil else { return nil }
         return (inputTokens ?? 0) + (outputTokens ?? 0)
@@ -49,12 +43,9 @@ public enum OpenCodeExportError: Error, Equatable, Sendable {
     case notJSON
 }
 
-/// `opencode export <child>` for the GSD Sync activity view (upstream `opencode_export_session`).
 public enum OpenCodeExport {
     public static let timeout: Duration = .seconds(30)
 
-    /// Session ids come from `.gsd-child-session`, a file in the repository: only plain ids are
-    /// passed on, never something the CLI could read as an option.
     public static func isValidSessionID(_ id: String) -> Bool {
         !id.isEmpty && id.count <= 128 && !id.hasPrefix("-")
             && id.unicodeScalars.allSatisfy { CharacterSet.alphanumerics.contains($0) && $0.isASCII || $0 == "_" || $0 == "-" }
@@ -77,8 +68,6 @@ public enum OpenCodeExport {
         return try parse(result.stdout)
     }
 
-    /// The CLI prints a status line (`Exporting session: <id>`) before the JSON: parsing starts at
-    /// the first `{`.
     public static func parse(_ output: String) throws(OpenCodeExportError) -> OpenCodeExportSession {
         guard let start = output.firstIndex(of: "{"),
               let root = try? JSONSerialization.jsonObject(with: Data(output[start...].utf8)) as? [String: Any] else {
@@ -146,7 +135,6 @@ public enum OpenCodeExport {
         (value as? NSNumber)?.intValue
     }
 
-    /// OpenCode times are milliseconds since 1970.
     private static func date(_ value: Any?) -> Date? {
         (value as? NSNumber).map { Date(timeIntervalSince1970: $0.doubleValue / 1000) }
     }

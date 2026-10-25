@@ -3,8 +3,6 @@ import AletheFoundation
 import AppKit
 import SwiftUI
 
-/// Help › Diagnostics… (replaces upstream `AuditModal`, SET-11): the warnings and errors recorded
-/// this run, exported as JSON, plus the log actions.
 struct DiagnosticsSheet: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.dismiss) private var nativeDismiss
@@ -184,8 +182,6 @@ private struct DiagnosticEventRow: View {
     }
 }
 
-/// Shown at launch after a run that did not exit cleanly (upstream `crash_watch.rs`
-/// `get_last_crash_report`): the crash records to view or save. Nothing is sent anywhere.
 struct CrashNoticeSheet: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.dismiss) private var nativeDismiss

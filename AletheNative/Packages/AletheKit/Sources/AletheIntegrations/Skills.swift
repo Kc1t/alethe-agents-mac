@@ -1,11 +1,8 @@
 import Foundation
 
-/// Where an agent keeps its skills (upstream `skills.rs` `ROOTS`). `shared` is the cross-agent store
-/// the other roots link into, not an agent of its own.
 public enum SkillAgent: String, CaseIterable, Codable, Hashable, Sendable {
     case claude, codex, opencode, antigravity, shared
 
-    /// The skills folder relative to the home folder.
     public var segments: [String] {
         switch self {
         case .claude: [".claude", "skills"]
@@ -21,14 +18,10 @@ public struct SkillSummary: Hashable, Sendable, Identifiable {
     public var name: String
     public var agent: SkillAgent
     public var path: String
-    /// The folder with symlinks resolved (the shared copy for a linked skill).
     public var resolvedPath: String
     public var description: String
-    /// The skill folder is a symlink.
     public var linked: Bool
-    /// An agent's entry whose folder lives in the shared store.
     public var shared: Bool
-    /// Ships with the agent (Codex `.system`): never removed from Alethe.
     public var bundled: Bool
     public var entryCount: Int
 
@@ -62,20 +55,17 @@ public struct SkillAgentSnapshot: Hashable, Sendable {
     }
 }
 
-/// A file or folder inside a skill (depth and width capped like upstream's `build_tree`).
 public struct SkillNode: Hashable, Sendable, Identifiable {
     public var name: String
     public var path: String
     public var isDirectory: Bool
     public var size: Int64
     public var children: [SkillNode]
-    /// Its folder had more entries than were listed.
     public var truncated: Bool
 
     public var id: String { path }
 }
 
-/// The skill's entry in `~/.agents/.skill-lock.json` (written by the `skills` installer).
 public struct SkillLockInfo: Hashable, Sendable {
     public var source: String?
     public var sourceURL: String?
@@ -87,7 +77,6 @@ public struct SkillDetail: Hashable, Sendable {
     public var summary: SkillSummary
     public var frontmatter: [String: String]
     public var frontmatterRaw: String
-    /// `SKILL.md` without its frontmatter.
     public var body: String
     public var tree: [SkillNode]
     public var lock: SkillLockInfo?
@@ -95,10 +84,8 @@ public struct SkillDetail: Hashable, Sendable {
 
 public struct SkillRemoveReport: Hashable, Sendable {
     public var path: String
-    /// Only the link went; the shared copy stays at `sharedCopyPath`.
     public var removedLinkOnly: Bool
     public var sharedCopyPath: String?
-    /// The folder went to the Trash instead of being deleted.
     public var movedToTrash: Bool
 }
 
@@ -110,9 +97,6 @@ public enum SkillError: Error, Equatable, Sendable {
     case removeFailed(String)
 }
 
-/// Reads, inspects and uninstalls the skills of every agent (upstream `skills.rs`). All work is
-/// synchronous file I/O: callers use the `async` forms, which run it off the main thread and stop
-/// between entries when their task is cancelled.
 public struct SkillStore: Sendable {
     public static let skillFile = "SKILL.md"
     static let codexSystemMarker = ".codex-system-skills.marker"
@@ -121,7 +105,6 @@ public struct SkillStore: Sendable {
     static let maxTreeChildren = 100
 
     public let home: URL
-    /// Real folders go to the Trash (links are always just unlinked).
     public let useTrash: Bool
 
     public init(home: URL = FileManager.default.homeDirectoryForCurrentUser, useTrash: Bool = true) {
@@ -135,8 +118,6 @@ public struct SkillStore: Sendable {
 
     var lockFile: URL { home.appending(path: ".agents/.skill-lock.json") }
 
-    // MARK: Async
-
     public func scan() async throws -> [SkillAgentSnapshot] {
         try await Self.offMain { try scanNow() }
     }
@@ -149,13 +130,10 @@ public struct SkillStore: Sendable {
         try await Self.offMain { try uninstallNow(agent: agent, name: name) }
     }
 
-    /// Runs `work` on a background task that inherits the caller's cancellation.
     static func offMain<T: Sendable>(_ work: @escaping @Sendable () throws -> T) async throws -> T {
         let task = Task.detached(priority: .userInitiated) { try work() }
         return try await withTaskCancellationHandler { try await task.value } onCancel: { task.cancel() }
     }
-
-    // MARK: Scan
 
     public func scanNow() throws -> [SkillAgentSnapshot] {
         try SkillAgent.allCases.map { agent in
@@ -184,7 +162,6 @@ public struct SkillStore: Sendable {
         return out.sorted { $0.name < $1.name }
     }
 
-    /// Nil when the folder has no readable `SKILL.md`.
     func summarize(_ agent: SkillAgent, root: URL, dir: URL) -> SkillSummary? {
         guard let raw = Self.readSkillFile(dir) else { return nil }
         let fields = SkillFrontmatter.parse(SkillFrontmatter.split(raw).front)
@@ -199,8 +176,6 @@ public struct SkillStore: Sendable {
             entryCount: Self.children(of: dir, includingHidden: true).count
         )
     }
-
-    // MARK: Detail
 
     public func detailNow(agent: SkillAgent, name: String) throws -> SkillDetail {
         let (root, dir) = try locate(agent, name)
@@ -242,8 +217,6 @@ public struct SkillStore: Sendable {
                              installedAt: entry["installedAt"] as? String, updatedAt: entry["updatedAt"] as? String)
     }
 
-    // MARK: Uninstall
-
     public func uninstallNow(agent: SkillAgent, name: String) throws -> SkillRemoveReport {
         let (root, dir) = try locate(agent, name)
         guard let summary = summarize(agent, root: root, dir: dir) else { throw SkillError.notFound }
@@ -251,7 +224,6 @@ public struct SkillStore: Sendable {
         try Task.checkCancellation()
         do {
             if summary.linked {
-                // Unlinked, never followed: the shared copy other agents point at has to survive.
                 try FileManager.default.removeItem(atPath: dir.path)
                 return SkillRemoveReport(path: summary.path, removedLinkOnly: true,
                                          sharedCopyPath: summary.resolvedPath, movedToTrash: false)
@@ -268,9 +240,6 @@ public struct SkillStore: Sendable {
         }
     }
 
-    // MARK: Paths
-
-    /// Rejects names that could leave the skills folder (upstream `validate_name`).
     public static func validate(name: String) throws {
         if name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || name == "." || name == ".."
             || name.contains(where: { "/\\:".contains($0) }) || name.contains("\0") {
@@ -278,12 +247,9 @@ public struct SkillStore: Sendable {
         }
     }
 
-    /// `<root>/<name>` or `<root>/.system/<name>`, proven not to escape the root, so a crafted name
-    /// can never point the reader or the uninstaller somewhere else.
     func locate(_ agent: SkillAgent, _ name: String) throws -> (root: URL, dir: URL) {
         try Self.validate(name: name)
         let root = root(for: agent)
-        // No trailing slash: a path ending in "/" would follow a linked skill instead of naming the link.
         let direct = root.appending(path: name, directoryHint: .notDirectory)
         let system = root.appending(path: Self.systemFolder).appending(path: name, directoryHint: .notDirectory)
         let dir: URL
@@ -314,7 +280,6 @@ public struct SkillStore: Sendable {
         }
     }
 
-    /// Follows symlinks, like upstream's `Path::is_dir`.
     static func isDirectory(_ url: URL) -> Bool {
         var isDirectory: ObjCBool = false
         return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue
@@ -329,8 +294,6 @@ public struct SkillStore: Sendable {
         return (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil, options: options)) ?? []
     }
 
-    /// `realpath`: symlinks resolved and `/tmp` spelled `/private/tmp` (Foundation's
-    /// `resolvingSymlinksInPath` does the opposite, which breaks prefix checks).
     static func canonical(_ url: URL) -> URL {
         guard let resolved = realpath(url.path, nil) else { return url.standardizedFileURL }
         defer { free(resolved) }
@@ -342,9 +305,6 @@ public struct SkillStore: Sendable {
     }
 }
 
-/// `SKILL.md` frontmatter, parsed for the shapes installed skills actually use (upstream
-/// `split_frontmatter`/`parse_frontmatter`): plain and quoted scalars, folded (`>`) and literal (`|`)
-/// blocks, and nested maps kept as their indented text. Not a YAML parser.
 public enum SkillFrontmatter {
     public static func split(_ raw: String) -> (front: String, body: String) {
         let normalized = raw.replacingOccurrences(of: "\r\n", with: "\n")
@@ -404,17 +364,13 @@ public enum SkillFrontmatter {
     }
 }
 
-/// One skill across the agents that have it (upstream `lib/skills.ts` `groupSkillsByName`).
 public struct SkillGroup: Hashable, Sendable, Identifiable {
     public var name: String
     public var description: String
     public var entries: [SkillSummary]
-    /// Agents that have it, without the shared store.
     public var agents: [SkillAgent]
-    /// Entries a bulk remove may touch: never the shared copy other agents link to, never bundled.
     public var removable: [SkillSummary]
     public var sharedEntry: SkillSummary?
-    /// Every agent copy ships with its agent.
     public var bundled: Bool
 
     public var id: String { name }
@@ -442,14 +398,12 @@ public struct SkillGroup: Hashable, Sendable, Identifiable {
         .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
-    /// Name or description contains the query (case-insensitive); an empty query matches all.
     public func matches(_ query: String) -> Bool {
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !needle.isEmpty else { return true }
         return name.localizedCaseInsensitiveContains(needle) || description.localizedCaseInsensitiveContains(needle)
     }
 
-    /// Installed for `agent` (nil: any).
     public func isInstalled(for agent: SkillAgent?) -> Bool {
         agent.map { agent in entries.contains { $0.agent == agent } } ?? true
     }

@@ -2,8 +2,6 @@ import Foundation
 import Testing
 @testable import AletheFoundation
 
-/// The per-profile secret store (P7-1). The Keychain case uses a throwaway service, so the user's
-/// own items are never read or written.
 @Suite struct KeychainStoreTests {
     private func roundTrip(_ store: any SecretStore) throws {
         let profile = "test-\(UUID().uuidString)"

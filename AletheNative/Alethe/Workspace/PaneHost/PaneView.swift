@@ -6,9 +6,6 @@ import AppKit
 import Observation
 import SwiftUI
 
-/// One pane: a header, the sub-tabs lane when shown, and the active tab's terminal (owned by
-/// `TerminalRegistry`, only re-parented here), plus the ended/not-found overlay when the process is
-/// not running.
 @MainActor
 final class PaneView: NSView {
     let paneID: PaneID
@@ -19,9 +16,7 @@ final class PaneView: NSView {
     private var overlay: NSHostingView<AnyView>?
     private var findBar: NSHostingView<AnyView>?
     private var offerBar: NSHostingView<AnyView>?
-    /// The project whose terminal this pane shows (for the page offer's "Open in Pane").
     private var projectID: ProjectID?
-    /// The terminal whose find bar this pane follows (the active tab's).
     private weak var searchedTerminal: TerminalPaneView?
     private var context: PaneHostContext?
     private var lastStyle: (focused: Bool, dropTarget: Bool)?
@@ -111,7 +106,6 @@ final class PaneView: NSView {
             focusInset.zPosition = 10
         } else { focusInset.removeFromSuperlayer() }
     }
-    /// A file or page pane (Markdown…): one SwiftUI view in place of header, lane and terminal.
     private var contentHost: NSHostingView<AnyView>?
 
     func configure(pane: Pane, project: Project, focused: Bool, dropTarget: Bool, context: PaneHostContext,
@@ -167,7 +161,6 @@ final class PaneView: NSView {
         let switched = tabID != nil && tabID != tab.id
         tabID = tab.id
         setAccessibilityIdentifier("pane.\(tab.title ?? tab.agent)")
-        // A disabled pane runs nothing (P2-23): no process, only the enable overlay.
         if !pane.isDisabled { environment.terminals.ensureStarted(tab, in: project, environment: environment) }
         attachTerminal(pane.isDisabled ? nil : environment.terminals.view(for: tab.id))
         followSearch(of: pane.isDisabled ? nil : environment.terminals.view(for: tab.id))
@@ -189,7 +182,6 @@ final class PaneView: NSView {
             overlay?.removeFromSuperview()
             overlay = nil
         }
-        // A sub-tab switch in the focused pane hands the keyboard to the newly shown terminal.
         if switched && focused { DispatchQueue.main.async { [weak self] in self?.focusTerminal() } }
         needsLayout = true
     }
@@ -295,11 +287,8 @@ final class PaneView: NSView {
         }
     }
 
-    // MARK: - Page offer
-
     private var offerObservation = 0
 
-    /// Shows the page offer of the visible tab, and follows it as it appears or goes.
     private func observeOffer(for tab: TabID) {
         offerObservation += 1
         let generation = offerObservation
@@ -349,8 +338,6 @@ final class PaneView: NSView {
         needsLayout = true
     }
 
-    // MARK: - Find bar
-
     private func followSearch(of terminal: TerminalPaneView?) {
         guard terminal !== searchedTerminal else {
             updateFindBar()
@@ -362,11 +349,8 @@ final class PaneView: NSView {
         updateFindBar()
     }
 
-    /// Bumped when the pane starts following another terminal, so an older observation stops.
     private var searchObservation = 0
 
-    /// Shows or hides the find bar whenever the terminal's search opens or closes (⌘F from the menu,
-    /// or Ghostty's own `start_search` / `end_search`).
     private func observeSearch(_ generation: Int) {
         guard let terminal = searchedTerminal else { return }
         withObservationTracking {
@@ -424,7 +408,6 @@ final class PaneView: NSView {
         let floating = web && !webTopbarPinned
         header.frame = CGRect(x: 0, y: floating ? context?.metrics.size(4) ?? 4 : 0,
                               width: bounds.width, height: floating ? context?.metrics.size(26) ?? 26 : headerHeight)
-        // A floating (unpinned) web header overlays the terminal and reserves no strip.
         let top = floating ? 0 : headerHeight
         let body = CGRect(x: 0, y: top, width: bounds.width, height: max(0, bounds.height - top))
         let leading = lane == nil ? 0 : min(laneWidth, body.width)
@@ -435,7 +418,6 @@ final class PaneView: NSView {
                                width: max(0, body.width - leading - (web ? padding?.size(14) ?? 14 : 0)),
                                height: max(0, body.height - (web ? padding?.size(6) ?? 6 : 0)))
         overlay?.frame = content.frame
-        // The content frame just changed; refit explicitly instead of relying on autoresizing.
         (content.subviews.first as? TerminalPaneView)?.syncSurfaceSize()
         if let offerBar {
             let height = offerBar.fittingSize.height

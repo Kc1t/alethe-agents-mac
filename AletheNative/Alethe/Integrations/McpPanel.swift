@@ -4,7 +4,6 @@ import AletheModel
 import AlethePluginKit
 import SwiftUI
 
-/// Where the MCP manager opens.
 struct McpManagerRoute: Hashable {
     enum Tab: String, Hashable { case servers, skills }
 
@@ -13,9 +12,6 @@ struct McpManagerRoute: Hashable {
     var add = false
 }
 
-/// The right sidebar's MCP tab (upstream `McpPanel`, EXT-1): servers grouped by name across agents,
-/// with scope switch, agent filter, live health and config diagnostics; or the skills of every agent.
-/// Rows open the MCP manager, where every change happens.
 struct McpPanel: View {
     @Environment(AppEnvironment.self) private var environment
 
@@ -125,8 +121,6 @@ private struct McpPanelContent: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("mcp.panel")
     }
-
-    // MARK: Header
 
     private var header: some View {
         HStack(spacing: metrics.isWebInterface ? metrics.size(8) : metrics.space(.s)) {
@@ -279,8 +273,6 @@ private struct McpPanelContent: View {
             .foregroundStyle(theme[metrics.isWebInterface ? .fgFaint : .textSecondary])
             .accessibilityIdentifier("mcp.panel.stats")
     }
-
-    // MARK: List
 
     @ViewBuilder private var list: some View {
         let loaded = section == .servers ? model.snapshots != nil : skills != nil
@@ -507,8 +499,6 @@ private struct McpPanelContent: View {
     }
 }
 
-// MARK: - Shared pieces
-
 extension McpSnapshotIssue {
     var title: LocalizedStringKey {
         switch self {
@@ -575,7 +565,6 @@ struct McpBadge: View {
     }
 }
 
-/// Agents that have the server (filled) and readable agents that lack it (hollow).
 struct McpAgentDots: View {
     let present: [McpAgent]
     let missing: [McpAgent]
@@ -620,7 +609,6 @@ private struct McpWebRowBackground: ViewModifier {
     }
 }
 
-/// The web MCP panel uses the compact bordered EmptyState component.
 private struct WebMcpEmpty: View {
     let title: LocalizedStringKey
     let detail: LocalizedStringKey?

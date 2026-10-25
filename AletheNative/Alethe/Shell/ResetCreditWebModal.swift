@@ -2,8 +2,6 @@ import AletheAgents
 import AletheDesign
 import SwiftUI
 
-/// `ResetCreditModal.tsx` / `ResetCreditModal.module.css`: the nested 560-point dialog opened from
-/// the Codex card of the AI usage modal. Each credit has its own "Use reset credit" action.
 struct ResetCreditWebModal: View {
     let finish: (WebDialogCenter.Outcome) -> Void
     @Environment(AppEnvironment.self) private var environment

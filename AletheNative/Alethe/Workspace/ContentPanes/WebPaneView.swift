@@ -4,9 +4,6 @@ import AppKit
 import SwiftUI
 import WebKit
 
-/// Web pane (upstream `WebPane`): a private page with back, forward, reload, an address field, page
-/// options (JavaScript, zoom, how long it stays loaded while hidden), open in the default browser and
-/// close. Dragging the toolbar's empty space reorders the pane.
 struct WebPaneView: View {
     let page: WebPageModel
     let isFocused: Bool
@@ -136,7 +133,6 @@ struct WebPaneView: View {
         .accessibilityIdentifier("web.options")
     }
 
-    /// A setter that changes a copy of the options, applies it and persists it.
     private func update<Value>(_ change: @escaping (inout WebPaneOptions, Value) -> Void) -> (Value) -> Void {
         { value in
             var options = page.options
@@ -158,7 +154,6 @@ struct WebPaneView: View {
     }
 }
 
-/// Hosts the page's current WKWebView, which the model may release and recreate.
 private struct WebViewHost: NSViewRepresentable {
     let page: WebPageModel
 

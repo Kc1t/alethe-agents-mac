@@ -12,21 +12,17 @@ public enum ShadowLevel: String, CaseIterable, Codable, Sendable {
     case sm, md, lg
 }
 
-/// Terminal colors handed to the terminal engine (Ghostty config).
 public struct TerminalPalette: Hashable, Sendable, Codable {
     public let background: ThemeColor
     public let foreground: ThemeColor
     public let cursor: ThemeColor
     public let selection: ThemeColor
-    /// 16 ANSI colors: black, red, green, yellow, blue, magenta, cyan, white, then the bright set.
     public let ansi: [ThemeColor]
 }
 
-/// A complete theme: every `ThemeToken` resolved (no cascade at runtime).
 public struct Theme: Identifiable, Hashable, Sendable, Codable {
     public let id: String
     public let isLight: Bool
-    /// Three colors shown in the theme picker.
     public let swatch: [ThemeColor]
     public let colors: [ThemeToken: ThemeColor]
     public let shadows: [ShadowLevel: ThemeShadow]
@@ -36,7 +32,6 @@ public struct Theme: Identifiable, Hashable, Sendable, Codable {
         (colors[token] ?? Self.missingTokenColor).color
     }
 
-    /// The token for AppKit layers (borders, backgrounds of hosted NSViews).
     public func nsColor(_ token: ThemeToken) -> NSColor {
         (colors[token] ?? Self.missingTokenColor).nsColor
     }
@@ -45,7 +40,6 @@ public struct Theme: Identifiable, Hashable, Sendable, Codable {
         shadows[level] ?? ThemeShadow(x: 0, y: 0, blur: 0, color: Self.missingTokenColor)
     }
 
-    /// Validation guarantees every token exists; this only keeps a malformed plugin theme from crashing.
     private static let missingTokenColor = ThemeColor(hex: "#00000000")!
 
     init(id: String, isLight: Bool, swatch: [ThemeColor], colors: [ThemeToken: ThemeColor],
@@ -88,7 +82,6 @@ public struct Theme: Identifiable, Hashable, Sendable, Codable {
         try container.encode(terminal, forKey: .terminal)
     }
 
-    /// Problems that make a theme unusable: missing tokens, wrong swatch or ANSI sizes.
     public var validationErrors: [String] {
         var errors: [String] = []
         let missing = ThemeToken.allCases.filter { colors[$0] == nil }

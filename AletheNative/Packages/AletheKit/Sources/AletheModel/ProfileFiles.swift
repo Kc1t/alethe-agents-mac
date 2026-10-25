@@ -1,10 +1,8 @@
 import Foundation
 
-/// What Settings › Profiles shows per profile (upstream `ProfileSummary`).
 public struct ProfileSummary: Hashable, Sendable {
     public var projects: Int
     public var terminals: Int
-    /// Bytes on disk of the profile folder, scrollback included.
     public var bytes: Int64
 
     public init(projects: Int = 0, terminals: Int = 0, bytes: Int64 = 0) {
@@ -14,9 +12,7 @@ public struct ProfileSummary: Hashable, Sendable {
     }
 }
 
-/// File work on whole profile folders. Blocking: callers run it off the main thread.
 public enum ProfileFiles {
-    /// Counts from a `workspace.json` read loosely, so a file from another build still counts.
     public static func counts(ofWorkspaceAt url: URL) -> (projects: Int, terminals: Int) {
         guard let data = try? Data(contentsOf: url),
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -33,7 +29,6 @@ public enum ProfileFiles {
                               bytes: size(of: locations.profileDirectory(id)))
     }
 
-    /// Allocated size of every regular file below `directory`.
     public static func size(of directory: URL) -> Int64 {
         let keys: [URLResourceKey] = [.isRegularFileKey, .totalFileAllocatedSizeKey, .fileSizeKey]
         guard let enumerator = FileManager.default.enumerator(at: directory, includingPropertiesForKeys: keys) else { return 0 }
@@ -45,9 +40,6 @@ public enum ProfileFiles {
         return total
     }
 
-    /// Files that only matter to a running app and never travel with a profile (upstream
-    /// `is_excluded_from_backup`): atomic-save leftovers, logs, the Tauri WebView cache, Finder's
-    /// `.DS_Store`. `relativePath` is relative to the profile folder, `/`-separated.
     public static func isRuntimeFile(relativePath: String) -> Bool {
         let components = relativePath.split(separator: "/")
         guard let first = components.first, let last = components.last else { return false }
@@ -57,8 +49,6 @@ public enum ProfileFiles {
         return ext == "tmp" || ext == "log"
     }
 
-    /// Copies `source` into `destination` (created), leaving runtime files, the top-level entries named
-    /// in `skipping` and anything but regular files and folders (sockets, symbolic links) behind.
     public static func copyProfileFolder(from source: URL, to destination: URL, skipping: Set<String> = []) throws {
         let manager = FileManager.default
         try manager.createDirectory(at: destination, withIntermediateDirectories: true)
@@ -86,8 +76,6 @@ public enum ProfileFiles {
         }
     }
 
-    /// Moves a deleted profile's folder to the Trash, so a mistaken delete can be undone from Finder.
-    /// A folder that was never created is fine.
     public static func trashProfileFolder(_ directory: URL) throws {
         guard FileManager.default.fileExists(atPath: directory.path) else { return }
         try FileManager.default.trashItem(at: directory, resultingItemURL: nil)

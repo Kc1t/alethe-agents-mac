@@ -5,7 +5,6 @@ import AletheTodos
 import AppKit
 import SwiftUI
 
-/// TodoSidebar.tsx and TodoSidebar.module.css; the native list remains in TodosView.
 struct TodosWebPanel: View {
     let store: TodoStore
     let settings: () -> Void
@@ -47,7 +46,6 @@ struct TodosWebPanel: View {
         VStack(spacing: 0) {
             header.modifier(AletheSidebarWebEntrance(.header))
             composer.modifier(AletheSidebarWebEntrance(.composer))
-                // TodoSidebar.tsx `focusComposer`: Cmd+N expands and focuses the composer while the panel is mounted.
                 .background(TodoComposerShortcut { expanded = true; composerFocused = true })
             ScrollView {
                 VStack(spacing: metrics.size(16)) {
@@ -393,8 +391,6 @@ private struct TodoWebProjectPicker: View {
     }
 }
 
-/// A local key monitor that claims plain Cmd+N for the todo composer (it is installed after the
-/// window-level shortcuts, so it sees the key first while the panel is on screen).
 private struct TodoComposerShortcut: NSViewRepresentable {
     let action: () -> Void
 

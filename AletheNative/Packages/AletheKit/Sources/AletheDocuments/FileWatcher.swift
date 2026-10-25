@@ -1,10 +1,6 @@
 import Darwin
 import Foundation
 
-/// Calls `onChange` on the main queue when a file is written, replaced or removed (upstream
-/// `watch_file`). Editors that save atomically replace the file (rename over it), which ends a
-/// descriptor watch, so after a rename or delete the watcher reopens the path, and keeps retrying
-/// briefly while the new file is not there yet. Bursts are coalesced into one call.
 public final class FileWatcher: @unchecked Sendable {
     public let path: String
     private let onChange: @MainActor () -> Void
@@ -35,7 +31,6 @@ public final class FileWatcher: @unchecked Sendable {
         guard !stopped else { return }
         let descriptor = Darwin.open(path, O_EVTONLY)
         guard descriptor >= 0 else {
-            // Mid-replace: the new file may not exist yet. Give up after ~5 s.
             if attempt < 50 {
                 queue.asyncAfter(deadline: .now() + 0.1) { [self] in open(attempt: attempt + 1) }
             }

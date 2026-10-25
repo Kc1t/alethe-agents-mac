@@ -2,9 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// Toolbar memory indicator (upstream RAM indicator + `MemoryAnalyticsModal`): what the terminals
-/// use, tinted by the system's memory pressure; the popover breaks it down per terminal and holds
-/// the hibernation policy.
 struct MemoryIndicator: View {
     var webTitleBar = false
     @Environment(AppEnvironment.self) private var environment
@@ -44,7 +41,6 @@ struct MemoryIndicator: View {
         }
     }
 
-    /// The web title bar's pill: `5 | 6000 MB`, or just the memory when no AI terminal runs.
     static func pillText(count: Int, totalMB: Double) -> String {
         let memory = String(format: "%.0f MB", totalMB)
         return count > 0 ? "\(count) | \(memory)" : memory
@@ -61,7 +57,6 @@ struct MemoryIndicator: View {
     }
 }
 
-/// The memory panel's tabs: the existing breakdown, and the AI terminals with what they started.
 enum MemoryTab: String, CaseIterable, Identifiable {
     case overview, ai
     var id: String { rawValue }
@@ -163,7 +158,6 @@ private struct MemoryDetails: View {
     }
 }
 
-/// The hibernation policy, shared by the popover and Settings.
 struct ResourcePolicyPicker: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics
@@ -203,7 +197,6 @@ struct ResourcePolicyPicker: View {
     }
 }
 
-/// Settings › Resources: the policy and its idle limits.
 struct ResourceSettings: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics
@@ -274,7 +267,6 @@ extension ResourcePolicy.Mode {
         }
     }
 
-    /// The title as plain text, for the web dropdown.
     var titleText: String {
         switch self {
         case .manual: String(localized: "resources.mode.manual")

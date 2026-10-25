@@ -1,6 +1,5 @@
 import Foundation
 
-/// SF Symbol names per file type, ported from upstream `FileIcon.tsx` (lucide icons).
 public enum FileIcons {
     public static let folderSymbol = "folder"
     public static let openFolderSymbol = "folder.fill"
@@ -36,7 +35,6 @@ public enum FileIcons {
     }
 }
 
-/// Which pane opens a file (upstream `classifyPaneKind`; HTML and PDF go to the web pane natively).
 public enum FilePaneKind: String, Hashable, Sendable, CaseIterable {
     case markdown, image, video, text, web
 
@@ -45,7 +43,6 @@ public enum FilePaneKind: String, Hashable, Sendable, CaseIterable {
     private static let markdownExtensions: Set<String> = ["md", "markdown", "mdx"]
     private static let webExtensions: Set<String> = ["html", "htm", "pdf"]
 
-    /// Classifies a path; a trailing `:line[:column]` suffix is ignored like upstream.
     public static func forFile(_ path: String) -> FilePaneKind {
         let trimmed = path.trimmingCharacters(in: .whitespaces)
             .replacingOccurrences(of: #":\d+(?::\d+)?$"#, with: "", options: .regularExpression)

@@ -1,15 +1,10 @@
 import Foundation
 import AlethePluginKit
 
-/// Pure-Swift model of a third-party ExtensionKit extension, independent of ExtensionFoundation so
-/// it is unit-testable (P4-19 spike). The app layer fills it from `AppExtensionIdentity` plus the
-/// extension's `AletheExtension` Info.plist dictionary.
 public struct ExtensionDescriptor: Hashable, Sendable, Codable {
-    /// `AppExtensionIdentity.bundleIdentifier`.
     public var bundleIdentifier: String
     public var localizedName: String
     public var version: String
-    /// Raw capability strings the extension declares; unknown ones are rejected, never ignored.
     public var declaredCapabilities: [String]
     public var apiVersion: PluginAPIVersion
 
@@ -35,8 +30,6 @@ public enum ExtensionValidationError: Error, Equatable, Sendable {
 }
 
 public enum ExtensionCapabilityMapper {
-    /// Maps declared strings to `PluginCapability`. Strict: any unknown string fails the whole
-    /// extension, so a newer extension cannot silently gain an unreviewed capability.
     public static func capabilities(of descriptor: ExtensionDescriptor) throws -> Set<PluginCapability> {
         var result: Set<PluginCapability> = []
         var unknown: [String] = []
@@ -47,7 +40,6 @@ public enum ExtensionCapabilityMapper {
         return result
     }
 
-    /// Builds the host-side manifest. Third-party extensions start disabled until consent.
     public static func manifest(for descriptor: ExtensionDescriptor) throws -> PluginManifest {
         guard !descriptor.bundleIdentifier.isEmpty else { throw ExtensionValidationError.emptyIdentifier }
         guard descriptor.apiVersion.isCompatible() else {

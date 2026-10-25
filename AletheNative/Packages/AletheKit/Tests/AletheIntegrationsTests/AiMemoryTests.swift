@@ -69,7 +69,6 @@ import Testing
     }
 
     @Test func closedLoopbackPortIsNotRunning() async {
-        // Port 9 (discard) has no listener on a developer Mac.
         #expect(await !LoopbackProbe.isListening(host: "127.0.0.1", port: 9, timeout: .milliseconds(200)))
     }
 }

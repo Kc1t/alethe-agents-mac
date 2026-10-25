@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheModel
 
-/// Ports of upstream `browserUrl.test.ts` and `browserResourcePolicy.test.ts`.
 @Suite struct WebPaneTests {
     @Test func defaultsPublicHostsToHTTPS() {
         #expect(WebAddress.normalize("example.com/docs")?.absoluteString == "https://example.com/docs")

@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// The toolbar's `sync` item (upstream `topbarShowSync` pill): opens the GitHub Sync sheet.
 struct SyncToolbarItem: View {
     @Environment(AppEnvironment.self) private var environment
 

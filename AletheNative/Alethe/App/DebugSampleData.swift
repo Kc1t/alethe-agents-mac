@@ -16,12 +16,10 @@ struct DebugSampleDataCommands: Commands {
 }
 
 extension AppEnvironment {
-    /// Explicit opt-in only; fixtures live in the active profile's support directory.
     func loadSampleData() async {
         guard !loadingSampleData, let workspace, let locations, let profileID, let store = todoStore else { return }
         loadingSampleData = true
         defer { loadingSampleData = false }
-        // Plugin activation starts its load asynchronously. Do not seed before it can overwrite us.
         while !store.isLoaded {
             do { try await Task.sleep(for: .milliseconds(20)) } catch { return }
         }

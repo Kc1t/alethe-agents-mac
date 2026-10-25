@@ -3,7 +3,6 @@ import Testing
 import AletheAgents
 @testable import AletheOrchestrator
 
-/// Planner subagents from hooks (P6-11, upstream `agentCanvasStore.ingest`).
 @Suite struct SubagentLedgerTests {
     private func hook(_ json: String) throws -> SubagentHook {
         try #require(SubagentHook.parse(Data(json.utf8)))
@@ -72,7 +71,6 @@ import AletheAgents
         _ = ledger.ingest(try hook(#"{"hook_event_name":"PostToolUse","tool_name":"KillShell","tool_input":{"shell_id":"sh1"},"tool_response":{"message":"Killed"}}"#),
                           planner: "pty-1", sourceAgent: "claude", nowMs: 9)
         #expect(ledger.nodes.first?.status == .done && ledger.nodes.first?.result == "Killed")
-        // A subagent's own tool call is not the planner's shell.
         #expect(ledger.ingest(try hook(#"{"hook_event_name":"PostToolUse","agent_id":"a1","tool_name":"Bash","tool_input":{"run_in_background":true},"tool_response":{"backgroundTaskId":"sh2"}}"#),
                               planner: "pty-1", sourceAgent: "claude", nowMs: 10) == .none)
     }

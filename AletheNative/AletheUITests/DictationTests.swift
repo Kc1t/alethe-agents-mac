@@ -1,6 +1,5 @@
 import XCTest
 
-/// Dictation (P3-17): with the microphone denied, ⌥⌘E says so and offers System Settings.
 @MainActor
 final class DictationTests: XCTestCase {
     func testDeniedMicrophoneExplainsAndDismisses() {
@@ -34,7 +33,6 @@ final class DictationTests: XCTestCase {
         app.typeKey(" ", modifierFlags: [.command, .shift])
         let bar = app.descendants(matching: .any)["jev.voiceBar"]
         XCTAssertTrue(bar.waitForExistence(timeout: 5))
-        // Clicking exercises the same start path as F9 without depending on a physical microphone.
         app.buttons["jev.microphone"].click()
         XCTAssertTrue(app.descendants(matching: .any)["dictation.openSettings"].waitForExistence(timeout: 5))
         app.typeKey(.escape, modifierFlags: [])

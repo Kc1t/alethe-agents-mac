@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheIntegrations
 
-/// Upstream `graphify.rs` tests' graph (`temp_repo_with_graph`): mixed field names, `links`.
 private let upstreamGraph = #"""
 {
   "nodes": [
@@ -17,10 +16,8 @@ private let upstreamGraph = #"""
 }
 """#
 
-/// Upstream's smaller graph after an edit: `c` and the edge to it are gone.
 private let upstreamSmallerGraph = #"{ "nodes": [ { "id": "a" }, { "id": "b" } ], "links": [ { "source": "a", "target": "b" } ]}"#
 
-/// The shape Graphify writes (NetworkX node-link data): numeric communities, source files, `edges`.
 private let nodeLinkGraph = #"""
 {
   "directed": false,
@@ -46,7 +43,6 @@ private func temporaryDirectory() -> URL {
     return url
 }
 
-/// A repository with `graphify-out/graph.json` holding `graph`.
 private func repositoryWithGraph(_ graph: String = upstreamGraph) throws -> URL {
     let root = temporaryDirectory()
     try FileManager.default.createDirectory(at: root.appending(path: ".git"), withIntermediateDirectories: true)
@@ -59,7 +55,6 @@ private func write(_ text: String, to url: URL) throws {
     try Data(text.utf8).write(to: url)
 }
 
-/// A clock that advances `step` seconds per call.
 private final class SteppingClock: @unchecked Sendable {
     private let lock = NSLock()
     private var current: Date
@@ -78,7 +73,6 @@ private final class SteppingClock: @unchecked Sendable {
     }
 }
 
-/// A stand-in `graphify`: prints a version, writes a one-node graph, or hangs, as asked.
 private func fakeCLI(in folder: URL, generation: String) throws -> String {
     let url = folder.appending(path: "graphify")
     try write("""
@@ -163,7 +157,6 @@ private let writesGraph = #"mkdir -p "$1/graphify-out" && echo '{"nodes":[{"id":
 
 @Suite(.timeLimit(.minutes(1))) struct GraphifyRepositoryTests {
     @Test func snapshotListDiffRollbackAndPrune() throws {
-        // Upstream `snapshot_list_diff_rollback_and_prune`.
         let root = try repositoryWithGraph()
         let repository = GraphifyRepository(root: root)
 
@@ -225,7 +218,7 @@ private let writesGraph = #"mkdir -p "$1/graphify-out" && echo '{"nodes":[{"id":
         let start = Date(timeIntervalSince1970: 1_750_000_000)
         let clock = SteppingClock(start: start, step: day)
         let writer = GraphifyRepository(root: root, now: { clock.next() })
-        for _ in 0..<5 { try writer.snapshot() }  // days 0…4
+        for _ in 0..<5 { try writer.snapshot() }
 
         let later = GraphifyRepository(root: root, now: { start.addingTimeInterval(4 * day) })
         #expect(later.prune(keepLast: 4) == 1, "the oldest past the newest four")
@@ -236,7 +229,6 @@ private let writesGraph = #"mkdir -p "$1/graphify-out" && echo '{"nodes":[{"id":
     }
 
     @Test func rejectsForgedSnapshotIDs() throws {
-        // Upstream `rejects_forged_snapshot_id`.
         let root = try repositoryWithGraph()
         let repository = GraphifyRepository(root: root)
         #expect(throws: GraphifyError.invalidSnapshotID) { try repository.rollback(to: "../evil") }
@@ -271,7 +263,6 @@ private let writesGraph = #"mkdir -p "$1/graphify-out" && echo '{"nodes":[{"id":
         try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: true)
         #expect(GraphifyRepository.repositoryRoot(containing: nested)?.path == root.standardizedFileURL.path)
 
-        // A linked worktree has a `.git` file and is its own root.
         let worktree = root.appending(path: "worktrees/feature")
         try write("gitdir: ../../.git/worktrees/feature\n", to: worktree.appending(path: ".git"))
         #expect(GraphifyRepository.repositoryRoot(containing: worktree)?.path == worktree.standardizedFileURL.path)
@@ -280,7 +271,6 @@ private let writesGraph = #"mkdir -p "$1/graphify-out" && echo '{"nodes":[{"id":
 
 @Suite(.timeLimit(.minutes(1))) struct GraphifyServiceTests {
     @Test func mcpServerArguments() {
-        // Upstream `mcp_server_spec`: `<command> <root> --mcp`.
         #expect(GraphifyService.mcpArguments(root: URL(filePath: "/repo/app/")) == ["/repo/app", "--mcp"])
         #expect(GraphifyService.defaultCommand == "graphify")
     }
@@ -295,7 +285,6 @@ private let writesGraph = #"mkdir -p "$1/graphify-out" && echo '{"nodes":[{"id":
     }
 
     @Test func ensureGraphStates() async throws {
-        // Upstream `ensure_graph_bootstrap_states`.
         let service = GraphifyService()
         let withGraph = try repositoryWithGraph()
         #expect(await service.ensureGraph(root: withGraph, executable: nil) == .exists)

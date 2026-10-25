@@ -8,8 +8,6 @@ struct MainWindow: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme
     @Environment(\.metrics) private var metrics
-    /// The window's undo manager: a sheet gets its own, so edits made there would not be undoable
-    /// from the main window once it closes.
     @Environment(\.undoManager) private var undoManager
     @SceneStorage("main.columnVisibility") private var sidebarVisible = true
     @AppStorage("main.rightSidebarWidth") private var rightSidebarWidth = 280.0
@@ -67,7 +65,6 @@ struct MainWindow: View {
         .overlay {
             if !environment.startupFinished { StartupLoadingView() }
         }
-        // Keep the window usable at 800×500 even when its controls are zoomed.
         .frame(minWidth: metrics.isWebInterface ? metrics.size(800 / metrics.scale) : 800,
                minHeight: metrics.isWebInterface ? metrics.size(500 / metrics.scale) : 500)
         .blur(radius: webTerminalPresented || showsTitleBarMemory || showsTitleBarNews || showsTitleBarCustomization ? metrics.size(10) : 0)
@@ -266,7 +263,6 @@ struct MainWindow: View {
                 .navigationSplitViewColumnWidth(min: metrics.size(200), ideal: metrics.size(240), max: metrics.size(360))
         } detail: {
             WorkspaceView()
-                // Inside the detail column: over the whole split view, AppKit's split views take the clicks.
                 .overlay(alignment: .bottom) { DictationHUD() }
                 .animation(environment.reducesMotion ? nil : .easeOut(duration: 0.2), value: environment.dictation.machine.phase)
                 .modifier(MainToolbar())
@@ -372,7 +368,6 @@ struct MainWindow: View {
         Binding { environment.rightSidebarVisible } set: { environment.rightSidebarVisible = $0 }
     }
 
-    /// Sidebar visibility survives relaunch (state restoration).
     private var columnVisibility: Binding<NavigationSplitViewVisibility> {
         Binding {
             sidebarVisible ? .all : .detailOnly

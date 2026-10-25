@@ -6,9 +6,6 @@ import AletheModel
 import AletheOrchestrator
 import SwiftUI
 
-/// Settings › Multiagent (upstream `MultiagentPage`, `schedulerStore`): the scheduler's queue for a
-/// project with Run Tick and Cancel, the telemetry metrics, the recent events filterable by
-/// correlation id, and the planning audit with its autocommit toggle. Refreshed from the event bus.
 struct MultiagentSettings: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme
@@ -57,8 +54,6 @@ struct MultiagentSettings: View {
             Text("settings.multiagent.cancel.message")
         }
     }
-
-    // MARK: Scheduler
 
     private var schedulerSection: some View {
         Section {
@@ -112,8 +107,6 @@ struct MultiagentSettings: View {
         }
     }
 
-    // MARK: Metrics
-
     private var metricsSection: some View {
         Section {
             if model.metrics.isEmpty {
@@ -151,8 +144,6 @@ struct MultiagentSettings: View {
         }
     }
 
-    // MARK: Traces
-
     private var tracesSection: some View {
         Section {
             TextField(text: $model.correlationFilter, prompt: Text("settings.multiagent.traces.filter.prompt")) {
@@ -174,8 +165,6 @@ struct MultiagentSettings: View {
             Text(metrics.isWebInterface ? "settings.web.reference.prefs.multiagentTracesDesc" : "settings.multiagent.traces.help")
         }
     }
-
-    // MARK: Audit
 
     private var auditSection: some View {
         Section {
@@ -204,14 +193,11 @@ struct MultiagentSettings: View {
         }
     }
 
-    // MARK: Helpers
-
     private var selectedProject: Project? {
         guard let id = model.projectID else { return nil }
         return projects.first { $0.id.rawValue == id }
     }
 
-    /// Changes when the chosen project or its folder or worktree mode changes.
     private var projectKey: String {
         guard let project = selectedProject else { return "" }
         return "\(project.id.rawValue)|\(project.folder)|\(project.effectiveWorktreeMode.rawValue)"
@@ -240,12 +226,9 @@ struct MultiagentSettings: View {
     }
 }
 
-// MARK: Rows
-
 private struct TaskRow: View {
     let task: SchedulerTask
     let index: Int
-    /// Titles by task id, to name dependencies.
     let titles: [String: String]
     let onCancel: () -> Void
     @Environment(\.theme) private var theme
@@ -385,24 +368,17 @@ extension SchedulerTaskStatus {
     }
 }
 
-// MARK: Model
-
-/// State of the Multiagent tab. Reads the scheduler, telemetry and planning audit off the main
-/// actor and refreshes when the bus publishes, coalescing bursts.
 @Observable
 @MainActor
 final class MultiagentSettingsModel {
     struct Metric: Identifiable, Equatable {
         var id: String
         var data: MetricData
-        /// Upstream strips the event prefix and upper-cases the rest.
         var name: String { id.replacingOccurrences(of: "alethe_event_", with: "").uppercased() }
     }
 
-    /// Upstream shows the newest 15 events and commits.
     static let traceLimit = 15
     static let historyLimit = 15
-    /// Telemetry records an event from its own subscription; waiting a moment lets it catch up.
     static let coalescing: Duration = .milliseconds(150)
 
     var projectID: String?
@@ -415,7 +391,6 @@ final class MultiagentSettingsModel {
     private(set) var isLoadingTasks = false
     private(set) var isLoadingHistory = false
     private(set) var isTicking = false
-    /// A folder outside git or a failed tick, shown under the picker.
     private(set) var problem: String?
 
     @ObservationIgnored private var controller: MultiagentController?
@@ -424,7 +399,6 @@ final class MultiagentSettingsModel {
     @ObservationIgnored private var flush: Task<Void, Never>?
     @ObservationIgnored private var historyStale = false
 
-    /// Follows the bus until the view goes away.
     func run(controller: MultiagentController) async {
         self.controller = controller
         let events = await controller.bus.subscribe()
@@ -443,7 +417,6 @@ final class MultiagentSettingsModel {
         flush = nil
     }
 
-    /// Focuses `project` in the controller and loads its queue (from `task.md`, no transitions) and history.
     func select(project: Project?, controller: MultiagentController) async {
         self.controller = controller
         problem = nil
@@ -474,7 +447,6 @@ final class MultiagentSettingsModel {
         await refreshHistory()
     }
 
-    /// Upstream `trigger_scheduler_tick` with the project's worktree mode.
     func tick() {
         guard let controller, let project, !isTicking else { return }
         isTicking = true
@@ -539,7 +511,6 @@ final class MultiagentSettingsModel {
         history = list
     }
 
-    /// Roadmap order: each task after the ones it depends on, ties by title.
     static func chainOrder(_ tasks: [SchedulerTask]) -> [SchedulerTask] {
         let byID = Dictionary(tasks.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         var depths: [String: Int] = [:]

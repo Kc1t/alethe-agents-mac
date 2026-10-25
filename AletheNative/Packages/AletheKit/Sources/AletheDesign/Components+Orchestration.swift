@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// CustomAgentsSection.module.css: fixed 28-point row actions and 32-point form actions.
 public struct AletheCustomAgentButtonStyle: ButtonStyle {
     private let compact: Bool
     private let primary: Bool

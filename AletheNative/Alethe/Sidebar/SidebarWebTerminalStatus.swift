@@ -2,7 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// NormalTerminalNode shows busy or unread completion; waiting does not occupy the end slot.
 struct SidebarWebTerminalStatus: View {
     let tab: TabID
     @Environment(AppEnvironment.self) private var environment

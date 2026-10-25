@@ -1,9 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// Small web-styled replacements for system controls that settings pages used to show in `.web`.
-
-/// A busy indicator: the web activity spinner in `.web`, the system spinner in `.mac`.
 struct WebBusyIndicator: View {
     @Environment(\.metrics) private var metrics
 
@@ -16,7 +13,6 @@ struct WebBusyIndicator: View {
     }
 }
 
-/// A numeric field with minus/plus buttons on the web's sunken 32 pt input surface.
 struct WebStepperRow: View {
     let title: String
     @Binding var value: Int
@@ -61,7 +57,6 @@ struct WebStepperRow: View {
     }
 }
 
-/// A thin determinate bar (web `usageBar`), system `ProgressView` in `.mac`.
 struct WebProgressBar: View {
     let value: Double
     var total: Double = 100
@@ -86,7 +81,6 @@ struct WebProgressBar: View {
     }
 }
 
-/// A collapsible block with web chevron, replacing `DisclosureGroup` in `.web`.
 struct WebDisclosure<Label: View, Content: View>: View {
     @State private var expanded = false
     @ViewBuilder let label: () -> Label
@@ -118,7 +112,6 @@ struct WebDisclosure<Label: View, Content: View>: View {
     }
 }
 
-/// The web's sunken 32 pt text input surface around a plain field (`.web` only).
 private struct WebFieldSurface: ViewModifier {
     @Environment(\.metrics) private var metrics
     @Environment(\.theme) private var theme

@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheModel
 
-/// Disable terminals and projects, suspend groups (P2-23).
 @Suite struct SuspensionTests {
     @Test func disablingATerminal() {
         var doc = WorkspaceDocument()

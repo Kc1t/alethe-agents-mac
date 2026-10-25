@@ -1,7 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// ModelSearchablePicker.tsx: CLI models, search, and an explicit custom-value option.
 struct WebModelDropdown: View {
     @Binding var selection: String
     let models: [String]
@@ -32,7 +31,6 @@ struct WebModelDropdown: View {
     }
 }
 
-/// EditProjectAgentSettings.tsx uses agent cards for the provider, rather than a select.
 struct WebConflictProviderChoices: View {
     @Binding var selection: String
     let options: [String]

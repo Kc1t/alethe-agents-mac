@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// PreferencesModal.module.css: scrolling sections, option rows and compact control typography.
 public struct AletheSettingsForm<Content: View>: View {
     @Environment(\.metrics) private var metrics
     @Environment(\.theme) private var theme
@@ -81,7 +80,6 @@ private struct AletheSettingsLabeledStyle: LabeledContentStyle {
     }
 }
 
-/// Native Forms retain their original intrinsic sizing; web Forms scroll within the dialog.
 public struct AletheSettingsSizing: ViewModifier {
     @Environment(\.metrics) private var metrics
     public init() {}

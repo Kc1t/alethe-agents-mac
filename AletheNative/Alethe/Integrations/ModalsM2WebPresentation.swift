@@ -1,8 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// Modal.tsx / Modal.module.css chrome for the integration dialogs.
-/// Presentation owners supply NewTerminalWebOverlay so sheets stay native in mac mode.
 struct ModalsM2WebModal<Body: View, Footer: View>: View {
     let title: Text
     let close: () -> Void
@@ -60,7 +58,6 @@ struct ModalsM2WebModal<Body: View, Footer: View>: View {
     }
 }
 
-/// AddServerFlow.module.css segmented control, with keyboard-selectable buttons.
 struct ModalsM2Segments<Value: Hashable>: View {
     @Binding var selection: Value
     let options: [(Value, LocalizedStringKey)]
@@ -139,7 +136,6 @@ struct ModalsM2Input: ViewModifier {
     }
 }
 
-/// agentActions.module.css pre.log, with an auto-scrolling live installer transcript.
 struct ModalsM2InstallLog: View {
     let log: String
     @Environment(\.metrics) private var metrics
@@ -161,7 +157,6 @@ struct ModalsM2InstallLog: View {
     }
 }
 
-/// agentActions.module.css `.toolchain`: a bordered box for the Node.js / advisory sub-sections.
 struct ModalsM2Toolchain<Content: View>: View {
     @ViewBuilder let content: () -> Content
     @Environment(\.metrics) private var metrics
@@ -175,7 +170,6 @@ struct ModalsM2Toolchain<Content: View>: View {
     }
 }
 
-/// agentActions.module.css `.command`: the exact command, one selectable monospaced line.
 struct ModalsM2Command: View {
     let command: String
     @Environment(\.metrics) private var metrics
@@ -192,7 +186,6 @@ struct ModalsM2Command: View {
     }
 }
 
-/// The "Node.js is missing" section shared by the agent and 9router install modals.
 struct ModalsM2NodeToolchain: View {
     let command: String?
     let running: Bool
@@ -226,7 +219,6 @@ extension EnvironmentValues {
     @Entry var modalsM2Close: (() -> Void)? = nil
 }
 
-/// Scrollable settings content embedded in a modal uses a bounded viewport at every interface zoom.
 struct WebSettingsSubdialog<Content: View>: View {
     let title: LocalizedStringKey
     @ViewBuilder let content: () -> Content
@@ -248,7 +240,6 @@ struct WebSettingsSubdialog<Content: View>: View {
     }
 }
 
-/// Destructive actions keep an explicit confirmation while using the active theme and window layer.
 struct WebConfirmationModal: View {
     let title: Text
     let message: Text

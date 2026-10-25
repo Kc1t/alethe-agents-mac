@@ -1,20 +1,10 @@
 import Foundation
 
-// The types the remote tasks share: the transport (P7-7) turns sockets into `RemoteRequest`s and
-// hands them to a `RemoteRouter` (the API, P7-8), which reads the app through the three sources
-// (P7-9 assets, P7-12 terminals and workspace). None of them decides policy on its own.
-
-// MARK: - HTTP
-
-/// One parsed HTTP request, as the transport read it within `RemoteLimits`.
 public struct RemoteRequest: Sendable, Equatable {
     public var method: String
-    /// The request target: path plus query (`/api/scrollback?id=…`).
     public var target: String
-    /// Header values by lowercased name (the first occurrence wins).
     public var headers: [String: String]
     public var body: Data
-    /// The peer as `ip:port` — used for per-address lockouts and shown on the device list.
     public var peerAddress: String
 
     public init(method: String, target: String, headers: [String: String] = [:], body: Data = Data(), peerAddress: String) {
@@ -41,7 +31,6 @@ public struct RemoteRequest: Sendable, Equatable {
         RemoteText.queryValue(target, key)
     }
 
-    /// The `Authorization: Bearer …` session token, or `""`.
     public var bearerToken: String {
         guard let value = header("authorization") else { return "" }
         for prefix in ["Bearer ", "bearer "] where value.hasPrefix(prefix) {
@@ -51,7 +40,6 @@ public struct RemoteRequest: Sendable, Equatable {
     }
 }
 
-/// One HTTP response. The transport writes `head()` and `body`, refusing bodies over `sizeLimit`.
 public struct RemoteResponse: Sendable, Equatable {
     public enum Caching: Sendable, Equatable {
         case noStore, immutable
@@ -65,9 +53,7 @@ public struct RemoteResponse: Sendable, Equatable {
     }
 
     public enum SizeLimit: Sendable, Equatable {
-        /// 64 KB: API answers and errors.
         case standard
-        /// 4 MB: scrollback, transcripts and static assets.
         case large
 
         public var bytes: Int {
@@ -103,7 +89,6 @@ public struct RemoteResponse: Sendable, Equatable {
         return json(status, data, sizeLimit: sizeLimit)
     }
 
-    /// `{"error": message}` — the client shows `message` as is.
     public static func error(_ status: Int, _ message: String) -> RemoteResponse {
         json(status, encoding: ["error": message])
     }
@@ -127,7 +112,6 @@ public struct RemoteResponse: Sendable, Equatable {
         }
     }
 
-    /// The status line and headers (upstream `respond_bytes_with_limit`), ending with the blank line.
     public func head() -> String {
         "HTTP/1.1 \(status) \(reasonPhrase)\r\n"
             + "Content-Type: \(contentType)\r\n"
@@ -143,12 +127,9 @@ public struct RemoteResponse: Sendable, Equatable {
         + "style-src 'self' 'unsafe-inline'; script-src 'self'; base-uri 'none'; frame-ancestors 'none'"
 }
 
-/// Answers every HTTP request the transport accepted (the API, P7-8).
 public protocol RemoteRouter: Sendable {
     func route(_ request: RemoteRequest) async -> RemoteResponse
 }
-
-// MARK: - Sources
 
 public struct RemoteTerminalSize: Codable, Equatable, Sendable {
     public var cols: Int
@@ -159,18 +140,15 @@ public struct RemoteTerminalSize: Codable, Equatable, Sendable {
         self.rows = rows
     }
 
-    /// Upstream's size for a terminal that reports none.
     public static let fallback = RemoteTerminalSize(cols: 80, rows: 24)
 }
 
 public enum RemoteInputError: Error, Equatable, Sendable {
     case notFound
-    /// The tab has no live process (the API answers 409).
     case notRunning
     case failed(String)
 }
 
-/// Live output of a terminal, for the hub to publish to subscribed devices.
 public enum RemoteTerminalOutput: Equatable, Sendable {
     case data(terminalID: String, text: String)
     case exit(terminalID: String, reason: String)
@@ -181,7 +159,6 @@ public enum RemoteTerminalOutput: Equatable, Sendable {
         }
     }
 
-    /// The WebSocket frame upstream sends for it (`pty_output` / `pty_exit`).
     public var frame: String {
         switch self {
         case .data(let id, let text): RemoteFrame.encode(["type": "pty_output", "ptyId": id, "text": text])
@@ -190,22 +167,15 @@ public enum RemoteTerminalOutput: Equatable, Sendable {
     }
 }
 
-/// The app's terminals, by tab id (`ptyId` on the wire).
 public protocol RemoteTerminalSource: Sendable {
-    /// The last `maxBytes` of the tab's scrollback, cut on a character boundary.
     func scrollbackTail(terminalID: String, maxBytes: Int) async -> String
     func size(terminalID: String) async -> RemoteTerminalSize?
-    /// Writes `text` to the tab's PTY as typed input.
     func write(terminalID: String, text: String) async throws(RemoteInputError)
-    /// Output of every running tab; forwarded into `RemoteHub.publish`, which drops it unless a
-    /// device subscribed to that tab.
     func output() -> AsyncStream<RemoteTerminalOutput>
 }
 
-/// A tab the user shared with remote devices (`Pane.remoteShared`).
 public struct RemoteSharedTab: Codable, Equatable, Sendable {
     public var terminalID: String
-    /// Upstream agent id: `claude`, `codex`, `opencode` or `shell`.
     public var agent: String
     public var cwd: String
     public var sessionID: String?
@@ -217,12 +187,10 @@ public struct RemoteSharedTab: Codable, Equatable, Sendable {
         self.sessionID = sessionID
     }
 
-    /// Claude Code and Codex expose transcripts, questions and interrupts remotely.
     public var isControllableAgent: Bool { agent == "claude" || agent == "codex" }
     public var isShell: Bool { agent == "shell" }
 }
 
-/// `/api/state` (upstream `workspace_snapshot`): groups, and projects with their shared chats only.
 public struct RemoteWorkspaceSnapshot: Codable, Equatable, Sendable {
     public struct Group: Codable, Equatable, Sendable {
         public var id: String
@@ -277,7 +245,6 @@ public struct RemoteWorkspaceSnapshot: Codable, Equatable, Sendable {
     }
 }
 
-/// `/appearance.json` (upstream `RemoteAppearance`): the phone mirrors the Mac's look.
 public struct RemoteAppearance: Codable, Equatable, Sendable {
     public var uiTheme: String
     public var appIconTheme: String
@@ -304,7 +271,6 @@ public struct RemoteQuestionOption: Codable, Equatable, Sendable {
     }
 }
 
-/// An interactive agent question (Claude Code `AskUserQuestion`, Codex `request_user_input`).
 public struct RemoteQuestion: Codable, Equatable, Sendable {
     public var id: String
     public var header: String
@@ -321,7 +287,6 @@ public struct RemoteQuestion: Codable, Equatable, Sendable {
     }
 }
 
-/// The questions still awaiting an answer; `id` is the agent's tool call id.
 public struct RemoteQuestionSet: Codable, Equatable, Sendable {
     public var id: String
     public var questions: [RemoteQuestion]
@@ -332,10 +297,8 @@ public struct RemoteQuestionSet: Codable, Equatable, Sendable {
     }
 }
 
-/// `/api/transcript` (upstream `TranscriptSnapshot`).
 public struct RemoteTranscript: Codable, Equatable, Sendable {
     public struct Message: Codable, Equatable, Sendable {
-        /// `user`, `assistant` or `tool`.
         public var role: String
         public var text: String
         public var questionSetId: String?
@@ -350,7 +313,6 @@ public struct RemoteTranscript: Codable, Equatable, Sendable {
     }
 
     public var sessionId: String?
-    /// The transcript file's modification time in ms; an unchanged revision skips the parse.
     public var revision: UInt64
     public var unchanged: Bool
     public var messages: [Message]
@@ -363,15 +325,11 @@ public struct RemoteTranscript: Codable, Equatable, Sendable {
     }
 }
 
-/// The app's workspace as remote devices see it.
 public protocol RemoteWorkspaceSource: Sendable {
-    /// Every tab of every shared pane.
     func sharedTabs() async -> [RemoteSharedTab]
     func snapshot() async -> RemoteWorkspaceSnapshot
     func appearance() async -> RemoteAppearance
-    /// The tab's agent transcript (Claude Code and Codex); `since` is the client's last revision.
     func transcript(for tab: RemoteSharedTab, since: UInt64?, limit: Int) async throws -> RemoteTranscript
-    /// The questions the tab's agent is waiting on, if any.
     func activeQuestions(for tab: RemoteSharedTab) async -> RemoteQuestionSet?
 }
 
@@ -381,7 +339,6 @@ public extension RemoteWorkspaceSource {
     }
 }
 
-/// A file of the bundled phone client.
 public struct RemoteAsset: Sendable, Equatable {
     public var data: Data
     public var contentType: String
@@ -398,19 +355,14 @@ public struct RemoteAsset: Sendable, Equatable {
     }
 }
 
-/// The phone client's static files (P7-9); `appIconTheme` picks `/brand-icon.png`.
 public protocol RemoteAssetSource: Sendable {
     func asset(at path: String, appIconTheme: String) async -> RemoteAsset?
 }
 
-// MARK: - Events
-
-/// A device's input reached a terminal (upstream `remote://message`).
 public struct RemoteMessageEvent: Codable, Equatable, Sendable {
     public var terminalID: String
     public var deviceID: Int
     public var deviceName: String
-    /// At most 120 characters.
     public var preview: String
 
     public init(terminalID: String, deviceID: Int, deviceName: String, preview: String) {
@@ -421,18 +373,12 @@ public struct RemoteMessageEvent: Codable, Equatable, Sendable {
     }
 }
 
-/// What remote control tells the app.
 public enum RemoteEvent: Equatable, Sendable {
     case message(RemoteMessageEvent)
-    /// A listener could not bind; remote control turned itself off.
     case startFailed
-    /// No device was paired for `RemoteLimits.idleDisable`; remote control turned itself off.
     case autoDisabled
 }
 
-// MARK: - WebSocket frames
-
-/// JSON text frames the WebSocket sends besides terminal output.
 public enum RemoteFrame {
     public static let authenticated = encode(["type": "authenticated"])
     public static let expired = encode(["type": "error", "reason": "expired", "message": "Remote session expired"])

@@ -3,8 +3,6 @@ import Testing
 import XCTest
 @testable import AletheIntegrations
 
-/// A ring of `count` nodes in `communities` groups plus chords, like a code graph's mix of chains and
-/// hubs; ids are strings, as Graphify writes file paths.
 private func syntheticGraph(count: Int, communities: Int = 12) -> GraphData {
     let nodes = (0..<count).map { GraphNode(id: "src/file\($0).ts", label: "file\($0).ts", group: String($0 % communities)) }
     var edges: [GraphEdge] = []
@@ -51,7 +49,6 @@ private let upstreamGraph = #"""
     }
 
     @Test func linkedNodesEndCloserThanUnlinkedOnes() throws {
-        // Two separate pairs: each pair's nodes pull together while the pairs push apart.
         let nodes = ["a", "b", "x", "y"].map { GraphNode(id: $0, label: $0) }
         let edges = [GraphEdge(id: "1", source: "a", target: "b"), GraphEdge(id: "2", source: "x", target: "y")]
         let layout = try ForceLayout.compute(GraphData(nodes: nodes, edges: edges, nodeCount: 4, edgeCount: 2, truncated: false))
@@ -105,8 +102,6 @@ private let upstreamGraph = #"""
     }
 }
 
-/// P: laying out a graph at upstream's visualization cap (`MAX_VIZ_NODES`, 3000 nodes), the largest
-/// graph the view receives; upstream's own fixtures have three nodes.
 final class GraphLayoutPerformanceTests: XCTestCase {
     func testLayoutOfTheLargestGraph() throws {
         let graph = syntheticGraph(count: GraphData.visualizationLimit)

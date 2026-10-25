@@ -2,7 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// MultiagentPage.tsx: editable shortcuts and rules use the web's persisted field names.
 struct MultiagentWorkerSettings: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics

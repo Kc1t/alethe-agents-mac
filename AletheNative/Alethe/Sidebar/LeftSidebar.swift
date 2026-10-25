@@ -4,7 +4,6 @@ import AletheModel
 import AlethePluginKit
 import SwiftUI
 
-/// Window sidebar shell; project rows and their actions remain owned by SidebarView.
 struct LeftSidebar: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme
@@ -158,7 +157,6 @@ struct LeftSidebar: View {
         .accessibilityAddTraits(effectiveTab == id && !environment.showingHome ? .isSelected : [])
     }
 
-    // Home and the sidebar tab are independent in NormalProjectSidebar.tsx.
     @ViewBuilder private var webContent: some View {
         if effectiveTab == "git", let workspace = environment.workspace {
             GitControlSheet(workspace: workspace, undoManager: nil, projectID: selectedProject?.id, embedded: true)

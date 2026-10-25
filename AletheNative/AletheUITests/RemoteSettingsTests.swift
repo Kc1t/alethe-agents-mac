@@ -1,10 +1,5 @@
 import XCTest
 
-/// Settings › Remote and terminal sharing (P7-18). The `remote` seed turns remote control on (bound to
-/// 127.0.0.1) with a shared shell pane (`shared`) and a private one (`private`), input allowed, two
-/// devices. `settings.remote.probe` (debug test launches only) shows what the controller and its hub
-/// hold, so each check proves the click reached the controller. Every control is clicked where it is
-/// drawn and its effect verified (hit targets).
 @MainActor
 final class RemoteSettingsTests: XCTestCase {
     override func setUp() async throws {
@@ -72,7 +67,6 @@ final class RemoteSettingsTests: XCTestCase {
         waitFor(probe, "enabled=false")
         XCTAssertFalse(element(app, "settings.remote.pairing").exists, "no pairing while off")
 
-        // Turning it on asks once, with the network warning.
         enabled.click()
         let turnOn = element(app, "settings.remote.enable.turnOn")
         XCTAssertTrue(turnOn.waitForExistence(timeout: 5))

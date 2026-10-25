@@ -24,8 +24,6 @@ private let cursor = CursorMcpAdapter()
 private let opencode = OpenCodeMcpAdapter()
 private let antigravity = AntigravityMcpAdapter()
 
-// MARK: - Codex (upstream mcp_agents.rs cases)
-
 @Suite struct CodexMcpAdapterTests {
     @Test func readsEveryTableShape() throws {
         let servers = try codex.parse(try fixture("codex-config.toml"), source: userSource)
@@ -177,8 +175,6 @@ private let antigravity = AntigravityMcpAdapter()
     }
 }
 
-// MARK: - Claude Code
-
 private let claudeInline = """
 {
   "numStartups": 1871,
@@ -307,7 +303,6 @@ private let claudeInline = """
         let servers = try claude.parse(raw, source: local)
         #expect(servers.map(\.name) == ["swarm"])
 
-        // The existing entry is found despite its trailing slash; unknown keys survive.
         var updated = probe("swarm")
         updated.env["K"] = .literal("W")
         let next = try claude.upsert(raw, source: local, server: updated)
@@ -362,8 +357,6 @@ private let claudeInline = """
         #expect(ClaudeMcpAdapter.projectKey(forPath: "/") == "/")
     }
 }
-
-// MARK: - OpenCode
 
 private let opencodeInline = """
 {
@@ -456,8 +449,6 @@ private let opencodeInline = """
     }
 }
 
-// MARK: - Cursor and Antigravity
-
 @Suite struct ClaudeShapedAdapterTests {
     @Test func cursorReadsTheClaudeShapeAndKeepsAProjectFile() throws {
         let raw = #"{"mcpServers":{"figma":{"url":"https://mcp.figma.com/sse"}}}"#
@@ -507,8 +498,6 @@ private let opencodeInline = """
             == "/home/.gemini/config/import_manifest.json")
     }
 }
-
-// MARK: - Config sources
 
 @Suite struct McpConfigSourceTests {
     private let home = McpHome(home: URL(filePath: "/home/me", directoryHint: .isDirectory))

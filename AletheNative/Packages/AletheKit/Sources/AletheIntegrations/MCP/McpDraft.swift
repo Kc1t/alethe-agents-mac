@@ -1,28 +1,19 @@
 import Foundation
 
-// The MCP manager's editable form (upstream `AddServerFlow` fields) and the small read helpers the
-// panel and the manager share (upstream `lib/mcp.ts`). A stored literal never enters a text field:
-// editing leaves it in place until the user types a replacement.
-
 public enum McpTransportKind: String, Hashable, Sendable, CaseIterable {
     case stdio
     case http
     case sse
 }
 
-/// One env (or header) row of the form.
 public struct McpEnvDraft: Hashable, Sendable, Identifiable {
     public let id: UUID
     public var key: String
-    /// A new literal, or the host variable when `passthrough` is on. Empty on a stored literal
-    /// means "keep it".
     public var value: String
     public var passthrough: Bool
-    /// The registry marks the value as a secret: the field is a secure one.
     public var secret: Bool
     public var required: Bool
     public var hint: String?
-    /// The entry this row edits; never shown, only kept or replaced.
     public var stored: McpEnvEntry?
 
     public init(key: String = "", value: String = "", passthrough: Bool = false, secret: Bool = false,
@@ -37,17 +28,14 @@ public struct McpEnvDraft: Hashable, Sendable, Identifiable {
         self.stored = stored
     }
 
-    /// The masked stored literal, shown as the field's placeholder.
     public var storedPreview: String? {
         stored?.literal.flatMap { $0.isEmpty ? nil : Secret.mask($0) }
     }
 
-    /// Whether the row keeps a stored literal it does not show.
     public var keepsStoredLiteral: Bool {
         !passthrough && value.isEmpty && stored?.literal != nil
     }
 
-    /// The entry to write; nil for a row without a key.
     public var entry: McpEnvEntry? {
         let name = key.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return nil }
@@ -77,19 +65,15 @@ public struct McpEnvDraft: Hashable, Sendable, Identifiable {
     }
 }
 
-/// A server being added or edited.
 public struct McpServerDraft: Hashable, Sendable {
     public var name: String
     public var kind: McpTransportKind
     public var command: String
-    /// One argument per line.
     public var arguments: String
     public var cwd: String
     public var url: String
     public var env: [McpEnvDraft]
     public var headers: [McpEnvDraft]
-    /// The server being edited: what the form does not show (enabled, timeouts, bearer variable)
-    /// is kept from it.
     public private(set) var original: McpServer?
 
     public init() {
@@ -124,7 +108,6 @@ public struct McpServerDraft: Hashable, Sendable {
         }
     }
 
-    /// A registry install option: secret hints start empty, others with their default.
     public init(option: McpInstallOption, name: String) {
         self.init()
         self.name = name
@@ -145,12 +128,10 @@ public struct McpServerDraft: Hashable, Sendable {
 
     public var isEditing: Bool { original != nil }
 
-    /// Required rows left without a value (and nothing stored).
     public var missingRequired: [String] {
         (env + headers).filter { $0.required && $0.value.isEmpty && $0.stored == nil }.map(\.key)
     }
 
-    /// The server to write, validated like the store validates it.
     public func server() throws(McpStoreError) -> McpServer {
         func map(_ rows: [McpEnvDraft]) -> McpEnvMap {
             var out: McpEnvMap = [:]
@@ -180,10 +161,7 @@ public struct McpServerDraft: Hashable, Sendable {
     }
 }
 
-// MARK: - Read helpers
-
 extension McpTransport {
-    /// Command and arguments, or the URL (upstream `transportSummary`).
     public var summary: String { view.summary }
 }
 
@@ -197,7 +175,6 @@ extension McpTransportView {
 }
 
 extension McpServerGroup {
-    /// Upstream `matchesQuery`: the name, an agent or the transport summary contains the query.
     public func matches(_ query: String) -> Bool {
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !needle.isEmpty else { return true }
@@ -206,15 +183,12 @@ extension McpServerGroup {
             || records.contains { $0.server.transport.summary.lowercased().contains(needle) }
     }
 
-    /// Kept when no agent is picked, or when one of the picked agents has the server.
     public func isOn(anyOf picked: Set<McpAgent>) -> Bool {
         picked.isEmpty || agents.contains(where: picked.contains)
     }
 }
 
-/// Why an agent's servers may be missing from the list (upstream panel diagnostics).
 public enum McpSnapshotIssue: String, Hashable, Sendable {
-    /// The agent has no config for this scope (Antigravity projects).
     case unsupported
     case unreadable
     case missing
@@ -230,19 +204,16 @@ extension McpAgentSnapshot {
         return nil
     }
 
-    /// The agent can take a new server in this scope.
     public var isWritable: Bool {
         sources.contains { $0.parseError == nil && $0.writable }
     }
 }
 
 extension McpStore {
-    /// The files `agent` reads for `scope`, in write-preference order.
     public func sources(for agent: McpAgent, scope: McpScope, repository: URL?) -> [McpSource] {
         sources(agent, scope, repository)
     }
 
-    /// The source a scanned record came from (its backups and restore work on it).
     public func source(of record: McpServerRecord, repository: URL?) -> McpSource? {
         let path = record.sourceURL.standardizedFileURL.path(percentEncoded: false)
         return sources(record.agent, record.scope, repository).first {

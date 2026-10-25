@@ -3,8 +3,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// Tokens and cost of one agent session (upstream `get_session_cost`): totals, then one row per
-/// model. Claude Code is priced from the table; OpenCode reports its own cost; Codex has tokens only.
 struct SessionCostView: View {
     let cost: SessionCost?
     let loading: Bool
@@ -65,7 +63,6 @@ struct SessionCostView: View {
     }
 }
 
-/// Session Cost… for a tab (Terminal menu, pane menu).
 struct SessionCostSheet: View {
     let workspace: WorkspaceModel
     let tabID: TabID

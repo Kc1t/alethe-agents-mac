@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheIntegrations
 
-// Golden cases from upstream `mcp_health.rs`.
 @Suite struct McpHealthParserTests {
     @Test func claudeOutputIsReadLineByLine() {
         let stdout = "Checking MCP server health…\n\n"

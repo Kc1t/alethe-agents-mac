@@ -6,8 +6,6 @@ public enum WorkspaceHistoryTag {}
 public typealias WorkspaceTabID = Identifier<WorkspaceTabTag>
 public typealias WorkspaceHistoryID = Identifier<WorkspaceHistoryTag>
 
-/// What the workspace shows: the part of `WorkspaceState` a workspace tab or a history entry
-/// restores (upstream `WorkspaceViewSnapshot`).
 public struct WorkspaceSnapshot: Codable, Hashable, Sendable {
     public var openProjectIDs: [ProjectID]
     public var containerWeights: [Double]
@@ -16,7 +14,6 @@ public struct WorkspaceSnapshot: Codable, Hashable, Sendable {
     public var collapsedProjectIDs: [ProjectID]
     public var fullscreenProjectID: ProjectID?
     public var isolatedPaneID: PaneID?
-    /// Flat workspace (P2-21; absent in snapshots saved before it).
     public var flat: Bool
 
     public init(openProjectIDs: [ProjectID] = [], containerWeights: [Double] = [], focusedPaneID: PaneID? = nil,
@@ -45,8 +42,6 @@ public struct WorkspaceSnapshot: Codable, Hashable, Sendable {
     }
 }
 
-/// A saved workspace view, shown in the tab bar (upstream `WorkspaceTab`). A project tab follows one
-/// project; a composition tab is any other mix.
 public struct WorkspaceTab: Codable, Hashable, Sendable, Identifiable {
     public enum Kind: String, Codable, Sendable {
         case project, composition
@@ -54,7 +49,6 @@ public struct WorkspaceTab: Codable, Hashable, Sendable, Identifiable {
 
     public var id: WorkspaceTabID
     public var kind: Kind
-    /// The project a project tab follows.
     public var projectID: ProjectID?
     public var pinned: Bool
     public var snapshot: WorkspaceSnapshot
@@ -73,7 +67,6 @@ public struct WorkspaceTab: Codable, Hashable, Sendable, Identifiable {
     }
 }
 
-/// One step of back/forward navigation (upstream `WorkspaceHistoryEntry`).
 public struct WorkspaceHistoryEntry: Codable, Hashable, Sendable, Identifiable {
     public var id: WorkspaceHistoryID
     public var tabID: WorkspaceTabID
@@ -89,14 +82,9 @@ public struct WorkspaceHistoryEntry: Codable, Hashable, Sendable, Identifiable {
     }
 }
 
-/// Workspace tabs and history (upstream `lib/workspaceNavigation.ts` and the navigation slices of
-/// `projectsStore.workspaceSlices.ts`). The active tab always mirrors the live view: every change of
-/// what is shown is written back to it (`syncActiveTab`).
 extension WorkspaceDocument {
     public static let maxWorkspaceTabs = 10
     public static let maxWorkspaceHistory = 50
-
-    // MARK: - Snapshots
 
     public var currentSnapshot: WorkspaceSnapshot {
         WorkspaceSnapshot(openProjectIDs: workspace.openProjectIDs, containerWeights: workspace.containerWeights,
@@ -106,7 +94,6 @@ extension WorkspaceDocument {
                           flat: workspace.flat)
     }
 
-    /// Drops projects and panes that no longer exist (upstream `sanitizeWorkspaceSnapshot`).
     public func sanitized(_ snapshot: WorkspaceSnapshot) -> WorkspaceSnapshot {
         let known = Set(projects.map(\.id))
         var result = snapshot
@@ -128,7 +115,6 @@ extension WorkspaceDocument {
         return result
     }
 
-    /// Shows a snapshot (sanitized first).
     public mutating func apply(_ snapshot: WorkspaceSnapshot) {
         let clean = sanitized(snapshot)
         workspace.openProjectIDs = clean.openProjectIDs
@@ -141,10 +127,6 @@ extension WorkspaceDocument {
         workspace.flat = clean.flat
     }
 
-    // MARK: - Labels
-
-    /// The tab's title: its project's name, or the composition's first project plus how many more
-    /// (upstream `compositionLabel`). Nil for an empty view.
     public func label(of tab: WorkspaceTab) -> (name: String, more: Int)? {
         if let group = tab.webGroupID.flatMap({ id in groups.first { $0.id == id } }) { return (group.name, 0) }
         if let pane = tab.webPaneID.flatMap(pane)?.pane {
@@ -156,7 +138,6 @@ extension WorkspaceDocument {
         return (first, names.count - 1)
     }
 
-    /// The color of a tab: its project's, or the first open project's.
     public func color(of tab: WorkspaceTab) -> ProjectColor? {
         if let id = tab.webGroupID { return groups.first { $0.id == id }?.color }
         return (tab.kind == .project ? tab.projectID : tab.snapshot.openProjectIDs.first).flatMap(project)?.color
@@ -166,11 +147,6 @@ extension WorkspaceDocument {
         workspace.activeTabID.flatMap { id in workspace.tabs.first { $0.id == id } }
     }
 
-    // MARK: - Navigation
-
-    /// Opens a project in its own tab (reusing the tab that already follows it), showing only that
-    /// project (upstream `openProjectWorkspace`). A project already shown in the view is only
-    /// selected.
     public mutating func openInTab(_ id: ProjectID) {
         guard project(id) != nil else { return }
         if workspace.openProjectIDs.contains(id) {
@@ -189,13 +165,11 @@ extension WorkspaceDocument {
         }
     }
 
-    /// Shows a tab of the bar.
     public mutating func activateWorkspaceTab(_ id: WorkspaceTabID) {
         guard id != workspace.activeTabID, let tab = workspace.tabs.first(where: { $0.id == id }) else { return }
         navigate(to: tab, adding: false)
     }
 
-    /// The tab `offset` places after the active one, wrapping around (⌃Tab / ⌃⇧Tab).
     public func workspaceTab(_ offset: Int) -> WorkspaceTabID? {
         let tabs = workspace.tabs
         guard tabs.count > 1 else { return nil }
@@ -203,7 +177,6 @@ extension WorkspaceDocument {
         return tabs[((current + offset) % tabs.count + tabs.count) % tabs.count].id
     }
 
-    /// Pinned tabs come first and are the last ones dropped when the bar is full.
     public mutating func togglePinned(_ id: WorkspaceTabID) {
         guard let index = workspace.tabs.firstIndex(where: { $0.id == id }) else { return }
         workspace.tabs[index].pinned.toggle()
@@ -211,7 +184,6 @@ extension WorkspaceDocument {
         workspace.tabs = workspace.tabs.filter(\.pinned) + workspace.tabs.filter { !$0.pinned }
     }
 
-    /// Moves a tab to `index` in the bar (pinned tabs stay ahead of the others).
     public mutating func moveWorkspaceTab(_ id: WorkspaceTabID, to index: Int) {
         guard let from = workspace.tabs.firstIndex(where: { $0.id == id }) else { return }
         let tab = workspace.tabs.remove(at: from)
@@ -219,9 +191,6 @@ extension WorkspaceDocument {
         workspace.tabs = workspace.tabs.filter(\.pinned) + workspace.tabs.filter { !$0.pinned }
     }
 
-    /// Closes a tab (upstream `closeSavedWorkspaceTab`); it goes to the reopen list (⇧⌘T). Closing the
-    /// active tab shows the next one, or the previous one when it was last; closing the only tab
-    /// empties the workspace.
     public mutating func closeWorkspaceTab(_ id: WorkspaceTabID) {
         guard let index = workspace.tabs.firstIndex(where: { $0.id == id }) else { return }
         let closing = workspace.tabs.remove(at: index)
@@ -242,7 +211,6 @@ extension WorkspaceDocument {
         navigate(to: workspace.tabs[min(index, workspace.tabs.count - 1)], adding: false)
     }
 
-    /// Reopens the most recently closed tab (upstream `reopenClosedWorkspaceTab`).
     public mutating func reopenClosedWorkspaceTab() {
         guard !workspace.closedTabs.isEmpty else { return }
         var tab = workspace.closedTabs.removeFirst()
@@ -254,7 +222,6 @@ extension WorkspaceDocument {
     public var canGoBack: Bool { workspace.historyIndex > 0 }
     public var canGoForward: Bool { workspace.historyIndex + 1 < workspace.history.count }
 
-    /// Back (-1) or forward (+1) through the visited views (upstream `navigateWorkspaceHistory`).
     public mutating func navigateHistory(_ direction: Int) {
         let target = workspace.historyIndex + direction
         guard workspace.history.indices.contains(target) else { return }
@@ -267,8 +234,6 @@ extension WorkspaceDocument {
         workspace.historyIndex = target
     }
 
-    /// Writes the live view back to the active tab and the current history entry. With no active tab,
-    /// a non-empty view becomes the first tab (files from before tabs, and the first project opened).
     public mutating func syncActiveTab() {
         let snapshot = currentSnapshot
         guard let id = workspace.activeTabID, let index = workspace.tabs.firstIndex(where: { $0.id == id }) else {
@@ -283,7 +248,6 @@ extension WorkspaceDocument {
         guard tab.snapshot != snapshot else { return }
         tab.snapshot = snapshot
         tab.updatedAt = Date()
-        // A project tab that now shows something else becomes a composition.
         if tab.kind == .project, snapshot.openProjectIDs != tab.projectID.map({ [$0] }) {
             tab.kind = .composition
             tab.projectID = nil
@@ -295,13 +259,11 @@ extension WorkspaceDocument {
         }
     }
 
-    /// Launch without the last view: nothing open, no active tab; the tab bar stays to pick from.
     public mutating func startClean() {
         workspace.activeTabID = nil
         apply(WorkspaceSnapshot())
     }
 
-    /// Drops references to deleted projects from tabs, closed tabs and history.
     mutating func repairNavigation() {
         let known = Set(projects.map(\.id))
         func valid(_ tab: WorkspaceTab) -> Bool {
@@ -320,10 +282,6 @@ extension WorkspaceDocument {
         if workspace.historyIndex < 0, !workspace.history.isEmpty { workspace.historyIndex = workspace.history.count - 1 }
     }
 
-    // MARK: - Helpers
-
-    /// Shows `tab`, adding it to the bar when asked (dropping the oldest unpinned tab past the
-    /// limit), and records the visit (upstream `applyTabNavigation`).
     mutating func navigate(to tab: WorkspaceTab, adding: Bool) {
         var tab = tab
         tab.snapshot = sanitized(tab.snapshot)
@@ -349,8 +307,6 @@ extension WorkspaceDocument {
         pushHistory(WorkspaceHistoryEntry(tabID: tab.id, snapshot: tab.snapshot))
     }
 
-    /// Appends a visit, dropping the forward branch and the oldest entries past the limit (upstream
-    /// `pushWorkspaceHistory`).
     mutating func pushHistory(_ entry: WorkspaceHistoryEntry) {
         let branch = workspace.historyIndex >= 0 ? Array(workspace.history.prefix(workspace.historyIndex + 1)) : []
         workspace.history = Array((branch + [entry]).suffix(Self.maxWorkspaceHistory))

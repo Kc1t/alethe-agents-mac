@@ -1,6 +1,5 @@
 import XCTest
 
-/// Flat workspace and focus mode (P2-21).
 @MainActor
 final class FlatAndFocusTests: XCTestCase {
     override func setUp() async throws {

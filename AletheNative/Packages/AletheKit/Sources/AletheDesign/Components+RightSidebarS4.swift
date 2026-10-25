@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// McpPanel.module.css agentChip and TodoSidebar.module.css filterButton.
 public struct AletheSidebarFilterStyle: ButtonStyle {
     public enum Kind { case agent, todo, segment, scope, add }
     let selected: Bool
@@ -64,7 +63,6 @@ private struct SidebarFilterBody: View {
     }
 }
 
-/// Web inputs draw focus on their container rather than using AppKit's rounded field bezel.
 public struct AletheSidebarFieldBorder: ViewModifier {
     let focused: Bool
     let composer: Bool
@@ -96,7 +94,6 @@ public extension Motion {
     }
 }
 
-/// TodoSidebar.module.css: entrance offsets affect drawing, never the zoomed hit targets.
 public struct AletheSidebarWebEntrance: ViewModifier {
     public enum Part { case sidebar, header, composer, content }
     let part: Part
@@ -126,7 +123,6 @@ public struct AletheSidebarWebEntrance: ViewModifier {
     }
 }
 
-/// Unselected utility buttons have per-panel disabled colors/opacities in the web CSS.
 public struct AletheSidebarUtilityStyle: ButtonStyle {
     let width: CGFloat
     let height: CGFloat

@@ -1,8 +1,6 @@
 import Foundation
 
-/// Dependency-free helpers shared by the hub, the transport and the API (upstream `remote/util.rs`).
 public enum RemoteText {
-    /// Compares two tokens in time that depends only on their lengths, never on where they differ.
     public static func tokensEqual(_ provided: String, _ expected: String) -> Bool {
         let lhs = Array(provided.utf8)
         let rhs = Array(expected.utf8)
@@ -15,8 +13,6 @@ public enum RemoteText {
         return difference == 0
     }
 
-    /// Replaces every control character (Unicode `Cc`: C0, DEL, C1) with a space, so remote text
-    /// can never carry escape sequences or line breaks into a terminal.
     public static func sanitize(_ input: String) -> String {
         var output = String.UnicodeScalarView()
         for scalar in input.unicodeScalars {
@@ -25,7 +21,6 @@ public enum RemoteText {
         return String(output)
     }
 
-    /// The first `key` value in the target's query string, percent-decoded (`+` is a space).
     public static func queryValue(_ target: String, _ key: String) -> String? {
         let parts = target.split(separator: "?", maxSplits: 2, omittingEmptySubsequences: false)
         guard parts.count > 1 else { return nil }
@@ -38,7 +33,6 @@ public enum RemoteText {
         return nil
     }
 
-    /// Percent-decoding as upstream: a malformed escape stays literal, invalid UTF-8 is replaced.
     public static func percentDecode(_ value: String) -> String {
         let bytes = Array(value.utf8)
         var decoded: [UInt8] = []
@@ -61,12 +55,10 @@ public enum RemoteText {
         return String(decoding: decoded, as: UTF8.self)
     }
 
-    /// At most `limit` characters of `text`.
     public static func truncated(_ text: String, to limit: Int) -> String {
         text.count > limit ? String(text.prefix(limit)) : text
     }
 
-    /// A random token over nanoid's URL-safe alphabet (64 symbols, so each byte maps without bias).
     public static func randomToken(length: Int) -> String {
         var generator = SystemRandomNumberGenerator()
         var scalars = String.UnicodeScalarView()

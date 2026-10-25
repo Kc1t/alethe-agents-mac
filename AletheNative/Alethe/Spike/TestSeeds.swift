@@ -3,7 +3,6 @@ import AletheModel
 import AppKit
 import Foundation
 
-/// Sample workspaces for UI tests (`-AletheUITestSeed <name>`); applied only to an empty workspace.
 enum TestSeeds {
     static func apply(_ name: String, to doc: inout WorkspaceDocument) {
         switch name {
@@ -15,7 +14,6 @@ enum TestSeeds {
             doc.addProject(name: "client-site", folder: "/private/tmp", color: .teal, in: .group(clients))
             doc.addProject(name: "scratch", folder: "/private/tmp", color: .pink)
         case "cliOpen":
-            // Two projects in their own folders inside the throwaway data root, neither shown (P5-8).
             let root = UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp"
             for name in ["api", "web"] {
                 let folder = URL(filePath: root).appending(path: name)
@@ -31,7 +29,6 @@ enum TestSeeds {
             for title in ["one", "two", "three"] { doc.addPane(to: api, tab: PaneTab(agent: "shell", title: title)) }
             doc.addPane(to: web, tab: PaneTab(agent: "shell", title: "four"))
         case "grid":
-            // Three panes in a 2×2 custom grid: one, two on top, three below with a free slot beside it.
             let api = doc.addProject(name: "api", folder: "/private/tmp", color: .orange)
             let panes = ["one", "two", "three"].compactMap { doc.addPane(to: api, tab: PaneTab(agent: "shell", title: $0)) }
             doc.setGridLayout(.auto(panes.map(\.rawValue)), for: api)
@@ -40,7 +37,6 @@ enum TestSeeds {
             let pane = doc.addPane(to: project, tab: PaneTab(agent: "shell", title: "one"))
             if let pane { doc.addTab(PaneTab(agent: "shell", title: "two"), to: pane) }
         case "markdown":
-            // A README inside the throwaway data root, so the test never touches real files.
             let root = UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp"
             let file = URL(filePath: root).appending(path: "README.md")
             try? FileManager.default.createDirectory(atPath: root, withIntermediateDirectories: true)
@@ -48,7 +44,6 @@ enum TestSeeds {
             let project = doc.addProject(name: "docs", folder: root, color: .teal)
             doc.addPane(to: project, content: .markdown(path: file.path))
         case "media":
-            // A 64×64 PNG inside the throwaway data root.
             let root = UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp"
             let file = URL(filePath: root).appending(path: "shot.png")
             try? FileManager.default.createDirectory(atPath: root, withIntermediateDirectories: true)
@@ -60,17 +55,14 @@ enum TestSeeds {
             let project = doc.addProject(name: "media", folder: root, color: .orange)
             doc.addPane(to: project, content: .image(path: file.path))
         case "diff":
-            // A throwaway repository with one uncommitted change.
             let repo = seedRepository()
             let project = doc.addProject(name: "repo", folder: repo.path, color: .green)
             doc.addPane(to: project, content: .diff(path: nil, staged: false))
         case "git":
-            // The same repository plus an untracked file, for Git Control (P4-5).
             let repo = seedRepository()
             try? Data("draft\n".utf8).write(to: repo.appending(path: "draft.txt"))
             _ = doc.addProject(name: "repo", folder: repo.path, color: .green)
         case "worktrees":
-            // A throwaway repository with one locked agent worktree (P4-9).
             let root = UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp"
             let repo = URL(filePath: root).appending(path: "wtrepo")
             try? FileManager.default.createDirectory(at: repo, withIntermediateDirectories: true)
@@ -88,7 +80,6 @@ enum TestSeeds {
             }
             _ = doc.addProject(name: "wtrepo", folder: repo.path, color: .green)
         case "clone":
-            // A local bare repository (`origin.git` in the data root) to clone from (P5-5).
             let repo = seedRepository()
             let bare = repo.deletingLastPathComponent().appending(path: "origin.git")
             let git = Process()
@@ -98,7 +89,6 @@ enum TestSeeds {
             git.waitUntilExit()
             _ = doc.addProject(name: "repo", folder: repo.path, color: .green)
         case "agentLibrary":
-            // A project in the data root whose `.claude/agents` holds one agent Alethe did not write (P5-16).
             let root = UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp"
             let folder = URL(filePath: root).appending(path: "agentsproj")
             let agents = folder.appending(path: ".claude/agents")
@@ -106,11 +96,9 @@ enum TestSeeds {
             try? Data("---\nname: mine\ndescription: My own agent.\n---\n".utf8).write(to: agents.appending(path: "mine.md"))
             _ = doc.addProject(name: "agentsproj", folder: folder.path, color: .purple)
         case "web":
-            // Port 9 (discard) is closed on a Mac: the page fails fast without touching the network.
             let project = doc.addProject(name: "site", folder: "/private/tmp", color: .blue)
             doc.addPane(to: project, content: .web(url: "http://127.0.0.1:9/", options: WebPaneOptions()))
         case "graphify":
-            // A repository with a Graphify graph and one older, smaller snapshot; no pane yet (P5-23).
             let root = UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp"
             let repo = URL(filePath: root).appending(path: "graphrepo")
             let graph = #"{"nodes":[{"id":"alpha","label":"alpha","source_file":"README.md","community":0},{"id":"beta","label":"beta","community":0},{"id":"delta","label":"delta","community":1},{"id":"epsilon","label":"epsilon","community":1}],"edges":[{"source":"alpha","target":"beta"},{"source":"beta","target":"delta"},{"source":"delta","target":"epsilon"}]}"#
@@ -123,11 +111,8 @@ enum TestSeeds {
             try? Data(older.utf8).write(to: repo.appending(path: ".alethe/graph-snapshots/1750000000000.json"))
             _ = doc.addProject(name: "graphrepo", folder: repo.path, color: .purple)
         case "orchestrator":
-            // One project, no panes; the orchestrator feature is turned on below (P6-13).
             doc.addProject(name: "scratch", folder: "/private/tmp", color: .pink)
         case "orchestratorBoard", "orchestratorLarge":
-            // A board beside a disabled Claude Code planner tab (`tab-lead`), over a jobs file in the
-            // profile: the core restores it on first use (P6-14).
             let folder = seedOrchestratorJobs(large: name == "orchestratorLarge")
             let project = doc.addProject(name: "board", folder: folder.path, color: .purple)
             if let pane = doc.addPane(to: project, tab: PaneTab(id: TabID(rawValue: "tab-lead"), agent: "claude", title: "lead")) {
@@ -138,8 +123,6 @@ enum TestSeeds {
         case orchestratorWorker:
             seedOrchestratorWorker(into: &doc)
         case "orchestratorApply":
-            // A done worker whose worktree holds one uncommitted file, beside its disabled planner
-            // tab (`tab-lead`): applying it merges cleanly into `main` (P6-16).
             let folder = seedApplyRepository()
             let project = doc.addProject(name: "applyrepo", folder: folder.path, color: .purple)
             if let pane = doc.addPane(to: project, tab: PaneTab(id: TabID(rawValue: "tab-lead"), agent: "claude", title: "lead")) {
@@ -150,8 +133,6 @@ enum TestSeeds {
         case "skills":
             seedSkills()
         case "gsdSync":
-            // A repository with a GSD Sync child session mid-planning, in a project holding a disabled
-            // OpenCode tab: GSD Sync is available without spawning OpenCode (P5-24).
             let repo = seedPlanningRepository()
             let project = doc.addProject(name: "gsdproj", folder: repo.path, color: .purple)
             if let pane = doc.addPane(to: project, tab: PaneTab(agent: "opencode")) { doc.setDisabled(pane, true) }
@@ -159,13 +140,10 @@ enum TestSeeds {
         case "mcp":
             seedMcp()
         case "multiagent", "multiagentLive":
-            // A committed `.planning/` roadmap with one of three items done (P6-22); the live variant
-            // keeps changing `.planning/notes.md`, as an agent would, so autocommit has work.
             let repo = seedSchedulerRepository()
             doc.addProject(name: "agentrepo", folder: repo.path, color: .purple)
             if name == "multiagentLive" { touchPlanningPeriodically(in: repo) }
         case "prompt":
-            // Folder from -AletheUITestFolder (a folder the agent already trusts).
             let folder = UserDefaults.standard.string(forKey: "AletheUITestFolder") ?? "/private/tmp"
             let project = doc.addProject(name: "prompted", folder: folder, color: .purple)
             doc.addPane(to: project, tab: PaneTab(agent: "claude", initialPrompt: "/help"))
@@ -178,7 +156,6 @@ enum TestSeeds {
         }
     }
 
-    /// Preferences a seed needs (applied with the workspace seed).
     static func apply(_ name: String, to preferences: inout PreferencesDocument) {
         if let style = UserDefaults.standard.string(forKey: "AletheUITestVisualStyle") { preferences.visualStyle = style }
         if let theme = UserDefaults.standard.string(forKey: "AletheUITestTheme") { preferences.themeID = theme }
@@ -198,9 +175,6 @@ enum TestSeeds {
         }
     }
 
-    /// What a seed sets up in the running app once the peripheral controllers started (Phase 7).
-    /// Unlike the document seeds it runs on every launch with the seed, since Keychain items of a
-    /// test launch live in memory only.
     @MainActor
     static func apply(_ name: String, to environment: AppEnvironment) {
         seedRemote(name, environment: environment)
@@ -210,10 +184,6 @@ enum TestSeeds {
         seedRouter9(name, environment: environment)
     }
 
-    /// `boardrepo` in the data root and `profiles/default/orchestrator-jobs.json` (upstream's v2
-    /// shape). The small board: planner `tab-lead` with run-01 (done, failed, interrupted workers)
-    /// and run-02 (one done worker in a worktree), plus run-03 delegated from outside a terminal.
-    /// The large one: 100 workers in five runs under `tab-lead`.
     private static func seedOrchestratorJobs(large: Bool) -> URL {
         let root = URL(filePath: UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp")
         let folder = root.appending(path: "boardrepo")
@@ -265,9 +235,6 @@ enum TestSeeds {
         return folder
     }
 
-    /// `applyrepo` in the data root: `main` with one commit (local identity, no global config needed)
-    /// and job `job-01`'s worktree on `alethe/agent-job-01` holding an uncommitted `feature.txt`;
-    /// the profile's jobs file has that job done under planner `tab-lead`.
     private static func seedApplyRepository() -> URL {
         let root = URL(filePath: UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp")
         let repo = root.appending(path: "applyrepo")
@@ -303,8 +270,6 @@ enum TestSeeds {
         return repo
     }
 
-    /// `gsdrepo` in the data root: a repository whose `.planning/` has a busy child session, a
-    /// status and a three-item roadmap with one item checked.
     private static func seedPlanningRepository() -> URL {
         let root = UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp"
         let repo = URL(filePath: root).appending(path: "gsdrepo")
@@ -326,8 +291,6 @@ enum TestSeeds {
         return repo
     }
 
-    /// `agentrepo` in the data root: `.planning/task.md` (1 of 3 checked) committed as an audit commit,
-    /// with a local identity so later audit commits need no global git config.
     private static func seedSchedulerRepository() -> URL {
         let root = UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp"
         let repo = URL(filePath: root).appending(path: "agentrepo")
@@ -348,7 +311,6 @@ enum TestSeeds {
         return repo
     }
 
-    /// Appends to `.planning/notes.md` every 3 s for five minutes.
     private static func touchPlanningPeriodically(in repo: URL) {
         let notes = repo.appending(path: ".planning/notes.md")
         Task.detached(priority: .utility) {
@@ -366,8 +328,6 @@ enum TestSeeds {
         }
     }
 
-    /// Skills in the `-AletheIntegrationsHome` folder (P5-15): `brand` in the shared store linked
-    /// from Claude Code, `motion` only in Claude Code, and Codex's bundled `imagegen`.
     private static func seedSkills() {
         guard let home = UserDefaults.standard.string(forKey: "AletheIntegrationsHome") else { return }
         let root = URL(filePath: home, directoryHint: .isDirectory)
@@ -386,8 +346,6 @@ enum TestSeeds {
         _ = skill(".codex/skills/.system/imagegen", "---\ndescription: Generates images\n---\n\n# Images\n")
     }
 
-    /// MCP configs in the `-AletheIntegrationsHome` folder (P5-25): Claude Code's `alpha` with a secret
-    /// env value, Codex's `beta`, an empty Cursor config, and the folders the other agents write to.
     private static func seedMcp() {
         guard let home = UserDefaults.standard.string(forKey: "AletheIntegrationsHome") else { return }
         let root = URL(filePath: home, directoryHint: .isDirectory)
@@ -407,7 +365,6 @@ enum TestSeeds {
         }
     }
 
-    /// `repo` in the data root: `notes.txt` committed on `main`, then modified in the worktree.
     private static func seedRepository() -> URL {
         let root = UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp"
         let repo = URL(filePath: root).appending(path: "repo")

@@ -2,18 +2,10 @@ import AletheDesign
 import CryptoKit
 import Foundation
 
-/// The upstream phone client (`src-tauri/remote/` plus the files its server embeds), bundled as
-/// `Resources/RemoteClient` by `Scripts/sync-remote-client.sh` and served on upstream's paths with
-/// its content types and caching (`remote/http.rs`). The copy is byte-identical to upstream except
-/// the patches listed in `bundle-manifest.json`, so upstream's `src/remoteChat.test.ts` stays the
-/// client's test. The Caskaydia fonts come from AletheDesign's resources.
 public struct RemoteClientBundle: RemoteAssetSource {
     public enum File: Sendable, Equatable {
-        /// A file under `RemoteClient/`.
         case client(String)
-        /// A font file in AletheDesign's resources.
         case font(String)
-        /// The brand icon of the app icon theme (`/brand-icon.png`).
         case brandIcon
     }
 
@@ -27,7 +19,6 @@ public struct RemoteClientBundle: RemoteAssetSource {
     private static let javaScript = "text/javascript; charset=utf-8"
     private static let css = "text/css; charset=utf-8"
 
-    /// Every path the client may request, as upstream `handle_static` answers it.
     public static let routes: [String: Route] = {
         var routes: [String: Route] = [
             "/": Route(file: .client("index.html"), contentType: html, caching: .noStore),
@@ -60,7 +51,6 @@ public struct RemoteClientBundle: RemoteAssetSource {
         return routes
     }()
 
-    /// Upstream `is_known_app_icon`; anything else gets the default brand icon.
     public static let brandIconThemes = ["elite-original", "elite-pure-black", "elite-indigo", "elite-blush"]
     public static let defaultBrandIconTheme = "elite-indigo"
 
@@ -69,10 +59,8 @@ public struct RemoteClientBundle: RemoteAssetSource {
         return "brand-icons/\(theme).png"
     }
 
-    /// The bundled `RemoteClient` directory.
     public let root: URL?
 
-    /// `root` defaults to the bundled client.
     public init(root: URL? = nil) {
         self.root = root ?? Bundle.module.url(forResource: "RemoteClient", withExtension: nil)
     }
@@ -94,17 +82,11 @@ public struct RemoteClientBundle: RemoteAssetSource {
         }
     }
 
-    // MARK: - Manifest
-
-    /// `bundle-manifest.json`, written by the sync script.
     public struct Manifest: Codable, Sendable, Equatable {
         public struct Entry: Codable, Sendable, Equatable {
-            /// Path under `RemoteClient/`.
             public var path: String
-            /// Upstream path (or `node_modules/<path>@<version>`).
             public var source: String
             public var upstreamSHA256: String
-            /// The bundled file's checksum, after patches.
             public var sha256: String
             public var patched: Bool
         }
@@ -112,7 +94,6 @@ public struct RemoteClientBundle: RemoteAssetSource {
         public var upstreamSHA: String
         public var xterm: String
         public var addonUnicode11: String
-        /// Patch files from `Scripts/remote-client-patches/`, in the order applied.
         public var patches: [String]
         public var files: [Entry]
     }
@@ -124,7 +105,6 @@ public struct RemoteClientBundle: RemoteAssetSource {
         return try? JSONDecoder().decode(Manifest.self, from: data)
     }
 
-    /// Manifest entries whose bundled bytes are missing or no longer match their checksum.
     public func checksumMismatches() -> [String] {
         guard let manifest = manifest(), let root else { return ["bundle-manifest.json"] }
         return manifest.files.compactMap { entry in

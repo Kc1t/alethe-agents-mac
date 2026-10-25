@@ -1,9 +1,7 @@
 import Foundation
 import Testing
 
-/// Design-system lint (ADR-5): colors come only from theme tokens, and there are no gradients.
 @Suite struct ColorLintTests {
-    /// AletheNative/ (this file lives in AletheNative/Packages/AletheKit/Tests/AletheDesignTests/).
     static let root = URL(filePath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         .deletingLastPathComponent().deletingLastPathComponent()

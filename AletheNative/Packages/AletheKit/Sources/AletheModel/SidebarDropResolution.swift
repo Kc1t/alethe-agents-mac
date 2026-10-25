@@ -1,6 +1,5 @@
 import Foundation
 
-/// Ranked pointer collisions, matching NormalProjectSidebar's rank-then-area ordering.
 public struct SidebarDropCandidate: Sendable {
     public let bounds: CGRect
     public let rank: Int

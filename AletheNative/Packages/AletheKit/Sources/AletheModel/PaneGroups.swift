@@ -1,6 +1,5 @@
 import Foundation
 
-/// Matches the web PaneGroup JSON, including orchestration metadata.
 public struct PaneGroup: Codable, Hashable, Sendable, Identifiable {
     public var id: String
     public var paneIds: [PaneID]
@@ -17,7 +16,6 @@ public struct PaneGroup: Codable, Hashable, Sendable, Identifiable {
 }
 
 extension Project {
-    /// Discard dangling members and singleton stacks after close, move or import.
     public mutating func reconcilePaneGroups() {
         let known = Set(panes.map(\.id))
         var used = Set<PaneID>()
@@ -31,7 +29,6 @@ extension Project {
         }
     }
 
-    /// Absorb intersecting stacks, preserving their order and orchestration metadata like the web.
     public mutating func groupPanes(_ ids: [PaneID], kind: String? = nil, plannerId: PaneID? = nil) {
         var seen = Set<PaneID>()
         let valid = ids.filter { id in panes.contains { $0.id == id } && seen.insert(id).inserted }

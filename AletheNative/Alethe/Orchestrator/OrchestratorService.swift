@@ -6,16 +6,9 @@ import AletheOrchestrator
 import Foundation
 import Observation
 
-/// The app's orchestrator (upstream `orchestrator.rs`): one core for the profile this process runs,
-/// prepared on first use — the job store restored, the worker launchers resolved once — so a
-/// missing CLI never delays the launch and only fails the jobs that need it. Hosts the MCP endpoint
-/// the planners call (`POST /mcp` on the hook listener, through `OrchestratorWiring`), republishes
-/// the core's snapshots for the board, and answers, diffs and messages workers for it. `shutdown()`
-/// (from `AppEnvironment.flush`) ends and reaps every worker.
 @Observable
 @MainActor
 final class OrchestratorService {
-    /// The latest state of every job and planner, for the board.
     private(set) var snapshot = OrchestratorSnapshot()
     private(set) var isPrepared = false
     private var workerRules: [WorkerRuleSet]? = []
@@ -32,12 +25,9 @@ final class OrchestratorService {
         var profileDirectory: URL
         var registry: WorkerRegistry
         var launchers: LauncherCache
-        /// The user's CLI path overrides, read when the core is prepared.
         var overrides: @MainActor () -> [String: String]
     }
 
-    /// Wires the profile in and ends workers an unclean exit left running (off main, before any
-    /// spawn). The core itself waits for its first use.
     func start(profileDirectory: URL, launchers: LauncherCache,
                overrides: @escaping @MainActor () -> [String: String],
                isEnabled: @escaping @MainActor () -> Bool) {
@@ -51,7 +41,6 @@ final class OrchestratorService {
         }
     }
 
-    /// The core, prepared on the first call; nil before `start` or after `shutdown`.
     func prepared() async -> OrchestratorCore? {
         if let preparing { return await preparing.value }
         guard let setup, !isShutDown else { return nil }
@@ -94,14 +83,10 @@ final class OrchestratorService {
         }
     }
 
-    // MARK: Planners and the MCP endpoint
-
-    /// A terminal that may delegate (upstream `orchestrator_mcp_config_path`'s `register_planner`).
     func registerPlanner(_ planner: Planner) {
         Task { await prepared()?.registerPlanner(planner) }
     }
 
-    /// One `POST /mcp` body from a planner. Off while the feature is off (404), 202 for a notification.
     nonisolated func handleMcp(body: Data, planner: String?) async -> AgentHookServer.McpReply {
         guard let core = await coreIfEnabled() else { return .unavailable }
         guard let reply = await OrchestratorMCP.handle(body: body, planner: planner, handler: core) else { return .accepted }
@@ -113,22 +98,15 @@ final class OrchestratorService {
         return await prepared()
     }
 
-    // MARK: The board
-
-    /// Answers a worker's pending ask (upstream `orchestrator_answer`): the person is already
-    /// looking at the question. `decision`: accept, acceptForSession, decline or abort.
     func answer(job: String, decision: String) async throws -> OrderedJSON {
         try await callTool("alethe_answer", ["jobId": .string(job), "decision": .string(decision)])
     }
 
-    /// The worker's diff so far (upstream `orchestrator_job_diff`); nil for an unknown job.
     func diff(job: String) async -> String? {
         guard let core = await prepared(), let found = await core.job(job) else { return nil }
         return found.diff ?? ""
     }
 
-    /// Talks to one worker without the lead (upstream `orchestrator_message`): `steer` corrects the
-    /// running turn, otherwise the message is its next turn.
     func message(job: String, text: String, steer: Bool) async throws -> OrderedJSON {
         try await callTool(steer ? "alethe_steer" : "alethe_send", ["jobId": .string(job), "message": .string(text)])
     }
@@ -152,9 +130,6 @@ final class OrchestratorService {
         return try await core.callTool(name: name, arguments: arguments, planner: nil)
     }
 
-    // MARK: Quit
-
-    /// Ends and reaps every worker and writes the history; nothing starts afterwards.
     func shutdown() async {
         isShutDown = true
         if let preparing, let core = await preparing.value {

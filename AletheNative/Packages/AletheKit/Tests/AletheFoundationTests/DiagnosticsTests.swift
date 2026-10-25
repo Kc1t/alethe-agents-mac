@@ -7,7 +7,6 @@ private func temporaryDirectory() -> URL {
         .appending(path: "alethe-diagnostics-\(UUID().uuidString)", directoryHint: .isDirectory)
 }
 
-/// Secrets of every shape the redactor knows, embedded in ordinary log text.
 private let secrets = [
     "sk-ant-api03-AbCdEfGhIjKlMnOpQrStUv",
     "ghp_0123456789abcdefghijABCDEFGHIJ",
@@ -75,7 +74,6 @@ struct SessionMarkerTests {
         store.begin(marker(1))
         let previous = store.begin(marker(2))
         #expect(previous.uncleanMarker?.processID == 1)
-        // The new session replaces it: a third launch after a clean quit is clean again.
         store.markCleanExit()
         #expect(store.begin(marker(3)).uncleanMarker == nil)
     }
@@ -147,7 +145,6 @@ struct RotatingLogFileTests {
         let text = file.readAll()
         #expect(text.contains("line 19"))
         #expect(!text.contains("line 0 "))
-        // Oldest first.
         let lines = text.split(separator: "\n")
         #expect(lines.last?.hasPrefix("line 19") == true)
     }

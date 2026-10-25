@@ -3,7 +3,6 @@ import SQLite3
 import Testing
 @testable import AletheAgents
 
-/// Session cost (P3-8; upstream `agent_cost.rs`).
 @Suite struct SessionCostTests {
     private func file(_ lines: [String]) throws -> String {
         let path = FileManager.default.temporaryDirectory.appending(path: "alethe-cost-\(UUID().uuidString).jsonl").path
@@ -14,7 +13,6 @@ import Testing
     @Test func pricingFollowsTheFamilyTable() throws {
         let sonnet = ModelCost(model: "claude-sonnet-4-5", input: 1_000_000, output: 1_000_000, cacheRead: 1_000_000,
                                cacheWrite5m: 1_000_000, cacheWrite1h: 1_000_000)
-        // 3 + 15 + 0.3 + 3.75 + 6
         #expect(abs((ModelPricing.cost(of: sonnet) ?? 0) - 28.05) < 0.0001)
         #expect(ModelPricing.cost(of: ModelCost(model: "gpt-5", input: 10)) == nil)
     }

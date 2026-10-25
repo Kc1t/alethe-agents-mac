@@ -1,6 +1,5 @@
 import Foundation
 
-/// A web terminalLinks.ts match; offsets are UTF-16, as in xterm.
 public struct DetectedTerminalLink: Equatable, Sendable {
     public enum Kind: Equatable, Sendable { case url, path }
     public enum FileKind: Equatable, Sendable { case markdown, image, video, text }
@@ -12,7 +11,6 @@ public struct DetectedTerminalLink: Equatable, Sendable {
     public let fileKind: FileKind?
 }
 
-/// The web detector and path rules, independent of filesystem existence.
 public enum TerminalLinks {
     private static let start = #"https?:\/\/|(?<![@\w.-])(?:localhost(?::\d{1,5})?|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:app|ai|biz|br|ca|cloud|co|com|de|dev|edu|fr|gg|gov|info|io|jp|live|me|net|online|org|page|sh|site|tech|tools|tv|uk|xyz))(?::\d{1,5})?(?:\/[^\s<>"'`|]*)?|(?:[A-Za-z]:\\|\\\\)|(?<![\w])(?:~[\\/]|\/)(?=[A-Za-z0-9_.~])|(?<![@\w.-])(?:\.\.?[\\/])?(?:[A-Za-z0-9_.-]+[\\/])*[A-Za-z0-9_.-]+\.(?:md|markdown|mdx|png|jpe?g|gif|webp|bmp|avif|ico|svg|txt|tsx?|jsx?|json|ya?ml|toml|csv|pdf|mp4|m4v|mov|avi|mkv|webm|mp3|wav|flac|m4a|zip|7z|rar|tar|gz|exe|msi|dll)(?=$|[\s),.;:\]}`])"#
     private static let bareURL = #"^(?:localhost(?::\d{1,5})?|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:app|ai|biz|br|ca|cloud|co|com|de|dev|edu|fr|gg|gov|info|io|jp|live|me|net|online|org|page|sh|site|tech|tools|tv|uk|xyz))(?::\d{1,5})?(?:\/[^\s<>"'`|]*)?"#
@@ -38,7 +36,6 @@ public enum TerminalLinks {
         public let startLine: Int
     }
 
-    /// One-based rows and columns, matching xterm's buffer/range API.
     public static func logicalLine(_ rows: [Row], lineNumber: Int) -> LogicalLine? {
         var start = lineNumber - 1
         guard rows.indices.contains(start) else { return nil }
@@ -93,8 +90,6 @@ public enum TerminalLinks {
         return join(cwd, clean.replacingOccurrences(of: #"^\.([\\/])"#, with: "", options: .regularExpression))
     }
 
-    /// filesystem.rs find_relative_path: cwd first, then the newest worktree match, including
-    /// a printed worktree-directory prefix (repo-feature/docs/report.md).
     public static func findRelativePath(_ relative: String, cwd: String, worktrees: [String],
         exists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) },
         modifiedAt: (String) -> Date? = {

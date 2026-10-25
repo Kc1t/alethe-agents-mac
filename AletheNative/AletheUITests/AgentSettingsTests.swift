@@ -1,6 +1,5 @@
 import XCTest
 
-/// Settings › Agents (P3-2): turning an agent off removes it from New Terminal.
 @MainActor
 final class AgentSettingsTests: XCTestCase {
     override func setUp() async throws {
@@ -29,7 +28,6 @@ final class AgentSettingsTests: XCTestCase {
         app.terminate()
     }
 
-    /// HT: the agent toggles and buttons are clicked where drawn at 90 %, 100 % and 120 %.
     func testAgentControlsReceiveClicksAtThreeZoomLevels() {
         for (label, keys) in [("90 %", ["-"]), ("100 %", []), ("120 %", ["+", "+"])] {
             let (app, _) = launchAlethe()

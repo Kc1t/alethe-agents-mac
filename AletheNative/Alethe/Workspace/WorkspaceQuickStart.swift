@@ -4,9 +4,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// The web "no project open" card of an empty workspace (upstream `NoWorkspace`,
-/// `WorkspaceView/index.tsx` + `.emptyProjectCard` in `WorkspaceView.module.css`): pick the agent
-/// and a folder, open the folder as a project and start a terminal in it.
 struct WorkspaceQuickStartCard: View {
     let workspace: WorkspaceModel
     @Environment(AppEnvironment.self) private var environment
@@ -185,8 +182,6 @@ struct WorkspaceQuickStartCard: View {
         folder = url.standardizedFileURL.path
     }
 
-    /// Upstream `openFolderAsProject`: a project named after the folder, with a terminal of the
-    /// chosen agent opened in its own workspace tab.
     private func openFolderAsProject() {
         let path = trimmedFolder
         guard !path.isEmpty else { return }
@@ -209,7 +204,6 @@ struct WorkspaceQuickStartCard: View {
     }
 }
 
-/// One agent choice of the quick-start grid (`.emptyAgentButton`).
 private struct QuickStartAgentButton: View {
     let kind: AgentKind
     let selected: Bool

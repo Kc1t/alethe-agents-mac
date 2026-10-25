@@ -6,27 +6,18 @@ import Foundation
 import Observation
 import Synchronization
 
-/// Remote control's app service (PER-7; upstream `useRemoteControlService.ts`, `remote/commands.rs`,
-/// `pty_bridge.rs`): the hub and API read the workspace and terminals through the sources below;
-/// the user's settings are pushed as they change; events become notifications. Off at every launch:
-/// nothing binds until `setEnabled(true)`, and `stop` (at quit) revokes every device.
 @Observable
 @MainActor
 final class RemoteControlController {
-    /// Whether the user turned it on this session (never saved).
     private(set) var isEnabled = false
-    /// The hub's last reported state, for Settings and the pairing sheet.
     private(set) var info: RemoteInfo?
-    /// Whether a Tailscale address exists; nil until `refreshTailscale`.
     private(set) var tailscale: RemoteTailscaleStatus?
 
     @ObservationIgnored private weak var environment: AppEnvironment?
     @ObservationIgnored private var service: RemoteControlService?
     @ObservationIgnored private var eventsTask: Task<Void, Never>?
-    /// Commands run one at a time, in the order the user gave them.
     @ObservationIgnored private var queue: Task<Void, Never>?
     @ObservationIgnored private var pushed: RemoteControlSettings?
-    /// Tabs shared right now; output of any other tab never leaves the Mac.
     @ObservationIgnored private let sharedIDs = SharedTabIDs()
 
     func start(environment: AppEnvironment) {
@@ -48,7 +39,6 @@ final class RemoteControlController {
         observeSharing()
     }
 
-    /// Quitting: listeners and connections close, every device is revoked.
     func stop() async {
         queue?.cancel()
         queue = nil
@@ -57,8 +47,6 @@ final class RemoteControlController {
         await service.stop()
         info = await service.info()
     }
-
-    // MARK: - Commands
 
     func setEnabled(_ enabled: Bool) {
         isEnabled = enabled
@@ -81,7 +69,6 @@ final class RemoteControlController {
         enqueue { await $0.revokeAll() }
     }
 
-    /// Re-reads the hub (device list, pairing countdown).
     func refresh() {
         enqueue { await $0.info() }
     }
@@ -90,12 +77,10 @@ final class RemoteControlController {
         Task { tailscale = await RemoteHost.tailscaleStatus() }
     }
 
-    /// Shares a terminal pane with paired devices, or stops sharing it.
     func setShared(_ pane: PaneID, _ shared: Bool) {
         environment?.workspace?.update { $0.setRemoteShared(pane, shared) }
     }
 
-    /// What `/api/state` answers right now.
     func snapshot() -> RemoteWorkspaceSnapshot {
         guard let environment, let document = environment.workspace?.document else {
             return RemoteWorkspaceSnapshot(groups: [], projects: [])
@@ -104,7 +89,6 @@ final class RemoteControlController {
     }
 
     #if DEBUG
-    /// UI tests: an event as if the hub emitted it (a stub device message).
     func emitForTesting(_ event: RemoteEvent) {
         service?.hub.emit(event)
     }
@@ -123,9 +107,6 @@ final class RemoteControlController {
         }
     }
 
-    // MARK: - Settings and sharing
-
-    /// The user's settings as the hub takes them.
     var settings: RemoteControlSettings {
         let remote = environment?.preferences?.document.remoteSettings ?? RemotePreferences()
         return RemoteControlSettings(maxDevices: remote.maxDevices, sessionExpirySecs: remote.sessionExpirySecs,
@@ -133,7 +114,6 @@ final class RemoteControlController {
                                      reachMode: remote.useTailscale ? .tailscale : .lan)
     }
 
-    /// Pushes the settings whenever they change; the hub restarts only for a new reach mode.
     private func observeSettings() {
         let current = withObservationTracking { settings } onChange: { [weak self] in
             Task { @MainActor in self?.observeSettings() }
@@ -154,8 +134,6 @@ final class RemoteControlController {
         }
         sharedIDs.set(ids)
     }
-
-    // MARK: - Events
 
     private func handle(_ event: RemoteEvent) {
         guard let notifier = environment?.notifier else { return }
@@ -178,9 +156,6 @@ final class RemoteControlController {
         }
     }
 
-    // MARK: - Sources
-
-    /// The Mac's LAN or Tailscale address. UI-test launches (debug builds) bind loopback only.
     private static var resolver: RemoteHostResolver {
         #if DEBUG
         let defaults = UserDefaults.standard
@@ -191,7 +166,6 @@ final class RemoteControlController {
         return .system
     }
 
-    /// The terminal registry by tab id (upstream `pty_bridge.rs`).
     private static func terminalBackend(_ environment: AppEnvironment, shared: SharedTabIDs) -> RemoteTerminalBridge.Backend {
         let terminals = environment.terminals
         let relay = terminals.output
@@ -230,7 +204,6 @@ final class RemoteControlController {
     }
 }
 
-/// The ids of the shared tabs, read by the output relay on the PTY queues.
 final class SharedTabIDs: Sendable {
     private let ids = Mutex<Set<String>>([])
 
@@ -238,8 +211,6 @@ final class SharedTabIDs: Sendable {
     func contains(_ id: String) -> Bool { ids.withLock { $0.contains(id) } }
 }
 
-/// The workspace as remote devices see it (upstream `remote/workspace.rs`, `appearance.rs`): only
-/// tabs of shared panes; transcripts and questions through `Handoff`, off the main thread.
 @MainActor
 final class RemoteAppWorkspace: RemoteWorkspaceSource {
     private weak var environment: AppEnvironment?
@@ -263,7 +234,6 @@ final class RemoteAppWorkspace: RemoteWorkspaceSource {
         return Self.snapshot(of: document, names: environment.terminals)
     }
 
-    /// Groups, and every project with its shared tabs only (upstream `workspace_snapshot`).
     static func snapshot(of document: WorkspaceDocument, names: TerminalRegistry) -> RemoteWorkspaceSnapshot {
         let groups = document.groups.map {
             RemoteWorkspaceSnapshot.Group(id: $0.id.rawValue, name: $0.name, color: $0.color?.rawValue)

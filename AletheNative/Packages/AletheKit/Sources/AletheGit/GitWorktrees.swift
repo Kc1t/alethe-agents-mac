@@ -1,20 +1,12 @@
 import Foundation
 
-// Per-agent worktree isolation (port of upstream `worktrees.rs`, RFC-003). Each agent gets
-// `<repo>/.alethe/worktrees/<agentId>/` on branch `alethe/agent-<agentId>`, either as a linked
-// `git worktree` (shares the repository's `.git`) or as a `git clone --local` copy.
-
-/// How an agent's environment is created (upstream `WorktreeMode`, persisted as `worktreeMode`).
 public enum WorktreeMode: String, Codable, Sendable, CaseIterable {
     case gitWorktree
     case localCopy
 }
 
-/// Project-level multi-agent settings (upstream `Project.autoWorktree` / `Project.worktreeMode`).
 public struct WorktreeSettings: Codable, Equatable, Sendable {
-    /// New agent terminals get their own worktree automatically.
     public var autoWorktree: Bool
-    /// `nil` means the default (`gitWorktree`), as upstream leaves the field undefined.
     public var worktreeMode: WorktreeMode?
 
     public init(autoWorktree: Bool = false, worktreeMode: WorktreeMode? = nil) {
@@ -24,15 +16,12 @@ public struct WorktreeSettings: Codable, Equatable, Sendable {
 
     public var effectiveMode: WorktreeMode { worktreeMode ?? .gitWorktree }
 
-    /// The agent id a new terminal should be provisioned with, or `nil` when isolation is off or the
-    /// terminal is not an agent (shells never get a worktree).
     public func agentIdForNewTerminal(isAgent: Bool, terminalId: String) -> String? {
         guard autoWorktree, isAgent, (try? GitWorktrees.sanitizeAgentId(terminalId)) != nil else { return nil }
         return terminalId.trimmingCharacters(in: .whitespaces)
     }
 }
 
-/// One agent environment under `.alethe/worktrees/` (upstream `WorktreeInfo`).
 public struct WorktreeInfo: Equatable, Sendable, Codable {
     public var agentId: String
     public var path: String
@@ -40,11 +29,9 @@ public struct WorktreeInfo: Equatable, Sendable, Codable {
     public var mode: WorktreeMode
 }
 
-/// One entry of `git worktree list --porcelain`.
 public struct GitWorktreeEntry: Equatable, Sendable {
     public var path: String
     public var head: String?
-    /// Short branch name (`refs/heads/` stripped); `nil` when detached or bare.
     public var branch: String?
     public var isBare = false
     public var isDetached = false
@@ -55,7 +42,6 @@ public struct GitWorktreeEntry: Equatable, Sendable {
 
     public init(path: String) { self.path = path }
 
-    /// The agent id when the entry is an Alethe agent worktree (branch `alethe/agent-<id>`).
     public var agentId: String? {
         guard let branch, branch.hasPrefix(GitWorktrees.branchPrefix) else { return nil }
         let id = String(branch.dropFirst(GitWorktrees.branchPrefix.count))
@@ -63,7 +49,6 @@ public struct GitWorktreeEntry: Equatable, Sendable {
     }
 }
 
-/// A change `commitPending` would pick up (upstream `PendingChange`).
 public struct WorktreePendingChange: Equatable, Sendable {
     public var path: String
     public var status: String
@@ -74,12 +59,9 @@ public enum GitWorktreeError: Error, Equatable, Sendable {
     case exists
     case notFound
     case invalidPath
-    /// The worktree is locked through `git worktree lock` (upstream `admin_locked:<reason>`).
     case adminLocked(reason: String)
 }
 
-/// Worktree operations for one repository. Paths resolve to the main repository even when called
-/// from inside a linked worktree.
 public struct GitWorktrees: Sendable {
     public static let branchPrefix = "alethe/agent-"
     public static let defaultCommitMessage = "Agent work (auto-commit before integration)"
@@ -90,9 +72,6 @@ public struct GitWorktrees: Sendable {
         self.runner = runner
     }
 
-    // MARK: Pure helpers
-
-    /// Agent ids become a directory and a branch name: ASCII letters, digits, `-` and `_` only.
     public static func sanitizeAgentId(_ agentId: String) throws -> String {
         let trimmed = agentId.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty,
@@ -107,7 +86,6 @@ public struct GitWorktrees: Sendable {
         root.appendingPathComponent(".alethe", isDirectory: true).appendingPathComponent("worktrees", isDirectory: true)
     }
 
-    /// `.git` file = linked worktree, `.git` directory = local copy, neither = not an environment.
     public static func detectMode(_ directory: URL) -> WorktreeMode? {
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: directory.appendingPathComponent(".git").path, isDirectory: &isDirectory)
@@ -115,7 +93,6 @@ public struct GitWorktrees: Sendable {
         return isDirectory.boolValue ? .localCopy : .gitWorktree
     }
 
-    /// Parses `git worktree list --porcelain` (blank-line separated records; `-z` output also accepted).
     public static func parsePorcelain(_ output: String) -> [GitWorktreeEntry] {
         var entries: [GitWorktreeEntry] = []
         var current: GitWorktreeEntry?
@@ -160,12 +137,10 @@ public struct GitWorktrees: Sendable {
         return entries
     }
 
-    /// Alethe infrastructure files are never agent work (upstream `is_real_work`).
     public static func isRealWork(_ path: String) -> Bool {
         !path.isEmpty && !path.hasPrefix(".planning/") && !path.hasPrefix(".opencode/") && path != "opencode.json"
     }
 
-    /// Parses `git status --porcelain` (v1) into real-work changes.
     public static func parsePendingChanges(_ output: String) -> [WorktreePendingChange] {
         output.split(separator: "\n").compactMap { raw in
             let line = String(raw)
@@ -177,9 +152,6 @@ public struct GitWorktrees: Sendable {
         }
     }
 
-    // MARK: Repository resolution
-
-    /// The main repository's top level, even when `path` is inside a linked worktree.
     public func mainRepositoryRoot(_ path: URL) async throws -> URL {
         let output = try await runner.run(["rev-parse", "--path-format=absolute", "--git-common-dir"], in: path)
         let common = output.text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -194,9 +166,6 @@ public struct GitWorktrees: Sendable {
         return (root, id, Self.worktreesBase(root).appendingPathComponent(id, isDirectory: true))
     }
 
-    // MARK: Operations
-
-    /// Creates the agent's environment on a new `alethe/agent-<id>` branch at HEAD.
     public func provision(repo: URL, agentId: String, mode: WorktreeMode) async throws -> WorktreeInfo {
         let (root, id, dest) = try await environment(repo, agentId)
         try FileManager.default.createDirectory(at: Self.worktreesBase(root), withIntermediateDirectories: true)
@@ -212,7 +181,6 @@ public struct GitWorktrees: Sendable {
         return WorktreeInfo(agentId: id, path: dest.path, branch: branch, mode: mode)
     }
 
-    /// The agent environments under `.alethe/worktrees/`, sorted by agent id.
     public func list(repo: URL) async throws -> [WorktreeInfo] {
         let root = try await mainRepositoryRoot(repo)
         let base = Self.worktreesBase(root)
@@ -230,13 +198,11 @@ public struct GitWorktrees: Sendable {
         return result.sorted { $0.agentId < $1.agentId }
     }
 
-    /// Every worktree git knows about (`git worktree list --porcelain`), including the main one.
     public func gitWorktrees(repo: URL) async throws -> [GitWorktreeEntry] {
         let root = try await mainRepositoryRoot(repo)
         return Self.parsePorcelain(try await runner.run(["worktree", "list", "--porcelain"], in: root).text)
     }
 
-    /// Removes the environment; a locked linked worktree reports its lock reason instead.
     public func remove(repo: URL, agentId: String, force: Bool) async throws {
         let (root, _, dest) = try await environment(repo, agentId)
         guard FileManager.default.fileExists(atPath: dest.path) else { throw GitWorktreeError.notFound }
@@ -267,7 +233,6 @@ public struct GitWorktrees: Sendable {
         _ = try await runner.run(["worktree", "unlock", dest.path], in: root)
     }
 
-    /// Brings a local copy's agent branch into the main repository; linked worktrees already share it.
     public func fetchBranch(repo: URL, agentId: String) async throws {
         let (root, id, dir) = try await environment(repo, agentId)
         switch Self.detectMode(dir) {
@@ -281,14 +246,11 @@ public struct GitWorktrees: Sendable {
         }
     }
 
-    /// Real-work changes in the environment, without touching it.
     public func pendingChanges(repo: URL, agentId: String) async throws -> [WorktreePendingChange] {
         let dir = try await existingEnvironment(repo, agentId)
         return Self.parsePendingChanges(try await runner.run(["status", "--porcelain"], in: dir).text)
     }
 
-    /// Commits the real-work changes; returns `false` when there was nothing to commit. A blank
-    /// message falls back to the upstream auto-commit message.
     @discardableResult
     public func commitPending(repo: URL, agentId: String, message: String = GitWorktrees.defaultCommitMessage) async throws -> Bool {
         let dir = try await existingEnvironment(repo, agentId)
@@ -300,8 +262,6 @@ public struct GitWorktrees: Sendable {
         return true
     }
 
-    /// Deletes leftover directories under `.alethe/worktrees/` that are no longer environments, then
-    /// prunes worktree metadata whose directory is gone. Returns the removed agent ids.
     @discardableResult
     public func cleanup(repo: URL) async throws -> [String] {
         let root = try await mainRepositoryRoot(repo)
@@ -325,7 +285,6 @@ public struct GitWorktrees: Sendable {
         return dir
     }
 
-    /// The `git worktree lock` reason of a linked worktree (its admin dir's `locked` file).
     static func adminLockReason(_ worktree: URL) -> String? {
         guard let pointer = try? String(contentsOf: worktree.appendingPathComponent(".git"), encoding: .utf8),
               let line = pointer.split(separator: "\n").first, line.hasPrefix("gitdir:") else { return nil }

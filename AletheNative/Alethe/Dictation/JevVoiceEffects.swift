@@ -1,7 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// VoiceCommand.module.css timing and geometry, with solid theme colors instead of gradients.
 struct JevVoiceEdge: View {
     let listening: Bool
     let processing: Bool

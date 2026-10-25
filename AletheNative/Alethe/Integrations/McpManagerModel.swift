@@ -4,13 +4,8 @@ import AletheIntegrations
 import Foundation
 import Observation
 
-/// What the MCP tab and the MCP manager show (upstream `mcpStore` + `McpManagerModal` state, EXT-1):
-/// one scan of every agent for the scope, live health, revealed values and the last change's undo.
-/// Every read and write runs in `McpStore` off the main thread; a revealed value lives only here, is
-/// never logged, and is dropped on a scope change or when the manager closes.
 @MainActor @Observable
 final class McpManagerModel {
-    /// One revealed env value or header, exactly: two servers of one agent can share a key name.
     struct RevealKey: Hashable {
         let agent: McpAgent
         let source: URL
@@ -22,7 +17,6 @@ final class McpManagerModel {
     let store: McpStore
     let registry: McpRegistry
     private let health: McpHealthChecker
-    /// Health runs the agents' own CLIs, which read the real home: off when a test home is set.
     let healthAvailable: Bool
 
     private(set) var scope: McpScope
@@ -32,15 +26,12 @@ final class McpManagerModel {
     private(set) var loading = false
     private(set) var busy = false
     private(set) var error: String? { didSet { if error != oldValue { AppLog.shown(error, .integrations) } } }
-    /// Outcome of the last change.
     private(set) var note: String?
-    /// The last change that can be taken back, by its description.
     private(set) var undoLabel: String?
     private(set) var healthByAgent: [McpAgent: [McpHealth]] = [:]
     private(set) var healthErrors: [McpAgent: McpHealthError] = [:]
     private(set) var checking: Set<McpAgent> = []
     private(set) var revealed: [RevealKey: String] = [:]
-    /// Persists the scope switch (`mcpDefaultScope`).
     @ObservationIgnored var onScopeChange: ((McpScope) -> Void)?
 
     @ObservationIgnored private var undoAction: (() async throws -> Void)?
@@ -57,13 +48,10 @@ final class McpManagerModel {
         self.scope = scope
     }
 
-    /// Project scope needs a project; without one the global configs show.
     var effectiveScope: McpScope { repository == nil ? .global : scope }
 
-    /// Agents that can take a new server in this scope.
     var writableAgents: [McpAgent] { (snapshots ?? []).filter(\.isWritable).map(\.agent) }
 
-    /// Agents whose config the scan could not use, and why.
     var issues: [(agent: McpAgent, issue: McpSnapshotIssue)] {
         (snapshots ?? []).compactMap { snapshot in snapshot.issue.map { (snapshot.agent, $0) } }
     }
@@ -72,9 +60,6 @@ final class McpManagerModel {
 
     func snapshot(_ agent: McpAgent) -> McpAgentSnapshot? { snapshots?.first { $0.agent == agent } }
 
-    // MARK: Scope and scan
-
-    /// The selected project's folder; a change rescans.
     func setRepository(_ folder: String?) {
         let url = folder.flatMap { $0.isEmpty ? nil : URL(filePath: $0, directoryHint: .isDirectory) }
         guard url != repository || snapshots == nil else { return }
@@ -114,7 +99,6 @@ final class McpManagerModel {
         await task.value
     }
 
-    /// Stops pending work and forgets revealed values (the manager closed).
     func close() {
         revealed = [:]
     }
@@ -127,17 +111,13 @@ final class McpManagerModel {
         loading = false
     }
 
-    // MARK: Health
-
     var healthAgents: [McpAgent] { McpAgent.allCases.filter { McpHealthParser.cli(for: $0) != nil } }
 
-    /// The status `agent`'s CLI reported for `name`; nil before a check.
     func status(of name: String, on agent: McpAgent) -> McpHealthStatus? {
         guard let reported = healthByAgent[agent] else { return nil }
         return reported.first { $0.name == name }?.status ?? .unknown
     }
 
-    /// The worst reported status of a server across the agents checked: what the panel row shows.
     func status(of group: McpServerGroup) -> McpHealthStatus? {
         let statuses = group.agents.compactMap { agent in healthByAgent[agent]?.first { $0.name == group.name }?.status }
         guard !statuses.isEmpty else { return nil }
@@ -147,7 +127,6 @@ final class McpManagerModel {
         return .connected
     }
 
-    /// Checks every agent with a CLI once per launch (the tab opening), then on request.
     func checkHealthOnce() {
         guard healthAvailable, !checkedOnce else { return }
         checkedOnce = true
@@ -175,9 +154,6 @@ final class McpManagerModel {
         }
     }
 
-    // MARK: Changes
-
-    /// Switches a server on or off in its own file; applies at once with undo.
     func toggle(_ record: McpServerRecord) async {
         let enabled = !record.server.enabled
         let name = record.server.name
@@ -192,8 +168,6 @@ final class McpManagerModel {
         }
     }
 
-    /// Removes the server from each record's file. Destructive: the view asked once; each file was
-    /// backed up first, so Backups can restore it.
     func remove(_ records: [McpServerRecord]) async {
         guard let name = records.first?.server.name else { return }
         let label = format("mcp.note.removed", name, Self.labels(records.map(\.agent)))
@@ -206,7 +180,6 @@ final class McpManagerModel {
         }
     }
 
-    /// Replaces one record's server with the edited form; undo writes the previous one back.
     func save(_ draft: McpServerDraft, over record: McpServerRecord) async throws(McpStoreError) {
         let server = try draft.server()
         let previous = record.server
@@ -220,8 +193,6 @@ final class McpManagerModel {
         }
     }
 
-    /// Writes a new server to each target (agents that already have one by that name are skipped,
-    /// never overwritten); undo removes it from where it was written.
     func add(_ draft: McpServerDraft, to targets: [McpAgent]) async throws(McpStoreError) {
         let server = try draft.server()
         let existing = Set(group(named: server.name)?.agents ?? [])
@@ -259,7 +230,6 @@ final class McpManagerModel {
         busy = false
     }
 
-    /// Copies a server to agents that lack it (never overwriting), reporting each target.
     func sync(_ group: McpServerGroup, to targets: [McpAgent]) async {
         guard let from = group.records.first?.agent, !targets.isEmpty else { return }
         busy = true
@@ -319,7 +289,6 @@ final class McpManagerModel {
         busy = false
     }
 
-    /// Runs one write (or several), then rescans; `body` returns the undo when there is one.
     private func change(label: String, undoable: Bool = true,
                         _ body: (McpStore, URL?) async throws -> (() async throws -> Void)?) async {
         busy = true
@@ -346,13 +315,10 @@ final class McpManagerModel {
         undoAction = nil
     }
 
-    // MARK: Reveal
-
     func key(_ record: McpServerRecord, _ key: String, header: Bool) -> RevealKey {
         RevealKey(agent: record.agent, source: record.sourceURL, server: record.server.name, key: key, header: header)
     }
 
-    /// Reads one stored value on request; it stays until hidden, a scope change or the manager closing.
     func reveal(_ record: McpServerRecord, key: String, header: Bool) async {
         do {
             let value = try await store.reveal(agent: record.agent, scope: record.scope, repository: repository,
@@ -367,16 +333,12 @@ final class McpManagerModel {
         revealed[key] = nil
     }
 
-    // MARK: Backups
-
     func backups(for record: McpServerRecord) async -> [ConfigBackup] {
         guard let source = store.source(of: record, repository: repository) else { return [] }
         let store = store
         return await Task.detached { store.backups(agent: record.agent, source: source) }.value
     }
 
-    /// Puts a backup back over the record's file. Destructive: the view asked once. The current
-    /// contents are backed up first.
     func restore(_ backup: ConfigBackup, for record: McpServerRecord) async {
         guard let source = store.source(of: record, repository: repository) else { return }
         let label = format("mcp.note.restored", record.sourceURL.lastPathComponent,
@@ -387,13 +349,10 @@ final class McpManagerModel {
         }
     }
 
-    // MARK: Text
-
     static func labels(_ agents: [McpAgent]) -> String {
         agents.map(\.label).joined(separator: ", ")
     }
 
-    /// Codes and field names only: a store error never carries a value from the file.
     static func describe(_ error: any Error) -> String {
         guard let error = error as? McpStoreError else {
             return error is CancellationError ? String(localized: "mcp.error.cancelled") : error.localizedDescription
@@ -419,7 +378,6 @@ final class McpManagerModel {
 }
 
 extension McpAgent {
-    /// Product names stay as they are.
     var label: String {
         switch self {
         case .claude: "Claude Code"

@@ -1,9 +1,5 @@
 import Foundation
 
-/// A project's settings as a portable JSON file (Project menu › Export/Import Settings, P5-6;
-/// upstream `sidebarMenus.tsx`). Terminals and scrollback stay out. The keys are upstream `Project`
-/// keys, so a file exported by the Tauri app imports here and an empty `terminals` array keeps this
-/// file importable there. Keys a file lacks are left as they are; unknown keys are ignored.
 public struct ProjectSettingsFile: Equatable, Sendable {
     public var name: String?
     public var color: ProjectColor?
@@ -13,13 +9,10 @@ public struct ProjectSettingsFile: Equatable, Sendable {
     public var githubURL: String?
 
     public enum Failure: Error, Equatable, Sendable {
-        /// Not a JSON object.
         case unreadable
-        /// A JSON object without any setting this app knows.
         case noSettings
     }
 
-    /// One setting an import would change.
     public enum Change: Hashable, Sendable {
         case name(from: String, to: String)
         case color(from: ProjectColor, to: ProjectColor)
@@ -39,7 +32,6 @@ public struct ProjectSettingsFile: Equatable, Sendable {
         self.githubURL = githubURL
     }
 
-    /// Every setting of `project`, explicit (defaults included) so an import restores them exactly.
     public init(project: Project) {
         self.init(name: project.name, color: project.color, autoWorktree: project.usesAutoWorktree,
                   worktreeMode: project.effectiveWorktreeMode, layoutMode: project.layout, githubURL: project.githubURL)
@@ -68,7 +60,6 @@ public struct ProjectSettingsFile: Equatable, Sendable {
         return try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
     }
 
-    /// What importing this file into `project` would change, in a stable order; empty: nothing.
     public func changes(to project: Project) -> [Change] {
         var changes: [Change] = []
         if let name, name != project.name { changes.append(.name(from: project.name, to: name)) }
@@ -84,7 +75,6 @@ public struct ProjectSettingsFile: Equatable, Sendable {
         return changes
     }
 
-    /// Applies the file's settings; defaults are stored absent, as elsewhere in the document.
     public func apply(to project: inout Project) {
         if let name { project.name = name }
         if let color { project.color = color }
@@ -94,7 +84,6 @@ public struct ProjectSettingsFile: Equatable, Sendable {
         if let githubURL { project.githubURL = githubURL }
     }
 
-    /// A file name for `project`'s export (upstream: non-alphanumerics become `-`).
     public static func suggestedFileName(for project: Project) -> String {
         let base = String(project.name.map { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "_" || $0 == "-") ? $0 : "-" })
         return "\(base.isEmpty ? "project" : base).alethe-project.json"

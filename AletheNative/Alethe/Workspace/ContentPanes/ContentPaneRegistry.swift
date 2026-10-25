@@ -4,10 +4,6 @@ import AVFoundation
 import Foundation
 import Observation
 
-/// Open file-backed panes (Markdown, image, video, diff, web, graph), one model per pane, kept while the pane exists so a
-/// draft or a scroll position survives layout changes. The terminal counterpart is
-/// `TerminalRegistry`. Orchestrator boards keep no model here: their state is the app's
-/// orchestrator service, shared by every board (P6-9).
 @MainActor
 final class ContentPaneRegistry {
     private var markdown: [PaneID: MarkdownFile] = [:]
@@ -29,7 +25,6 @@ final class ContentPaneRegistry {
         return page
     }
 
-    /// The system asks for memory back: hidden pages are released at once (upstream pressure rule).
     private func watchMemoryPressure() {
         guard memoryPressure == nil else { return }
         let source = DispatchSource.makeMemoryPressureSource(eventMask: [.warning, .critical], queue: .main)
@@ -82,7 +77,6 @@ final class ContentPaneRegistry {
         return file
     }
 
-    /// Closes the models of panes that no longer exist.
     func prune(keeping panes: Set<PaneID>) {
         for (pane, file) in markdown where !panes.contains(pane) {
             file.close()

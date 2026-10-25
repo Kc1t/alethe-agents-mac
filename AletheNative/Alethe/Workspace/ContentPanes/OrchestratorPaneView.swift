@@ -4,10 +4,6 @@ import AletheModel
 import AletheOrchestrator
 import SwiftUI
 
-/// Orchestrator board pane (upstream `OrchestratorPane/index.tsx`): the planners of this project as
-/// tabs, the open planner's runs and workers on the canvas, and the summary rail, live from the
-/// orchestrator service plus the planners' own subagents. With the orchestrator feature off it says
-/// so and offers to turn it on, since an imported or restored board can outlive the feature.
 struct OrchestratorPaneView: View {
     let project: ProjectID
     let isFocused: Bool
@@ -39,7 +35,6 @@ struct OrchestratorPaneView: View {
         }
         .background(theme[.bg])
         .task(id: isOn) {
-            // The core is prepared on first use: opening a board is a use.
             if isOn { _ = await environment.orchestrator.prepared() }
         }
         .onChange(of: inputs, initial: true) { _, inputs in
@@ -54,9 +49,6 @@ struct OrchestratorPaneView: View {
         .accessibilityIdentifier("orchestrator.pane")
     }
 
-    // MARK: Inputs
-
-    /// Everything the board derives from, except the clock: a new value re-derives off main.
     private struct Inputs: Equatable {
         var snapshot: OrchestratorSnapshot
         var subagents: [NativeSubagent]
@@ -91,16 +83,12 @@ struct OrchestratorPaneView: View {
         )
     }
 
-    // MARK: Planners
-
-    /// The planner's tab, when it is still open anywhere.
     private func plannerTab(_ id: String?) -> PaneTab? {
         guard let id else { return nil }
         return environment.workspace?.document.projects.lazy.flatMap(\.panes).flatMap(\.tabs)
             .first { $0.id.rawValue == id }
     }
 
-    /// The live tab name when the tab is open, else what the planner registered with.
     private func label(_ group: PlannerGroup) -> String? {
         guard group.id != nil else { return nil }
         if let tab = plannerTab(group.id) { return environment.terminals.displayName(of: tab) }
@@ -112,14 +100,12 @@ struct OrchestratorPaneView: View {
         return plannerTab(id) == nil
     }
 
-    /// Shows the planner's terminal tab (upstream `revealPlanner`).
     private func reveal(_ group: PlannerGroup) {
         guard let tab = plannerTab(group.id) else { return }
         environment.showingHome = false
         environment.workspace?.update { $0.activateTab(tab.id) }
     }
 
-    /// A local image opens in an image pane, anything else in a web pane.
     private func open(_ item: MediaItem) {
         switch item.kind {
         case .imageLocal:
@@ -128,8 +114,6 @@ struct OrchestratorPaneView: View {
             environment.open(.web(url: item.value, options: WebPaneOptions()), in: project)
         }
     }
-
-    // MARK: Layout
 
     private var header: some View {
         HStack(spacing: metrics.space(.s)) {
@@ -163,8 +147,6 @@ struct OrchestratorPaneView: View {
         .overlay(alignment: .bottom) { Rectangle().fill(theme[.borderSubtle]).frame(height: metrics.size(1)) }
     }
 
-    /// Upstream `counts`: the open planner's spend (P6-17), what waits on the person anywhere on
-    /// this board, and the core's slots.
     private var counts: some View {
         let snapshot = environment.orchestrator.snapshot
         let blocked = board.visibleJobs.filter { $0.status == .blocked }.count
@@ -212,7 +194,6 @@ struct OrchestratorPaneView: View {
                 }
             }
         } else {
-            // The first derivation has not landed yet.
             theme[.bgSunken]
         }
     }

@@ -5,16 +5,13 @@ public enum ThemeCatalogError: Error, Equatable {
     case invalidTheme(id: String, problems: [String])
 }
 
-/// Built-in themes bundled with the app, in picker order.
 public struct ThemeCatalog: Sendable {
-    /// Picker order, matching the Tauri app's `BUILTIN_THEME_OPTIONS`.
     public static let builtinOrder = [
         "elite-original", "elite-pure-black", "elite-indigo", "elite-blush",
         "dark", "light", "dracula", "nord", "gruvbox", "solarized", "tokyo-night", "vscode",
         "min-dark", "min-light", "catppuccin-frappe", "gruvbox-material",
     ]
     public static let defaultThemeID = "elite-indigo"
-    /// Theme used when a stored id is unknown (e.g. its plugin is disabled).
     public static let fallbackThemeID = "dark"
 
     public let themes: [Theme]
@@ -46,8 +43,6 @@ public struct ThemeCatalog: Sendable {
         self.themes = themes
     }
 
-    /// This catalog followed by the valid `contributed` themes (e.g. from plugins), for the picker.
-    /// A contribution whose id is already listed or that fails validation is dropped.
     public func merging(_ contributed: [Theme]) -> ThemeCatalog {
         var ids = Set(themes.map(\.id))
         var merged = themes
@@ -61,7 +56,6 @@ public struct ThemeCatalog: Sendable {
         themes.first { $0.id == id }
     }
 
-    /// The theme to apply for a stored preference; unknown ids fall back without touching the preference.
     public func resolved(id: String) -> Theme {
         theme(id: id) ?? theme(id: Self.fallbackThemeID) ?? themes[0]
     }

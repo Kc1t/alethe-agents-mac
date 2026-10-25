@@ -4,10 +4,6 @@ import AletheGit
 import AletheIntegrations
 @testable import AletheOrchestrator
 
-// Upstream `tests/orchestrator.rs` cases for steering, follow-ups, approvals and isolation (P6-7),
-// plus units. Workers are fake launchers (shell scripts); git runs on temporary repositories with
-// the user's and the system's git configuration shut out.
-
 private let gitEnvironment = ["GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1"]
 
 private func temporaryDirectory(_ tag: String) throws -> URL {
@@ -16,13 +12,10 @@ private func temporaryDirectory(_ tag: String) throws -> URL {
     return url
 }
 
-/// A worker that starts and never speaks the protocol (upstream `silent_launcher`).
 private func silentLauncher() -> Launcher {
     Launcher(kind: WorkerAgent.codex, program: URL(filePath: "/bin/sleep"), arguments: ["60"])
 }
 
-/// A fake `codex app-server` that opens (or resumes) a thread and reports each turn as
-/// "did <text>" after `turnSeconds`, so the order of turns shows in the deliveries.
 private func echoCodexLauncher(in folder: URL, turnSeconds: Int = 0) throws -> Launcher {
     let script = folder.appending(path: "echo-codex.sh")
     try """
@@ -44,8 +37,6 @@ private func echoCodexLauncher(in folder: URL, turnSeconds: Int = 0) throws -> L
     return Launcher(kind: WorkerAgent.codex, program: URL(filePath: "/bin/sh"), arguments: [script.path])
 }
 
-/// A fake `codex app-server` that stops on a command approval (rpc id 77) in its first turn and
-/// reports the decision it was given, and whether its thread was opened with the granular policy.
 private func askingCodexLauncher(in folder: URL) throws -> Launcher {
     let script = folder.appending(path: "asking-codex.sh")
     try """
@@ -68,7 +59,6 @@ private func askingCodexLauncher(in folder: URL) throws -> Launcher {
     return Launcher(kind: WorkerAgent.codex, program: URL(filePath: "/bin/sh"), arguments: [script.path])
 }
 
-/// A fake Claude headless worker: every user line is one turn that ends in a `result`.
 private func fakeClaudeLauncher() -> Launcher {
     let script = #"""
     while IFS= read -r line; do
@@ -90,7 +80,6 @@ private func makeCore(_ launchers: [Launcher] = []) -> OrchestratorCore {
     ))
 }
 
-/// One `tools/call` through the MCP transport (upstream `call`): the tool's JSON, or `{"error": …}`.
 private func call(_ core: OrchestratorCore, _ name: String, _ arguments: OrderedJSON) async throws -> OrderedJSONObject {
     let body: OrderedJSON = [
         "jsonrpc": "2.0", "id": 10, "method": "tools/call",
@@ -107,7 +96,6 @@ private func deliveryTexts(_ checked: OrderedJSONObject) -> [String] {
     checked["deliveries"]?.arrayValue?.compactMap { $0.objectValue?["text"]?.stringValue } ?? []
 }
 
-/// The refusal a core call ends in, or nil when it succeeded.
 private func refusal(_ operation: () async throws -> OrderedJSON) async -> String? {
     do {
         _ = try await operation()
@@ -117,7 +105,6 @@ private func refusal(_ operation: () async throws -> OrderedJSON) async -> Strin
     }
 }
 
-/// Polls the core until `condition` holds for job-01, at most 10 s.
 private func waitForJob(_ core: OrchestratorCore, _ jobID: String = "job-01",
                         _ condition: (Job) -> Bool) async throws -> Job {
     let deadline = ContinuousClock.now + .seconds(10)
@@ -146,7 +133,6 @@ private func git(_ arguments: [String], in folder: URL) throws -> String {
     return String(decoding: data, as: UTF8.self)
 }
 
-/// A repository with one commit holding `seed.txt`.
 private func seededRepository(_ tag: String) throws -> URL {
     let folder = try temporaryDirectory(tag)
     try git(["init", "-q"], in: folder)
@@ -168,7 +154,6 @@ private func removeRepository(_ folder: URL) {
 }
 
 @Suite(.timeLimit(.minutes(1))) struct OrchestratorFollowUpTests {
-    // Upstream `answering_is_refused_when_nothing_is_waiting`.
     @Test func answeringIsRefusedWhenNothingIsWaiting() async throws {
         let folder = try temporaryDirectory("answer")
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -185,14 +170,12 @@ private func removeRepository(_ folder: URL) {
         await core.shutdown()
     }
 
-    // Upstream `steering_an_unknown_job_is_refused`.
     @Test func steeringAnUnknownJobIsRefused() async throws {
         let core = makeCore()
         let result = try await call(core, "alethe_steer", ["jobId": "job-99", "message": "turn left"])
         #expect(result["error"]?.stringValue?.contains("unknown job") == true, "\(result)")
     }
 
-    // Upstream `isolating_outside_a_repository_says_so`.
     @Test func isolatingOutsideARepositorySaysSo() async throws {
         let folder = try temporaryDirectory("norepo")
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -204,7 +187,6 @@ private func removeRepository(_ folder: URL) {
         #expect(await core.snapshot().jobs.isEmpty, "a refused batch leaves no job behind")
     }
 
-    // Upstream `isolating_gives_each_worker_its_own_worktree`.
     @Test func isolatingGivesEachWorkerItsOwnWorktree() async throws {
         let repo = try seededRepository("isolate")
         defer { removeRepository(repo) }
@@ -225,7 +207,6 @@ private func removeRepository(_ folder: URL) {
             paths.append(path)
         }
         #expect(paths.count == 2 && paths[0] != paths[1], "both workers landed in the same directory")
-        // Each job works inside its worktree, on upstream's branch.
         #expect(await core.job("job-01")?.cwd == paths.first)
         #expect(await core.job("job-01")?.worktree == paths.first)
         try git(["rev-parse", "--verify", "refs/heads/alethe/agent-job-01"], in: repo)
@@ -238,7 +219,6 @@ private func removeRepository(_ folder: URL) {
     @Test func aHalfMadeBatchIsRolledBack() async throws {
         let repo = try seededRepository("rollback")
         defer { removeRepository(repo) }
-        // The second job's worktree folder is taken, so the batch fails after the first was made.
         try FileManager.default.createDirectory(
             at: repo.appending(path: ".alethe/worktrees/job-02"), withIntermediateDirectories: true)
         let core = makeCore([silentLauncher()])
@@ -254,7 +234,6 @@ private func removeRepository(_ folder: URL) {
         #expect(await core.snapshot().jobs.isEmpty, "nothing of the batch was accepted")
         #expect(await core.counts().queued == 0)
 
-        // The refused batch's ids stay spent, as upstream reserves them before the worktrees.
         let next = try await call(core, "alethe_delegate", ["cwd": .string(repo.path), "tasks": ["three"]])
         #expect(next["jobs"]?.arrayValue?.first?.objectValue?["id"] == "job-03", "\(next)")
         await core.shutdown()
@@ -270,7 +249,6 @@ private func removeRepository(_ folder: URL) {
 
         let folder = try temporaryDirectory("options")
         defer { try? FileManager.default.removeItem(at: folder) }
-        // No launcher: the job fails cleanly but keeps what it was asked to run with.
         let core = makeCore()
         let delegated = try await call(core, "alethe_delegate", [
             "tasks": ["x"], "cwd": .string(folder.path), "askForApproval": true, "webSearch": true,
@@ -332,13 +310,11 @@ private func removeRepository(_ folder: URL) {
         _ = try await call(core, "alethe_delegate", ["tasks": ["start"], "cwd": .string(folder.path)])
         _ = try await call(core, "alethe_check", ["wait": true, "timeoutMs": 10000])
 
-        // Parked: the process is still there, the message is its next turn right away.
         let sent = try await call(core, "alethe_send", ["jobId": "job-01", "message": "again"])
         #expect(sent["sent"] == "job-01", "\(sent)")
         var checked = try await call(core, "alethe_check", ["wait": true, "timeoutMs": 10000])
         #expect(deliveryTexts(checked) == ["did again"], "\(checked)")
 
-        // Released: the process is gone, the worker is started again on its thread.
         #expect(await core.release(["job-01"]) == ["job-01"])
         let revived = try await call(core, "alethe_send", ["jobId": "job-01", "message": "later"])
         #expect(revived["revived"] == "job-01", "\(revived)")

@@ -1,6 +1,5 @@
 import Foundation
 
-/// A counter with the last and summed value (upstream `MetricData`).
 public struct MetricData: Codable, Equatable, Hashable, Sendable {
     public var count: Int
     public var lastValue: Double
@@ -19,15 +18,9 @@ public struct MetricData: Codable, Equatable, Hashable, Sendable {
     }
 }
 
-/// Metrics and traces of the bus's events (upstream `telemetry.rs`): a count per event type
-/// (`alethe_event_<type lowercased>`); count, last and sum of the numeric `duration_ms`,
-/// `cost_usd` and `memory_mb` data fields (`alethe_metric_<field>`); the last 500 events, filterable
-/// by correlation id; and, when a logs folder is given, every event appended redacted to a rotating
-/// `telemetry.jsonl`. Actor-isolated, so file writes never happen on the main thread.
 public actor Telemetry {
     public static let traceLimit = 500
     public static let fileName = "telemetry.jsonl"
-    /// Fields of an event's data that feed metrics (upstream's list).
     public static let metricFields: Set<String> = ["duration_ms", "cost_usd", "memory_mb"]
 
     private var metricsByKey: [String: MetricData] = [:]
@@ -40,7 +33,6 @@ public actor Telemetry {
         file = logsDirectory.map(Self.log(in:))
     }
 
-    /// The telemetry file, rotated like `alethe.log`.
     public static func log(in directory: URL) -> RotatingLogFile {
         RotatingLogFile(url: directory.appending(path: fileName), maxBytes: 256 * 1024, keep: 3)
     }
@@ -48,14 +40,12 @@ public actor Telemetry {
     public static func eventKey(_ type: String) -> String { "alethe_event_\(type.lowercased())" }
     public static func metricKey(_ field: String) -> String { "alethe_metric_\(field)" }
 
-    /// Logs, counts and keeps one event (upstream's watcher loop body).
     public func record(_ event: BusEvent) {
         append(event)
         updateMetrics(event)
         addTrace(event)
     }
 
-    /// Records every event of `bus` until the returned task is cancelled or the bus finishes.
     public nonisolated func follow(_ bus: EventBus) async -> Task<Void, Never> {
         let stream = await bus.subscribe()
         return Task { [weak self] in
@@ -66,10 +56,8 @@ public actor Telemetry {
         }
     }
 
-    /// Upstream `get_telemetry_metrics`.
     public func metrics() -> [String: MetricData] { metricsByKey }
 
-    /// Upstream `get_telemetry_traces`: oldest first; only `correlationID`'s when given.
     public func traces(correlationID: String? = nil) -> [BusEvent] {
         guard let correlationID else { return ring }
         return ring.filter { $0.correlationID == correlationID }
@@ -78,7 +66,6 @@ public actor Telemetry {
     func updateMetrics(_ event: BusEvent) {
         metricsByKey[Self.eventKey(event.type), default: MetricData()].count += 1
         guard case .object(let fields) = event.data else { return }
-        // Sorted so the metrics update in a stable order (upstream iterates a JSON map).
         for field in fields.keys.sorted() where Self.metricFields.contains(field) {
             guard case .number(let value) = fields[field] else { continue }
             var metric = metricsByKey[Self.metricKey(field), default: MetricData()]
@@ -99,7 +86,6 @@ public actor Telemetry {
         file.append(line)
     }
 
-    /// One JSON line with every secret-looking value redacted.
     public static func line(for event: BusEvent) -> String? {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]

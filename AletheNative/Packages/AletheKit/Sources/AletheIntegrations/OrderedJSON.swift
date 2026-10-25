@@ -1,12 +1,8 @@
 import Foundation
 
-/// A JSON value that keeps object key order and number spelling, so an agent's config file can be
-/// edited and written back without reshuffling or reformatting what Alethe does not own
-/// (upstream uses `serde_json::Value` with `preserve_order`).
 public enum OrderedJSON: Hashable, Sendable {
     case null
     case bool(Bool)
-    /// The literal as written (`1`, `1.0`, `1e3`), never reformatted.
     case number(String)
     case string(String)
     case array([OrderedJSON])
@@ -46,8 +42,6 @@ public enum OrderedJSON: Hashable, Sendable {
     }
 }
 
-/// Object members in file order. Setting an existing key keeps its position; a new key is appended;
-/// removing a key shifts the rest (serde_json `shift_remove`), never swapping.
 public struct OrderedJSONObject: Hashable, Sendable, Sequence {
     public struct Member: Hashable, Sendable {
         public var key: String
@@ -85,11 +79,8 @@ public struct OrderedJSONObject: Hashable, Sendable, Sequence {
     public func makeIterator() -> IndexingIterator<[Member]> { members.makeIterator() }
 }
 
-// MARK: - Parsing
-
 public struct OrderedJSONParseError: Error, Equatable, Sendable, CustomStringConvertible {
     public var message: String
-    /// 1-based position of the offending character.
     public var line: Int
     public var column: Int
 
@@ -97,8 +88,6 @@ public struct OrderedJSONParseError: Error, Equatable, Sendable, CustomStringCon
 }
 
 extension OrderedJSON {
-    /// Parses strict JSON (RFC 8259). Duplicate keys keep the last value at the first position,
-    /// as serde_json does.
     public static func parse(_ text: String) throws(OrderedJSONParseError) -> OrderedJSON {
         var parser = Parser(bytes: Array(text.utf8))
         parser.skipWhitespace()
@@ -303,11 +292,7 @@ extension OrderedJSON {
     }
 }
 
-// MARK: - Rendering
-
 extension OrderedJSON {
-    /// Pretty output in serde_json's `to_string_pretty` shape: two-space indent, `"key": value`,
-    /// empty containers as `{}`/`[]`, slashes and non-ASCII unescaped.
     public func rendered() -> String {
         var output = ""
         render(into: &output, indent: 0)
@@ -363,10 +348,7 @@ extension OrderedJSON {
     }
 }
 
-// MARK: - Codable bridge
-
 extension OrderedJSON {
-    /// Encodes a model value (key order follows the encoder; sorted for a stable output).
     public init<Value: Encodable>(encoding value: Value) throws {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
@@ -378,10 +360,7 @@ extension OrderedJSON {
     }
 }
 
-// MARK: - Compact rendering, literals and numbers
-
 extension OrderedJSON {
-    /// Single-line output in serde_json's `to_string` shape: no whitespace, key order kept.
     public func compactRendered() -> String {
         var output = ""
         renderCompact(into: &output)
@@ -411,7 +390,6 @@ extension OrderedJSON {
         }
     }
 
-    /// serde_json's `as_u64`: only a non-negative integer literal qualifies.
     public var uint64Value: UInt64? {
         if case .number(let literal) = self { return UInt64(literal) }
         return nil
@@ -419,8 +397,6 @@ extension OrderedJSON {
 
     public static func unsigned(_ value: UInt64) -> OrderedJSON { .number(String(value)) }
 
-    /// A float as serde_json writes one (`1.0`, `0.25`); NaN and infinities become `null` like
-    /// `json!` does.
     public static func double(_ value: Double) -> OrderedJSON {
         guard value.isFinite else { return .null }
         if value == value.rounded(), abs(value) < 1e16 { return .number(String(Int64(value)) + ".0") }

@@ -4,10 +4,6 @@ import AletheOrchestrator
 import AppKit
 import SwiftUI
 
-/// The board canvas (upstream `board`/`world`): the P6-12 layout with its connectors and dot grid
-/// drawn by one SwiftUI `Canvas`, the node cards placed over it at their zoomed size (only those
-/// near the viewport), pan by dragging the background, pinch and button zoom, fit and focus.
-/// Screen point = (canvas point × scale + offset) × UI scale.
 struct BoardCanvasView: View {
     let board: OrchestratorBoardModel
     let group: PlannerGroup
@@ -20,8 +16,6 @@ struct BoardCanvasView: View {
     @State private var dragged = CGSize.zero
     @State private var magnified: CGFloat = 1
 
-    /// Nodes this far (canvas units) outside the viewport are still built, so panning never shows
-    /// a card popping in at the edge.
     private static let cullMargin: Double = 160
 
     var body: some View {
@@ -51,7 +45,6 @@ struct BoardCanvasView: View {
             .clipShape(Rectangle())
             .simultaneousGesture(magnify(ui: ui))
             .background(BoardWheelZoom { delta, point in
-                // OrchestratorPane/index.tsx: Cmd/Ctrl + wheel zooms by exp(-deltaY / 400) around the pointer.
                 board.zoom(by: exp(delta / 400), at: BoardPoint(x: point.x / ui, y: point.y / ui), animated: false)
             })
             .overlay(alignment: .bottomLeading) { hint }
@@ -67,8 +60,6 @@ struct BoardCanvasView: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("orchestrator.board")
     }
-
-    // MARK: Nodes
 
     @ViewBuilder
     private func nodes(units: BoardUnits, view: ViewTransform, ui: Double, viewport: CGSize) -> some View {
@@ -102,7 +93,6 @@ struct BoardCanvasView: View {
         }
     }
 
-    /// The viewport in canvas units, grown by the cull margin.
     private func visibleRect(view: ViewTransform, ui: Double, viewport: CGSize) -> BoardBox {
         let scale = max(view.scale, BoardLayout.minScale)
         let margin = Self.cullMargin
@@ -113,8 +103,6 @@ struct BoardCanvasView: View {
             height: viewport.height / ui / scale + margin * 2
         )
     }
-
-    // MARK: Gestures
 
     private func pan(ui: Double) -> some Gesture {
         DragGesture(minimumDistance: 2)
@@ -137,8 +125,6 @@ struct BoardCanvasView: View {
             }
             .onEnded { _ in magnified = 1 }
     }
-
-    // MARK: Overlays
 
     private var hint: some View {
         VStack(alignment: .leading, spacing: metrics.space(.xxs)) {
@@ -211,15 +197,10 @@ private extension BoardBox {
     }
 }
 
-// MARK: - Placement
-
-/// Where a node goes, in screen points relative to the canvas, and how wide it is.
 private struct BoardNodeFrame: LayoutValueKey {
     static let defaultValue = CGRect.zero
 }
 
-/// Places each node at its screen origin with its zoomed width; the height is the card's own.
-/// Layout-based placement (never `offset`) keeps every control's hit area where it is drawn.
 private struct BoardNodesLayout: Layout {
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         proposal.replacingUnspecifiedDimensions()
@@ -238,7 +219,6 @@ private struct BoardNodesLayout: Layout {
 }
 
 private extension View {
-    /// Places a card for `node` and reports its rendered height back to the layout.
     func boardNode(_ node: GraphNode, view: ViewTransform, ui: Double, units: BoardUnits,
                    board: OrchestratorBoardModel) -> some View {
         let unit = Double(units.unit)
@@ -258,10 +238,6 @@ private extension View {
     }
 }
 
-// MARK: - Connectors
-
-/// The dot grid and the connectors (upstream `.board` background and `svg.edges`), redrawn in one
-/// pass. A running connector's dashes flow unless motion is reduced.
 private struct BoardEdgesCanvas: View {
     let graph: BoardGraph
     let view: ViewTransform
@@ -295,7 +271,6 @@ private struct BoardEdgesCanvas: View {
 
     private func drawDots(in context: inout GraphicsContext, size: CGSize) {
         var spacing = BoardLayout.dotSpacing * unit
-        // Below this the texture turns into noise and costs more than it shows.
         while spacing < 10 { spacing *= 2 }
         let radius = max(0.6, unit * 0.8)
         let startX = (view.x * ui).truncatingRemainder(dividingBy: spacing) - spacing
@@ -393,10 +368,7 @@ private struct BoardEdgesCanvas: View {
     }
 }
 
-/// Cmd/Ctrl + scroll wheel over the board zooms it (upstream `onWheel` with `ctrlKey || metaKey`).
-/// A passive local monitor: the view never takes hits, and events outside its bounds pass through.
 private struct BoardWheelZoom: NSViewRepresentable {
-    /// Scroll delta (positive = content moves down, i.e. zoom in) and the pointer in view points, top-left origin.
     let onZoom: (Double, CGPoint) -> Void
 
     func makeNSView(context: Context) -> MonitorView {

@@ -2,7 +2,6 @@ import AletheDesign
 import AppKit
 import SwiftUI
 
-/// HomeView.module.css and AsciiEffect: cover fit, theme ink, flow and a fading lower edge.
 struct HomeBackdrop: View {
     @Environment(\.theme) private var theme
     @Environment(\.metrics) private var metrics
@@ -21,7 +20,6 @@ struct HomeBackdrop: View {
         let scale: CGFloat
     }
 
-    // AsciiEffect uses the width of Arial's M, with an eight-pixel line height.
     private var cellWidth: CGFloat {
         ("M" as NSString).size(withAttributes: [.font: NSFont(name: "Arial", size: metrics.size(8))
                                               ?? NSFont.systemFont(ofSize: metrics.size(8))]).width
@@ -54,7 +52,6 @@ struct HomeBackdrop: View {
         let ramp = Array(" .:-=+*#%@")
         let muted = theme.nsColor(.fgMuted).usingColorSpace(.deviceRGB) ?? theme.nsColor(.fgMuted)
         let foreground = theme.nsColor(.fg).usingColorSpace(.deviceRGB) ?? theme.nsColor(.fg)
-        // Resolve glyphs once per ink level, rather than measuring text for every cell.
         let glyphs = (0..<32).map { level in
             let mix = Double(level) / 31
             let ink = muted.blended(withFraction: mix, of: foreground) ?? foreground
@@ -67,7 +64,6 @@ struct HomeBackdrop: View {
         for row in 0..<sample.rows {
             let y = CGFloat(row) * height
             var line = context
-            // CSS mask: opaque through 70%, then fade; the bg overlay removes 32% of ink.
             line.opacity = opacity * 0.68 * min(1, max(0, (1 - y / size.height) / 0.3))
             for column in 0..<sample.columns {
                 let x = CGFloat(column) * width
@@ -121,7 +117,6 @@ struct HomeBackdrop: View {
             let index = (row * columns + column) * 4
             let alpha = Double(pixels[index + 3]) / 255
             guard alpha > 0 else { return 0 }
-            // CGContext stores premultiplied channels; undo that before applying web contrast.
             let luminance = (Double(pixels[index]) * 0.2126 + Double(pixels[index + 1]) * 0.7152
                              + Double(pixels[index + 2]) * 0.0722) / (255 * alpha)
             let contrasted = min(1, max(0, (luminance - 0.5) * 1.15 + 0.5))

@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// SidebarMergePanel.module.css actionBtn and its semantic action colors.
 public struct AletheGitMergeActionStyle: ButtonStyle {
     let foreground: ThemeToken
     let background: ThemeToken

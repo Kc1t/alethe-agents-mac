@@ -5,29 +5,22 @@ import MetricKit
 import Observation
 import UniformTypeIdentifiers
 
-/// What the after-crash notice shows: the run that did not exit cleanly and its crash records.
 struct CrashNotice: Hashable {
     var previous: SessionMarker
     var artifacts: [CrashArtifact]
 }
 
-/// Logs, diagnostics and the crash report (P5-11; upstream `logging.rs`, `crash_watch.rs`,
-/// `diagnostics.rs` `export_logs`, `AuditModal`). Nothing leaves the Mac unless the user exports it.
 @Observable
 @MainActor
 final class DiagnosticsController {
-    /// Recorded warnings and errors of this run, newest first.
     private(set) var recent: [DiagnosticEvent] = []
     private(set) var logsDirectory: URL?
-    /// The previous run's crash, when it did not exit cleanly.
     private(set) var crashNotice: CrashNotice?
 
     @ObservationIgnored private var marker: SessionMarkerStore?
     @ObservationIgnored private var metricKit: MetricKitCollector?
     @ObservationIgnored private var observer: (any NSObjectProtocol)?
 
-    /// Starts recording into `logs`, begins this run's session marker and, when the previous run
-    /// crashed, gathers its crash records for the notice.
     func start(logs: URL) async {
         guard logsDirectory == nil else { return }
         logsDirectory = logs
@@ -56,7 +49,6 @@ final class DiagnosticsController {
         crashNotice = CrashNotice(previous: crashed, artifacts: artifacts)
     }
 
-    /// Called as the app quits normally.
     func markCleanExit() {
         marker?.markCleanExit()
     }
@@ -65,15 +57,12 @@ final class DiagnosticsController {
         Diagnostics.shared.clearRecent()
     }
 
-    // MARK: - Actions (each one starts from an explicit user choice)
-
     func openLogsFolder() {
         guard let logsDirectory else { return }
         try? FileManager.default.createDirectory(at: logsDirectory, withIntermediateDirectories: true)
         NSWorkspace.shared.open(logsDirectory)
     }
 
-    /// Diagnostics › Export: the recorded warnings and errors as JSON (SET-11).
     func exportReport() {
         let date = Date.now.formatted(.iso8601.year().month().day())
         guard let destination = savePanel(name: "Alethe-diagnostics-\(date).json", type: .json) else { return }
@@ -85,8 +74,6 @@ final class DiagnosticsController {
         }
     }
 
-    /// Help › Export Logs…: this run's unified log, the warnings-and-errors file, the spawn log and
-    /// the session marker, redacted, in one zip.
     func exportLogs() {
         let date = Date.now.formatted(.iso8601.year().month().day())
         guard let destination = savePanel(name: "Alethe-logs-\(date).zip", type: .zip) else { return }
@@ -107,12 +94,10 @@ final class DiagnosticsController {
         }
     }
 
-    /// Opens a crash record in its default app (Console for `.ips`).
     func view(_ artifact: CrashArtifact) {
         NSWorkspace.shared.open(artifact.url)
     }
 
-    /// Saves a copy of a crash record where the user chooses (text is redacted like the logs).
     func export(_ artifact: CrashArtifact) {
         let type = UTType(filenameExtension: artifact.url.pathExtension) ?? .data
         guard let destination = savePanel(name: artifact.url.lastPathComponent, type: type) else { return }
@@ -140,8 +125,6 @@ final class DiagnosticsController {
         return panel.runModal() == .OK ? panel.url : nil
     }
 
-    /// Writes the files into a temporary folder and zips it (the file coordinator's `.forUploading`
-    /// read produces a zip of a folder).
     nonisolated private static func zip(_ files: [(name: String, data: Data)], to destination: URL) throws {
         let fileManager = FileManager.default
         let staging = fileManager.temporaryDirectory.appending(path: "alethe-logs-\(UUID().uuidString)", directoryHint: .isDirectory)
@@ -162,8 +145,6 @@ final class DiagnosticsController {
     }
 }
 
-/// Saves MetricKit diagnostic payloads that carry crash diagnostics into `logs/metrickit/`, where the
-/// after-crash notice finds them. MetricKit delivers them at the next launch.
 final class MetricKitCollector: NSObject, MXMetricManagerSubscriber, @unchecked Sendable {
     private let directory: URL
 
@@ -187,7 +168,6 @@ final class MetricKitCollector: NSObject, MXMetricManagerSubscriber, @unchecked 
             let file = directory.appending(path: "crash-\(stamp).json")
             guard !FileManager.default.fileExists(atPath: file.path) else { continue }
             try? payload.jsonRepresentation().write(to: file, options: .atomic)
-            // Dated by the crash, not by this launch, so an old payload never reads as a new crash.
             try? FileManager.default.setAttributes([.modificationDate: payload.timeStampEnd], ofItemAtPath: file.path)
         }
     }

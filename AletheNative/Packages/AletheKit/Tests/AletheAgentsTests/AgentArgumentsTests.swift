@@ -1,7 +1,6 @@
 import Testing
 @testable import AletheAgents
 
-/// Ported from upstream `src/lib/sessionLaunch.test.ts`.
 @Suite struct AgentArgumentsTests {
     @Test func newClaudePanesGetDistinctSessionIDs() {
         let first = AgentArguments.build(for: .claude, base: ["--dangerously-skip-permissions"]) { "id-1" }
@@ -62,7 +61,6 @@ import Testing
     }
 }
 
-/// Model picker (P3-5; upstream `is_valid_model_id` cases).
 @Suite struct ModelDiscoveryTests {
     @Test func acceptsModelIDsAndRejectsCLIProse() {
         for id in ["claude-sonnet-4-5", "gpt-5", "o3-mini", "model-error-free", "anthropic/claude-sonnet-4"] {

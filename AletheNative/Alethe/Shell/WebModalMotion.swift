@@ -1,8 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// src/components/modals/Modal.module.css: modalFadeIn/Out on the backdrop, modalSpringPop/Out on the
-/// dialog, and the `clean` visual style's cleanModalIn/Out. One definition serves every web overlay.
 enum WebModalMotion {
     static func backdrop(visible: Bool, clean: Bool, reduceMotion: Bool) -> Animation? {
         guard !reduceMotion else { return nil }
@@ -18,7 +16,6 @@ enum WebModalMotion {
                        : .timingCurve(0.4, 0, 0.2, 1, duration: 0.15)
     }
 
-    /// Resting-state offsets from the centred position, as a fraction of the dialog height, and scale.
     static func hidden(opening: Bool, clean: Bool) -> (offset: CGFloat, scale: CGFloat) {
         if clean { return (0.02, 1) }
         return opening ? (0.05, 0.92) : (0.04, 0.94)
@@ -57,12 +54,10 @@ private struct WebModalBackdropMotion: ViewModifier {
 }
 
 extension View {
-    /// Web dialog enter/exit: spring pop (or the clean fade-slide). `closing` selects the exit offsets.
     func webModalContentMotion(visible: Bool, closing: Bool = false) -> some View {
         modifier(WebModalContentMotion(visible: visible, closing: closing))
     }
 
-    /// Web backdrop fade (modalFadeIn/Out).
     func webModalBackdropMotion(visible: Bool) -> some View {
         modifier(WebModalBackdropMotion(visible: visible))
     }

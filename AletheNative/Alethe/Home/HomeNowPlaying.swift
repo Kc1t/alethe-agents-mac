@@ -2,7 +2,6 @@ import AletheDesign
 import AletheIntegrations
 import SwiftUI
 
-/// NowPlayingWidget.tsx and the homePlayerDock overrides in HomeView.module.css.
 struct WebHomeNowPlaying: View {
     var homeDockInfoWidth: CGFloat = .infinity
     @Environment(AppEnvironment.self) private var environment

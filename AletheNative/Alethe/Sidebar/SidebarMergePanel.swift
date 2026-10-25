@@ -5,15 +5,11 @@ import AletheMerge
 import AletheModel
 import SwiftUI
 
-/// In-progress merge environments of a project's repository, read from the Merge Center metadata
-/// (`.alethe/merge-envs/<id>.json`). Polls the folder (no git) while the sidebar row is visible.
 @MainActor @Observable
 final class ProjectMergeWatcher {
     private(set) var sessions: [MergeSessionSummary] = []
     static let interval: Duration = .seconds(4)
 
-    /// Refreshes until the calling task is cancelled; sessions of other projects sharing the
-    /// repository are left out.
     func watch(folder: URL, projectID: ProjectID) async {
         guard let root = try? await GitRepository.discover(folder) else { return }
         while !Task.isCancelled {
@@ -25,9 +21,6 @@ final class ProjectMergeWatcher {
     }
 }
 
-/// Compact merge panel under a project in the left sidebar (upstream `SidebarMergePanel` /
-/// `MergeTree`): the merge, its stage, and its conflicted files as a tree grouped by folder or by
-/// class. Clicking reopens the Merge Center at that stage.
 struct SidebarMergePanel: View {
     let session: MergeSessionSummary
     let project: Project
@@ -42,8 +35,6 @@ struct SidebarMergePanel: View {
         if metrics.isWebInterface { webCard } else { nativeBody }
     }
 
-    /// `SidebarMergePanel.module.css` `.container`/`.card`: a panel card with a mono branch name, a
-    /// status tag and the conflicted files as a custom collapsible tree.
     private var webCard: some View {
         let groups = MergeTree.groups(session.conflicts, by: grouping)
         let tone: ThemeToken = session.conflicts.isEmpty ? .statusWorking : .statusWaiting
@@ -215,8 +206,6 @@ struct SidebarMergePanel: View {
     }
 }
 
-/// A worktree's GSD planning status under its project (upstream `SidebarMergePanel` planning gate,
-/// P5-24): the child session's state and the roadmap progress; clicking opens its activity.
 struct SidebarPlanningStatus: View {
     let session: GSDSyncSession
     @Environment(AppEnvironment.self) private var environment

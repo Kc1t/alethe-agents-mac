@@ -3,7 +3,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// SetupWalkthrough.tsx's two-step checklist; native onboarding stays separate.
 struct WebHomeSetup: View {
     let workspace: WorkspaceModel
     @Environment(AppEnvironment.self) private var environment

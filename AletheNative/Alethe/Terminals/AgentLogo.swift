@@ -2,8 +2,6 @@ import AletheDesign
 import AppKit
 import SwiftUI
 
-/// An agent's brand logo (upstream `AgentIcon`, `src/components/icons/AgentIcons.tsx`), drawn at a
-/// square size. Agents without a bundled logo fall back to an SF Symbol tinted with the agent color.
 struct AgentLogo: View {
     let agent: String
     var size: CGFloat = 16
@@ -43,7 +41,6 @@ struct AgentLogo: View {
         return Image(asset.name)
     }
 
-    /// AppKit menus can use a bitmap's intrinsic dimensions despite the SwiftUI label frame.
     @MainActor static func menuImage(for agent: String, isLight: Bool, side: CGFloat) -> NSImage? {
         guard let asset = asset(for: agent, isLight: isLight) else { return nil }
         return menuImage(named: asset.name, template: asset.template, side: side)
@@ -53,7 +50,6 @@ struct AgentLogo: View {
         let key = "\(name):\(template):\(side)" as NSString
         if let cached = menuImages.object(forKey: key) { return cached }
         guard let source = NSImage(named: name) else { return nil }
-        // Redraw rather than resizing metadata: AppKit menus can pick a full-size source representation.
         let bounds = NSRect(x: 0, y: 0, width: side, height: side)
         let image = NSImage(size: bounds.size)
         image.lockFocus()
@@ -77,7 +73,6 @@ struct AgentLogo: View {
         let template: Bool
     }
 
-    /// Asset catalog image for an agent id (`AgentKind.rawValue`), nil when none is bundled.
     static func asset(for agent: String, isLight: Bool) -> Asset? {
         switch agent {
         case "claude": Asset(name: "AgentLogo-claude", template: false)

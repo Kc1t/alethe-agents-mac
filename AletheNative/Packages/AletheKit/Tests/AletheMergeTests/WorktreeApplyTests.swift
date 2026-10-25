@@ -3,12 +3,7 @@ import Foundation
 import Testing
 @testable import AletheMerge
 
-/// P6-16: applying a worker's worktree — step order and stop points over stub operations (U), and
-/// the real pipeline on throwaway repositories (G).
 struct WorktreeApplyTests {
-    // MARK: U — stubs
-
-    /// Records every operation in call order; `analysisClean`/`finalizeOutcome` steer the path.
     final class Stub: @unchecked Sendable {
         private let lock = NSLock()
         private var log: [String] = []
@@ -126,8 +121,6 @@ struct WorktreeApplyTests {
         #expect(stub.calls.last == "abort:env1")
     }
 
-    /// Cancelling while a step runs lets that step finish and stops before the next one; once the
-    /// merge step starts the apply completes.
     @Test(arguments: WorktreeApplyStep.allCases)
     func cancelStopsAtTheNextBoundary(_ step: WorktreeApplyStep) async throws {
         let stub = Stub()
@@ -165,15 +158,12 @@ struct WorktreeApplyTests {
         var all: [WorktreeApplyStep] { lock.withLock { steps } }
     }
 
-    // MARK: G — throwaway repositories
-
     static let runner = GitRunner(environment: ["GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1"])
 
     static func git(_ dir: URL, _ args: String...) async throws -> String {
         try await runner.run(args, in: dir).text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    /// `main` with `a.txt`, and job `job-1`'s worktree on `alethe/agent-job-1`.
     static func repoWithWorktree() async throws -> (root: URL, worktree: URL) {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("alethe-apply-\(UUID().uuidString)", isDirectory: true)

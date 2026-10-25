@@ -1,15 +1,11 @@
 import Foundation
 
-/// File-change reconciliation for a running pane. Unlike initial discovery, this continues after
-/// an id has been assigned and notices writes to an older conversation after an in-CLI resume.
 public struct SessionWatch: Sendable {
     private var previous: [String: Date]?
     private var currentID: String?
 
     public init() {}
 
-    /// An ambiguous directory update cannot identify a pane. Hooks remain authoritative, and a
-    /// conversation held by another pane is never adopted based on modification time alone.
     public mutating func reconcile(sessions: [SessionSnapshot], currentID: String?,
                                    startedAt: Date, claimedByOthers: Set<String>) -> String? {
         let snapshot = Dictionary(sessions.map { ($0.id, $0.modifiedAt) }, uniquingKeysWith: max)
@@ -25,7 +21,6 @@ public struct SessionWatch: Sendable {
         return changed.first?.id
     }
 
-    /// Includes Claude for continuous tracking; initial discovery used a preassigned launch UUID.
     public static func snapshot(_ kind: AgentKind, cwd: String, executable: String? = nil,
                                 homeDirectory: String = NSHomeDirectory()) async -> [SessionSnapshot] {
         switch kind {

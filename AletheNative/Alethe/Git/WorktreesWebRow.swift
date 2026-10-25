@@ -1,7 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// SidebarMergePanel.module.css card and branchHeader, retaining native worktree actions.
 struct GitWorktreeWebRow: View {
     let row: WorktreesModel.Row
     let selected: Bool

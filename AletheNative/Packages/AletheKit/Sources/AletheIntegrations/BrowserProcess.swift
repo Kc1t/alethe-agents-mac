@@ -1,7 +1,6 @@
 import Darwin
 import Foundation
 
-/// The browser, started as the leader of its own process group so its helpers go with it.
 final class BrowserProcess: @unchecked Sendable {
     let pid: pid_t
     private let lock = NSLock()
@@ -11,7 +10,6 @@ final class BrowserProcess: @unchecked Sendable {
         self.pid = pid
     }
 
-    /// `executable arguments…` with stdio on `/dev/null`, no inherited descriptors, default signals.
     static func spawn(_ executable: URL, arguments: [String]) throws(BrowserSessionError) -> BrowserProcess {
         var actions: posix_spawn_file_actions_t?
         posix_spawn_file_actions_init(&actions)
@@ -43,7 +41,6 @@ final class BrowserProcess: @unchecked Sendable {
         return BrowserProcess(pid: pid)
     }
 
-    /// Whether the browser still runs (reaps it once it exited).
     var isRunning: Bool {
         lock.lock()
         defer { lock.unlock() }
@@ -57,8 +54,6 @@ final class BrowserProcess: @unchecked Sendable {
         return true
     }
 
-    /// SIGTERM to the group first so the profile is written cleanly, then after `grace` SIGKILL to
-    /// every descendant (children first) and the group; the leader is reaped.
     func terminate(grace: TimeInterval = 1.5) {
         if isRunning {
             Darwin.kill(-pid, SIGTERM)
@@ -66,7 +61,6 @@ final class BrowserProcess: @unchecked Sendable {
             while isRunning, Date() < deadline { usleep(50_000) }
         }
         let running = isRunning
-        // Once reaped the leader's pid may be reused: only its group (kept by any survivor) is signalled.
         let tree = ProcessTable.descendants(of: pid, parents: ProcessTable.parents())
         for member in tree.reversed() where member != pid || running {
             Darwin.kill(member, SIGKILL)
@@ -81,14 +75,11 @@ final class BrowserProcess: @unchecked Sendable {
     }
 }
 
-/// This user's processes, from `sysctl` (no private API, no `ps`).
 enum ProcessTable {
-    /// Parent of every process of this user.
     static func parents() -> [pid_t: pid_t] {
         Dictionary(processes().map { ($0.kp_proc.p_pid, $0.kp_eproc.e_ppid) }, uniquingKeysWith: { first, _ in first })
     }
 
-    /// `root` and every descendant, parents before children.
     static func descendants(of root: pid_t, parents: [pid_t: pid_t]) -> [pid_t] {
         var children: [pid_t: [pid_t]] = [:]
         for (pid, parent) in parents where pid != parent { children[parent, default: []].append(pid) }
@@ -118,7 +109,6 @@ enum ProcessTable {
         return Array(procs.prefix(size / MemoryLayout<kinfo_proc>.stride))
     }
 
-    /// Executable path and argv of `pid` (`KERN_PROCARGS2`); nil when it is gone or not readable.
     static func commandLine(of pid: pid_t) -> (executable: String, arguments: [String])? {
         var mib: [Int32] = [CTL_KERN, KERN_PROCARGS2, pid]
         var size = 0
@@ -128,8 +118,6 @@ enum ProcessTable {
         return parseProcArgs(Array(buffer.prefix(size)))
     }
 
-    /// `KERN_PROCARGS2` layout: `argc` (Int32), the executable path, NUL padding, then `argc`
-    /// NUL-terminated arguments (the environment follows and is ignored).
     static func parseProcArgs(_ bytes: [UInt8]) -> (executable: String, arguments: [String])? {
         let countSize = MemoryLayout<Int32>.size
         guard bytes.count > countSize else { return nil }
@@ -153,7 +141,6 @@ enum ProcessTable {
     }
 }
 
-/// Calls `body` with a NULL-terminated C array of `strings`, valid for the call's duration.
 private func withCStrings<R>(_ strings: [String], _ body: ([UnsafeMutablePointer<CChar>?]) -> R) -> R {
     let pointers = strings.map { strdup($0) } + [nil]
     defer { pointers.forEach { free($0) } }

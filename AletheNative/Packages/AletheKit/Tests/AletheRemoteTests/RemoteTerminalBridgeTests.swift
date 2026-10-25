@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheRemote
 
-/// A stand-in for the app's terminal registry: running tabs record what is typed into them.
 final class FakeRegistry: @unchecked Sendable {
     private let lock = NSLock()
     private var typed: [String: Data] = [:]
@@ -94,7 +93,6 @@ final class FakeRegistry: @unchecked Sendable {
         registry.scrollback = Data("aé€😀z".utf8)
         let bridge = RemoteTerminalBridge(backend: registry.backend)
 
-        // "😀z" is 5 bytes; 6 bytes cut into the middle of "€" (3 bytes), whose tail is dropped.
         #expect(await bridge.scrollbackTail(terminalID: "tab-1", maxBytes: 6) == "😀z")
         #expect(await bridge.scrollbackTail(terminalID: "tab-1", maxBytes: 8) == "€😀z")
         #expect(await bridge.scrollbackTail(terminalID: "tab-1", maxBytes: 1_000) == "aé€😀z")
@@ -161,7 +159,6 @@ final class Received: @unchecked Sendable {
     var count: Int { values.count }
 }
 
-/// Polls `condition` for up to two seconds.
 func eventuallyTrue(_ condition: @Sendable () -> Bool) async -> Bool {
     for _ in 0..<40 {
         if condition() { return true }

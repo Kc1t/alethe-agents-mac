@@ -1,13 +1,8 @@
 import Darwin
 import Foundation
 
-/// A shell command started as the leader of its own process group, so everything it starts can be
-/// killed with it (a dev server's children survive a signal to the shell alone). Same approach as
-/// `AletheTerminal.ProcessTree`, which this target cannot import: SIGKILL the descendants found via
-/// `sysctl`, children first, then the whole group.
 final class GroupProcess: @unchecked Sendable {
     let pid: pid_t
-    /// Read end of the combined stdout/stderr pipe.
     let output: FileHandle
     private let lock = NSLock()
     private var status: Int32?
@@ -17,13 +12,10 @@ final class GroupProcess: @unchecked Sendable {
         self.output = output
     }
 
-    /// `shell -c command` in `directory` with `environment`; stdin is `/dev/null`.
     static func spawn(shell: URL, command: String, directory: URL, environment: [String: String]) throws -> GroupProcess {
         var fds: [Int32] = [0, 0]
         guard pipe(&fds) == 0 else { throw HealthProbeError.spawnFailed("pipe") }
         let (readEnd, writeEnd) = (fds[0], fds[1])
-        // Close-on-exec at once: a process spawned elsewhere meanwhile must not inherit the write end,
-        // or reading this pipe to its end would wait for that unrelated process.
         _ = fcntl(readEnd, F_SETFD, FD_CLOEXEC)
         _ = fcntl(writeEnd, F_SETFD, FD_CLOEXEC)
 
@@ -38,7 +30,6 @@ final class GroupProcess: @unchecked Sendable {
         var attributes: posix_spawnattr_t?
         posix_spawnattr_init(&attributes)
         defer { posix_spawnattr_destroy(&attributes) }
-        // New group led by the child; no inherited descriptors; default signal state.
         posix_spawnattr_setpgroup(&attributes, 0)
         var noSignals = sigset_t()
         sigemptyset(&noSignals)
@@ -65,7 +56,6 @@ final class GroupProcess: @unchecked Sendable {
         return GroupProcess(pid: pid, output: FileHandle(fileDescriptor: readEnd, closeOnDealloc: true))
     }
 
-    /// Whether the group leader is still running (reaps it once it exits).
     var isRunning: Bool {
         lock.lock()
         defer { lock.unlock() }
@@ -76,10 +66,8 @@ final class GroupProcess: @unchecked Sendable {
         return true
     }
 
-    /// SIGKILLs the leader's descendants, the leader and its whole group, then reaps the leader.
     func killTree() {
         let running = isRunning
-        // Once reaped the leader's pid may be reused: only its group (still owned by any survivor) is signalled.
         let tree = Self.descendants(of: pid, parents: Self.currentParents())
         for member in tree.reversed() where member != pid || running {
             Darwin.kill(member, SIGKILL)
@@ -93,9 +81,6 @@ final class GroupProcess: @unchecked Sendable {
         }
     }
 
-    // MARK: Process tree (mirrors AletheTerminal.ProcessTree)
-
-    /// `root` and every descendant, parents before children.
     static func descendants(of root: pid_t, parents: [pid_t: pid_t]) -> [pid_t] {
         var children: [pid_t: [pid_t]] = [:]
         for (pid, parent) in parents where pid != parent { children[parent, default: []].append(pid) }
@@ -111,7 +96,6 @@ final class GroupProcess: @unchecked Sendable {
         return result
     }
 
-    /// Parent of every process of this user, from `sysctl(KERN_PROC_UID)`.
     static func currentParents() -> [pid_t: pid_t] {
         var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_UID, Int32(bitPattern: getuid())]
         var size = 0
@@ -127,7 +111,6 @@ final class GroupProcess: @unchecked Sendable {
     }
 }
 
-/// Calls `body` with a NULL-terminated C array of `strings`, valid for the call's duration.
 private func withCStrings<R>(_ strings: [String], _ body: ([UnsafeMutablePointer<CChar>?]) -> R) -> R {
     let pointers = strings.map { strdup($0) } + [nil]
     defer { pointers.forEach { free($0) } }

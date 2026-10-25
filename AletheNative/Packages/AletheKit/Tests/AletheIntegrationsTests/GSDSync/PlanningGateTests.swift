@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheIntegrations
 
-/// A temporary checkout: a folder with a `.git` entry (no git process needed).
 func makeCheckout(_ label: String) -> URL {
     let root = FileManager.default.temporaryDirectory
         .appending(path: "AletheGSDTests-\(label)-\(UUID().uuidString)", directoryHint: .isDirectory)
@@ -16,7 +15,6 @@ func writeFile(_ root: URL, _ relativePath: String, _ text: String) throws {
     try Data(text.utf8).write(to: url)
 }
 
-// Upstream `planning_gate.rs` tests.
 @Suite(.timeLimit(.minutes(1))) struct PlanningGateStatusTests {
     @Test func noPlanningFolderMeansNotStarted() {
         let root = makeCheckout("no-planning")
@@ -119,7 +117,6 @@ func writeFile(_ root: URL, _ relativePath: String, _ text: String) throws {
         let folder = FileManager.default.temporaryDirectory.appending(path: "AletheGSDTests-none-\(UUID().uuidString)")
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
-        // The temporary folder is not inside a repository on any sane machine.
         #expect(PlanningGate.repositoryRoot(containing: folder) == nil)
     }
 }

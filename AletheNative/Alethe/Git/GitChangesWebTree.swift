@@ -3,9 +3,6 @@ import AletheGit
 import AppKit
 import SwiftUI
 
-/// Web changes tree (`plugins/git-control/GitControl.tsx` `ChangeGroup` / `TreeNodeView` +
-/// `GitControl.module.css`): files nested by folder (single-child folders collapsed), with stage /
-/// discard at group, folder and file level.
 indirect enum GitWebTreeNode: Identifiable {
     case dir(name: String, path: String, children: [GitWebTreeNode])
     case file(name: String, entry: GitStatusEntry)
@@ -24,7 +21,6 @@ indirect enum GitWebTreeNode: Identifiable {
         }
     }
 
-    /// `buildTree`.
     static func build(_ entries: [GitStatusEntry]) -> [GitWebTreeNode] {
         final class Dir {
             var name: String, path: String
@@ -57,7 +53,6 @@ indirect enum GitWebTreeNode: Identifiable {
         return convert(root).map(compress).sorted(by: compare)
     }
 
-    /// `compress`: a folder holding a single folder is shown as `a/b`.
     private static func compress(_ node: GitWebTreeNode) -> GitWebTreeNode {
         guard case .dir(var name, var path, var children) = node else { return node }
         while children.count == 1, case .dir(let childName, let childPath, let grandchildren) = children[0] {
@@ -73,7 +68,6 @@ indirect enum GitWebTreeNode: Identifiable {
         return a.name.localizedCompare(b.name) == .orderedAscending
     }
 
-    /// `collectPaths`.
     var paths: [String] {
         switch self {
         case .file(_, let entry): [entry.path]
@@ -82,7 +76,6 @@ indirect enum GitWebTreeNode: Identifiable {
     }
 }
 
-/// One group of the changes list (`ChangeGroup`).
 struct GitWebChangeGroup: View {
     enum Kind { case staged, changes, untracked, conflicts }
 
@@ -253,7 +246,6 @@ private struct GitWebTreeRow: View {
         }
     }
 
-    /// `statusChar` / `statusClass`.
     private func statusLetter(_ entry: GitStatusEntry) -> (String, ThemeToken) {
         if kind == .untracked { return ("U", .statusWorking) }
         if kind == .conflicts { return ("!", .statusOffline) }
@@ -270,7 +262,6 @@ private struct GitWebTreeRow: View {
     }
 }
 
-/// `.iconButton` / `.groupActions button` / `.fileActions button`: a square muted glyph with a hover fill.
 struct GitWebIconButton: View {
     let symbol: String
     let size: CGFloat

@@ -33,7 +33,6 @@ extension ProjectColor {
         }
     }
 
-    /// Rotates through the palette so consecutive new projects differ.
     static func next(after count: Int) -> ProjectColor {
         allCases[count % allCases.count]
     }

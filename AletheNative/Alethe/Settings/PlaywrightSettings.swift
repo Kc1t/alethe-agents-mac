@@ -3,8 +3,6 @@ import AletheIntegrations
 import AletheModel
 import SwiftUI
 
-/// Settings › Features › Playwright Browser (upstream `FeaturesPage` sub-panel): shared or dedicated
-/// browser, headless choices, and the shared browser's status with Start and Stop.
 struct PlaywrightOptions: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics
@@ -99,7 +97,6 @@ struct PlaywrightOptions: View {
                 .accessibilityIdentifier("settings.playwright.status")
         }
         .task {
-            // A headed browser can be quit by the user at any time.
             while !Task.isCancelled {
                 browser.refresh()
                 try? await Task.sleep(for: .seconds(2))

@@ -2,18 +2,6 @@ import AletheTerminal
 import AppKit
 import Foundation
 
-/// P0-6 measurement hooks, driven by launch arguments (debug builds only):
-///   -AletheSpikeCommand "<cmd>"   run <cmd> through the login shell instead of an interactive shell
-///   -AletheSpikeDump <path>       write the viewport text to <path> twice a second
-///   -AletheSpikeScript <path>     run the scripted input below, then quit
-///
-/// Input is injected with `NSWindow.sendEvent` into this app's own window — the same path real key
-/// events take (key equivalents, then the first responder) — so nothing reaches other apps.
-///
-/// Script lines:
-///   wait <ms>                    type <text>                 key <name> [cmd|shift|ctrl|opt]...
-///   ime-mark <text>              ime-commit <text>           search <text> | search-next | search-end
-///   dump <path>                  latency <count> <path>      dead <key> [shift]      quit
 enum TerminalSpike {
     static func launch() -> PTYLaunch {
         #if DEBUG
@@ -68,7 +56,6 @@ private struct SpikeScript {
                 let words = argument.split(separator: " ").map(String.init)
                 if let name = words.first { sendKey(name, modifiers: Set(words.dropFirst())) }
             case "dead":
-                // A dead key as the hardware sends it: key code only, no characters of its own.
                 let words = argument.split(separator: " ").map(String.init)
                 if let name = words.first, let character = name.first, let code = Self.keyCodes[character] {
                     post(code: code, characters: "", ignoring: String(character),
@@ -99,9 +86,6 @@ private struct SpikeScript {
         }
     }
 
-    // MARK: - Events
-
-    /// US-layout virtual key codes for the characters scripts type.
     private static let keyCodes: [Character: UInt16] = {
         var map: [Character: UInt16] = [
             "a": 0, "s": 1, "d": 2, "f": 3, "h": 4, "g": 5, "z": 6, "x": 7, "c": 8, "v": 9, "b": 11,
@@ -161,10 +145,6 @@ private struct SpikeScript {
         }
     }
 
-    // MARK: - Latency
-
-    /// Key event → bytes written to the PTY (the app's own input latency), and key event → echo
-    /// read back from the PTY (adds the shell's round trip).
     private func measureLatency(count: Int, path: String) async {
         let probe = LatencyProbe()
         let inputID = pane.tap.observeInput { _ in probe.markInput() }

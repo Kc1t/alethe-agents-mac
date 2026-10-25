@@ -1,19 +1,14 @@
 import Foundation
 
-/// A config file as it was read: its bytes and modification date, or its absence.
 public struct ConfigFileSnapshot: Sendable, Equatable {
     public let url: URL
-    /// `nil` when the file did not exist.
     public let contents: Data?
     public let modificationDate: Date?
 
     public var exists: Bool { contents != nil }
-    /// The contents as UTF-8 text; empty for a missing file.
     public var text: String { contents.map { String(decoding: $0, as: UTF8.self) } ?? "" }
 }
 
-/// Where a file's backups go: `<profile>/config-backups/<agent>-<kind>/`, e.g. `claude-user`,
-/// `codex-project` (upstream `mcp_store.rs` names backups `<agent>-<kind>-<ms>.<ext>`).
 public struct ConfigBackupSlot: Hashable, Sendable {
     public let agent: String
     public let kind: String
@@ -25,7 +20,6 @@ public struct ConfigBackupSlot: Hashable, Sendable {
 
     public var name: String { "\(agent)-\(kind)" }
 
-    /// Keeps names to one path component of `[a-z0-9_]`.
     private static func sanitize(_ value: String) -> String {
         let cleaned = value.lowercased().unicodeScalars.map { scalar -> Character in
             switch scalar {
@@ -48,27 +42,17 @@ public struct ConfigBackup: Hashable, Sendable, Identifiable {
 
 public struct ConfigWriteReport: Sendable, Equatable {
     public let url: URL
-    /// The copy of the previous contents; `nil` when the file did not exist.
     public let backup: ConfigBackup?
 }
 
 public enum ConfigFileError: Error, Equatable, Sendable {
-    /// The file on disk is not the one that was read: someone edited, created or removed it.
-    /// Nothing was written; re-read and apply the change again.
     case changedSinceRead(URL)
     case unreadable(URL, String)
     case backupFailed(URL, String)
     case writeFailed(URL, String)
 }
 
-/// Reads and writes the agents' config files that live outside the profile (`~/.claude.json`,
-/// `.mcp.json`, `~/.codex/config.toml`, …). Upstream `mcp_store.rs` `backup`/`prune_backups`/
-/// `atomic_write`, plus a guard upstream lacks: a write is refused when the file changed since it
-/// was read, so an outside edit is never overwritten blind.
-///
-/// Every method does file I/O synchronously; call it off the main thread.
 public struct ConfigFileWriter: Sendable {
-    /// Upstream `MAX_BACKUPS`, per slot.
     public static let maxBackups = 10
     public static let backupsFolderName = "config-backups"
 
@@ -83,8 +67,6 @@ public struct ConfigFileWriter: Sendable {
         self.backupRoot = backupRoot
         self.now = now
     }
-
-    // MARK: Reading
 
     public func read(_ url: URL) throws(ConfigFileError) -> ConfigFileSnapshot {
         let target = Self.resolved(url)
@@ -101,12 +83,6 @@ public struct ConfigFileWriter: Sendable {
         }
     }
 
-    // MARK: Writing
-
-    /// Writes `data` over the file `snapshot` was read from: re-reads it and refuses when it changed,
-    /// backs up the current contents into `slot` (pruned to `maxBackups`), then writes atomically
-    /// (temporary sibling renamed over the file, keeping its permissions). A symlinked file is
-    /// written through the link.
     @discardableResult
     public func write(_ data: Data, over snapshot: ConfigFileSnapshot, backupSlot slot: ConfigBackupSlot?) throws(ConfigFileError) -> ConfigWriteReport {
         let current = try read(snapshot.url)
@@ -119,14 +95,11 @@ public struct ConfigFileWriter: Sendable {
         return ConfigWriteReport(url: snapshot.url, backup: backup)
     }
 
-    /// Writes `text` (UTF-8) over the snapshot; see `write(_:over:backupSlot:)`.
     @discardableResult
     public func write(_ text: String, over snapshot: ConfigFileSnapshot, backupSlot slot: ConfigBackupSlot?) throws(ConfigFileError) -> ConfigWriteReport {
         try write(Data(text.utf8), over: snapshot, backupSlot: slot)
     }
 
-    /// Deletes the file `snapshot` was read from, with the same guard and backup as a write. A
-    /// missing file is a no-op; a symlink is removed, not its target.
     @discardableResult
     public func remove(over snapshot: ConfigFileSnapshot, backupSlot slot: ConfigBackupSlot?) throws(ConfigFileError) -> ConfigWriteReport {
         let current = try read(snapshot.url)
@@ -144,9 +117,6 @@ public struct ConfigFileWriter: Sendable {
         return ConfigWriteReport(url: snapshot.url, backup: backup)
     }
 
-    // MARK: Backups
-
-    /// A slot's backups, newest first.
     public func backups(in slot: ConfigBackupSlot) -> [ConfigBackup] {
         let folder = folder(for: slot)
         let prefix = slot.name + "-"
@@ -167,8 +137,6 @@ public struct ConfigFileWriter: Sendable {
         .sorted { $0.url.lastPathComponent > $1.url.lastPathComponent }
     }
 
-    /// Puts a backup's contents back into `url`. The current contents are backed up first (into the
-    /// backup's slot), so a restore can itself be undone. The caller asks before restoring.
     @discardableResult
     public func restore(_ backup: ConfigBackup, to url: URL) throws(ConfigFileError) -> ConfigWriteReport {
         let data: Data
@@ -189,12 +157,10 @@ public struct ConfigFileWriter: Sendable {
         let fileManager = FileManager.default
         let fileExtension = url.pathExtension.isEmpty ? "bak" : url.pathExtension
         do {
-            // Backups hold secrets (MCP env values): owner-only folder.
             try fileManager.createDirectory(at: folder, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
             var milliseconds = Int64((now().timeIntervalSince1970 * 1000).rounded(.down))
             var target: URL
             repeat {
-                // Zero-padded so name order is time order (pruning and listing sort by name).
                 target = folder.appending(path: "\(slot.name)-\(String(format: "%015lld", milliseconds)).\(fileExtension)")
                 milliseconds += 1
             } while fileManager.fileExists(atPath: target.path)
@@ -212,17 +178,12 @@ public struct ConfigFileWriter: Sendable {
         }
     }
 
-    /// Upstream `prune_backups`: keeps the newest `maxBackups` of the slot.
     private func prune(_ slot: ConfigBackupSlot) {
         for stale in backups(in: slot).dropFirst(Self.maxBackups) {
             try? FileManager.default.removeItem(at: stale.url)
         }
     }
 
-    // MARK: Atomic write
-
-    /// Resolves a symlinked config (dotfile repositories) so the rename replaces the real file, not
-    /// the link.
     static func resolved(_ url: URL) -> URL {
         url.resolvingSymlinksInPath()
     }
@@ -234,7 +195,6 @@ public struct ConfigFileWriter: Sendable {
         do {
             try fileManager.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             try data.write(to: temporary, options: .withoutOverwriting)
-            // A fresh file gets the default mode, which would widen a config the user locked to 0600.
             if let permissions = try? fileManager.attributesOfItem(atPath: url.path)[.posixPermissions] {
                 try fileManager.setAttributes([.posixPermissions: permissions], ofItemAtPath: temporary.path)
             }

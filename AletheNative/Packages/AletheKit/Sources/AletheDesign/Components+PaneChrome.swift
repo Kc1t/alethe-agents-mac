@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// TerminalPane.module.css `.action`: 22pt pinned target, 12pt icon and accent hover fill.
 public struct AlethePinnedPaneActionStyle: ButtonStyle {
     private let danger: Bool
     public init(danger: Bool = false) { self.danger = danger }

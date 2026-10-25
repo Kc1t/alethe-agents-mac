@@ -1,16 +1,12 @@
 import Foundation
 
-/// One checklist item. `projectID == nil` puts it in the global list; otherwise it belongs to that
-/// project's list. Upstream `TodoItem` (`src/lib/types.ts`).
 public struct Todo: Hashable, Sendable, Codable, Identifiable {
     public var id: String
     public var title: String
     public var done: Bool
     public var tags: [String]
-    /// Set when the todo was created from a GitHub pull request.
     public var prURL: URL?
     public var projectID: String?
-    /// Position in the store's list; rewritten after every change.
     public var order: Int
     public var createdAt: Date
     public var updatedAt: Date
@@ -38,7 +34,6 @@ public struct Todo: Hashable, Sendable, Codable, Identifiable {
     }
 }
 
-/// Which list a todo lives in.
 public enum TodoScope: Hashable, Sendable {
     case global
     case project(String)
@@ -53,7 +48,6 @@ public enum TodoScope: Hashable, Sendable {
     }
 }
 
-/// Upstream `src/lib/todos.ts` normalization rules.
 public enum TodoRules {
     public static let titleMaxLength = 200
     public static let tagMaxLength = 24
@@ -63,7 +57,6 @@ public enum TodoRules {
         String(value.trimmingCharacters(in: .whitespacesAndNewlines).prefix(titleMaxLength))
     }
 
-    /// Lowercased, `#` stripped, letters/digits/`_`/`-` only, deduplicated, at most six.
     public static func normalizeTags(_ values: [String]) -> [String] {
         var seen = Set<String>()
         var tags: [String] = []
@@ -79,7 +72,6 @@ public enum TodoRules {
         return Array(tags.prefix(maxTags))
     }
 
-    /// Upstream defaults shown on first run and after "reset".
     public static let defaultTitles: [(title: String, tags: [String])] = [
         ("Review active workspace", ["review"]),
         ("Open project README", ["docs"]),
@@ -87,7 +79,6 @@ public enum TodoRules {
     ]
 }
 
-/// The template folder used by the Todos plugin. Unknown legacy settings are ignored on decode.
 public struct TodoSettings: Hashable, Sendable, Codable {
     public var storagePath: String
 

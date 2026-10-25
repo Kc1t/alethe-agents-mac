@@ -1,6 +1,5 @@
 import XCTest
 
-/// Markdown pane (P2-9): rendered file, edit and save, reload, close with undo; header hit targets.
 @MainActor
 final class MarkdownPaneTests: XCTestCase {
     override func setUp() async throws {
@@ -21,7 +20,6 @@ final class MarkdownPaneTests: XCTestCase {
         XCTAssertTrue(editor.waitForExistence(timeout: 5))
         editor.click()
         editor.typeKey("a", modifierFlags: .command)
-        // No lowercase "c" (XCUITest drops it on the owner's layout).
         editor.typeText("# Updated\n")
         element(app, "markdown.save").click()
         XCTAssertTrue(app.staticTexts["Updated"].waitForExistence(timeout: 5), "saved text is rendered")
@@ -33,7 +31,6 @@ final class MarkdownPaneTests: XCTestCase {
         app.terminate()
     }
 
-    /// HT: header buttons at 90 %, 100 % and 120 %.
     func testHeaderButtonsReceiveClicksAtThreeZoomLevels() {
         for (label, keys) in [("90 %", ["-"]), ("100 %", []), ("120 %", ["+", "+"])] {
             let (app, _) = launchAlethe(arguments: ["-AletheUITestSeed", "markdown"])

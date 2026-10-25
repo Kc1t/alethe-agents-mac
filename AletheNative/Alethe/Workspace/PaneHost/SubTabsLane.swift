@@ -2,9 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// Vertical strip of a pane's sub-tabs (upstream `SubTabsLane`): one agent icon per tab, the active
-/// one marked by an accent bar, a close button on hover when there is more than one tab, and + to add.
-/// Closing is undoable (⌘Z), so it does not ask first as upstream does.
 struct SubTabsLane: View {
     let pane: Pane
     let isFocused: Bool
@@ -57,7 +54,6 @@ struct SubTabsLane: View {
         .scrollIndicators(.never)
         .frame(width: metrics.size(36))
         .background(theme[.shapeTabsLaneBg])
-        // No visible grip (it left an empty slot): the lane's free area drags the pane.
         .background {
             if canDragPane {
                 Color.clear.contentShape(Rectangle())
@@ -155,7 +151,6 @@ private struct SubTabItem: View {
             }
                 .foregroundStyle(theme[isActive || isHovered ? AgentTokens.accent(for: tab.agent) : .fgMuted])
                 .frame(width: metrics.size(26), height: metrics.size(26))
-                // Upstream: accent-soft on hover; the active item a selected card with an inset border.
                 .background(
                     RoundedRectangle(cornerRadius: metrics.size(6))
                         .fill(isActive ? theme[.surfaceCardSelected] : theme[.accentSoft].opacity(isHovered ? 1 : 0))
@@ -168,7 +163,6 @@ private struct SubTabItem: View {
         .buttonStyle(.plain)
         .overlay(alignment: .leading) {
             if isActive && (!metrics.isWebInterface || metrics.style != .clean) {
-                // Accent bar on the lane's leading edge (upstream `.active::before`).
                 RoundedRectangle(cornerRadius: metrics.size(1))
                     .fill(theme[metrics.isWebInterface || isFocused ? .accent : .borderStrong])
                     .frame(width: metrics.size(2), height: metrics.size(16))

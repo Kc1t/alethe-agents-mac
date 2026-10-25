@@ -3,7 +3,6 @@ import Testing
 @testable import AletheFoundation
 
 @Suite struct AppLanguageTests {
-    /// A throwaway defaults domain standing in for the app's own.
     private func withDomain(_ body: (UserDefaults, LanguageSetting) -> Void) {
         let domain = "com.kc1t.alethe.tests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: domain)!
@@ -23,7 +22,6 @@ import Testing
         }
     }
 
-    /// What System Settings › Language & Region › Applications writes is read back too.
     @Test func readsRegionalVariantsAndUnknownLanguages() {
         withDomain { defaults, setting in
             defaults.setPersistentDomain(["AppleLanguages": ["en-GB"]], forName: setting.domain)

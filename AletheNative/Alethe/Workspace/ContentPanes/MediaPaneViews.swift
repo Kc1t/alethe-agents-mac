@@ -5,7 +5,6 @@ import AVKit
 import Observation
 import SwiftUI
 
-/// An image file, reloaded when it changes on disk (an agent regenerating a screenshot or chart).
 @Observable
 @MainActor
 final class ImageFile {
@@ -20,7 +19,6 @@ final class ImageFile {
     }
 
     func reload() {
-        // NSImage caches by URL; read the bytes so a rewritten file shows its new content.
         image = (try? Data(contentsOf: url)).flatMap(NSImage.init(data:))
     }
 
@@ -30,7 +28,6 @@ final class ImageFile {
     }
 }
 
-/// Image pane (upstream `ImagePane`): the image fitted to the pane, or at actual size with scrolling.
 struct ImagePaneView: View {
     let file: ImageFile
     let isFocused: Bool
@@ -85,8 +82,6 @@ struct ImagePaneView: View {
     }
 }
 
-/// Video pane (upstream `VideoPane`): the system player with its controls. The player lives in
-/// `ContentPaneRegistry`, so moving or resizing the pane never restarts playback.
 struct VideoPaneView: View {
     let url: URL
     let player: AVPlayer

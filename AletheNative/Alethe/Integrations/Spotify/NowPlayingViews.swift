@@ -3,8 +3,6 @@ import AletheIntegrations
 import AppKit
 import SwiftUI
 
-/// Home's Now Playing card (upstream `HomeView/NowPlayingWidget`): art, track, artists, progress and
-/// Open in Spotify in native mode; the web hero stays empty until a track is known.
 struct NowPlayingCard: View {
     var homeDockInfoWidth: CGFloat = .infinity
     @Environment(AppEnvironment.self) private var environment
@@ -16,7 +14,6 @@ struct NowPlayingCard: View {
 
     var body: some View {
         if let model = environment.nowPlaying.model {
-            // A stable container: switching between the track and the prompt is not a disappearance.
             VStack(spacing: 0) { content(model) }
                 .nowPlayingVisibility(model)
         }
@@ -42,7 +39,6 @@ struct NowPlayingCard: View {
                 .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("home.nowPlaying.prompt")
         } else {
-            // Nothing to show yet; a zero-size view keeps the visibility hooks alive.
             Color.clear.frame(width: 0, height: 0)
         }
     }
@@ -180,7 +176,6 @@ struct NowPlayingCard: View {
     }
 }
 
-/// The sidebar's Now Playing footer (upstream `SidebarNowPlaying`): a compact row above Add Project.
 struct SidebarNowPlaying: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme
@@ -246,10 +241,7 @@ struct SidebarNowPlaying: View {
     }
 }
 
-// MARK: - Pieces
-
 private enum NowPlayingText {
-    /// "Track — Artist", with "(paused)" when not playing (upstream's tooltip).
     static func summary(_ track: SpotifyNowPlaying) -> String {
         let base = "\(track.track) — \(track.artist)"
         return track.playing ? base : "\(base) (\(String(localized: "nowPlaying.paused")))"
@@ -260,7 +252,6 @@ private enum NowPlayingText {
     }
 }
 
-/// "Now playing" with the equalizer, or "Last track" when paused.
 private struct NowPlayingStatus: View {
     let playing: Bool
     @Environment(\.theme) private var theme
@@ -282,7 +273,6 @@ private struct NowPlayingStatus: View {
     }
 }
 
-/// Elapsed and total time; the elapsed side advances each second while playing.
 private struct NowPlayingProgress: View {
     let model: NowPlayingModel
     let track: SpotifyNowPlaying
@@ -309,7 +299,6 @@ private struct NowPlayingProgress: View {
     }
 }
 
-/// Bars that move while music plays; still under Reduce Motion.
 private struct Equalizer: View {
     let barCount: Int
     let height: CGFloat
@@ -346,7 +335,6 @@ private struct Equalizer: View {
     }
 }
 
-/// Album art, loaded off the main thread and cached; a music note until it arrives or when missing.
 private struct CoverArt: View {
     let url: URL?
     let size: CGFloat
@@ -379,12 +367,10 @@ private struct CoverArt: View {
     }
 }
 
-/// A decoded cover; never mutated after decoding, so it can cross threads.
 private struct DecodedCover: @unchecked Sendable {
     let image: NSImage
 }
 
-/// Recent covers by URL. Only `https` is fetched; decoding happens off the main thread.
 private actor CoverArtCache {
     static let shared = CoverArtCache()
     private static let limit = 24
@@ -424,7 +410,6 @@ private actor CoverArtCache {
 }
 
 private extension View {
-    /// Registers a visible Now Playing view, which lets the model poll.
     func nowPlayingVisibility(_ model: NowPlayingModel) -> some View {
         onAppear { model.viewAppeared() }
             .onDisappear { model.viewDisappeared() }

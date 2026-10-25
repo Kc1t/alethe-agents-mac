@@ -2,10 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// Custom grid designer (upstream `LayoutDesignerModal`): track counts, presets and recent grids on
-/// the left, a canvas where each pane is a box. Click a box to select it and grow or shrink it from
-/// its edges; drag it onto a free slot or another box to move or swap. Save switches the project to
-/// the Grid layout and remembers the grid in its recent ones.
 struct LayoutDesignerSheet: View {
     let workspace: WorkspaceModel
     let undoManager: UndoManager?
@@ -127,8 +123,6 @@ struct LayoutDesignerSheet: View {
         .accessibilityIdentifier("layoutDesigner")
     }
 
-    // MARK: - Toolbar
-
     private var webToolbar: some View {
         HStack(spacing: metrics.size(12)) {
             webStepper("layoutDesigner.web.columns", value: draft.cols, id: "columns") { setTracks(cols: $0, rows: draft.rows) }
@@ -199,8 +193,6 @@ struct LayoutDesignerSheet: View {
         return draft.fillingFreeSpace(ids, selected) != draft
     }
 
-    // MARK: - Library
-
     private var library: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: metrics.space(.s)) {
@@ -256,8 +248,6 @@ struct LayoutDesignerSheet: View {
         .accessibilityIdentifier(id)
     }
 
-    // MARK: - Canvas
-
     private var canvas: some View {
         GeometryReader { proxy in
             let gap = metrics.space(.s)
@@ -287,7 +277,6 @@ struct LayoutDesignerSheet: View {
         var id: String { "\(col):\(row)" }
     }
 
-    /// Every slot of the draft, drawn under the boxes (and used to find a drop target).
     private func allSlots(in rect: CGRect, gap: CGFloat) -> [SlotFrame] {
         let columns = TrackMath.sizes(count: draft.cols, weights: [], total: rect.width, gap: gap)
         let rows = TrackMath.sizes(count: draft.rows, weights: [], total: rect.height, gap: gap)
@@ -342,7 +331,6 @@ struct LayoutDesignerSheet: View {
         .accessibilityIdentifier("layoutDesigner.box.\(childTitle(id))")
     }
 
-    /// Grow (+) and shrink (−) buttons on each edge of the selected box, shown only when they apply.
     private func edgeControls(_ id: String) -> some View {
         let cell = draft.cells[id] ?? GridCell(col: 1, row: 1)
         return ZStack {
@@ -383,8 +371,6 @@ struct LayoutDesignerSheet: View {
         .accessibilityIdentifier("layoutDesigner.\(symbol == "plus" ? "grow" : "shrink").\(edge.rawValue)")
     }
 
-    // MARK: - Actions
-
     private static func title(_ pane: Pane) -> String {
         if let tab = pane.activeTab { return tab.title ?? AgentLabels.name(for: tab.agent) }
         return pane.content.filePath.map { URL(filePath: $0).lastPathComponent } ?? pane.content.kind.rawValue
@@ -401,7 +387,6 @@ struct LayoutDesignerSheet: View {
         draft = normalized(currentLayout ?? .auto(ids))
     }
 
-    /// Explicit track sizes keep the steppers' add/remove predictable (upstream `normalizeDraft`).
     private func normalized(_ layout: CustomGrid) -> CustomGrid {
         var next = layout.reconciled(ids)
         next.colSizes = next.colSizes ?? Array(repeating: 1, count: next.cols)

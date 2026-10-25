@@ -1,8 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// `ui/Dropdown.tsx` + `Dropdown.module.css`: a 32-point sunken trigger and a themed listbox
-/// presented in the owning window, in place of the system pop-up menu.
 struct WebDropdown<Value: Hashable, Label: View>: View {
     @Binding var selection: Value
     let options: [Value]
@@ -307,7 +305,6 @@ struct WebDropdown<Value: Hashable, Label: View>: View {
     }
 }
 
-/// A settings-style row: title (and optional help) on the left, a `WebDropdown` on the right.
 struct WebSelectRow<Value: Hashable>: View {
     let title: LocalizedStringKey
     var detail: LocalizedStringKey?

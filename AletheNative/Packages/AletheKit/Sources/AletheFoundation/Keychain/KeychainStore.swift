@@ -2,31 +2,21 @@ import Foundation
 import Security
 import Synchronization
 
-/// A secret the app keeps per profile (ADR-1: upstream `keyring` and plaintext files → the Keychain).
-/// Raw values are part of the Keychain account name and must never change.
 public enum KeychainItem: String, CaseIterable, Codable, Hashable, Sendable {
-    /// Spotify app client secret (upstream `preferences.spotifyClientSecret`).
     case spotifyClientSecret
-    /// Spotify OAuth tokens as `SpotifyTokens` JSON (upstream `spotify_tokens.json`).
     case spotifyTokens
-    /// GitHub personal access token for gist sync (upstream `github_sync.json` `token`).
     case githubToken
-    /// 9router endpoint key (upstream `preferences.router9.apiKey`).
     case router9APIKey
 }
 
 public enum SecretStoreError: Error, Equatable, Sendable {
-    /// A Security.framework call failed; the status is safe to log, the value never is.
     case keychain(OSStatus)
-    /// A stored value could not be decoded as the expected type.
     case undecodable(KeychainItem)
 }
 
-/// Per-profile secret storage. Values are never logged or written to profile files.
 public protocol SecretStore: Sendable {
     func data(for item: KeychainItem, profile: String) throws -> Data?
     func set(_ data: Data, for item: KeychainItem, profile: String) throws
-    /// Deleting a missing item is not an error.
     func delete(_ item: KeychainItem, profile: String) throws
 }
 
@@ -35,7 +25,6 @@ extension SecretStore {
         try data(for: item, profile: profile).flatMap { String(data: $0, encoding: .utf8) }
     }
 
-    /// An empty string deletes the item.
     public func setString(_ value: String, for item: KeychainItem, profile: String) throws {
         if value.isEmpty {
             try delete(item, profile: profile)
@@ -57,20 +46,16 @@ extension SecretStore {
         try set(JSONEncoder().encode(value), for: item, profile: profile)
     }
 
-    /// Every item of a profile, for when the profile is deleted.
     public func deleteAll(profile: String) throws {
         for item in KeychainItem.allCases { try delete(item, profile: profile) }
     }
 }
 
-/// Generic passwords in the login Keychain: service `com.kc1t.alethe.mac`, account
-/// `<profile>/<item>`, this device only and never synchronized.
 public struct KeychainStore: SecretStore {
     public static let defaultService = AppIdentity.bundleIdentifier
 
     public let service: String
 
-    /// Tests pass a throwaway service so they never see the user's items.
     public init(service: String = defaultService) {
         self.service = service
     }
@@ -119,9 +104,6 @@ public struct KeychainStore: SecretStore {
         guard status == errSecSuccess || status == errSecItemNotFound else { throw SecretStoreError.keychain(status) }
     }
 
-    /// The store a launch uses. Debug launches with a test data root (`-AletheDataRoot`, UI tests)
-    /// or `-AletheNoKeychain YES` (ADR-8: unstable dev signing makes the Keychain prompt) get one
-    /// process-wide in-memory store; everything else gets the Keychain.
     public static func forLaunch(defaults: UserDefaults = .standard) -> any SecretStore {
         #if DEBUG
         if defaults.string(forKey: "AletheDataRoot") != nil || defaults.bool(forKey: "AletheNoKeychain") {
@@ -132,7 +114,6 @@ public struct KeychainStore: SecretStore {
     }
 }
 
-/// Secrets kept in memory only: unit tests and UI-test launches.
 public final class InMemorySecretStore: SecretStore {
     static let launchShared = InMemorySecretStore()
 
@@ -153,8 +134,6 @@ public final class InMemorySecretStore: SecretStore {
     }
 }
 
-/// The `spotifyTokens` item (upstream `StoredTokens`). `expiresAt` is stored as epoch seconds, like
-/// upstream's `expires_at`.
 public struct SpotifyTokens: Codable, Hashable, Sendable, CustomStringConvertible {
     public var accessToken: String
     public var refreshToken: String
@@ -184,6 +163,5 @@ public struct SpotifyTokens: Codable, Hashable, Sendable, CustomStringConvertibl
         try container.encode(expiresAt.timeIntervalSince1970, forKey: .expiresAt)
     }
 
-    /// Never prints the tokens.
     public var description: String { "SpotifyTokens(expiresAt: \(expiresAt))" }
 }

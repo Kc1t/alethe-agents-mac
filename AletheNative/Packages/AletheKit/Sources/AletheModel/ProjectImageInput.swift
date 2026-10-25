@@ -1,6 +1,5 @@
 import Foundation
 
-/// ImageInput.tsx stores original bytes without resizing or recompression.
 public enum ProjectImageInput {
     public static let maximumBytes = 2 * 1024 * 1024
 
@@ -15,7 +14,6 @@ public enum ProjectImageInput {
         return "data:\(mimeType);base64,\(data.base64EncodedString())"
     }
 
-    /// Read at most the web limit plus one byte, including files that grow after selection.
     public static func fileDataURL(_ url: URL, mimeType: String) throws -> String {
         guard mimeType.hasPrefix("image/") else { throw ValidationError.mustBeImage }
         let attributes = try url.resourceValues(forKeys: [.fileSizeKey])

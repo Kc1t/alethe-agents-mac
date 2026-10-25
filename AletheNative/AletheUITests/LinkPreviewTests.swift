@@ -1,6 +1,5 @@
 import XCTest
 
-/// Link preview (P2-14): a Markdown file renders in the sheet and Esc closes it.
 @MainActor
 final class LinkPreviewTests: XCTestCase {
     override func setUp() async throws {

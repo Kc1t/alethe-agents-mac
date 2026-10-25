@@ -5,14 +5,8 @@ import Foundation
 import Testing
 @testable import AletheRemote
 
-/// The §10 security checklist for remote control and the loopback-only peripherals (P7-20), over the
-/// package and app sources and the types that enforce each rule: nothing binds a wildcard address,
-/// Tailscale fails closed, logs never carry tokens or message text, exports redact remote
-/// credentials, saved documents never hold a token, and 9router and the Spotify OAuth callback stay
-/// on 127.0.0.1. The source checks read the checkout this file was compiled from.
 @Suite(.serialized)
 struct RemoteSecurityChecklistTests {
-    /// Its own port range, so it never competes with the transport and service tests.
     private static let configuration = RemoteTransport.Configuration(
         httpPorts: 9440...9450, webSocketPorts: 9441...9451, idleCheckInterval: .seconds(3600))
 
@@ -21,8 +15,6 @@ struct RemoteSecurityChecklistTests {
         return RemoteControlService(hub: hub, terminals: FakeTerminals(), workspace: FakeWorkspace(),
                                     assets: FakeAssets(), configuration: Self.configuration)
     }
-
-    // MARK: No wildcard bind
 
     @Test func wildcardAndNamedHostsAreNeverBindable() {
         for host in ["0.0.0.0", "::", "[::]", "", "*", "localhost", "example.com"] {
@@ -49,7 +41,6 @@ struct RemoteSecurityChecklistTests {
             let text = file.text
             if text.contains("NWListener(") {
                 listenerFiles += 1
-                // `NWListener(using:on:)` listens on every interface.
                 #expect(!SourceTree.matches(#"NWListener\([^)]*\bon:"#, in: text), "\(file.name) binds a port on every interface")
                 #expect(text.contains("requiredLocalEndpoint"), "\(file.name) creates a listener without a local endpoint")
             }
@@ -65,15 +56,12 @@ struct RemoteSecurityChecklistTests {
         }
         #expect(listenerFiles >= 3, "remote, hook server and Spotify callback listeners were checked")
 
-        // The remote listeners bind only what `bindableHost` returned.
         let transport = try SourceTree.file("AletheRemote/RemoteTransport.swift")
         #expect(transport.contains("guard let bindHost = Self.bindableHost(host)"))
         let binds = SourceTree.count(#"await bind\(\s*host: (\w+)"#, in: transport)
         let boundToBindHost = SourceTree.count(#"await bind\(\s*host: bindHost"#, in: transport)
         #expect(binds == 2 && boundToBindHost == 2)
     }
-
-    // MARK: Tailscale fails closed
 
     @Test func tailscaleMissingResolvesToAnUnbindableHost() async {
         let resolver = RemoteHostResolver(lanAddress: { "192.168.1.20" }, tailscaleAddress: { nil })
@@ -100,8 +88,6 @@ struct RemoteSecurityChecklistTests {
             #expect(!RemoteHost.isTailscaleRange(address), "\(address) is not a Tailscale address")
         }
     }
-
-    // MARK: No token in logs or exports
 
     @Test func remoteLogsNeverInterpolateTokensOrMessageText() throws {
         let files = try SourceTree.swiftFiles().filter {
@@ -145,8 +131,6 @@ struct RemoteSecurityChecklistTests {
         }
     }
 
-    // MARK: No token in saved documents
-
     @Test func workspaceAndPreferencesNeverHoldRemoteTokens() throws {
         var workspace = WorkspaceDocument()
         let project = workspace.addProject(name: "remote", folder: "/tmp", color: .teal)
@@ -163,13 +147,10 @@ struct RemoteSecurityChecklistTests {
         #expect(preferenceKeys.contains("remote"))
         #expect(preferenceKeys.allSatisfy { !$0.lowercased().contains("token") && !$0.lowercased().contains("pair") })
 
-        // Tokens live in the hub only: the saved models never mention them.
         for file in try SourceTree.swiftFiles() where file.path.contains("/Sources/AletheModel/") {
             #expect(!file.text.contains("sessionToken") && !file.text.contains("pairingToken"), "\(file.name)")
         }
     }
-
-    // MARK: Loopback-only peripherals
 
     @Test func router9ServesOnLoopbackOnly() throws {
         let paths = Router9Paths(profileDirectory: URL(filePath: "/p", directoryHint: .isDirectory))
@@ -191,9 +172,6 @@ struct RemoteSecurityChecklistTests {
         #expect(loopback.contains("allowLocalEndpointReuse = false"))
     }
 
-    // MARK: Helpers
-
-    /// Every key at any depth of a JSON document.
     private static func keys(of data: Data) throws -> Set<String> {
         func collect(_ value: Any, into keys: inout Set<String>) {
             if let object = value as? [String: Any] {
@@ -227,7 +205,6 @@ struct RemoteSecurityChecklistTests {
     }
 }
 
-/// The package's and the app's Swift sources, read from the checkout this test was built from.
 private enum SourceTree {
     struct File {
         var path: String
@@ -235,7 +212,6 @@ private enum SourceTree {
         var text: String
     }
 
-    /// `…/AletheKit/Tests/AletheRemoteTests/<this file>` → `…/AletheKit`.
     static let packageRoot = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
         .deletingLastPathComponent()
     static let appRoot = packageRoot.deletingLastPathComponent().deletingLastPathComponent().appending(path: "Alethe")
@@ -264,7 +240,6 @@ private enum SourceTree {
         return regex.numberOfMatches(in: text, range: NSRange(text.startIndex..., in: text))
     }
 
-    /// The string literal of every `logger.<level>("…")` call.
     static func logLiterals(in text: String) -> [String] {
         let pattern = #"logger\.(?:trace|debug|info|notice|warning|error|fault|critical|log)\("((?:[^"\\]|\\.)*)""#
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
@@ -273,7 +248,6 @@ private enum SourceTree {
         }
     }
 
-    /// The contents of each `\( … )` in a literal, nested parentheses included.
     static func interpolations(in literal: String) -> [String] {
         var result: [String] = []
         var index = literal.startIndex

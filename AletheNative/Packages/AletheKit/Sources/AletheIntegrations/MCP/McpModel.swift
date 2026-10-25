@@ -1,17 +1,11 @@
 import AletheAgents
 import Foundation
 
-// Port of upstream `mcp_model.rs`: the agent-neutral MCP server model, what each agent's config can
-// express, and the masked views the UI shows.
-
 public enum McpScope: String, Hashable, Sendable, Codable, CaseIterable {
     case global
     case project
 }
 
-/// One agent and scope can be served by more than one file. Claude keeps the servers added by
-/// `claude mcp add` (its default `local` scope) inside `~/.claude.json` under `projects.<folder>`,
-/// not in the repository's `.mcp.json`.
 public enum McpSourceKind: String, Hashable, Sendable, Codable, CaseIterable {
     case user
     case local
@@ -29,7 +23,6 @@ public enum McpAgent: String, Hashable, Sendable, Codable, CaseIterable, CustomS
     case opencode
     case antigravity
 
-    /// Accepts the CLI names too (`cursor-agent`, `agy`).
     public init?(parsing raw: String) {
         switch raw.trimmingCharacters(in: .whitespaces).lowercased() {
         case "claude": self = .claude
@@ -50,12 +43,8 @@ public enum McpAgent: String, Hashable, Sendable, Codable, CaseIterable, CustomS
     public var description: String { rawValue }
 }
 
-/// One environment entry (or HTTP header). Codex allows the same key to carry a literal value and
-/// appear in its `env_vars` passthrough list, so both sides are independent. The literal may be a
-/// secret: `description`, `debugDescription` and reflection never show it.
 public struct McpEnvEntry: Hashable, Sendable, CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
     public var literal: String?
-    /// The host variable the agent reads at launch (Codex `env_vars`, OpenCode `{env:NAME}`).
     public var passthroughFrom: String?
 
     public init(literal: String? = nil, passthroughFrom: String? = nil) {
@@ -87,7 +76,6 @@ public struct McpEnvEntry: Hashable, Sendable, CustomStringConvertible, CustomDe
     }
 }
 
-/// Environment or header entries by name. Writers emit them sorted by name (upstream `BTreeMap`).
 public typealias McpEnvMap = [String: McpEnvEntry]
 
 public struct McpLiteralView: Hashable, Sendable {
@@ -110,7 +98,6 @@ public enum McpTransport: Hashable, Sendable {
         return true
     }
 
-    /// Headers of a remote transport; nil for stdio.
     public var headers: McpEnvMap? {
         switch self {
         case .stdio: nil
@@ -151,7 +138,6 @@ public struct McpServer: Hashable, Sendable {
     public var env: McpEnvMap
     public var enabled: Bool
     public var timeouts: McpTimeouts
-    /// Codex only: the host variable holding a bearer token for a remote server.
     public var bearerTokenEnvVar: String?
 
     public init(
@@ -182,7 +168,6 @@ public struct McpServer: Hashable, Sendable {
     }
 }
 
-/// What the UI shows of a server: every literal env value and header masked (upstream `McpServerView`).
 public struct McpServerView: Hashable, Sendable {
     public let name: String
     public let transport: McpTransportView
@@ -192,14 +177,12 @@ public struct McpServerView: Hashable, Sendable {
     public let bearerTokenEnvVar: String?
 }
 
-/// A server as found in one agent's config file.
 public struct McpServerRecord: Hashable, Sendable {
     public var server: McpServer
     public var agent: McpAgent
     public var scope: McpScope
     public var sourceKind: McpSourceKind
     public var sourceURL: URL
-    /// Antigravity: the plugin import that contributed this server, when its name matches one.
     public var managedByImport: String?
 
     public init(server: McpServer, agent: McpAgent, scope: McpScope, sourceKind: McpSourceKind,
@@ -227,7 +210,6 @@ public struct McpServerRecordView: Hashable, Sendable {
     public let managedByImport: String?
 }
 
-/// The state of one config file after a scan (filled by the MCP store, P5-21).
 public struct McpSourceState: Hashable, Sendable {
     public var kind: McpSourceKind
     public var url: URL
@@ -261,14 +243,10 @@ public struct McpAgentSnapshot: Hashable, Sendable {
     }
 }
 
-// MARK: - Capabilities
-
 public struct McpCapability: Hashable, Sendable {
     public let agent: McpAgent
     public let projectScope: Bool
-    /// The config can switch a server off without removing it.
     public let enabledFlag: Bool
-    /// Env and header values can be read from the host at launch.
     public let envPassthrough: Bool
     public let timeouts: Bool
     public let headers: Bool
@@ -294,8 +272,6 @@ extension McpAgent {
     }
 }
 
-/// A field the server carries that the target agent cannot express (`env.<KEY>`, `headers.<KEY>`,
-/// `timeouts`, `transport`, `headers`, `bearerTokenEnvVar`). `detail` names the passthrough variable.
 public struct McpUnsupportedField: Hashable, Sendable {
     public let agent: McpAgent
     public let field: String
@@ -309,7 +285,6 @@ public struct McpUnsupportedField: Hashable, Sendable {
 }
 
 extension McpServer {
-    /// Upstream `unsupported_fields`, in its order (env then headers, each sorted by name).
     public func unsupportedFields(for agent: McpAgent) -> [McpUnsupportedField] {
         let caps = agent.capability
         var out: [McpUnsupportedField] = []
@@ -338,10 +313,7 @@ extension McpServer {
     }
 }
 
-// MARK: - Per-launch servers (P5-4)
-
 extension McpServer {
-    /// A per-launch stdio server as a config entry: literal env only, enabled.
     public init(launch: McpLaunchServer) {
         if let url = launch.url {
             self.init(name: launch.name, transport: .http(url: url, headers: launch.headers.mapValues(McpEnvEntry.literal)))
@@ -354,8 +326,6 @@ extension McpServer {
         )
     }
 
-    /// The per-launch form of a stdio server whose env is all literal; nil otherwise (remote
-    /// transports, passthrough entries or a working directory cannot be passed per launch).
     public var launchServer: McpLaunchServer? {
         guard case .stdio(let command, let arguments, nil) = transport else { return nil }
         var environment: [String: String] = [:]

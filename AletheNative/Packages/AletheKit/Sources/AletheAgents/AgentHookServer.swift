@@ -1,21 +1,12 @@
 import Foundation
 import Network
 
-/// The hook bridge's endpoint (upstream `agent_events.rs` listener, on Network.framework instead of
-/// tiny_http): loopback only, a port the system picks, a per-launch token every request must carry.
-/// It takes `POST /hook/<agent>` with the `X-Alethe-Tab` header and hands the body over, and — while
-/// an MCP handler is set (the orchestrator, P6-9) — `POST /mcp` with the `X-Alethe-Planner` header,
-/// answered with the handler's JSON-RPC reply (upstream `agent_events.rs` `/mcp`).
 public final class AgentHookServer: @unchecked Sendable {
     public typealias Handler = @Sendable (_ agent: String, _ tab: String, _ body: Data) -> Void
 
-    /// What a `POST /mcp` gets back.
     public enum McpReply: Equatable, Sendable {
-        /// 200 with this JSON body.
         case body(String)
-        /// 202, no body: a notification (upstream answers those with nothing).
         case accepted
-        /// 404: the endpoint is not served right now (the feature is off).
         case unavailable
     }
 
@@ -36,10 +27,8 @@ public final class AgentHookServer: @unchecked Sendable {
         self.handler = handler
     }
 
-    /// `http://127.0.0.1:<port>` once listening.
     public var endpoint: String? { lock.withLock { boundPort.map { "http://127.0.0.1:\($0)" } } }
 
-    /// Starts listening; returns once the port is known (or nil when it could not bind).
     public func start() async -> String? {
         let parameters = NWParameters.tcp
         parameters.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: .any)
@@ -65,7 +54,6 @@ public final class AgentHookServer: @unchecked Sendable {
         }
     }
 
-    /// Serves `POST /mcp` through `handler`; nil stops serving it (404).
     public func setMcpHandler(_ handler: McpHandler?) {
         lock.withLock { mcpHandler = handler }
     }
@@ -114,7 +102,6 @@ public final class AgentHookServer: @unchecked Sendable {
         case mcp(McpHandler, body: Data, planner: String?)
     }
 
-    /// Where a request goes. The token is checked first, for every path.
     func route(_ request: HTTPRequest) -> Route {
         guard request.headers["x-alethe-token"] == token else { return .status(401) }
         let path = request.path.split(separator: "?", maxSplits: 1).first.map(String.init) ?? request.path
@@ -140,7 +127,6 @@ public final class AgentHookServer: @unchecked Sendable {
     }
 }
 
-/// A minimal HTTP/1.1 request: request line, headers (names lowercased), a `Content-Length` body.
 public struct HTTPRequest: Equatable, Sendable {
     public var method: String
     public var path: String
@@ -179,6 +165,5 @@ private final class LockedFlag: @unchecked Sendable {
     private let lock = NSLock()
     private var value = false
 
-    /// True the first time only.
     func set() -> Bool { lock.withLock { defer { value = true }; return !value } }
 }

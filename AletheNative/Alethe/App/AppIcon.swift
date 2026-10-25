@@ -2,8 +2,6 @@ import AletheFoundation
 import AletheModel
 import AppKit
 
-/// The Dock icon follows `PreferencesDocument.iconTheme` (P5-12, upstream `setIcon`). Only the running
-/// app's image changes: rewriting the bundle's icon would break its signature.
 @MainActor
 enum AppIcon {
     private static var applied: AppIconTheme?
@@ -15,7 +13,6 @@ enum AppIcon {
     static func apply(_ theme: AppIconTheme) {
         guard theme != applied else { return }
         if theme == .default {
-            // nil restores the bundle's AppIcon, already on Apple's grid and in every resolution.
             NSApp.applicationIconImage = AppIdentity.isDebugBuild
                 ? Bundle.main.url(forResource: "AppIconDebug", withExtension: "icns").flatMap { NSImage(contentsOf: $0) }
                 : nil
@@ -26,9 +23,6 @@ enum AppIcon {
         applied = theme
     }
 
-    /// The theme artwork fills its whole canvas; Apple's icon grid draws the rounded square at
-    /// 824/1024 of the canvas with a drop shadow in the margin, so the Dock shows it the same size
-    /// as other apps (Scripts/make-app-icon.py does the same for the bundle icon).
     private static func dockImage(_ art: NSImage) -> NSImage {
         let canvas = NSSize(width: 1024, height: 1024)
         return NSImage(size: canvas, flipped: false) { rect in
@@ -62,7 +56,6 @@ extension AppIcon {
 }
 
 extension AppEnvironment {
-    /// Applies the chosen icon now and again whenever it changes.
     func followAppIcon() {
         let theme = withObservationTracking {
             preferences?.document.iconTheme ?? .default

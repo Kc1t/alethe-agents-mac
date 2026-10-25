@@ -6,14 +6,11 @@ import AVKit
 import SwiftUI
 import WebKit
 
-/// What a link preview shows.
 enum LinkPreviewTarget: Hashable {
     case web(URL)
     case file(String)
 }
 
-/// Link viewer (upstream `LinkViewerOverlay`): a quick look at a clicked link without adding a pane.
-/// Markdown rendered, images, videos, pages (private), other text files as source; Esc closes.
 struct LinkPreviewSheet: View {
     let target: LinkPreviewTarget
     @Environment(\.dismiss) private var nativeDismiss
@@ -123,7 +120,6 @@ struct LinkPreviewSheet: View {
             .accessibilityIdentifier("linkPreview.unavailable")
     }
 
-    /// The start of a text file (up to 512 KB), or nil for binary content.
     static func textPreview(_ path: String) -> String? {
         guard let handle = FileHandle(forReadingAtPath: path) else { return nil }
         defer { try? handle.close() }
@@ -153,7 +149,6 @@ private struct MarkdownPreview: View {
     }
 }
 
-/// A private, throwaway page for the preview.
 private struct PreviewWebView: NSViewRepresentable {
     let url: URL
 

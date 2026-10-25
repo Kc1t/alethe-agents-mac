@@ -1,6 +1,5 @@
 import Foundation
 
-/// A frontend call to an API path (upstream `ApiCallSite`).
 public struct ApiCallSite: Codable, Hashable, Sendable {
     public var file: String
     public var line: Int
@@ -15,7 +14,6 @@ public struct ApiCallSite: Codable, Hashable, Sendable {
     }
 }
 
-/// A backend route declaration (upstream `ApiRouteSite`).
 public struct ApiRouteSite: Codable, Hashable, Sendable {
     public var file: String
     public var line: Int
@@ -32,7 +30,6 @@ public struct ApiRouteSite: Codable, Hashable, Sendable {
     }
 }
 
-/// A call with no related backend route (upstream `ContractWarning`).
 public struct ContractWarning: Codable, Hashable, Sendable {
     public var call: ApiCallSite
     public var reason: String
@@ -47,9 +44,6 @@ public enum ContractCheckError: Error, Equatable, Sendable {
     case environmentNotFound
 }
 
-/// Port of upstream `contract_check.rs` (Merge Center shield layer 3): a heuristic that matches
-/// frontend `fetch`/`axios` calls against Express/FastAPI/Axum routes with simple line regexes.
-/// Best-effort and never blocking; silent when no backend route is found at all.
 public enum ContractCheck {
     public static let skipDirectories: Set<String> = [
         "node_modules", ".git", "target", "dist", "build", ".next", ".venv", "venv", "__pycache__",
@@ -65,7 +59,6 @@ public enum ContractCheck {
         let framework: String
 
         init(_ pattern: String, method: Int?, path: Int, framework: String = "") {
-            // Patterns are constants; a failure here is a programming error.
             regex = try! NSRegularExpression(pattern: pattern)
             methodGroup = method
             pathGroup = path
@@ -87,9 +80,6 @@ public enum ContractCheck {
         Pattern(#"\.route\(\s*['"`]([^'"`]+)"#, method: nil, path: 1, framework: "axum"),
     ]
 
-    // MARK: Pure helpers
-
-    /// `:id`, `{id}` and `<id>` become `:param`; a trailing slash is dropped (`/` stays `/`).
     public static func normalizePathPattern(_ raw: String) -> String {
         let range = NSRange(raw.startIndex..., in: raw)
         let normalized = parameter.stringByReplacingMatches(in: raw, range: range, withTemplate: ":param")
@@ -104,8 +94,6 @@ public enum ContractCheck {
         return Array(rest.split(separator: "/", omittingEmptySubsequences: false).prefix(count))
     }
 
-    /// Equal, one a prefix of the other, or sharing the first two segments (so `/api/v2/x` against
-    /// `/api/v1/x` is still flagged: the version segment differs).
     public static func pathsRelated(_ call: String, _ route: String) -> Bool {
         if call.isEmpty || route.isEmpty { return false }
         if call == route || call.hasPrefix(route) || route.hasPrefix(call) { return true }
@@ -113,21 +101,18 @@ public enum ContractCheck {
         return !callPrefix.isEmpty && callPrefix == segmentPrefix(route, 2)
     }
 
-    /// Frontend calls in one file's text (first match per pattern per line, relative paths only).
     public static func calls(in text: String, file: String) -> [ApiCallSite] {
         scan(text, patterns: callPatterns).map {
             ApiCallSite(file: file, line: $0.line, method: $0.method, pathPattern: $0.path)
         }
     }
 
-    /// Backend routes in one file's text.
     public static func routes(in text: String, file: String) -> [ApiRouteSite] {
         scan(text, patterns: routePatterns).map {
             ApiRouteSite(file: file, line: $0.line, method: $0.method, pathPattern: $0.path, framework: $0.framework)
         }
     }
 
-    /// Calls with no related route; empty when there are no routes (nothing to compare against).
     public static func warnings(calls: [ApiCallSite], routes: [ApiRouteSite]) -> [ContractWarning] {
         guard !routes.isEmpty else { return [] }
         return calls
@@ -158,9 +143,6 @@ public enum ContractCheck {
         return found
     }
 
-    // MARK: Filesystem
-
-    /// Files under `root` with one of `extensions`, skipping build/vendor folders; sorted.
     static func files(under root: URL, extensions: Set<String>) -> [URL] {
         let fm = FileManager.default
         var result: [URL] = []
@@ -187,7 +169,6 @@ public enum ContractCheck {
         return String(path.dropFirst(base.count + 1))
     }
 
-    /// Runs the check over a checkout (upstream `contract_check(env_path)`).
     public static func check(root: URL) throws -> [ContractWarning] {
         var isDir: ObjCBool = false
         guard FileManager.default.fileExists(atPath: root.path, isDirectory: &isDir), isDir.boolValue else {

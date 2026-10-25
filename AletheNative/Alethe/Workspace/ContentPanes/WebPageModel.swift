@@ -4,10 +4,6 @@ import AppKit
 import Observation
 import WebKit
 
-/// One web pane's page (upstream `WebPane` private browser): a WKWebView on a non-persistent data
-/// store, so nothing it visits is kept, and its navigation state for the toolbar. The view is
-/// released some time after the pane is hidden (its `WebResourceMode`) or at once under memory
-/// pressure, and recreated on the last address when the pane shows again.
 @Observable
 @MainActor
 final class WebPageModel: NSObject {
@@ -17,11 +13,9 @@ final class WebPageModel: NSObject {
     private(set) var isLoading = false
     private(set) var canGoBack = false
     private(set) var canGoForward = false
-    /// Why the last navigation failed; nil while it works.
     private(set) var failure: String? { didSet { if failure != oldValue { AppLog.shown(failure, .app, level: .warning) } } }
     private(set) var options: WebPaneOptions
 
-    /// Called when the page settles on another address, so the pane can persist it.
     @ObservationIgnored var onAddressChange: ((URL) -> Void)?
     @ObservationIgnored private var observations: [NSKeyValueObservation] = []
     @ObservationIgnored private var eviction: Task<Void, Never>?
@@ -32,8 +26,6 @@ final class WebPageModel: NSObject {
         self.options = options
         super.init()
     }
-
-    // MARK: - Visibility and memory
 
     func show() {
         isVisible = true
@@ -53,7 +45,6 @@ final class WebPageModel: NSObject {
         }
     }
 
-    /// Memory pressure: a hidden page goes now; a visible one stays.
     func relieveMemory() {
         if !isVisible { release() }
     }
@@ -90,8 +81,6 @@ final class WebPageModel: NSObject {
         if let url { view.load(URLRequest(url: url)) }
     }
 
-    // MARK: - Navigation
-
     func load(_ url: URL) {
         self.url = url
         failure = nil
@@ -111,7 +100,6 @@ final class WebPageModel: NSObject {
         self.options = options
         webView?.pageZoom = options.zoom
         if recreate, webView != nil {
-            // JavaScript is fixed when a web view is created.
             release()
             if isVisible { makeWebView() }
         }
@@ -136,12 +124,10 @@ extension WebPageModel: WKNavigationDelegate, WKUIDelegate {
     }
 
     private func record(_ error: any Error) {
-        // A navigation replaced by another one is not a failure.
         if (error as NSError).code == NSURLErrorCancelled { return }
         failure = error.localizedDescription
     }
 
-    /// Only http(s) stays in the pane; mailto:, app links and the like go to the system.
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
         guard let url = navigationAction.request.url, let scheme = url.scheme?.lowercased() else { return .cancel }
         if ["http", "https", "about", "blob", "data"].contains(scheme) { return .allow }
@@ -149,7 +135,6 @@ extension WebPageModel: WKNavigationDelegate, WKUIDelegate {
         return .cancel
     }
 
-    /// `target="_blank"` and `window.open`: open in this pane instead of a window the app has no place for.
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
                  for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
         if let url = navigationAction.request.url { webView.load(URLRequest(url: url)) }

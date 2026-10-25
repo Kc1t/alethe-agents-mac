@@ -1,18 +1,14 @@
 import Foundation
 
-/// What kind of project a folder holds (upstream `project_detector.rs` `ProjectStack`). A backend
-/// without a frontend is `cli`, as upstream reports it.
 public enum ProjectStack: String, Codable, CaseIterable, Sendable {
     case web, cli, desktop, fullstack, unknown
 }
 
-/// The result of `ProjectStackDetector.detect(_:)` (upstream `StackDetection`).
 public struct StackDetection: Codable, Equatable, Sendable {
     public var stack: ProjectStack
     public var hasFrontend: Bool
     public var hasBackend: Bool
     public var hasTauri: Bool
-    /// Validation commands for the stack, in upstream's order.
     public var suggestedCommands: [String]
 
     public init(stack: ProjectStack, hasFrontend: Bool, hasBackend: Bool, hasTauri: Bool, suggestedCommands: [String]) {
@@ -24,11 +20,8 @@ public struct StackDetection: Codable, Equatable, Sendable {
     }
 }
 
-/// Port of upstream `detect_project_stack`: looks only at well-known manifests at the folder's top
-/// level, so it is cheap, but it still reads files; call it off the main thread.
 public enum ProjectStackDetector {
     public enum Failure: Error, Equatable, Sendable {
-        /// Upstream `repo_not_found`.
         case folderNotFound
     }
 
@@ -85,7 +78,6 @@ public enum ProjectStackDetector {
         return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && !isDirectory.boolValue
     }
 
-    /// A `dev`/`build`/`start` script or a known frontend dependency; unreadable JSON is no signal.
     private static func packageHasFrontendSignal(_ file: URL) -> Bool {
         guard let data = try? Data(contentsOf: file),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return false }

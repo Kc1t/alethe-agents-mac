@@ -2,15 +2,11 @@ import AletheDesign
 import AletheIntegrations
 import SwiftUI
 
-/// Add Server (upstream `AddServerFlow`: registry search or manual entry, env hints, target agents)
-/// and Edit Server (one agent's record). Stored secrets are never put in a field: an edited row left
-/// empty keeps its value.
 struct McpServerEditor: View {
     enum Source: Hashable { case registry, manual }
     enum RegistryFilter: Hashable { case all, local, remote }
 
     let model: McpManagerModel
-    /// Nil adds a server.
     let editing: McpServerRecord?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.theme) private var theme
@@ -22,7 +18,6 @@ struct McpServerEditor: View {
     @State private var failure: String?
     @State private var saving = false
     @State private var prepared = false
-    // Registry
     @State private var term = ""
     @State private var filter = RegistryFilter.all
     @State private var page: McpRegistryPage?
@@ -119,8 +114,6 @@ struct McpServerEditor: View {
         .frame(width: metrics.size(640), height: metrics.size(600))
     }
 
-    // MARK: Registry
-
     private var registry: some View {
         VStack(alignment: .leading, spacing: metrics.space(.m)) {
             TextField(text: $term, prompt: Text("mcp.registry.search")) { Text("mcp.registry.search") }
@@ -209,7 +202,6 @@ struct McpServerEditor: View {
         .accessibilityIdentifier("mcp.registry.entry.\(entry.id)")
     }
 
-    /// Debounced like upstream (320 ms); a new term cancels the previous search.
     private func search() async {
         guard editing == nil else { return }
         registryState = .loading
@@ -241,8 +233,6 @@ struct McpServerEditor: View {
             entries += next.entries.filter { !known.contains($0.id) }
         }
     }
-
-    // MARK: Form
 
     private var form: some View {
         VStack(alignment: .leading, spacing: metrics.space(.m)) {
@@ -346,8 +336,6 @@ struct McpServerEditor: View {
         return McpAgent.allCases.filter { targets.contains($0) && unavailable($0, server: server, existing: existing) == nil }
     }
 
-    // MARK: Footer
-
     private var footer: some View {
         HStack {
             if let failure {
@@ -392,8 +380,6 @@ struct McpServerEditor: View {
         }
     }
 
-    // MARK: Pieces
-
     private func field<Content: View>(_ title: LocalizedStringKey, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: metrics.space(.xxs)) {
             Text(title).font(metrics.font(.footnote).weight(.semibold))
@@ -408,7 +394,6 @@ struct McpServerEditor: View {
     }
 }
 
-/// Env or header rows: key, value (a secure field for secrets), passthrough, remove.
 private struct McpEnvRowsEditor: View {
     let title: LocalizedStringKey
     @Binding var rows: [McpEnvDraft]

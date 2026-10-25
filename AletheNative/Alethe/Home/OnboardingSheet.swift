@@ -6,10 +6,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// The first-run sheet (upstream `OnboardingModal`, SET-7): name, the optional Tauri import, style
-/// and theme, agents, features and MCP servers. Keyboard-first — Return goes on, ⌘[ goes back, Esc
-/// skips — and every choice applies at once, so skipping keeps what was already chosen. Finishing
-/// hands over to the setup steps on Home (P3-16).
 struct OnboardingSheet: View {
     let workspace: WorkspaceModel
     let undoManager: UndoManager?
@@ -67,8 +63,6 @@ struct OnboardingSheet: View {
             tauriAvailable = await Task.detached { !TauriImportSheet.availableProfiles().isEmpty }.value
         }
     }
-
-    // MARK: - Web chrome (OnboardingModal.module.css)
 
     private var webBody: some View {
         let shape = RoundedRectangle(cornerRadius: metrics.radius(.lg))
@@ -164,8 +158,6 @@ struct OnboardingSheet: View {
             : String(localized: "onboarding.web.footerNote")
     }
 
-    // MARK: - Chrome
-
     private var header: some View {
         HStack(spacing: metrics.space(.m)) {
             Text("onboarding.kicker")
@@ -217,8 +209,6 @@ struct OnboardingSheet: View {
                      Feature.allCases.count)
             : String(localized: "onboarding.footnote")
     }
-
-    // MARK: - Steps
 
     @ViewBuilder
     private var content: some View {
@@ -309,8 +299,6 @@ struct OnboardingSheet: View {
         }
     }
 
-    // MARK: - Actions
-
     private var suggestedName: String {
         if let profileID = environment.profileID, let entry = environment.profiles?.document.profile(profileID),
            let named = entry.name {
@@ -329,7 +317,6 @@ struct OnboardingSheet: View {
             if isLast { finish() } else { move(1) }
             return
         }
-        // The name is the running profile's name (P5-9).
         guard let profileID = environment.profileID else { return move(1) }
         saving = true
         let trimmedPhoto = photo.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -380,7 +367,6 @@ struct OnboardingSheet: View {
     }
 }
 
-/// A step's title and one-line explanation.
 private struct OnboardingStepTitle: View {
     let title: LocalizedStringKey
     let subtitle: LocalizedStringKey
@@ -401,9 +387,6 @@ private struct OnboardingStepTitle: View {
     }
 }
 
-// MARK: - Import
-
-/// The Tauri app's data (P1-12): the import sheet over this one, then what it added.
 private struct OnboardingImportStep: View {
     let workspace: WorkspaceModel
     let undoManager: UndoManager?
@@ -441,9 +424,6 @@ private struct OnboardingImportStep: View {
     }
 }
 
-// MARK: - Agents
-
-/// The agents found on this Mac (Settings › Agents rows: turn on or off, install through P3-3).
 private struct OnboardingAgentsStep: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics
@@ -474,10 +454,6 @@ private struct OnboardingAgentsStep: View {
     }
 }
 
-// MARK: - MCP
-
-/// MCP servers found per agent and the gaps between agents (upstream `McpStep`); Sync All copies
-/// each server to the agents missing it through the MCP store (P5-21), never overwriting.
 private struct OnboardingMcpStep: View {
     let store: McpStore?
     @Environment(\.theme) private var theme
@@ -615,9 +591,6 @@ private struct OnboardingMcpStep: View {
     }
 }
 
-// MARK: - Welcome back
-
-/// Welcome back after an update or a long absence (upstream `WelcomeModal`).
 struct WelcomeBackSheet: View {
     let welcome: WelcomeBack
     @Environment(AppEnvironment.self) private var environment
@@ -718,14 +691,11 @@ struct WelcomeBackSheet: View {
     }
 }
 
-// MARK: - Launch
-
 extension AppEnvironment {
     static var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
     }
 
-    /// The MCP store over the integrations home, backing up into the running profile.
     var mcpStore: McpStore? {
         guard let locations, let profileID else { return nil }
         var home = McpHome.current()
@@ -737,7 +707,6 @@ extension AppEnvironment {
         return McpStore(home: home, writer: ConfigFileWriter(profileDirectory: locations.profileDirectory(profileID)))
     }
 
-    /// Records the launch and opens the onboarding or welcome back when due and nothing else is shown.
     func greetLaunch() {
         guard let preferences, let workspace else { return }
         var greeting = LaunchGreeting.none
@@ -754,8 +723,6 @@ extension AppEnvironment {
         }
     }
 
-    /// UI tests launch on a fresh data root every time: the greeting appears only when the test asks
-    /// for it (`-AletheUITestOnboarding YES`, `-AletheUITestWelcome YES`).
     private static func greets(_ testFlag: String) -> Bool {
         #if DEBUG
         if UserDefaults.standard.string(forKey: "AletheDataRoot") != nil {

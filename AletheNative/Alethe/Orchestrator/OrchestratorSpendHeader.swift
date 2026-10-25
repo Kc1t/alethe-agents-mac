@@ -2,10 +2,6 @@ import AletheDesign
 import AletheOrchestrator
 import SwiftUI
 
-/// The board header's spend per agent for the selected planner (upstream `aggregateAgentSpend`:
-/// cost, or "no price" when no worker of that agent is priced) and a warning chip per agent at the
-/// headroom threshold or rate-limited, with its reset (upstream `useOrchestratorQuotaWarnings`).
-/// While it is on screen the board counts as open for the usage feed.
 struct OrchestratorSpendHeader: View {
     let jobs: [JobSnapshot]
     @Environment(AppEnvironment.self) private var environment

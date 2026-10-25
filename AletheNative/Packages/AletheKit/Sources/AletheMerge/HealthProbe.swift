@@ -1,14 +1,11 @@
 import Foundation
 
-/// Outcome of booting the project's start command in the merge environment (upstream `HealthProbeResult`).
-/// A warning signal only: it never blocks a merge.
 public struct HealthProbeResult: Codable, Hashable, Sendable {
     public var started: Bool
     public var responded: Bool
     public var statusCode: Int?
     public var elapsedMs: Int
     public var outputTail: String
-    /// `nil` when the app is not an Alethe core; the terminal round-trip is not ported (see P4-12 notes).
     public var terminalVerified: Bool?
 
     public init(started: Bool, responded: Bool, statusCode: Int?, elapsedMs: Int, outputTail: String, terminalVerified: Bool? = nil) {
@@ -20,7 +17,6 @@ public struct HealthProbeResult: Codable, Hashable, Sendable {
         self.terminalVerified = terminalVerified
     }
 
-    /// Any HTTP answer counts as "responded" upstream; a 2xx/3xx is additionally healthy.
     public var healthy: Bool { responded && (statusCode.map { (200..<400).contains($0) } ?? false) }
 }
 
@@ -29,25 +25,18 @@ public enum HealthProbeError: Error, Equatable, Sendable {
     case spawnFailed(String)
 }
 
-/// Port of upstream `health_probe`: runs `sh -c <start>` with `PORT` set to a free port, polls
-/// `http://127.0.0.1:<port><path>` until it answers, the process exits or the timeout elapses, then
-/// always kills the process tree it started (`GroupProcess`).
 public struct HealthProbe: Sendable {
     public static let maxOutputTail = 8 * 1024
 
     public var shell: URL
     public init(shell: URL = URL(fileURLWithPath: "/bin/sh")) { self.shell = shell }
 
-    // MARK: Pure helpers
-
-    /// `http://127.0.0.1:<port>` plus `path`, defaulting to `/` and adding a missing leading slash.
     public static func probeURL(port: Int, path: String?) -> URL? {
         let trimmed = (path ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let normalized = trimmed.isEmpty ? "/" : (trimmed.hasPrefix("/") ? trimmed : "/" + trimmed)
         return URL(string: "http://127.0.0.1:\(port)\(normalized)")
     }
 
-    /// Keeps the last `limit` bytes of `text` (upstream `append_capped`), on a character boundary.
     public static func capped(_ text: String, limit: Int) -> String {
         let utf8 = text.utf8
         guard utf8.count > limit else { return text }
@@ -56,16 +45,12 @@ public struct HealthProbe: Sendable {
         return String(text[index...])
     }
 
-    /// Whether an `/api/health` body identifies an Alethe core (`service: "alethe-core"`).
     public static func isAletheCore(healthBody data: Data) -> Bool {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return false }
         return json["service"] as? String == "alethe-core"
     }
 
-    /// Timeout floor matches upstream (`timeout_ms.max(1000)`).
     public static func effectiveTimeout(ms: Int) -> Int { max(ms, 1000) }
-
-    // MARK: Run
 
     public func run(in directory: URL, startCommand: String, path: String?, timeoutMs: Int = 8000) async throws -> HealthProbeResult {
         var isDir: ObjCBool = false
@@ -83,7 +68,6 @@ public struct HealthProbe: Sendable {
             let data = handle.availableData
             if data.isEmpty { handle.readabilityHandler = nil } else { buffer.append(data) }
         }
-        // Always: the server and everything it started, even processes in their own groups.
         defer {
             process.killTree()
             process.output.readabilityHandler = nil

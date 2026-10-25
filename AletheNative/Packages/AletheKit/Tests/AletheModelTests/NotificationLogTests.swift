@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheModel
 
-/// In-app notifications (P3-11; upstream `pushToast` dedupe and cap).
 @Suite struct NotificationLogTests {
     @Test func duplicatesWithinFiveSecondsAreDropped() {
         var log = NotificationLog()

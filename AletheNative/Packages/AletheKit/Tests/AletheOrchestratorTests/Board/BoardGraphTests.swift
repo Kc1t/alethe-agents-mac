@@ -3,8 +3,6 @@ import Testing
 import AletheIntegrations
 @testable import AletheOrchestrator
 
-// Ported from upstream `src/lib/orchestratorGraph.test.ts` (30 cases), plus the media card units.
-
 private typealias L = BoardLayout
 
 private let runTop = L.canvasPadding

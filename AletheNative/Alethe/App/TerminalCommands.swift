@@ -4,7 +4,6 @@ import AppKit
 import AletheTerminal
 import SwiftUI
 
-/// Terminal menu: actions on the focused pane's visible terminal.
 struct TerminalCommands: Commands {
     let environment: AppEnvironment
 
@@ -53,7 +52,6 @@ struct TerminalCommands: Commands {
         }
     }
 
-    /// Confirms when several agents would restart, then reports the outcome.
     @MainActor private func resumePrevious() {
         let agents = environment.runningTerminals.agents
         if agents > 1 {
@@ -84,7 +82,6 @@ struct TerminalCommands: Commands {
 }
 
 extension AppEnvironment {
-    /// The terminal of the focused pane's active tab, when it is running.
     var focusedTerminal: TerminalPaneView? {
         guard let document = workspace?.document, let pane = document.workspace.focusedPaneID,
               let tab = document.pane(pane)?.pane.activeTab else { return nil }

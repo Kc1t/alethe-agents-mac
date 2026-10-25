@@ -2,8 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// ThemePickerModal.tsx + controls.module.css (`themeGrid`, `pillRow`): UI theme cards, visual style
-/// and terminal theme in one 620-point modal. Choices apply at once; Done marks the walkthrough step.
 struct ThemePickerWebModal: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.modalsM2Close) private var closeOverlay
@@ -70,7 +68,6 @@ struct ThemePickerWebModal: View {
         .accessibilityAddTraits(active ? .isSelected : [])
     }
 
-    /// Web `done`: mark the appearance walkthrough step and close.
     private func done() {
         environment.preferences?.update { preferences in
             var steps = preferences.setupDone ?? []

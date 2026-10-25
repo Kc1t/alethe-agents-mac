@@ -2,9 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// Workspace tabs above the panes (upstream TitleBar tabs): back/forward, one tab per saved view,
-/// pinned tabs first. Click shows a tab, the close button closes it (⇧⌘T reopens), the context menu
-/// pins it; tabs reorder by dragging.
 struct WorkspaceTabBar: View {
     let workspace: WorkspaceModel
     @Environment(AppEnvironment.self) private var environment
@@ -68,7 +65,6 @@ struct WorkspaceTabBar: View {
         let label = document.label(of: tab)
         let name = label?.name ?? String(localized: "workspaceTabs.empty")
         let radius = metrics.radius(.sm)
-        // Upstream `groupTab`: 26pt, muted until hovered; the active tab sits pressed into the bar.
         return HStack(spacing: metrics.isWebInterface ? metrics.size(2) : metrics.space(.s)) {
             if tab.pinned {
                 Image(systemName: "pin.fill")
@@ -109,8 +105,6 @@ struct WorkspaceTabBar: View {
             } else if let more = label?.more, more > 0 {
                 AletheCountPill(more)
             }
-            // Pure SwiftUI, not a borderless (AppKit-backed) button: inside the horizontal scroll
-            // view an NSButton reports a wrong frame and cannot be hit where it is drawn.
             Image(systemName: "xmark")
                 .font(metrics.font(size: metrics.isWebInterface ? 11 : 8, weight: .bold))
                 .frame(width: metrics.size(metrics.isWebInterface && !isActive && !isHovered ? 0 : 18), height: metrics.size(18))
@@ -217,7 +211,6 @@ struct WorkspaceTabBar: View {
     }
 }
 
-/// Reorders tabs live while one is dragged over another.
 private struct TabDropDelegate: DropDelegate {
     let target: WorkspaceTabID
     @Binding var dragging: WorkspaceTabID?

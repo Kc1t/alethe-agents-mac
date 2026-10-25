@@ -4,8 +4,6 @@ import AlethePluginKit
 import ExtensionKit
 import SwiftUI
 
-/// Settings › Plugins › Third-party extensions (P4-19): discovered ExtensionKit extensions with an
-/// enable toggle that goes through the consent prompt, their commands, and the system approval UI.
 struct ExtensionSettingsSection: View {
     let manager: ExtensionManager
     @Environment(\.theme) private var theme
@@ -53,7 +51,6 @@ struct ExtensionSettingsSection: View {
                 .padding()
             }
         }
-        // Web interface: the themed window overlay; closing it (X, backdrop, Escape) declines.
         .gitWebSheet(item: Binding { manager.pendingConsent } set: { value in
             if value == nil { manager.resolveConsent(approved: false) } else { manager.pendingConsent = value }
         }, width: 480) { request in
@@ -142,7 +139,6 @@ private struct ExtensionRow: View {
     }
 }
 
-/// The capability prompt shown on first enable, and when an update asks for more.
 struct ExtensionConsentSheet: View {
     let request: ExtensionManager.ConsentRequest
     let resolve: (Bool) -> Void
@@ -210,7 +206,6 @@ struct ExtensionConsentSheet: View {
     }
 }
 
-/// The system's enable/approve list for extensions of Alethe's point.
 private struct ExtensionBrowser: NSViewControllerRepresentable {
     func makeNSViewController(context: Context) -> EXAppExtensionBrowserViewController {
         EXAppExtensionBrowserViewController()

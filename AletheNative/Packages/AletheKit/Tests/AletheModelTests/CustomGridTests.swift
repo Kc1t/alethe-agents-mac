@@ -3,11 +3,9 @@ import Foundation
 import Testing
 @testable import AletheModel
 
-/// Port of upstream `gridLayout.test.ts`, plus presets, geometry and the document operations (P2-19).
 @Suite struct CustomGridTests {
     private let ids = ["a", "b", "c"]
 
-    /// 2×2 with three children: the bottom-right slot is free.
     private func threeInFour() -> CustomGrid {
         CustomGrid(cols: 2, rows: 2, cells: [
             "a": GridCell(col: 1, row: 1), "b": GridCell(col: 2, row: 1), "c": GridCell(col: 1, row: 2),

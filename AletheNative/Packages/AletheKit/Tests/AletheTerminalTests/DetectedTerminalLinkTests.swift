@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheTerminal
 
-/// Cases from origin/main src/components/XTermView/terminalLinks.test.ts.
 @Suite struct DetectedTerminalLinkTests {
     @Test(arguments: [
         ("https://github.com/login/device in your browser...", ["https://github.com/login/device"]),

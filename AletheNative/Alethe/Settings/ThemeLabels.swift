@@ -1,8 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// Picker names of the built-in themes (upstream `theme.<id>.label` / `.desc`). Keys are literal so
-/// the string gate can see them; an unknown id (a plugin theme, later) shows its id.
 extension Theme {
     var localizedName: Text {
         switch id {

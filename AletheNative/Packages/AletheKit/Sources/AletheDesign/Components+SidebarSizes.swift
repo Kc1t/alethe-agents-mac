@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Clean's final layout-button rules override the earlier 24 × 22 control.
 public struct AletheSidebarSizeLayoutStyle: ButtonStyle {
     let isSelected: Bool
     @Environment(\.metrics) private var metrics
@@ -38,7 +37,6 @@ private struct SidebarSizeLayoutButton: View {
     }
 }
 
-/// Sidebar working indicators are 13 points in Clean and 14 in Normal.
 public struct AletheSidebarSizeSpinner: View {
     @Environment(\.metrics) private var metrics
     @Environment(\.theme) private var theme

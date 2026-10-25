@@ -3,7 +3,6 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// The workspace area: open projects as containers of panes (`PaneHost`), or the empty state.
 struct WorkspaceView: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme
@@ -26,7 +25,6 @@ struct WorkspaceView: View {
             environment.workspace?.update { $0.syncActiveTab() }
         }
         .onChange(of: allTabIDs) { _, tabs in environment.terminals.prune(keeping: tabs) }
-        // Looking at a tab reads its completion (upstream clears `completionUnread` on focus).
         .onChange(of: frontTab) { _, tab in if let tab { environment.terminals.markRead(tab) } }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             if let frontTab { environment.terminals.markRead(frontTab) }
@@ -38,7 +36,6 @@ struct WorkspaceView: View {
             environment.contentPanes.prune(keeping: panes)
             if let focus = environment.focusModePaneID, !panes.contains(focus) { environment.focusModePaneID = nil }
         }
-        // A terminal opened from Home (its sheets, the quick launch) shows the workspace.
         .onChange(of: environment.workspace?.document.workspace.focusedPaneID) { _, pane in
             if pane != nil { environment.showingHome = false }
         }
@@ -69,7 +66,6 @@ struct WorkspaceView: View {
                          terminalGenerations: environment.terminals.generations,
                          focusModePane: environment.focusModePaneID)
             } else if metrics.isWebInterface, emptyGroupID == nil, emptyProject == nil, let workspace = environment.workspace {
-                // Upstream `NoWorkspace` without a project: the quick-start card.
                 WorkspaceQuickStartCard(workspace: workspace)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if metrics.isWebInterface {
@@ -90,7 +86,6 @@ struct WorkspaceView: View {
         return document.workspace.selectedProjectID.flatMap(document.project) ?? document.projects.first
     }
 
-    /// The group whose (empty) composition tab is active.
     private var emptyGroupID: GroupID? { environment.workspace?.document.activeWorkspaceTab?.webGroupID }
 
     private var emptyGroup: ProjectGroup? {
@@ -98,7 +93,6 @@ struct WorkspaceView: View {
         return environment.workspace?.document.groups.first { $0.id == id }
     }
 
-    /// Upstream `NoWorkspace` group branch: open the group, new project in it, Find/Jump.
     private func groupActions(_ group: ProjectGroup) -> some View {
         let document = environment.workspace?.document
         let members = Set((document?.groups ?? []).filter { document?.isGroup($0.id, inside: group.id) == true }.flatMap(\.projectIDs))
@@ -219,7 +213,6 @@ struct WorkspaceView: View {
     }
 }
 
-/// Opens the new-terminal sheet for a project.
 struct NewTerminalButton: View {
     let project: Project
     @Environment(AppEnvironment.self) private var environment

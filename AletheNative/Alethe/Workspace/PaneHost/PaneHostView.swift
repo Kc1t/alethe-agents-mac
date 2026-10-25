@@ -3,16 +3,12 @@ import AletheModel
 import AppKit
 import SwiftUI
 
-/// The workspace pane area (ADR-3): open projects side by side as containers, each laying out its
-/// panes. AppKit owns the terminal surfaces, so SwiftUI identity changes never recreate them.
 @MainActor
 final class PaneHostView: NSView {
     private var containers: [ProjectID: ContainerView] = [:]
-    /// Containers shown, left to right (just the fullscreen one when set).
     private var order: [ProjectID] = []
     private var collapsed: Set<ProjectID> = []
     private var dividers: [DividerView] = []
-    /// Weights of every open container, in `openProjectIDs` order.
     private var weights: [Double] = []
     private var openIDs: [ProjectID] = []
     private var context: PaneHostContext?
@@ -26,9 +22,7 @@ final class PaneHostView: NSView {
     private var selectedPane: (project: ProjectID, pane: PaneID)?
     private var mouseMonitor: Any?
     private var keyMonitor: Any?
-    /// Flat workspace: the one container's panes and the project each belongs to.
     private var flatOwners: [PaneID: Project] = [:]
-    /// Focus mode (upstream `FocusOverlay`): the pane floating over a blurred backdrop.
     private var focusModePane: PaneID?
     private var backdrop: FocusBackdropView?
     private var focusOverlay: FocusOverlayView?
@@ -36,7 +30,6 @@ final class PaneHostView: NSView {
     private weak var floatingContainer: ContainerView?
     private var overlayAnimator: FrameAnimator?
 
-    /// Id of the single container of a flat workspace.
     static let flatID = ProjectID(rawValue: "alethe.flat")
 
     private struct ContainerDrag {
@@ -56,8 +49,6 @@ final class PaneHostView: NSView {
         layer?.backgroundColor = context.theme.nsColor(.bg).cgColor
         FrameAnimator.reducesMotion = context.metrics.reducesMotion
 
-        // Flat (upstream `workspaceFlat`): every open project's shown panes in one Auto area, unless
-        // a project is shown alone.
         let flat = state.flat && state.fullscreenProjectID.map { !openIDs.contains($0) } ?? true && !openIDs.isEmpty
         var projects: [ProjectID: Project] = [:]
         flatOwners = [:]
@@ -71,7 +62,6 @@ final class PaneHostView: NSView {
             for id in openIDs {
                 guard var project = document.project(id) else { continue }
                 if context.metrics.isWebInterface, let isolated = document.activeWorkspaceTab?.webPaneID {
-                    // A terminal workspace displays its pane independently of the project's active grid.
                     project.panes = project.panes.filter { $0.id == isolated }
                     for index in project.panes.indices { project.panes[index].gridID = nil }
                     project.activeGridID = nil
@@ -135,23 +125,19 @@ final class PaneHostView: NSView {
     private var collapsedWidth: CGFloat { context.map { $0.metrics.size($0.metrics.isWebInterface ? 36 : 40) } ?? 40 }
     private var area: CGRect { context?.metrics.isWebInterface == true ? bounds : bounds.insetBy(dx: gap, dy: gap) }
 
-    /// Shown containers that are not collapsed: the ones that share the width and have dividers.
     private var expanded: [ProjectID] { order.filter { !collapsed.contains($0) } }
 
-    /// Weights of the expanded containers, from the weights of all open ones.
     private var expandedWeights: [Double] {
         guard weights.count == openIDs.count else { return [] }
         return expanded.compactMap { id in openIDs.firstIndex(of: id).map { weights[$0] } }
     }
 
-    /// Width of each expanded container.
     private func expandedSizes() -> [CGFloat] {
         if let liveSizes { return liveSizes }
         let fixed = CGFloat(order.count - expanded.count) * (collapsedWidth + gap)
         return TrackMath.sizes(count: expanded.count, weights: expandedWeights, total: max(0, area.width - fixed), gap: gap)
     }
 
-    /// Frame of every shown container, collapsed ones at their fixed width.
     private func frames() -> [ProjectID: CGRect] {
         if let containerGrid, collapsed.isEmpty {
             let ids = order.map(\.rawValue)
@@ -191,10 +177,6 @@ final class PaneHostView: NSView {
         layoutFocusMode(frames)
     }
 
-    // MARK: - Focus mode
-
-    /// Move the existing surface above the whole window, including both sidebars and title bar.
-    /// Reparenting preserves the PTY, scrollback and selection while the pane expands.
     private func layoutFocusMode(_ frames: [ProjectID: CGRect]) {
         guard let pane = focusModePane,
               let container = containers.values.first(where: { $0.paneViews.contains { $0.paneID == pane } }),
@@ -254,9 +236,6 @@ final class PaneHostView: NSView {
         backdrop = nil
     }
 
-    // MARK: - Container resizing
-
-    /// One divider between each pair of neighboring expanded containers.
     private func layoutDividers(_ frames: [ProjectID: CGRect]) {
         let pairs = containerGrid != nil && collapsed.isEmpty ? [] : zip(expanded, expanded.dropFirst()).map { ($0, $1) }
         while dividers.count > pairs.count { dividers.removeLast().removeFromSuperview() }
@@ -273,7 +252,6 @@ final class PaneHostView: NSView {
         for (index, view) in dividers.enumerated() {
             guard let left = frames[pairs[index].0] else { continue }
             view.configure(context: context)
-            // Right after the left container (a collapsed strip may follow before the next one).
             let center = left.maxX + gap / 2
             view.frame = CGRect(x: center - handle / 2, y: area.minY, width: handle, height: area.height)
         }
@@ -291,7 +269,6 @@ final class PaneHostView: NSView {
     private func endResize(divider: Int) {
         let settled = TrackMath.drag(resizeBase, divider: divider, delta: resizeDelta, minimum: minimumContainer)
         let settledWeights = TrackMath.weights(settled)
-        // Collapsed containers keep their stored weight for when they expand again.
         var all = weights.count == openIDs.count ? weights : Array(repeating: 1.0 / Double(max(1, openIDs.count)), count: openIDs.count)
         let expandedTotal = expanded.compactMap { openIDs.firstIndex(of: $0).map { all[$0] } }.reduce(0, +)
         for (index, id) in expanded.enumerated() {
@@ -305,9 +282,6 @@ final class PaneHostView: NSView {
         context?.setContainerWeights(weights)
     }
 
-    // MARK: - Container reorder
-
-    /// Dragging a container's header moves it among the open ones; neighbors make room on release.
     private func containerDragged(_ project: ProjectID, translation: CGSize?) {
         guard let view = containers[project], context?.environment.workspace?.document.workspace.fullscreenProjectID == nil else {
             return
@@ -332,17 +306,12 @@ final class PaneHostView: NSView {
         containerDrag = nil
         view.alphaValue = 1
         animateNextLayout = true
-        // No fullscreen while dragging, so `order` is every open container and `target` (how many
-        // others sit left of the dragged center) is its index once removed and reinserted.
         if drag.target != order.firstIndex(of: drag.project) {
             context?.moveContainer(drag.project, to: drag.target)
         }
         needsLayout = true
     }
 
-    // MARK: - Focus
-
-    /// A click anywhere in a pane focuses it; the click itself still reaches the terminal.
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         if let mouseMonitor { NSEvent.removeMonitor(mouseMonitor) }
@@ -355,7 +324,6 @@ final class PaneHostView: NSView {
             return event
         }
         if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
-        // Esc leaves focus mode before the terminal sees it (upstream captures it too).
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self, event.window === self.window, event.keyCode == 53, self.focusModePane != nil else { return event }
             self.context?.setFocusMode(nil)
@@ -391,8 +359,6 @@ final class PaneHostView: NSView {
     }
 }
 
-/// SwiftUI bridge. Everything the host renders is passed in as values so SwiftUI calls
-/// `updateNSView` whenever any of it changes.
 struct PaneHost: NSViewRepresentable {
     let document: WorkspaceDocument
     let terminalStates: [TabID: TerminalRegistry.State]
@@ -416,7 +382,6 @@ struct PaneHost: NSViewRepresentable {
     }
 }
 
-/// Focus mode backdrop: blurs and dims the workspace behind the focused pane; a click leaves.
 final class FocusBackdropView: NSVisualEffectView {
     var onClick: () -> Void = {}
     var tint: NSColor? {
@@ -454,7 +419,6 @@ final class FocusBackdropView: NSVisualEffectView {
     }
 }
 
-/// A window-level coordinate space for the existing terminal surface and its backdrop.
 @MainActor
 private final class FocusOverlayView: NSView {
     override var isFlipped: Bool { true }

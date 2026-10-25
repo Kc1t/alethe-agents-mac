@@ -5,7 +5,6 @@ import AletheTodos
 import AppKit
 import SwiftUI
 
-/// The user's open pull requests via `gh` (P4-14); details (checks, review, draft) load per row.
 struct PullRequestsView: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme
@@ -345,7 +344,6 @@ struct PullRequestsView: View {
         }
     }
 
-    /// Fetches one row's details once per load; failures leave the row's summary as is.
     private func loadDetails(_ pr: PullRequestSummary) async {
         guard !detailed.contains(pr.id) else { return }
         detailed.insert(pr.id)

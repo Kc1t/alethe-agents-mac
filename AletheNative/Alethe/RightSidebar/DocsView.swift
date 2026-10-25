@@ -5,7 +5,6 @@ import AletheModel
 import AlethePluginKit
 import SwiftUI
 
-/// Project Markdown files and open documents, rendered inside the inspector.
 struct DocsView: View {
     @Binding var droppedFiles: [URL]
 
@@ -277,7 +276,6 @@ struct DocsView: View {
         path.hasPrefix(folder + "/") ? String(path.dropFirst(folder.count + 1)) : path
     }
 
-    /// `*.md` / `*.markdown` files up to three levels deep, skipping hidden and dependency folders.
     nonisolated static func scan(_ folder: String, maxDepth: Int = 3, limit: Int = 200) -> [String] {
         let root = URL(filePath: folder, directoryHint: .isDirectory)
         guard let enumerator = FileManager.default.enumerator(

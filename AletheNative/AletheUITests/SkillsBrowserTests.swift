@@ -1,7 +1,5 @@
 import XCTest
 
-/// History › Skills… (P5-15) over a seeded throwaway home (`-AletheUITestSeed skills` with
-/// `-AletheIntegrationsHome`): list, filter, detail, and removing a linked skill keeps the shared copy.
 @MainActor
 final class SkillsBrowserTests: XCTestCase {
     override func setUp() async throws {
@@ -45,7 +43,6 @@ final class SkillsBrowserTests: XCTestCase {
         XCTAssertTrue(element(app, "skills.files").exists)
         XCTAssertTrue(element(app, "skills.remove").exists)
 
-        // Bundled: no remove.
         element(app, "skills.row.imagegen").click()
         XCTAssertTrue(app.staticTexts["Images"].waitForExistence(timeout: 5))
         XCTAssertFalse(element(app, "skills.remove").exists)
@@ -78,7 +75,6 @@ final class SkillsBrowserTests: XCTestCase {
         let note = element(app, "skills.note")
         XCTAssertTrue(note.waitForExistence(timeout: 5))
         XCTAssertTrue((note.value as? String ?? note.label).contains("shared copy was kept"))
-        // Only the shared store has it now.
         XCTAssertTrue(eventually { !self.element(app, "skills.remove.claude").exists })
         XCTAssertTrue(element(app, "skills.row.brand").exists)
         app.terminate()

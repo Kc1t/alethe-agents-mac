@@ -1,8 +1,5 @@
 import XCTest
 
-/// Orchestrator pane entry points (P6-13): New Terminal › Orchestration opens a planner with the
-/// board beside it and turns the feature on; Add Content and the project menu offer the board only
-/// while the feature is on.
 @MainActor
 final class OrchestratorEntryTests: XCTestCase {
     override func setUp() async throws {
@@ -30,7 +27,6 @@ final class OrchestratorEntryTests: XCTestCase {
 
         XCTAssertTrue(element(app, "pane.header.claude").waitForExistence(timeout: 10), "the planner opens")
         XCTAssertTrue(element(app, "orchestrator.pane").waitForExistence(timeout: 5), "the board opens beside it")
-        // The planner registers itself (P6-9), so the board shows its tab or, before that, the empty state.
         XCTAssertTrue(eventually { self.element(app, "orchestrator.empty").exists || self.element(app, "orchestrator.tabs").exists },
                       "the feature is on: the board, not the notice")
         XCTAssertFalse(element(app, "orchestrator.featureOff").exists)

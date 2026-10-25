@@ -2,16 +2,12 @@ import AlethePluginKit
 import Foundation
 import Observation
 
-/// The todo list (global and per-project) and its settings, persisted through the plugin's
-/// `PluginStorage` under the keys `todos` and `settings`. Ports upstream `plugins/todos/store.ts`:
-/// active items stay ahead of completed ones, and a reorder never crosses that boundary.
 @MainActor
 @Observable
 public final class TodoStore {
     static let todosKey = "todos"
     static let settingsKey = "settings"
 
-    /// Every todo, in visible order.
     public private(set) var todos: [Todo] = []
     public private(set) var settings = TodoSettings()
     public private(set) var isLoaded = false
@@ -25,7 +21,6 @@ public final class TodoStore {
         self.now = now
     }
 
-    /// Reads the stored list and settings. Unreadable entries fall back to empty/defaults.
     public func load() async {
         guard let storage else { isLoaded = true; return }
         let stored = (try? await storage.decode([Todo].self, forKey: Self.todosKey)) ?? nil
@@ -35,7 +30,6 @@ public final class TodoStore {
         isLoaded = true
     }
 
-    /// Todos of one list, in visible order.
     public func todos(in scope: TodoScope) -> [Todo] {
         todos.filter(scope.contains)
     }
@@ -44,9 +38,6 @@ public final class TodoStore {
         todos.first { $0.id == id }
     }
 
-    // MARK: Mutations
-
-    /// Adds an active todo after the last active one. Returns nil for an empty title.
     @discardableResult
     public func add(title: String, tags: [String] = [], scope: TodoScope = .global, prURL: URL? = nil) -> Todo? {
         let title = TodoRules.normalizeTitle(title)
@@ -58,7 +49,6 @@ public final class TodoStore {
         return self.todo(id: todo.id)
     }
 
-    /// Adds a todo for a pull request, or returns the existing one with the same URL.
     @discardableResult
     public func addPullRequest(number: Int, title: String, url: URL, scope: TodoScope = .global) -> Todo? {
         if let existing = todos.first(where: { $0.prURL == url }) { return existing }
@@ -89,12 +79,10 @@ public final class TodoStore {
         update(id) { $0.prURL = url }
     }
 
-    /// Moves a todo between the global list and a project's list.
     public func move(_ id: String, to scope: TodoScope) {
         update(id) { $0.projectID = scope.projectID }
     }
 
-    /// Completing moves the item to the end; reopening puts it after the last active item.
     public func toggle(_ id: String) {
         guard var changed = todo(id: id) else { return }
         changed.done.toggle()
@@ -112,7 +100,6 @@ public final class TodoStore {
         write(todos.filter { $0.id != id })
     }
 
-    /// Moves `draggedID` just before `targetID`. Ignored across the active/completed boundary.
     public func reorder(_ draggedID: String, onto targetID: String) {
         guard draggedID != targetID,
               let from = todos.firstIndex(where: { $0.id == draggedID }),
@@ -122,22 +109,18 @@ public final class TodoStore {
         var next = todos
         let dragged = next.remove(at: from)
         let adjusted = next.firstIndex { $0.id == targetID } ?? next.endIndex
-        // Upstream semantics: the dragged item lands just before the target.
         next.insert(dragged, at: adjusted)
         write(next)
     }
 
-    /// Replaces the list with upstream's three default todos.
     public func resetToDefaults() {
         write(TodoRules.defaultTitles.map { Todo(title: $0.title, tags: $0.tags, createdAt: now()) })
     }
 
-    /// Replaces the whole list (template import).
     public func replaceAll(_ todos: [Todo]) {
         write(todos)
     }
 
-    /// Applies and persists a settings change.
     public func updateSettings(_ change: (inout TodoSettings) -> Void) {
         var next = settings
         change(&next)
@@ -147,13 +130,10 @@ public final class TodoStore {
         enqueue { storage in try? await storage.encode(snapshot, forKey: Self.settingsKey) }
     }
 
-    /// Waits for queued writes and flushes the storage file.
     public func flush() async throws {
         await pendingWrite?.value
         try await storage?.flush()
     }
-
-    // MARK: Private
 
     private func update(_ id: String, _ change: (inout Todo) -> Void) {
         guard let index = todos.firstIndex(where: { $0.id == id }) else { return }
@@ -170,7 +150,6 @@ public final class TodoStore {
         enqueue { storage in try? await storage.encode(snapshot, forKey: Self.todosKey) }
     }
 
-    /// Chains writes so they reach the storage actor in order.
     private func enqueue(_ operation: @escaping @Sendable (PluginStorage) async -> Void) {
         guard let storage else { return }
         let previous = pendingWrite
@@ -190,25 +169,21 @@ public final class TodoStore {
 }
 
 extension TodoStore {
-    /// The template file inside `settings.storagePath`.
     public var templateURL: URL? {
         let path = settings.storagePath.trimmingCharacters(in: .whitespaces)
         return path.isEmpty ? nil : URL(filePath: path, directoryHint: .isDirectory).appending(path: TodoTemplate.fileName)
     }
 
-    /// Creates the template in `settings.storagePath` when missing and returns its URL.
     public func ensureTemplate(using files: TodoFileAccess) async throws -> URL {
         guard let templateURL else { throw TodoTemplate.TemplateError.emptyDirectory }
         return try await TodoTemplate.ensure(in: templateURL.deletingLastPathComponent(), using: files)
     }
 
-    /// Replaces the list with the todos read from a JSONC file.
     public func importTemplate(from url: URL, using files: TodoFileAccess) async throws {
         let todos = try TodoTemplate.parse(try await files.read(url), now: now())
         replaceAll(todos)
     }
 
-    /// Writes the list back to a JSONC file.
     public func exportTemplate(to url: URL, using files: TodoFileAccess) async throws {
         try await files.write(TodoTemplate.render(todos), url)
     }

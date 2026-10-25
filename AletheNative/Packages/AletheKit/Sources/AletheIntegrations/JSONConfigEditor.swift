@@ -2,21 +2,12 @@ import AletheFoundation
 import Foundation
 
 public enum JSONConfigError: Error, Equatable, Sendable {
-    /// The text is not JSON (with the parser's line and column).
     case unparsable(OrderedJSONParseError)
-    /// The top-level value is not an object.
     case rootNotAnObject
-    /// A key on the path holds something other than an object; it is never replaced blindly.
     case notAnObject(path: [String])
     case emptyPath
 }
 
-/// Edits one key path of an agent's JSON config and keeps everything else — unknown keys, their
-/// order, number spelling (upstream `mcp_agents.rs` `json_root`/`json_upsert`/`json_remove`/
-/// `json_render`). The output is pretty JSON with a trailing newline, as upstream writes it.
-///
-/// Comments in a JSONC source are accepted for reading (`allowComments`) but are not preserved:
-/// callers must not write a `.jsonc` file back through this editor (upstream refuses them too).
 public struct JSONConfigEditor: Sendable, Equatable {
     public private(set) var root: OrderedJSONObject
 
@@ -24,7 +15,6 @@ public struct JSONConfigEditor: Sendable, Equatable {
         self.root = root
     }
 
-    /// An empty or whitespace-only file is an empty object.
     public init(parsing text: String, allowComments: Bool = false) throws(JSONConfigError) {
         let source = allowComments ? JSONC.strip(text) : text
         guard !source.allSatisfy(\.isWhitespace) else {
@@ -55,8 +45,6 @@ public struct JSONConfigEditor: Sendable, Equatable {
         return object[last]
     }
 
-    /// Sets the value at `path`, creating missing intermediate objects. An existing key keeps its
-    /// position; a new one is appended to its object.
     public mutating func set(_ value: OrderedJSON, at path: [String]) throws(JSONConfigError) {
         guard !path.isEmpty else { throw .emptyPath }
         try Self.update(&root, path: path[...], fullPath: path, create: true) { object, key in
@@ -64,8 +52,6 @@ public struct JSONConfigEditor: Sendable, Equatable {
         }
     }
 
-    /// Removes the key at `path` and returns what it held; `nil` when it was absent. Intermediate
-    /// objects left empty are kept, as upstream does.
     @discardableResult
     public mutating func remove(at path: [String]) throws(JSONConfigError) -> OrderedJSON? {
         guard !path.isEmpty else { throw .emptyPath }
@@ -76,9 +62,6 @@ public struct JSONConfigEditor: Sendable, Equatable {
         return removed
     }
 
-    /// Rewrites only `managed` keys of the object at `path` (creating it when missing) and keeps
-    /// every other key the user added: managed keys are removed, then `values` are set in order
-    /// (upstream `json_upsert`'s shift-remove + insert).
     public mutating func upsertObject(
         at path: [String],
         managedKeys: [String],

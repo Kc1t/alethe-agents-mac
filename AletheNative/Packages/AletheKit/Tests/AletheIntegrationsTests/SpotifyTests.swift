@@ -4,7 +4,6 @@ import Synchronization
 import Testing
 @testable import AletheIntegrations
 
-/// G: upstream `spotify.rs` tests.
 struct SpotifyGoldenTests {
     @Test func parsesRecentTrackAsPausedNowPlaying() throws {
         let item: [String: Any] = [
@@ -125,9 +124,6 @@ struct SpotifyCallbackTests {
     }
 }
 
-// MARK: - Service over a URLProtocol stub
-
-/// Answers every request of a stubbed session; records what was sent.
 final class SpotifyStubProtocol: URLProtocol, @unchecked Sendable {
     struct Sent: Sendable {
         var url: URL
@@ -180,7 +176,6 @@ final class SpotifyStubProtocol: URLProtocol, @unchecked Sendable {
     }
 }
 
-/// U: the service over the stub, with the loopback callback stubbed too. Serialized: one responder.
 @Suite(.serialized, .timeLimit(.minutes(1)))
 struct SpotifyServiceTests {
     private let profile = "default"

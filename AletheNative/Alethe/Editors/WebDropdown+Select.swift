@@ -1,7 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// Keep the existing native control while giving every web select the same themed listbox.
 struct InterfaceSelect<Value: Hashable, Label: View>: View {
     @Binding var selection: Value
     let options: [Value]
@@ -20,9 +19,6 @@ struct InterfaceSelect<Value: Hashable, Label: View>: View {
     }
 }
 
-/// Values from the raw select rules; their opened lists share Dropdown's listbox.
-/// reset.css's 32px minimum wins over filter/sort's 28px height. Their background shorthands
-/// also remove reset.css's arrow image; controls.module.css explicitly restores it for shortcuts.
 struct WebSelectAppearance: Sendable {
     var height: CGFloat = 32
     var fontSize: CGFloat = 13
@@ -41,7 +37,6 @@ struct WebSelectAppearance: Sendable {
     static let shortcut = Self(fontSize: 14, trailing: 10, radius: .md, raw: true)
 }
 
-/// The web has compact Home and Todo choice lists in addition to the standard select.
 enum WebDropdownMenuStyle: Equatable, Sendable {
     case standard, todo, homeAgent, homeMode
 
@@ -54,7 +49,6 @@ enum WebDropdownMenuStyle: Equatable, Sendable {
     var padding: CGFloat { self == .homeAgent || self == .homeMode ? 5 : 4 }
 }
 
-/// Action menus opened by modal content must be above the modal as well as pane chrome.
 struct WebChoiceActionLayer: ViewModifier {
     @Environment(\.metrics) private var metrics
     func body(content: Content) -> some View {

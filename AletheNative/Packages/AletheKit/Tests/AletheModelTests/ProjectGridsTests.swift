@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheModel
 
-/// Named project grids (P2-20, upstream `projectGrids.ts` and the grid slices).
 @Suite struct ProjectGridsTests {
     private func sample() -> (WorkspaceDocument, ProjectID, [PaneID]) {
         var doc = WorkspaceDocument()

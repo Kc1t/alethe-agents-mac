@@ -59,10 +59,7 @@ final class EditorTests: XCTestCase {
         let name = app.textFields["editor.group.name"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["editor.confirm"].isEnabled)
-        // The sheet focuses its name field; wait for that before typing so no keystroke is lost.
         XCTAssertTrue(eventually { (name.value(forKey: "hasKeyboardFocus") as? Bool) == true })
-        // No lowercase "c": XCUITest's typeText drops it under the Brazilian - Pro layout (real key
-        // events reach the field fine).
         name.typeText("Playground")
         XCTAssertEqual(name.value as? String, "Playground")
         app.buttons["editor.confirm"].click()

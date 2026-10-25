@@ -4,7 +4,6 @@ import Foundation
 import Testing
 @testable import AletheIntegrations
 
-/// G: upstream `src/lib/router9.test.ts`.
 struct Router9RoutingTests {
     private let active = Router9RoutingConfig(enabled: true, apiKey: "9r_test")
 
@@ -95,7 +94,6 @@ struct Router9RoutingTests {
     }
 }
 
-/// U: status, command lines and launches against fake installs; a stub server started and stopped.
 @Suite(.timeLimit(.minutes(1))) struct Router9ServiceTests {
     private static func temporaryProfile() throws -> URL {
         let url = FileManager.default.temporaryDirectory
@@ -110,7 +108,6 @@ struct Router9RoutingTests {
                             isPortInUse: { _ in portInUse }, searchDirectories: { [] })
     }
 
-    /// An executable shell script that records its environment in the log, forks a child and waits.
     private static func writeStubServer(at url: URL) throws {
         let script = """
         #!/bin/sh
@@ -269,7 +266,6 @@ struct Router9RoutingTests {
         let log = await Self.waitForLog(service.paths, containing: "PORT=")
         #expect(log.contains("PORT=31000 HOSTNAME=127.0.0.1 BASE=http://127.0.0.1:31000 DATA_DIR=unset"))
 
-        // A second start while it runs is a no-op.
         try await service.start(port: 31000, source: .external)
         #expect(service.processID == pid)
         #expect(await service.status(port: 31000).running)
@@ -298,7 +294,6 @@ struct Router9RoutingTests {
 
         try await service.start(source: .managed)
         let log = await Self.waitForLog(service.paths, containing: "DATA_DIR=")
-        // Paths are passed without a directory URL's trailing slash.
         #expect(log.contains("args=\(service.paths.entryScript.path) "))
         #expect(log.contains("DATA_DIR=\(service.paths.dataDirectory.path) "))
         #expect(log.contains("PWD=\(service.paths.installDirectory.path)\n"))

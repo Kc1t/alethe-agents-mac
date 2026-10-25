@@ -3,8 +3,6 @@ import AletheFoundation
 import AppKit
 import SwiftUI
 
-/// Dictation's floating status at the bottom of the window: listening with the words so far, the
-/// speech model downloading, or why it could not start.
 struct DictationHUD: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme

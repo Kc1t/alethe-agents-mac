@@ -1,7 +1,4 @@
-/// Secrets shown in the UI (MCP env values, tokens).
 public enum Secret {
-    /// Upstream `mask_secret`: values under 12 characters are fully hidden (at most 8 dots); longer
-    /// ones show only their last four characters, which cannot meaningfully narrow them down.
     public static func mask(_ value: String) -> String {
         let scalars = Array(value.unicodeScalars)
         guard !scalars.isEmpty else { return "" }

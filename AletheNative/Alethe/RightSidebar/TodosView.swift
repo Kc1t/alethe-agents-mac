@@ -4,7 +4,6 @@ import AletheTodos
 import AppKit
 import SwiftUI
 
-/// The Todos plugin's `todos` view (P4-16): the global list and the selected project's list.
 struct TodosView: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme
@@ -201,7 +200,6 @@ struct TodosView: View {
     }
 
     private func add(_ store: TodoStore) {
-        // `#word` tokens become tags.
         let words = draft.split(separator: " ").map(String.init)
         let tags = words.filter { $0.count > 1 && $0.hasPrefix("#") }.map { String($0.dropFirst()) }
         let title = words.filter { !($0.count > 1 && $0.hasPrefix("#")) }.joined(separator: " ")
@@ -226,7 +224,6 @@ struct TodosView: View {
         focus = .tags
     }
 
-    /// Replaces the tags with the field's words (`#` optional); an empty field clears them.
     private func commitTags(_ store: TodoStore) {
         if let taggingID { store.setTags(taggingID, [tagDraft]) }
         taggingID = nil

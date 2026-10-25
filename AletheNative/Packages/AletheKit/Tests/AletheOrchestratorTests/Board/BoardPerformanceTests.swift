@@ -1,8 +1,6 @@
 import XCTest
 @testable import AletheOrchestrator
 
-/// P (P6-14): what the board derives off main on every snapshot for 100 workers in five runs —
-/// planner groups, promoted media, the layout — plus the connector steps the canvas draws.
 final class BoardPerformanceTests: XCTestCase {
     private func hundredWorkers() -> [JobSnapshot] {
         (1...100).map { index in

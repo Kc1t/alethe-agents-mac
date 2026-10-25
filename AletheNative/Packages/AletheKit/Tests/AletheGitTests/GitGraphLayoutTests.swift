@@ -11,7 +11,6 @@ private func e(_ from: Int, _ to: Int, _ color: Int) -> GitGraphEdge {
     GitGraphEdge(from: from, to: to, colorIndex: color)
 }
 
-/// Goldens were derived by tracing upstream `buildGraphRows` + `GraphRowView` over the same fixtures.
 @Suite struct GitGraphLayoutTests {
     let branchMerge = [
         commit("M", ["B1", "F1"], refs: [GitRef(kind: .branch, name: "main", isCurrent: true)]),
@@ -52,7 +51,6 @@ private func e(_ from: Int, _ to: Int, _ color: Int) -> GitGraphEdge {
         #expect(rows[1].passThroughLanes == [0])
         #expect(rows[2].lanesAfter == ["B0", "B0"])
         #expect(rows[2].bottomEdges == [e(0, 0, 0), e(1, 1, 1)])
-        // Root: lane 1 converges into the node on lane 0.
         #expect(rows[3].topEdges == [e(0, 0, 0), e(1, 0, 1)])
         #expect(rows[3].bottomEdges.isEmpty)
         #expect(rows[0].refs.first?.name == "main")
@@ -100,7 +98,6 @@ private func e(_ from: Int, _ to: Int, _ color: Int) -> GitGraphEdge {
             commit("H1", ["H2", "S"]), commit("H2", ["H3", "S"]), commit("S", ["H3"]), commit("H3", []),
         ])
         #expect(rows[1].lanesAfter == ["H3", "S"])
-        // Upstream draws only the first two; the join curve (0 -> 1) is our addition.
         #expect(rows[1].bottomEdges == [e(0, 0, 0), e(1, 1, 1), e(0, 1, 1)])
     }
 
@@ -144,7 +141,6 @@ private func e(_ from: Int, _ to: Int, _ color: Int) -> GitGraphEdge {
     }
 
     @Test func sameBranchIdentityKeepsItsColor() {
-        // `origin/main` and `main` collapse into one identity, so both lanes share color 0.
         let rows = GitGraphLayout.layout([
             commit("L", ["P"], refs: [GitRef(kind: .branch, name: "main")]),
             commit("R", ["P"], refs: [GitRef(kind: .remoteBranch, name: "origin/main")]),

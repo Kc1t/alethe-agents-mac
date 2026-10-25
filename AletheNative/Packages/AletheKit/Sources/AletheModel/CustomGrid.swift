@@ -1,6 +1,5 @@
 import Foundation
 
-/// Where one child sits in a custom grid: 1-based column and row plus spans (upstream `GridCell`).
 public struct GridCell: Codable, Hashable, Sendable {
     public var col: Int
     public var row: Int
@@ -20,8 +19,6 @@ public struct GridCell: Codable, Hashable, Sendable {
     }
 }
 
-/// A custom grid (upstream `CustomGrid`): tracks, one cell per child id, optional relative track
-/// sizes. Children are keyed by id string so the same grid serves panes today and containers later.
 public struct CustomGrid: Codable, Hashable, Sendable {
     public enum Edge: String, CaseIterable, Sendable {
         case left, right, top, bottom
@@ -42,7 +39,6 @@ public struct CustomGrid: Codable, Hashable, Sendable {
         self.rowSizes = rowSizes
     }
 
-    /// Children row by row in `cols` columns (upstream `autoGridLayout`).
     public static func auto(_ ids: [String], cols: Int = 2) -> CustomGrid {
         let cols = max(1, cols)
         var cells: [String: GridCell] = [:]
@@ -62,9 +58,6 @@ public struct CustomGrid: Codable, Hashable, Sendable {
                         row: max(1, min(safeRows - rowSpan + 1, cell.row)), colSpan: colSpan, rowSpan: rowSpan)
     }
 
-    /// Every child gets a valid, non-overlapping cell: missing or colliding ones move to the first
-    /// free spot, adding rows when needed; stale track sizes are dropped (upstream
-    /// `reconcileGridLayout`).
     public func reconciled(_ ids: [String]) -> CustomGrid {
         var result = CustomGrid(cols: safeCols, rows: safeRows)
         var occupied: [GridCell] = []
@@ -100,7 +93,6 @@ public struct CustomGrid: Codable, Hashable, Sendable {
         return result
     }
 
-    /// `[row][col]` (0-based) holding the id in that slot, nil when free (upstream `occupancyGrid`).
     public func occupancy(_ ids: [String]) -> [[String?]] {
         var grid = Array(repeating: Array(repeating: String?.none, count: safeCols), count: safeRows)
         for id in ids {
@@ -115,7 +107,6 @@ public struct CustomGrid: Codable, Hashable, Sendable {
         return grid
     }
 
-    /// Free slots, row by row (1-based).
     public func freeCells(_ ids: [String]) -> [(col: Int, row: Int)] {
         occupancy(ids).enumerated().flatMap { row, line in
             line.enumerated().compactMap { col, occupant in occupant == nil ? (col + 1, row + 1) : nil }
@@ -126,8 +117,6 @@ public struct CustomGrid: Codable, Hashable, Sendable {
         occupancy(ids).contains { $0.contains(nil) }
     }
 
-    /// Whole free lines past `edge` of a child; a line counts only when free along the whole side
-    /// (upstream `freeSpanFor`).
     public func freeSpan(_ ids: [String], _ id: String, _ edge: Edge) -> Int {
         guard let raw = cells[id] else { return 0 }
         let cell = clamped(raw)
@@ -154,8 +143,6 @@ public struct CustomGrid: Codable, Hashable, Sendable {
         return span
     }
 
-    /// Grows (`steps > 0`, capped by free space) or shrinks (never below one slot) a child towards
-    /// an edge (upstream `expandCell`).
     public func expanding(_ ids: [String], _ id: String, _ edge: Edge, by steps: Int) -> CustomGrid {
         guard let raw = cells[id], steps != 0 else { return self }
         let cell = clamped(raw)
@@ -179,7 +166,6 @@ public struct CustomGrid: Codable, Hashable, Sendable {
         return result
     }
 
-    /// Grows a child over every free slot reachable from it (upstream `fillFreeSpace`).
     public func fillingFreeSpace(_ ids: [String], _ id: String) -> CustomGrid {
         guard cells[id] != nil else { return self }
         var current = self
@@ -196,8 +182,6 @@ public struct CustomGrid: Codable, Hashable, Sendable {
         return current
     }
 
-    /// Moves a child's top-left to (`col`, `row`); landing on another child swaps them (upstream
-    /// `moveCellTo`).
     public func moving(_ ids: [String], _ id: String, toCol col: Int, row: Int) -> CustomGrid {
         guard let raw = cells[id] else { return self }
         let source = clamped(raw)
@@ -225,7 +209,6 @@ public struct CustomGrid: Codable, Hashable, Sendable {
         return result
     }
 
-    /// Sets the track counts, keeping the sizes of the tracks that remain (designer steppers).
     public func resized(cols: Int, rows: Int, _ ids: [String]) -> CustomGrid {
         func tracks(_ sizes: [Double]?, _ count: Int) -> [Double] {
             let current = sizes ?? []
@@ -240,7 +223,6 @@ public struct CustomGrid: Codable, Hashable, Sendable {
     }
 }
 
-/// A saved custom grid, most recent first (upstream `CustomGridHistoryEntry`).
 public struct CustomGridHistoryEntry: Codable, Hashable, Sendable, Identifiable {
     public var id: String
     public var savedAt: Date
@@ -258,7 +240,6 @@ public struct CustomGridHistoryEntry: Codable, Hashable, Sendable, Identifiable 
         let values = try decoder.container(keyedBy: CodingKeys.self)
         id = try values.decode(String.self, forKey: .id)
         layout = try values.decode(CustomGrid.self, forKey: .layout)
-        // Web stores Date.now() milliseconds; retain decoding of older native Date values.
         if let timestamp = try? values.decode(Double.self, forKey: .savedAt), timestamp > 100_000_000_000 {
             savedAt = Date(timeIntervalSince1970: timestamp / 1000)
         } else {
@@ -275,7 +256,6 @@ public struct CustomGridHistoryEntry: Codable, Hashable, Sendable, Identifiable 
 
 }
 
-/// Ready-made grids offered by the designer (upstream `createLayoutPresets`).
 public enum CustomGridPreset: String, CaseIterable, Sendable {
     case balanced, columns, rows, focusLeft, focusTop
 
@@ -311,8 +291,6 @@ public enum CustomGridPreset: String, CaseIterable, Sendable {
 extension WorkspaceDocument {
     public static let maxGridLayoutHistory = 8
 
-    /// Saves a project's custom grid and switches it to the Grid layout; with `recordHistory`, the
-    /// grid also goes to the front of its recent grids (upstream `setProjectGridLayout`).
     public mutating func setGridLayout(_ layout: CustomGrid, for id: ProjectID, recordHistory: Bool = false) {
         guard let project = project(id) else { return }
         let clean = layout.reconciled(project.visiblePanes.map(\.id.rawValue))
@@ -333,8 +311,6 @@ extension WorkspaceDocument {
 
     public func effectiveGrid(of project: Project) -> CustomGrid { project.effectiveGrid }
 
-    /// Track sizes committed by a resize: a grid project keeps them in its grid; the other layouts
-    /// in the workspace's per-project weights.
     public mutating func setTrackWeights(_ weights: GridWeights, for id: ProjectID) {
         guard let project = project(id) else { return }
         guard project.layout == .grid else {
@@ -347,7 +323,6 @@ extension WorkspaceDocument {
         updateProject(id) { $0.activeArrangement.gridLayout = grid }
     }
 
-    /// Moves a pane of a grid project to a slot (dragging a pane onto another pane or a free slot).
     public mutating func moveGridCell(_ pane: PaneID, toCol col: Int, row: Int) {
         guard let (project, _) = self.pane(pane), project.layout == .grid else { return }
         let ids = project.visiblePanes.map(\.id.rawValue)
@@ -355,7 +330,6 @@ extension WorkspaceDocument {
         updateProject(project.id) { $0.activeArrangement.gridLayout = grid }
     }
 
-    /// Grows a grid pane over the free slots next to it.
     public mutating func fillFreeSpace(_ pane: PaneID) {
         guard let (project, _) = self.pane(pane), project.layout == .grid else { return }
         let ids = project.visiblePanes.map(\.id.rawValue)
@@ -365,7 +339,6 @@ extension WorkspaceDocument {
 }
 
 extension Project {
-    /// The grid the shown panes sit in: the saved grid fitted to them, or rows of two.
     public var effectiveGrid: CustomGrid {
         let ids = visiblePanes.map(\.id.rawValue)
         return activeArrangement.gridLayout?.reconciled(ids) ?? .auto(ids)

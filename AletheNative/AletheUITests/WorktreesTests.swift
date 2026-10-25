@@ -1,6 +1,5 @@
 import XCTest
 
-/// Worktrees sheet from the project context menu (P4-9).
 @MainActor
 final class WorktreesTests: XCTestCase {
     override func setUp() async throws {

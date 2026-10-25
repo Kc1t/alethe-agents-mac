@@ -1,14 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// UI-test fixture for the hit-target harness (P0-9), shown instead of the workspace when the app is
-/// launched with `-AletheUITestFixture hit-targets` (debug builds only).
-///
-/// Every control reports its state through an accessibility value, so a test can click the control
-/// where it is drawn and verify the click landed. `-AletheUITestScale <n>` applies the UI scale the
-/// supported way (metrics); `-AletheUITestBrokenScale YES` applies `scaleEffect` instead (the first
-/// attempt's zoom). `-AletheUITestBrokenOverlay YES` adds an invisible full-window view that takes
-/// clicks, and the harness must catch it.
 struct HitTargetFixture: View {
     @State private var toggleOn = false
     @State private var taps = 0
@@ -42,8 +34,6 @@ struct HitTargetFixture: View {
                 .frame(width: metrics.size(160), height: metrics.size(28))
         }
         .font(metrics.font(.body))
-        // Far from the scaleEffect anchor (top-leading): there a scaled drawing and the real
-        // AppKit hit area no longer overlap, which is where the original bug bit.
         .padding(.leading, metrics.size(420))
         .padding(.top, metrics.size(260))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -63,7 +53,6 @@ struct HitTargetFixture: View {
     }
 }
 
-/// A control that is an `NSView` for certain: the case `scaleEffect` breaks.
 private struct AppKitButton: NSViewRepresentable {
     @MainActor final class Coordinator: NSObject {
         var clicks = 0

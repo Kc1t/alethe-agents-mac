@@ -4,7 +4,6 @@ import AletheModel
 import AlethePluginKit
 import SwiftUI
 
-/// Settings › Appearance: theme, app icon, UI zoom and interface language.
 struct AppearanceSettings: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics
@@ -14,7 +13,6 @@ struct AppearanceSettings: View {
 
     private var uiScale: Double { environment.preferences?.document.uiScale ?? 1 }
 
-    /// AppearancePage.tsx "view placement": one Left/Right dropdown per contributed sidebar tab.
     @ViewBuilder
     private var viewPlacementRows: some View {
         let tabs = environment.plugins?.contributions.sidebarTabs ?? []
@@ -125,8 +123,6 @@ struct AppearanceSettings: View {
                     HStack(spacing: metrics.space(.m)) {
                         Text(verbatim: uiScale.formatted(.percent.precision(.fractionLength(0))))
                             .monospacedDigit()
-                            // A new identity per value: SwiftUI keeps a changed Text's accessibility
-                            // value stale, so VoiceOver and UI tests would read the old percentage.
                             .id(uiScale)
                             .accessibilityIdentifier("settings.zoom.value")
                         HStack(spacing: metrics.space(.xs)) {
@@ -136,7 +132,6 @@ struct AppearanceSettings: View {
                                 Label {
                                     Text("menu.view.zoomOut")
                                 } icon: {
-                                    // Same box for both glyphs: "minus" is shorter and the button would shrink.
                                     Image(systemName: "minus").webProfileSized(12).frame(width: metrics.size(12), height: metrics.size(12))
                                 }
                             }
@@ -194,7 +189,6 @@ struct AppearanceSettings: View {
             }
         }
         .formStyle(.grouped)
-        // Sized to its content: the Settings window grows instead of hiding controls in a scroll view.
         .modifier(AletheSettingsSizing())
         .onChange(of: language) { _, language in LanguageSetting().set(language) }
     }
@@ -331,17 +325,13 @@ struct AppearanceSettings: View {
     }
 }
 
-/// The built-in themes as swatch tiles, in the Tauri app's picker order. Selecting one applies it
-/// everywhere at once, terminals included.
 struct ThemeGrid: View {
-    /// Minimum tile width in the web interface (settings 150, ThemePickerModal 160).
     var webMinimum: CGFloat = 150
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme
     @Environment(\.metrics) private var metrics
 
     private var themes: [Theme] {
-        // Built-ins in picker order, then plugin themes in contribution order.
         let catalog = environment.themeCatalog
         let builtin = ThemeCatalog.builtinOrder.compactMap { catalog.theme(id: $0) }
         let ids = Set(builtin.map(\.id))
@@ -431,7 +421,6 @@ struct ThemeGrid: View {
     }
 }
 
-/// Upstream's four app icons (P5-12); choosing one changes the Dock icon at once.
 private struct AppIconGrid: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme
@@ -497,7 +486,6 @@ private struct AppIconGrid: View {
 }
 
 extension AppIconTheme {
-    /// Named like the themes they match.
     var localizedName: Text {
         switch self {
         case .eliteOriginal: Text("theme.eliteOriginal")
@@ -556,7 +544,6 @@ struct SettingsZoomButtonStyle: ButtonStyle {
 }
 
 
-/// Settings › Appearance: the frame around the focused pane (on/off and opacity).
 private struct PaneFocusBorderSection: View {
     @AppStorage(PaneFocusBorder.enabledKey) private var enabled = true
     @AppStorage(PaneFocusBorder.opacityKey) private var opacity = 1.0

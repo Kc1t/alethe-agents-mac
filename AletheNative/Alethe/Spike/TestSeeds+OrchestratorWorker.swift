@@ -2,12 +2,6 @@
 import AletheModel
 import Foundation
 
-/// `-AletheUITestSeed orchestratorWorker` (P6-15): a board over live stub workers. The Codex CLI
-/// override points at `fake-codex` in the data root, a shell script speaking the app-server protocol:
-/// a turn whose text contains "ask" stops on a command approval in `/private/tmp` (outside the
-/// worker's folder) and, once answered, reports "answered <decision>" plus a diff and keeps its turn
-/// running; "hold" keeps the turn running; a steer ends the turn with "steered <text>"; any other
-/// turn ends with "did <text>" and a diff.
 extension TestSeeds {
     static let orchestratorWorker = "orchestratorWorker"
 
@@ -17,8 +11,6 @@ extension TestSeeds {
 
     static var fakeCodexPath: String { dataRoot.appending(path: "fake-codex").path }
 
-    /// Project `workers` with a disabled Claude Code planner tab `tab-lead` and a board pane, over a
-    /// jobs file: job-01 and job-02 interrupted on their threads, job-03 done in a worktree folder.
     static func seedOrchestratorWorker(into doc: inout WorkspaceDocument) {
         let folder = dataRoot.appending(path: "workerrepo")
         let worktree = folder.appending(path: ".alethe/worktrees/job-03")

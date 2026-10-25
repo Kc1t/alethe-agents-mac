@@ -1,13 +1,10 @@
 import Foundation
 
-/// A syntax or structure error at a byte offset. The reason is a fixed phrase: it never quotes
-/// the file, which may hold live credentials.
 struct TOMLSyntaxError: Error {
     let offset: Int
     let reason: String
 }
 
-/// Where every line of a document sits, so edits can splice bytes instead of re-rendering.
 struct TOMLIndex: Sendable {
     enum TriviaKind: Sendable { case blank, comment }
 
@@ -18,33 +15,26 @@ struct TOMLIndex: Sendable {
 
     struct Statement: Sendable {
         let key: [String]
-        /// From the line start through its newline (or the end of the file).
         let line: Range<Int>
         let valueRange: Range<Int>
         let value: TOMLValue
     }
 
     struct Section: Sendable {
-        /// Header key path; empty for the root section before the first header.
         let path: [String]
         let isArray: Bool
-        /// A `[[array]]` element or a table nested in one: its path alone does not locate it.
         let isArrayScoped: Bool
-        /// The header line; `nil` for the root section.
         let header: Range<Int>?
         var statements: [Statement] = []
-        /// End of the last statement line, or of the header when there is none.
         var bodyEnd: Int
 
         var isRoot: Bool { header == nil }
     }
 
     var sections: [Section]
-    /// Blank and comment-only lines, keyed by the offset where the line ends.
     var trivia: [Int: Trivia]
     var root: TOMLTable
     var newline: String
-    /// Offset after a byte-order mark.
     var contentStart: Int
 }
 
@@ -57,8 +47,6 @@ private struct BuildFailure: Error {
     let reason: String
 }
 
-/// Assembles the value tree from headers and key/value lines, enforcing TOML's rules on
-/// redefinition (a table defined twice, a key defined twice, extending an inline table).
 private struct TOMLTreeBuilder {
     var root = TOMLTable()
     private(set) var current: [TOMLStep] = []
@@ -182,8 +170,6 @@ private struct TOMLTreeBuilder {
     }
 }
 
-/// A TOML 1.0 parser (with 1.1's multi-line inline tables and `\e`/`\x` escapes) over UTF-8
-/// bytes that records the byte range of every header, key/value line and trivia line.
 struct TOMLParser {
     private let bytes: [UInt8]
     private var i = 0
@@ -198,8 +184,6 @@ struct TOMLParser {
         var parser = TOMLParser(bytes: bytes)
         return try parser.run()
     }
-
-    // MARK: Lines
 
     private mutating func run() throws -> TOMLIndex {
         if bytes.starts(with: [0xEF, 0xBB, 0xBF]) { i = 3 }
@@ -264,8 +248,6 @@ struct TOMLParser {
         return "\n"
     }
 
-    // MARK: Low-level scanning
-
     private func ascii(_ character: Unicode.Scalar) -> UInt8 { UInt8(ascii: character) }
 
     private func peek(_ offset: Int) -> UInt8? {
@@ -303,7 +285,6 @@ struct TOMLParser {
         }
     }
 
-    /// Trailing spaces, an optional comment, then a newline or the end of the file.
     private mutating func finishLine() throws {
         skipSpaces()
         if i < bytes.count, bytes[i] == ascii("#") { try skipComment() }
@@ -311,7 +292,6 @@ struct TOMLParser {
         consumeLineEnd()
     }
 
-    /// Whitespace, newlines and comments inside arrays and inline tables.
     private mutating func skipBlank() throws {
         while true {
             skipSpaces()
@@ -337,8 +317,6 @@ struct TOMLParser {
         let prefix = Array(text.utf8)
         return i + prefix.count <= bytes.count && Array(bytes[i..<(i + prefix.count)]) == prefix
     }
-
-    // MARK: Keys
 
     private mutating func parseKey() throws -> [String] {
         var parts: [String] = []
@@ -369,8 +347,6 @@ struct TOMLParser {
         guard i > start else { throw TOMLSyntaxError(offset: i, reason: "expected a key") }
         return String(decoding: bytes[start..<i], as: UTF8.self)
     }
-
-    // MARK: Values
 
     private mutating func parseValue(depth: Int) throws -> TOMLValue {
         guard depth < Self.maxDepth else { throw TOMLSyntaxError(offset: i, reason: "values are nested too deeply") }
@@ -451,7 +427,6 @@ struct TOMLParser {
         }
     }
 
-    /// Counts a run of `quote` bytes; three to five close the string, the extras are content.
     private mutating func closingQuotes(_ quote: UInt8, into out: inout [UInt8]) throws -> Bool {
         var run = 0
         while i + run < bytes.count, bytes[i + run] == quote { run += 1 }
@@ -479,7 +454,6 @@ struct TOMLParser {
                 continue
             }
             if byte == ascii("\\") {
-                // A backslash ending a line trims the newline and the whitespace that follows.
                 var next = i + 1
                 while next < bytes.count, bytes[next] == 0x20 || bytes[next] == 0x09 { next += 1 }
                 let endsLine = next < bytes.count
@@ -504,7 +478,6 @@ struct TOMLParser {
         }
     }
 
-    /// Appends one content byte of a multi-line string, normalizing CRLF.
     private mutating func appendMultilineByte(_ byte: UInt8, into out: inout [UInt8]) throws {
         if byte == 0x0D {
             guard peek(1) == 0x0A else { throw TOMLSyntaxError(offset: i, reason: "control character in a string") }
@@ -644,7 +617,6 @@ struct TOMLParser {
                 || byte == UInt8(ascii: ".") || byte == UInt8(ascii: ":")
         }
         while i < bytes.count, isTokenByte(bytes[i]) { i += 1 }
-        // A date and a time separated by a space form one token.
         if i - start == 10, i + 3 < bytes.count, bytes[start + 4] == ascii("-"), bytes[start + 7] == ascii("-"),
            bytes[i] == 0x20, Self.isDigit(bytes[i + 1]), Self.isDigit(bytes[i + 2]), bytes[i + 3] == ascii(":") {
             i += 1
@@ -674,7 +646,6 @@ struct TOMLParser {
         return token.allSatisfy { allowed.contains($0) }
     }
 
-    /// Digits with single underscores between them.
     private static func validDigits(_ digits: ArraySlice<UInt8>, _ isValid: (UInt8) -> Bool) -> Bool {
         guard let first = digits.first, let last = digits.last, first != UInt8(ascii: "_"),
               last != UInt8(ascii: "_") else { return false }

@@ -102,7 +102,6 @@ private func temporaryDirectory() -> URL {
             "pomodoroShortBreakMinutes": .null,
             "pomodoroLongBreakMinutes": .string("invalid legacy value"),
         ]), forKey: "settings")
-        // Even a malformed legacy session must be ignored when loading the list.
         await storage.set(.string("unused legacy session"), forKey: "pomodoro")
         try await storage.flush()
 

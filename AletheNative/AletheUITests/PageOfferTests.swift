@@ -1,6 +1,5 @@
 import XCTest
 
-/// Page offer (P2-15): a local address printed in a terminal is offered; open it in a pane, or dismiss.
 @MainActor
 final class PageOfferTests: XCTestCase {
     override func setUp() async throws {
@@ -21,7 +20,6 @@ final class PageOfferTests: XCTestCase {
         let pane = element(app, "terminal.pane")
         XCTAssertTrue(pane.waitForExistence(timeout: 5))
         pane.click()
-        // No lowercase "c" (XCUITest drops it on the owner's layout), hence 127.0.0.1.
         pane.typeText("printf '%s\\n' \(address)\n")
     }
 

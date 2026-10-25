@@ -1,9 +1,6 @@
 import Foundation
 import SQLite3
 
-/// Home's activity graph (upstream `get_multi_agent_activity`): per UTC day, the Claude Code messages
-/// (user and assistant lines of the transcripts), the Codex rollouts last written that day and the
-/// OpenCode messages.
 public enum ActivityDays {
     public struct Day: Hashable, Sendable {
         public var date: String
@@ -39,7 +36,6 @@ public enum ActivityDays {
         return window(days: days, now: now, counts: counts)
     }
 
-    /// The last `days` UTC days, oldest first, with their counts.
     static func window(days: Int, now: Date, counts: [String: Int]) -> [Day] {
         (0..<days).reversed().map { offset in
             let date = day(now.addingTimeInterval(-Double(offset) * 86_400))
@@ -47,7 +43,6 @@ public enum ActivityDays {
         }
     }
 
-    /// Consecutive active days ending at the last active one (upstream `computeStreak`).
     public static func streak(_ days: [Day]) -> Int {
         var index = days.count - 1
         while index >= 0, days[index].count == 0 { index -= 1 }
@@ -66,7 +61,6 @@ public enum ActivityDays {
             guard line.range(of: user) != nil || line.range(of: assistant) != nil,
                   let marker = line.range(of: stamp), line.endIndex - marker.upperBound >= 10 else { return true }
             let value = line[marker.upperBound..<(marker.upperBound + 10)]
-            // Only the top-level entry type counts; a quick parse settles lines that merely mention one.
             guard let date = String(data: value, encoding: .utf8), date.count == 10,
                   date[date.index(date.startIndex, offsetBy: 4)] == "-", date[date.index(date.startIndex, offsetBy: 7)] == "-",
                   let type = JSONLReader.object(line)?["type"] as? String, type == "user" || type == "assistant" else { return true }

@@ -1,12 +1,3 @@
-/// Commit-graph lane layout, ported from upstream `buildGraphRows` (src/plugins/git-control/GitGraphList.tsx).
-///
-/// Commits are laid out newest first, as `git log` returns them. Each row places the commit on a lane,
-/// continues the first parent on that same lane and opens a new lane for every other parent. Lane colors
-/// are a round-robin ordinal per identity (branch name for tips, else the hash that opened the lane);
-/// the UI maps `colorIndex % palette.count` and paints lane 0 with the fixed "main" color.
-
-/// A line segment inside one row half: `from` lane at the half's top → `to` lane at its bottom.
-/// `from == to` is a straight line; otherwise it is a curve (convergence, branch or merge).
 public struct GitGraphEdge: Hashable, Sendable {
     public var from: Int
     public var to: Int
@@ -21,31 +12,22 @@ public struct GitGraphEdge: Hashable, Sendable {
 
 public struct GitGraphRow: Hashable, Sendable, Identifiable {
     public var commit: GitCommit
-    /// Lane holding this commit's node.
     public var lane: Int
-    /// Color ordinal of the commit's own lane.
     public var colorIndex: Int
-    /// Lane occupancy (the hash each lane waits for) entering and leaving the row.
     public var lanesBefore: [String?]
     public var lanesAfter: [String?]
-    /// Top half (row top → node center): pass-throughs, the commit lane and lanes converging on the node.
     public var topEdges: [GitGraphEdge]
-    /// Bottom half (node center → row bottom): the commit lane, pass-throughs and branch/merge curves.
     public var bottomEdges: [GitGraphEdge]
     public var isLastRow: Bool
 
     public var id: String { commit.hash }
     public var refs: [GitRef] { commit.refs }
-    /// Lanes needed to draw this row.
     public var laneCount: Int { max(lanesBefore.count, lanesAfter.count, lane + 1) }
-    /// Lanes that run straight through the row without touching the node.
     public var passThroughLanes: [Int] {
         topEdges.filter { $0.from == $0.to && $0.from != lane }.map(\.from)
     }
 }
 
-/// Incremental layout: feed pages in order with `append`; open lanes carry across pages, so paginated
-/// output equals a one-shot layout of the concatenated commits.
 public struct GitGraphLayout: Sendable {
     private var lanes: [String?] = []
     private var laneColors: [Int?] = []
@@ -56,17 +38,13 @@ public struct GitGraphLayout: Sendable {
 
     public init() {}
 
-    /// One-shot layout of a complete window (upstream semantics: parents outside it end their lane).
     public static func layout(_ commits: [GitCommit]) -> [GitGraphRow] {
         var layout = GitGraphLayout()
         return layout.append(commits, hasMore: false)
     }
 
-    /// Lanes still waiting for a commit that has not been laid out yet.
     public var openLanes: [String?] { lanes }
 
-    /// Lays out the next page. With `hasMore`, parents not seen yet keep their lane open for the next
-    /// page; without it, the page is the final one and missing parents end their lane like upstream.
     public mutating func append(_ commits: [GitCommit], hasMore: Bool) -> [GitGraphRow] {
         for commit in commits where branchByHash[commit.hash] == nil {
             if let name = Self.branchName(commit.refs) { branchByHash[commit.hash] = name }
@@ -90,7 +68,6 @@ public struct GitGraphLayout: Sendable {
 
             for l in lanes.indices where lanes[l] == commit.hash { lanes[l] = nil }
 
-            // Merge parents that already own a lane: upstream draws nothing for them; we add a curve.
             var joins: [Int] = []
             if let first = commit.parents.first {
                 lanes[lane] = keeps(first, remaining, hasMore) ? first : nil
@@ -161,7 +138,6 @@ public struct GitGraphLayout: Sendable {
         return lanes.count - 1
     }
 
-    /// Round-robin color per identity; an identity keeps its ordinal when it reappears.
     private mutating func color(for hash: String) -> Int {
         let identity = branchByHash[hash] ?? hash
         if let cached = colorByIdentity[identity] { return cached }
@@ -171,7 +147,6 @@ public struct GitGraphLayout: Sendable {
         return assigned
     }
 
-    /// Best branch name for coloring a tip: local over `origin/*`, `origin/x` collapsed into `x`, tags ignored.
     static func branchName(_ refs: [GitRef]) -> String? {
         var best: String?
         var bestIsLocal = false

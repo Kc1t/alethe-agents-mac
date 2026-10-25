@@ -1,8 +1,5 @@
 import Foundation
 
-// MARK: - Models
-
-/// One side (index or worktree) of a status entry.
 public enum GitChange: String, Hashable, Sendable {
     case modified = "M", added = "A", deleted = "D", renamed = "R", copied = "C"
     case typeChanged = "T", unmerged = "U"
@@ -23,7 +20,6 @@ public struct GitStatusEntry: Hashable, Sendable {
     public enum Kind: Hashable, Sendable { case ordinary, renamed, unmerged, untracked, ignored }
     public var kind: Kind
     public var path: String
-    /// The source path of a rename or copy.
     public var originalPath: String?
     public var index: GitChange?
     public var worktree: GitChange?
@@ -36,9 +32,7 @@ public struct GitStatusEntry: Hashable, Sendable {
 }
 
 public struct GitBranchStatus: Hashable, Sendable {
-    /// The branch name, `nil` when detached.
     public var head: String?
-    /// The commit, `nil` before the first commit.
     public var oid: String?
     public var upstream: String?
     public var ahead = 0
@@ -58,14 +52,12 @@ public struct GitStatus: Hashable, Sendable {
     public var isClean: Bool { entries.allSatisfy { $0.kind == .ignored } }
 }
 
-/// A file changed by a commit or between two trees (`--name-status`).
 public struct GitFileChange: Hashable, Sendable {
     public var path: String
     public var originalPath: String?
     public var change: GitChange
 }
 
-/// Lines added and removed in one file (`--numstat`); `nil` counts mean a binary file.
 public struct GitDiffStat: Hashable, Sendable {
     public var path: String
     public var originalPath: String?
@@ -79,7 +71,6 @@ public struct GitRef: Hashable, Sendable {
     public enum Kind: Hashable, Sendable { case head, branch, remoteBranch, tag, other }
     public var kind: Kind
     public var name: String
-    /// True for the branch HEAD points at (`HEAD -> refs/heads/main`).
     public var isCurrent = false
 }
 
@@ -108,21 +99,15 @@ public struct GitBranch: Hashable, Sendable, Identifiable {
 
 public struct GitIncomingOutgoing: Hashable, Sendable {
     public var upstream: String
-    /// Commits on the upstream not yet in HEAD.
     public var incoming: [GitCommit]
-    /// Commits in HEAD not yet on the upstream.
     public var outgoing: [GitCommit]
 }
-
-// MARK: - Parsers (pure)
 
 public enum GitParsers {
     static let fieldSeparator: Character = "\u{1F}"
     static let recordSeparator: Character = "\u{1E}"
 
-    /// `git log` format consumed by `parseLog`.
     public static let logFormat = "--format=%H%x1f%P%x1f%D%x1f%an%x1f%ae%x1f%at%x1f%s%x1e"
-    /// `git for-each-ref` format consumed by `parseBranches`.
     public static let branchFormat = "--format=%(refname)%1f%(objectname)%1f%(upstream:short)%1f%(HEAD)"
 
     private static func nulFields(_ text: String) -> [Substring] {
@@ -131,7 +116,6 @@ public enum GitParsers {
         return fields
     }
 
-    /// Parses `git status --porcelain=v2 -z --branch`.
     public static func parseStatus(_ text: String) -> GitStatus {
         var branch = GitBranchStatus()
         var entries: [GitStatusEntry] = []
@@ -158,7 +142,6 @@ public enum GitParsers {
                 default: break
                 }
             case "1", "2", "u":
-                // Field counts before the path: 1 → 8, 2 → 9, u → 10.
                 let leading = tag == "1" ? 8 : tag == "2" ? 9 : 10
                 let parts = record.split(separator: " ", maxSplits: leading, omittingEmptySubsequences: false)
                 guard parts.count == leading + 1 else { continue }
@@ -192,7 +175,6 @@ public enum GitParsers {
         return GitSubmoduleState(commitChanged: chars[1] == "C", hasTrackedChanges: chars[2] == "M", hasUntracked: chars[3] == "U")
     }
 
-    /// Parses `--name-status -z` (git diff / diff-tree): `M\0path\0`, `R100\0old\0new\0`.
     public static func parseNameStatus(_ text: String) -> [GitFileChange] {
         let fields = nulFields(text)
         var changes: [GitFileChange] = []
@@ -214,7 +196,6 @@ public enum GitParsers {
         return changes
     }
 
-    /// Parses `--numstat -z`: `a\td\tpath\0`, or for a rename `a\td\t\0old\0new\0`; `-` counts are binary.
     public static func parseNumstat(_ text: String) -> [GitDiffStat] {
         let fields = nulFields(text)
         var stats: [GitDiffStat] = []
@@ -235,7 +216,6 @@ public enum GitParsers {
         return stats
     }
 
-    /// Parses `git log` output produced with `logFormat` (refs from `--decorate=full`).
     public static func parseLog(_ text: String) -> [GitCommit] {
         text.split(separator: recordSeparator).compactMap { raw in
             let record = raw.trimmingCharacters(in: .newlines)
@@ -253,7 +233,6 @@ public enum GitParsers {
         }
     }
 
-    /// Parses a `%D` decoration with full ref names: `HEAD -> refs/heads/main, tag: refs/tags/v1`.
     public static func parseRefs(_ decoration: String) -> [GitRef] {
         decoration.components(separatedBy: ", ").compactMap { item in
             var name = item.trimmingCharacters(in: .whitespaces)
@@ -277,7 +256,6 @@ public enum GitParsers {
         return GitRef(kind: full == "HEAD" ? .head : .other, name: full)
     }
 
-    /// Parses `git for-each-ref` output produced with `branchFormat`; symbolic `*/HEAD` refs are skipped.
     public static func parseBranches(_ text: String) -> [GitBranch] {
         text.split(separator: "\n").compactMap { line in
             let fields = line.split(separator: fieldSeparator, omittingEmptySubsequences: false)
@@ -294,8 +272,6 @@ public enum GitParsers {
         }
     }
 
-    // MARK: Validation (defense against argument injection, as upstream)
-
     public static func validateHash(_ hash: String) throws {
         guard !hash.isEmpty, hash.count <= 64, hash.allSatisfy(\.isHexDigit) else {
             throw GitError.invalidArgument("commit hash")
@@ -308,7 +284,6 @@ public enum GitParsers {
         else { throw GitError.invalidArgument("branch name") }
     }
 
-    /// Paths must be relative to the repository root and stay inside it.
     public static func validatePaths(_ paths: [String]) throws {
         guard !paths.isEmpty else { throw GitError.invalidArgument("no paths") }
         for path in paths {

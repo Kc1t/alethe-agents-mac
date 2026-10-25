@@ -2,7 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// Project/group color choice as theme swatches (never literal colors).
 struct ColorSwatchPicker: View {
     @Binding var selection: ProjectColor?
     var allowsNone = false

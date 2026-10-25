@@ -3,11 +3,7 @@ import Testing
 import AletheIntegrations
 @testable import AletheOrchestrator
 
-/// Recorded Codex `app-server` transcripts. Upstream's Codex cases (`two_workers_overlap_…`,
-/// `the_queue_never_breaches_…`, `a_worker_that_never_finishes_…`) drive real or silent processes;
-/// these are the worker's stdout for those runs, one JSON message per line, replayed without a process.
 private enum Transcript {
-    /// A worker asked to create ALPHA.txt (upstream `two_workers_overlap_and_check_waits_for_both`).
     static let alpha = """
     {"id":1,"result":{"userAgent":"codex_app_server/0.46.0","platformFamily":"unix","platformOs":"macos"}}
     {"id":2,"result":{"thread":{"id":"thr_alpha","preview":"","modelProvider":"openai","createdAt":1758800000},"model":"gpt-5-codex","cwd":"/tmp/alethe-orch-parallel","approvalPolicy":"never","sandbox":{"type":"workspaceWrite"}}}
@@ -26,7 +22,6 @@ private enum Transcript {
     {"method":"turn/completed","params":{"threadId":"thr_alpha","turn":{"id":"turn_1","items":[],"status":"completed"}}}
     """
 
-    /// What Alethe wrote to that worker, in order.
     static let alphaWritten = """
     {"id":1,"method":"initialize","params":{"clientInfo":{"name":"alethe-orchestrator","title":"Alethe","version":"1"},"capabilities":{"experimentalApi":true}}}
     {"method":"initialized"}
@@ -34,8 +29,6 @@ private enum Transcript {
     {"id":3,"method":"turn/start","params":{"threadId":"thr_alpha","input":[{"type":"text","text":"Create a file ALPHA.txt whose entire content is the word ALPHA."}],"approvalPolicy":"never"}}
     """
 
-    /// A worker delegated with `askForApproval` that wants the network (upstream
-    /// `the_handshake_offers_a_way_to_answer_a_blocked_worker`, carried through to the answer).
     static let blocked = """
     {"id":1,"result":{"userAgent":"codex_app_server/0.46.0"}}
     {"id":2,"result":{"thread":{"id":"thr_ask"}}}
@@ -48,8 +41,6 @@ private enum Transcript {
     {"method":"turn/completed","params":{"threadId":"thr_ask","turn":{"id":"turn_7","items":[],"status":"completed"}}}
     """
 
-    /// A worker that starts a turn and then never finishes it (upstream
-    /// `a_worker_that_never_finishes_is_stopped_by_its_budget`, with a turn in flight).
     static let hanging = """
     {"id":1,"result":{}}
     {"id":2,"result":{"thread":{"id":"thr_hang"}}}
@@ -61,7 +52,6 @@ private enum Transcript {
     }
 }
 
-/// Replays a transcript and returns everything written back plus the events, in order.
 private func replay(_ session: inout CodexWorkerSession, _ transcript: String, nowMs: UInt64 = 42) -> CodexWorkerStep {
     var total = CodexWorkerStep()
     for line in Transcript.lines(transcript) {
@@ -85,7 +75,6 @@ private func alphaSession() -> CodexWorkerSession {
 }
 
 @Suite struct CodexWorkerProtocolGoldenTests {
-    // Upstream `the_handshake_offers_a_way_to_answer_a_blocked_worker`.
     @Test func theHandshakeOffersAWayToAnswerABlockedWorker() throws {
         let tools = try #require(OrchestratorMCP.tools.arrayValue)
         let names = tools.compactMap { $0.objectValue?["name"]?.stringValue }
@@ -95,7 +84,6 @@ private func alphaSession() -> CodexWorkerSession {
         #expect(ask?.objectValue != nil, "delegation has to be able to ask for approval")
     }
 
-    // Upstream `two_workers_overlap_and_check_waits_for_both`, one worker's side of the wire.
     @Test func aCodexWorkerCreatesItsFileAndReportsItsOwnConclusion() {
         var session = alphaSession()
         var written = session.handshake()
@@ -116,8 +104,6 @@ private func alphaSession() -> CodexWorkerSession {
         #expect(step.events.last == .turnEnded(succeeded: true, summary: "Created ALPHA.txt containing ALPHA."))
     }
 
-    // Upstream `a_worker_that_never_finishes_is_stopped_by_its_budget`: the watchdog interrupts the
-    // turn in flight on the job's own request ids, and a worker that never spoke gets no interrupt.
     @Test func aWorkerThatNeverFinishesIsInterruptedOnItsOwnTurn() {
         var silent = CodexWorkerSession(jobID: "job-01", cwd: "/tmp/w", firstTurn: "hang forever")
         #expect(silent.interrupt() == nil)
@@ -130,7 +116,6 @@ private func alphaSession() -> CodexWorkerSession {
             == #"{"id":11,"method":"turn/interrupt","params":{"threadId":"thr_hang","turnId":"turn_1"}}"#)
     }
 
-    // A blocked worker waits on its question, and the planner's answer goes back on the worker's id.
     @Test func aBlockedWorkerIsAnsweredOnTheIdItAskedWith() throws {
         let policy = CodexApprovalPolicy.policy(askForApproval: true)
         var job = Job(id: "job-04", plannerID: "tab-1", agent: "codex", runID: "run-02", runLabel: nil,
@@ -144,7 +129,6 @@ private func alphaSession() -> CodexWorkerSession {
         for event in asked.events { job.apply(event) }
         #expect(job.status == .blocked)
         #expect(job.pending?.compactRendered() == #"{"rpcId":0,"kind":"command","command":"curl -sSf https://example.com","cwd":"/tmp/repo","reason":"needs network access","askedAtMs":1700}"#)
-        // Nothing is answered on its own: the only write after the thread is the first turn.
         #expect(asked.outgoing.count == 1)
 
         let answer = try session.answer("accept")

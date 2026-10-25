@@ -2,8 +2,6 @@ import AletheDesign
 import AletheTerminal
 import AppKit
 
-/// Terminal-only web input routing. Ordinary text, Option/dead keys and IME composition continue
-/// through Ghostty. The macOS profile retains the original image-only clipboard interception.
 @MainActor
 enum ImagePasteMonitor {
     private static var monitor: Any?
@@ -76,7 +74,6 @@ enum ImagePasteMonitor {
             return event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command
                 && event.charactersIgnoringModifiers == "v" && terminal.pasteImageIfNeeded()
         }
-        // A composing input method owns its keys until it commits the marked text.
         guard !terminal.terminalView.hasMarkedText() else { return false }
         if flags == .command {
             switch key {
@@ -87,8 +84,6 @@ enum ImagePasteMonitor {
             default: break
             }
         }
-        // Upstream accepts Ctrl or Cmd for prompt recall. Keep Cmd+arrows for the app's existing
-        // prompt-mark navigation and provide the web's Ctrl+arrows without sending them to the CLI.
         if flags == .control {
             if key == "c" { terminal.copyOrInterrupt(); return true }
             if key == "v" { terminal.pasteClipboard(); return true }
@@ -99,8 +94,6 @@ enum ImagePasteMonitor {
     }
 }
 
-/// Shift+right-click exposes explicit actions while plain right-click keeps the web's copy/paste
-/// shortcut. Menu targets remain alive for the complete synchronous AppKit menu tracking loop.
 @MainActor
 private final class TerminalInputMenu: NSObject {
     let terminal: TerminalPaneView

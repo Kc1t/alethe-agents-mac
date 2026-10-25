@@ -1,17 +1,11 @@
 import Foundation
 
-/// Types a new tab's initial prompt into its agent once the agent is ready. Port of upstream
-/// `sendInitialInput` (`useXtermSession.ts`) and `deliverOpenCodePrompt` (`agentPromptDelivery.ts`);
-/// every timing below was tuned live against the real CLIs upstream.
 public enum PromptDelivery {
-    /// What delivery needs from a terminal; injectable so the policy is testable with a fake clock.
     public struct IO: Sendable {
         public var now: @Sendable () -> Duration
         public var sleep: @Sendable (Duration) async -> Void
-        /// Time since the process last produced output.
         public var quietFor: @Sendable () -> Duration
         public var isRunning: @Sendable () -> Bool
-        /// The rendered screen as plain text (no escape sequences).
         public var readScreen: @Sendable () async -> String
         public var write: @Sendable (String) async -> Void
 
@@ -28,16 +22,10 @@ public enum PromptDelivery {
     }
 
     public enum Style: Sendable {
-        /// Claude Code, Codex, Cursor: bracketed paste, then Enter (and a second Enter later, which
-        /// is harmless on an empty prompt and catches a paste that swallowed the first).
         case paste
-        /// OpenCode: its editor drops a single large write and goes quiet before it can take input,
-        /// so type in small chunks and confirm on screen before pressing Enter.
         case typeAndConfirm
     }
 
-    /// Waits until the agent looks ready: at least 1.5 s after start (4 s for OpenCode), then 700 ms
-    /// without output or 4 s in total, whichever comes first. False if it exits or the deadline passes.
     public static func waitUntilReady(style: Style, io: IO, deadline: Duration = .seconds(120)) async -> Bool {
         let start = io.now()
         let earliest = start + (style == .typeAndConfirm ? .seconds(4) : .milliseconds(1500))
@@ -52,7 +40,6 @@ public enum PromptDelivery {
         return false
     }
 
-    /// Waits for readiness, then delivers `prompt`. True once it was sent.
     public static func deliver(_ prompt: String, style: Style, io: IO, deadline: Duration = .seconds(120)) async -> Bool {
         let text = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return false }
@@ -73,12 +60,8 @@ public enum PromptDelivery {
         }
     }
 
-    // MARK: - OpenCode
-
     static let placeholder = normalizedForMatch("Ask anything")
 
-    /// Letters and digits only, lowercased: OpenCode's input box draws a border glyph at the start
-    /// of every wrapped line, which breaks any exact comparison.
     static func normalizedForMatch(_ text: String) -> String {
         String(String.UnicodeScalarView(text.unicodeScalars.filter {
             CharacterSet.letters.contains($0) || CharacterSet.decimalDigits.contains($0)
@@ -87,7 +70,6 @@ public enum PromptDelivery {
 
     private static func typeAndConfirm(_ prompt: String, io: IO, deadline: Duration) async -> Bool {
         let normalized = normalizedForMatch(prompt)
-        // Both ends: a long prompt scrolls its start out of the box by the time typing finishes.
         let head = String(normalized.prefix(20)), tail = String(normalized.suffix(20))
         func onScreen(_ screen: String) -> Bool {
             let text = normalizedForMatch(screen)
@@ -106,8 +88,6 @@ public enum PromptDelivery {
         var confirmed = false
         var firstRound = true
         while !confirmed, io.now() < deadline {
-            // Retype only into an empty box: Ctrl+U does not clear OpenCode's editor, so retyping
-            // over text that did arrive stacks duplicates.
             let screen = await io.readScreen()
             if firstRound || normalizedForMatch(screen).contains(placeholder) || !onScreen(screen) {
                 firstRound = false
@@ -124,8 +104,6 @@ public enum PromptDelivery {
         }
         guard confirmed else { return false }
 
-        // A single Enter sometimes does not register: resend only while the screen stays exactly the
-        // same, and stop at the first change (sent, or the answer started).
         await io.sleep(.milliseconds(150))
         var previous = await io.readScreen()
         for _ in 0..<4 where io.now() < deadline {

@@ -1,26 +1,21 @@
 import AletheGit
 import Foundation
 
-/// The ephemeral environment provisioned by `prepare` (upstream `ConflictEnv`).
 public struct ConflictEnvironment: Sendable, Hashable, Codable {
     public var id: String
     public var path: URL
     public var branch: String
     public var clean: Bool
     public var conflicts: [ConflictFile]
-    /// `ALETHE_CONFLICT.md` inside the environment; `nil` for a clean merge.
     public var promptPath: URL?
 }
 
-/// Cycle metadata kept outside the worktree (`merge-envs/<id>.json`, upstream `MergeMeta`).
 public struct MergeMeta: Sendable, Hashable, Codable {
     public var id: String
     public var source: String
     public var target: String
     public var projectId: String?
     public var conflictPaths: [String]
-    /// Native-only additions, optional so upstream metadata still decodes: the Merge Center stage
-    /// last reached (for resuming) and the latest Validate results.
     public var stage: MergeCenterStage?
     public var lastValidation: ValidationReport?
     public var contractWarnings: [ContractWarning]?
@@ -39,14 +34,9 @@ public struct MergeMeta: Sendable, Hashable, Codable {
     }
 }
 
-/// Outcome of reconciling the environment with the target's current tip (upstream
-/// `merge_rebase_onto_target` stages).
 public enum RebaseOutcome: Sendable, Hashable {
-    /// `rebase_ok`: the target's new tip is an ancestor of the merge branch.
     case reconciled
-    /// `rebase_conflict`: the prompt and metadata were rewritten with the new conflicts.
     case conflicted([ConflictFile])
-    /// `rebase_failed`: not a conflict; the merge was aborted. Carries git's message.
     case failed(String)
 
     public var stage: String {
@@ -57,7 +47,6 @@ public enum RebaseOutcome: Sendable, Hashable {
         }
     }
 
-    /// Upstream's user-facing `output` text.
     public var output: String {
         switch self {
         case .reconciled: "Reconciled with the updated target — ready to reintegrate."
@@ -68,7 +57,6 @@ public enum RebaseOutcome: Sendable, Hashable {
     }
 }
 
-/// Long steps reported while preparing or reconciling.
 public enum MergePrepareStep: String, Sendable, Hashable, CaseIterable {
     case creatingEnvironment, merging, listingConflicts, writingPrompt, fetchingTarget, reconciling, aborting
 }
@@ -79,10 +67,6 @@ public enum ConflictResolutionError: Error, Equatable, Sendable {
     case invalidMetadata(String)
 }
 
-/// Ephemeral merge environment for agent-assisted conflict resolution (upstream
-/// `conflict_resolution.rs`, RFC-007). The merge is applied in worktree `alethe/merge-<id>` under
-/// `.alethe/merge-envs/` so the user's tree is never touched. Cancelling the calling task terminates
-/// the running git process (`GitRunner`).
 public struct ConflictResolution: Sendable {
     public static let promptFileName = "ALETHE_CONFLICT.md"
 
@@ -104,10 +88,6 @@ public struct ConflictResolution: Sendable {
         MergeAnalyzer.mergeEnvsDirectory(root: root).appendingPathComponent("\(id).json")
     }
 
-    // MARK: Prepare
-
-    /// Provisions the environment with the merge applied (markers included on conflict) and, when
-    /// conflicted, writes the agent prompt. A failure after the worktree exists tears it down.
     public func prepare(
         source: String,
         target: String,
@@ -156,16 +136,11 @@ public struct ConflictResolution: Sendable {
         }
     }
 
-    /// Conflicted paths currently unmerged in the environment, with class and strategy.
     public func conflicts(id: String) async throws -> [ConflictFile] {
         let env = try existingEnvironment(id: id)
         return try await MergeAnalyzer(root: root, runner: runner).unmergedFiles(in: env).map { ConflictFile(path: $0) }
     }
 
-    // MARK: Resume
-
-    /// Environments still on disk (metadata plus worktree), most recently touched first. Analysis
-    /// worktrees and unreadable metadata are skipped.
     public func inProgress() -> [MergeSessionSummary] {
         let fm = FileManager.default
         let dir = MergeAnalyzer.mergeEnvsDirectory(root: root)
@@ -182,7 +157,6 @@ public struct ConflictResolution: Sendable {
         return found.sorted { $0.1 != $1.1 ? $0.1 > $1.1 : $0.0.id < $1.0.id }.map(\.0)
     }
 
-    /// Rebuilds a prepared environment from its metadata, with the files still unmerged now.
     public func resume(id: String) async throws -> (environment: ConflictEnvironment, meta: MergeMeta) {
         let env = try existingEnvironment(id: id)
         let meta = try readMeta(id: id)
@@ -194,7 +168,6 @@ public struct ConflictResolution: Sendable {
         return (environment, meta)
     }
 
-    /// Updates the environment's metadata in place (stage reached, latest validation).
     public func updateMeta(id: String, _ change: (inout MergeMeta) -> Void) throws {
         _ = try existingEnvironment(id: id)
         var meta = try readMeta(id: id)
@@ -202,10 +175,6 @@ public struct ConflictResolution: Sendable {
         try writeMeta(meta)
     }
 
-    // MARK: Reconcile with the target
-
-    /// Brings the target's current tip into the environment (local fetch) and reconciles with
-    /// `git merge` — the merge branch already holds a merge commit, so replaying it would be spurious.
     public func rebaseOntoTarget(
         id: String,
         progress: (@Sendable (MergePrepareStep) -> Void)? = nil
@@ -231,31 +200,22 @@ public struct ConflictResolution: Sendable {
             return .conflicted(conflicts)
         }
 
-        // Hard failure: never leave a hanging merge behind.
         progress?(.aborting)
         _ = try? await runner.run(["merge", "--abort"], in: env, allowedExitCodes: Set(Int32(0)...Int32(255)))
         return .failed(reconcile.errorText)
     }
 
-    // MARK: Abort
-
-    /// Clears an unfinished merge/rebase in the environment (never the user's tree). "Nothing in
-    /// progress" is a no-op; any other failure propagates.
     public func preflightAbort(id: String) async throws {
         let env = try existingEnvironment(id: id)
         try await safeAbort(["merge", "--abort"], in: env)
         try await safeAbort(["rebase", "--abort"], in: env)
     }
 
-    /// Destroys the environment, its branch and metadata without integrating anything.
     public func abort(id: String) async throws {
         try Self.validateID(id)
         await destroy(id: id)
     }
 
-    // MARK: Prompt
-
-    /// The minimal context handed to the resolution agent (verbatim upstream `build_prompt`).
     public static func buildPrompt(meta: MergeMeta, conflicts: [ConflictFile]) -> String {
         var lines = [
             "# Merge conflict resolution (Alethe)",
@@ -278,12 +238,9 @@ public struct ConflictResolution: Sendable {
         return lines.joined(separator: "\n")
     }
 
-    /// Short instruction typed into the agent's terminal (cwd = the environment) pointing at the prompt.
     public static func agentInstruction() -> String {
         "Read \(promptFileName) in this directory and resolve the listed merge conflicts following its rules."
     }
-
-    // MARK: Helpers
 
     public static func validateID(_ id: String) throws {
         let allowed = id.unicodeScalars.allSatisfy {
@@ -327,13 +284,11 @@ public struct ConflictResolution: Sendable {
         }
     }
 
-    /// Best-effort teardown; runs even if the calling task was cancelled.
     private func destroy(id: String) async {
         let env = environmentDirectory(id: id)
         let root = root, runner = runner, meta = metaURL(id: id)
         await Task.detached {
             _ = try? await runner.run(["merge", "--abort"], in: env, allowedExitCodes: Set(Int32(0)...Int32(255)))
-            // Twice `--force` also removes a worktree left locked by an interrupted `worktree add`.
             _ = try? await runner.run(["worktree", "remove", "--force", "--force", env.path], in: root)
             try? FileManager.default.removeItem(at: env)
             _ = try? await runner.run(["worktree", "prune"], in: root)
@@ -342,7 +297,6 @@ public struct ConflictResolution: Sendable {
         }.value
     }
 
-    /// Ten lowercase alphanumerics (upstream: nanoid(10) with `_`/`-` replaced).
     static func newID() -> String {
         String(UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(10)).lowercased()
     }

@@ -3,7 +3,6 @@ import AletheDocuments
 import AppKit
 import SwiftUI
 
-/// MarkdownRenderer.tsx uses MarkdownPane.module.css even inside the right sidebar.
 struct MarkdownSidebarBody: View {
     let blocks: [MarkdownBlock]
     var nested = false

@@ -2,7 +2,6 @@ import AletheAgents
 import AletheModel
 import Foundation
 
-/// What a provider sees when deciding which MCP servers a launch gets.
 struct McpLaunchContext {
     var tab: TabID
     var kind: AgentKind
@@ -10,22 +9,17 @@ struct McpLaunchContext {
     var workingDirectory: String
 }
 
-/// Per-launch MCP wiring (P5-4): integrations register a provider (Graphify, ai-memory and
-/// Playwright plug in later), and each agent launch gets their servers without touching the user's
-/// or the project's config. Claude and OpenCode read them from a private file written here.
 @MainActor
 final class McpLaunchWiring {
     typealias Provider = @MainActor (McpLaunchContext) -> [McpLaunchServer]
 
     private let folder: URL
-    /// In registration order, so the first provider wins a name both use.
     private var providers: [(id: String, provider: Provider)] = []
 
     init(folder: URL = AgentHookHub.folder) {
         self.folder = folder
     }
 
-    /// Adds or replaces the provider registered under `id`.
     func register(_ id: String, _ provider: @escaping Provider) {
         if let index = providers.firstIndex(where: { $0.id == id }) {
             providers[index].provider = provider
@@ -38,8 +32,6 @@ final class McpLaunchWiring {
         providers.removeAll { $0.id == id }
     }
 
-    /// Servers for one launch and, for agents that read a file, its path; empty when nothing applies
-    /// or the file could not be written (the agent then starts without them).
     func launch(for context: McpLaunchContext) -> (servers: [McpLaunchServer], configPath: String?) {
         guard McpLaunchConfig.supports(context.kind), !providers.isEmpty else { return ([], nil) }
         let servers = McpLaunchServer.deduplicated(providers.flatMap { $0.provider(context) })
@@ -50,8 +42,6 @@ final class McpLaunchWiring {
         return (servers, file.path)
     }
 
-    /// Atomic (tmp → rename) 0600 write. Local until P5-1's `ConfigFileWriter` lands; these files
-    /// are Alethe's own per-run files, so no backup or conflict check applies.
     private static func writePrivately(_ data: Data, to file: URL, folder: URL) -> Bool {
         let manager = FileManager.default
         try? manager.createDirectory(at: folder, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])

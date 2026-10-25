@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Section bodies are unframed; only rows with a corresponding web card opt in.
 public enum AletheSettingsRowSurface: Equatable, Sendable {
     case standalone, option, remote, plugin, version, metric, task, agent, empty, toolbar
 
@@ -22,7 +21,6 @@ extension View {
     }
 }
 
-/// Shared by both form implementations; the macOS Form never applies this modifier.
 public struct AletheSettingsRowSurfaceModifier: ViewModifier {
     let surface: AletheSettingsRowSurface
     @Environment(\.metrics) private var metrics

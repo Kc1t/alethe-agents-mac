@@ -4,9 +4,6 @@ import AletheAgents
 import AletheIntegrations
 @testable import AletheOrchestrator
 
-// Upstream `tests/orchestrator.rs` fitness cases, through the same MCP entry point a planner uses.
-// The only worker is a silent fake (`/bin/sleep`); every job is cancelled before the core shuts down.
-
 private func workspace(_ tag: String) throws -> URL {
     let url = FileManager.default.temporaryDirectory.appending(path: "alethe-fitness-\(tag)-\(UUID().uuidString)")
     try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
@@ -56,7 +53,6 @@ private func fitness(_ worst: String, _ used: Int, plan: String? = nil, rateLimi
 }
 
 @Suite(.timeLimit(.minutes(1))) struct OrchestratorFitnessTests {
-    // Upstream `every_tool_response_carries_the_current_headroom`.
     @Test func everyToolResponseCarriesTheCurrentHeadroom() async throws {
         let core = makeCore()
         await core.setAgentFitness("claude", fitness("week", 19))
@@ -73,7 +69,6 @@ private func fitness(_ worst: String, _ used: Int, plan: String? = nil, rateLimi
         await core.shutdown()
     }
 
-    // Upstream `the_worst_window_decides_headroom_even_when_the_five_hour_ones_are_tied`.
     @Test func theWorstWindowDecidesHeadroom() async throws {
         let core = makeCore()
         await core.setAgentFitness("claude", fitness("week", 19))
@@ -83,7 +78,6 @@ private func fitness(_ worst: String, _ used: Int, plan: String? = nil, rateLimi
         await core.shutdown()
     }
 
-    // Upstream `delegating_to_an_exhausted_agent_names_the_other_side`.
     @Test func delegatingToAnExhaustedAgentNamesTheOtherSide() async throws {
         let folder = try workspace("headroom-hint")
         let core = makeCore()
@@ -100,7 +94,6 @@ private func fitness(_ worst: String, _ used: Int, plan: String? = nil, rateLimi
         try await finish(core, id.map { [$0] } ?? [], folder)
     }
 
-    // Upstream `a_rested_agent_gets_no_hint`.
     @Test func aRestedAgentGetsNoHint() async throws {
         let folder = try workspace("headroom-quiet")
         let core = makeCore()
@@ -114,7 +107,6 @@ private func fitness(_ worst: String, _ used: Int, plan: String? = nil, rateLimi
         try await finish(core, id.map { [$0] } ?? [], folder)
     }
 
-    // Upstream `the_board_records_why_a_worker_ran_where_it_ran`.
     @Test func theBoardRecordsWhyAWorkerRanWhereItRan() async throws {
         let folder = try workspace("routing-trace")
         let core = makeCore()
@@ -132,7 +124,6 @@ private func fitness(_ worst: String, _ used: Int, plan: String? = nil, rateLimi
         try await finish(core, [first, second], folder)
     }
 
-    // Upstream `a_board_with_room_on_both_sides_records_no_reason_at_all`.
     @Test func aBoardWithRoomOnBothSidesRecordsNoReason() async throws {
         let folder = try workspace("routing-quiet")
         let core = makeCore()
@@ -146,11 +137,9 @@ private func fitness(_ worst: String, _ used: Int, plan: String? = nil, rateLimi
         try await finish(core, [id], folder)
     }
 
-    // Upstream `with_both_sides_strained_the_board_blames_the_worse_one_every_time`.
     @Test func withBothSidesStrainedTheBoardBlamesTheWorseOne() async throws {
         let folder = try workspace("routing-both-strained")
         let core = makeCore()
-        // The reading that came back from a real run: both past the threshold, codex worse.
         await core.setAgentFitness("claude", fitness("5h", 80))
         await core.setAgentFitness("codex", fitness("5h", 98))
 
@@ -165,7 +154,6 @@ private func fitness(_ worst: String, _ used: Int, plan: String? = nil, rateLimi
         try await finish(core, ids, folder)
     }
 
-    // Upstream `a_hint_never_presents_an_equally_exhausted_agent_as_the_way_out`.
     @Test func aHintNeverPresentsAnEquallyExhaustedAgentAsTheWayOut() async throws {
         let folder = try workspace("hint-both-strained")
         let core = makeCore()
@@ -184,7 +172,6 @@ private func fitness(_ worst: String, _ used: Int, plan: String? = nil, rateLimi
         try await finish(core, id.map { [$0] } ?? [], folder)
     }
 
-    // Upstream `a_rate_limited_agent_outranks_any_percentage`.
     @Test func aRateLimitedAgentOutranksAnyPercentage() async throws {
         let core = makeCore()
         await core.setAgentFitness("claude", fitness("5h", 99))
@@ -194,8 +181,6 @@ private func fitness(_ worst: String, _ used: Int, plan: String? = nil, rateLimi
                 "sent work to a side that is already refusing it: \(status)")
         await core.shutdown()
     }
-
-    // MARK: Units
 
     @Test func withoutReadingsResponsesCarryNoFitness() async throws {
         let core = makeCore()
@@ -225,7 +210,6 @@ private func fitness(_ worst: String, _ used: Int, plan: String? = nil, rateLimi
         #expect(pushed == expected)
         #expect(await core.agentFitness()["codex"] == pushed)
 
-        // A reading without windows keeps the last one, as upstream does when a fetch fails.
         #expect(await core.setAgentFitness(from: ProviderUsage(agent: .codex, status: .unavailable("network"))) == nil)
         #expect(await core.agentFitness()["codex"] == pushed)
         await core.shutdown()

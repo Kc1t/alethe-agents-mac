@@ -1,8 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// WhatsNewModal.tsx / WhatsNewModal.module.css. The web lists its bundled changelog; native releases
-/// are read from the published release notes, with the static blurb as the offline fallback.
 struct WebTitleBarNews: View {
     let close: () -> Void
     @Environment(AppEnvironment.self) private var environment
@@ -94,8 +92,6 @@ struct WebTitleBarNews: View {
     }
 }
 
-/// TitleBar.module.css `.whatsNewDot`: a 5pt status-working dot at top 4 / right 4 of the What's New
-/// button while a newer native release is waiting (the web's `updateInfo`).
 private struct WebTitleBarNewsBadge: ViewModifier {
     @Environment(\.metrics) private var metrics
     @Environment(\.theme) private var theme
@@ -120,7 +116,6 @@ extension View {
     func webTitleBarNewsBadge() -> some View { modifier(WebTitleBarNewsBadge()) }
 }
 
-/// UpdateModal.tsx. Native builds are not installed in place: the primary action opens the release.
 struct UpdateAvailableWebModal: View {
     let release: SidebarNativeRelease
     @Environment(\.modalsM2Close) private var closeOverlay
@@ -152,7 +147,6 @@ struct UpdateAvailableWebModal: View {
     }
 }
 
-/// WhatsNewModal.module.css `.notes`: the release body, whitespace preserved, in a sunken box.
 private struct ReleaseNotesBox: View {
     let text: String
     let maxHeight: CGFloat
@@ -174,7 +168,6 @@ private struct ReleaseNotesBox: View {
     }
 }
 
-/// WhatsNewModal.module.css `.list`: bullets parsed from the release body's markdown lists.
 private struct ReleaseNotesList: View {
     let text: String
     @Environment(\.metrics) private var metrics

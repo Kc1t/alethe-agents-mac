@@ -3,14 +3,12 @@ import Synchronization
 import Testing
 @testable import AletheTerminal
 
-/// A fake terminal on a virtual clock: `sleep` advances time instantly.
 private final class FakeTerminal: Sendable {
     let clock = Mutex<Duration>(.zero)
     let lastOutput = Mutex<Duration>(.zero)
     let written = Mutex<[String]>([])
     let screen = Mutex<String>("")
     let running = Mutex(true)
-    /// Called after each write, to let a test react (e.g. echo typed text on screen).
     let onWrite: @Sendable (FakeTerminal, String) -> Void
 
     init(onWrite: @escaping @Sendable (FakeTerminal, String) -> Void = { _, _ in }) {
@@ -36,7 +34,7 @@ private final class FakeTerminal: Sendable {
 @Suite struct PromptDeliveryTests {
     @Test func pastesOnceTheAgentGoesQuiet() async {
         let terminal = FakeTerminal()
-        terminal.output(at: .seconds(2))  // still drawing at 2 s → quiet for 700 ms at 2.7 s
+        terminal.output(at: .seconds(2))
         let sent = await PromptDelivery.deliver("fix the tests\nplease", style: .paste, io: terminal.io)
         #expect(sent)
         let written = terminal.written.withLock { $0 }

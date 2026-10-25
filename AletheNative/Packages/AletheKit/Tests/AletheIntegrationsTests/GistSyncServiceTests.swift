@@ -5,7 +5,6 @@ import Synchronization
 import Testing
 @testable import AletheIntegrations
 
-/// Answers requests of sessions tagged with `X-Gist-Stub` through that stub's handler; never the network.
 final class GistStubProtocol: URLProtocol, @unchecked Sendable {
     static let header = "X-Gist-Stub"
     static let stubs = Mutex<[String: GistStub]>([:])
@@ -49,7 +48,6 @@ final class LogLines: Sendable {
     let lines = Mutex<[String]>([])
 }
 
-/// A fake GitHub: routes by "METHOD path" and records every request.
 final class GistStub: Sendable {
     typealias Route = @Sendable (URLRequest) -> (Int, Data)
 
@@ -86,7 +84,6 @@ final class GistStub: Sendable {
     }
 }
 
-/// Unit tests over a `URLProtocol` stub (P7-11). No upstream golden cases exist for `github_sync.rs`.
 @Suite(.timeLimit(.minutes(1))) struct GistSyncServiceTests {
     static let token = "ghp_FIXTUREGISTTOKEN000000000000000000"
     static let profile = ProfileID(rawValue: "default")
@@ -124,7 +121,6 @@ final class GistStub: Sendable {
             try? String(contentsOf: locations.profileDirectory(profile).appending(path: name), encoding: .utf8)
         }
 
-        /// The token is in no file under the data root and in no log line.
         func expectTokenNowhere() throws {
             #expect(!logs.lines.withLock { $0 }.contains { $0.contains(GistSyncServiceTests.token) })
             let enumerator = FileManager.default.enumerator(at: locations.root, includingPropertiesForKeys: nil)
@@ -159,8 +155,6 @@ final class GistStub: Sendable {
     static func body(_ request: URLRequest) -> [String: Any] {
         (request.httpBody.flatMap { try? JSONSerialization.jsonObject(with: $0) } as? [String: Any]) ?? [:]
     }
-
-    // MARK: - Token
 
     @Test func invalidTokenIsRefusedAndNotStored() async throws {
         let fixture = try Fixture(["GET /user": { _ in GistStub.json(401, ["message": "Bad credentials"]) }], connected: false)
@@ -201,8 +195,6 @@ final class GistStub: Sendable {
         #expect(try fixture.secrets.string(for: .githubToken, profile: fixture.profile.rawValue) == nil)
         await #expect(throws: GistSyncError.notConnected) { try await fixture.service().push() }
     }
-
-    // MARK: - Push
 
     @Test func firstPushCreatesAPrivateGistWithTheSyncedFiles() async throws {
         let fixture = try Fixture(["POST /gists": { _ in GistStub.json(201, ["id": "created"]) }])
@@ -263,8 +255,6 @@ final class GistStub: Sendable {
         await #expect(throws: GistSyncError.http(500)) { try await fixture.service().push() }
         #expect(fixture.state.gistID == nil && fixture.state.lastPushAt == nil)
     }
-
-    // MARK: - Pull
 
     @Test func pullStagesAValidatedProfileWithoutChangingIt() async throws {
         let remote = try await Self.workspaceJSON(projects: ["one", "two"])

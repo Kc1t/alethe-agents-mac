@@ -1,13 +1,11 @@
 import AletheAgents
 import Foundation
 
-/// Which 9router install Alethe runs: the copy it manages in the profile, or one the user installed.
 public enum Router9Source: String, Hashable, Sendable, Codable, CaseIterable {
     case managed
     case external
 }
 
-/// One place 9router can come from. `path` is set only for the external install.
 public struct Router9Install: Hashable, Sendable {
     public var installed: Bool
     public var version: String?
@@ -22,15 +20,10 @@ public struct Router9Install: Hashable, Sendable {
     public static let none = Router9Install()
 }
 
-/// Upstream `Router9Status`.
 public struct Router9Status: Hashable, Sendable {
-    /// The copy Alethe installed into its own profile folder.
     public var managed: Router9Install
-    /// A 9router the user installed themselves, resolved through `LauncherResolver`.
     public var external: Router9Install
-    /// The process this app started is still alive.
     public var running: Bool
-    /// Something answers on the port. With `running` false another process owns it.
     public var portInUse: Bool
     public var port: Int
     public var installDirectory: String
@@ -62,8 +55,6 @@ public struct Router9Status: Hashable, Sendable {
     }
 }
 
-/// The routing inputs of the 9router preferences. The API key comes from the Keychain (P7-1) and is
-/// passed in by the caller; nothing here stores or logs it.
 public struct Router9RoutingConfig: Hashable, Sendable {
     public var enabled: Bool
     public var port: Int
@@ -76,7 +67,6 @@ public struct Router9RoutingConfig: Hashable, Sendable {
     }
 }
 
-/// Pure 9router rules (upstream `lib/router9.ts`).
 public enum Router9 {
     public static let pinnedVersion = "0.5.59"
     public static let defaultPort = 20128
@@ -96,24 +86,19 @@ public enum Router9 {
 
     public static func supports(_ agent: AgentKind) -> Bool { dialect(for: agent) != nil }
 
-    /// A port a listener can bind, else the default.
     public static func normalizePort(_ port: Int) -> Int {
         port > 0 && port < 65536 ? port : defaultPort
     }
 
-    /// Preference values may arrive as JSON numbers: fractions fall back to the default.
     public static func normalizePort(_ port: Double) -> Int {
         guard port.isFinite, port.rounded() == port, port > 0, port < 65536 else { return defaultPort }
         return Int(port)
     }
 
-    /// Always loopback: Alethe never routes through another host.
     public static func baseURL(port: Int) -> String { "http://127.0.0.1:\(normalizePort(port))" }
 
     public static func dashboardURL(port: Int) -> String { "\(baseURL(port: port))/dashboard" }
 
-    /// Variables that point one agent at the local router; empty whenever routing must not apply,
-    /// so the caller can always merge the result.
     public static func environment(for agent: AgentKind, config: Router9RoutingConfig?) -> [String: String] {
         guard let config, config.enabled else { return [:] }
         let apiKey = config.apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -125,14 +110,11 @@ public enum Router9 {
         }
     }
 
-    /// True when any 9router is available to route through, whichever install it is.
     public static func hasInstall(_ status: Router9Status?) -> Bool {
         guard let status else { return false }
         return status.managed.installed || status.external.installed
     }
 
-    /// The install a start will use: the preferred one when it exists, else the other, nil when
-    /// neither is installed.
     public static func resolveSource(_ status: Router9Status?, preferred: Router9Source)
         -> (source: Router9Source, install: Router9Install)? {
         guard let status else { return nil }

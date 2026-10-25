@@ -1,4 +1,3 @@
-/// A direct child in the sidebar's mixed group/project order.
 public enum SidebarChild: Hashable, Sendable {
     case group(GroupID)
     case project(ProjectID)
@@ -17,7 +16,6 @@ extension WorkspaceDocument {
             + (container.map { group($0)?.projectIDs ?? [] } ?? ungroupedProjectIDs).map { .project($0) }
     }
 
-    /// Display order of direct children; the root always groups groups before projects.
     public func sidebarChildren(of container: GroupID?) -> [SidebarChild] {
         let members = defaultSidebarChildren(of: container)
         guard let container, let tokens = group(container)?.childOrder else { return members }
@@ -30,7 +28,6 @@ extension WorkspaceDocument {
         return ordered + members.filter { seen.insert($0).inserted }
     }
 
-    /// Moves a child into a container, before a sibling or at the end if none matches.
     public mutating func place(_ item: SidebarChild, in container: GroupID?, before sibling: SidebarChild?) {
         guard sibling != item else { return }
         if let container, group(container) == nil { return }
@@ -54,7 +51,6 @@ extension WorkspaceDocument {
         var list = sidebarChildren(of: container)
         let insertion = sibling.flatMap { list.firstIndex(of: $0) } ?? list.count
         list.insert(item, at: insertion)
-        // Restore the group only after computing membership without the moving item.
         if let movingGroup { groups.append(movingGroup) }
         let projectIDs = list.compactMap { child -> ProjectID? in
             if case .project(let id) = child { return id }
@@ -82,7 +78,6 @@ extension WorkspaceDocument {
         }
     }
 
-    /// Canonicalizes an explicitly stored order after membership changes.
     mutating func normalizeSidebarChildOrder(of container: GroupID) {
         guard let index = groups.firstIndex(where: { $0.id == container }), groups[index].childOrder != nil else { return }
         let list = sidebarChildren(of: container)

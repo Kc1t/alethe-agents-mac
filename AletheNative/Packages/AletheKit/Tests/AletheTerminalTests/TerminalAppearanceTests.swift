@@ -12,7 +12,6 @@ import Testing
         #expect(rendered.contains("font-size = 21"))
         #expect(rendered.contains("window-padding-x = 0"))
         #expect(rendered.contains("window-padding-y = 0"))
-        // The host padding comes from the pane layout, so the surface fills its host.
         #expect(TerminalAppearance.surfaceFrame(in: CGRect(x: 0, y: 0, width: 200, height: 100), metrics: metrics)
                 == CGRect(x: 0, y: 0, width: 200, height: 100))
         #expect(TerminalAppearance.surfaceFrame(in: .zero, metrics: metrics).size == .zero)
@@ -54,13 +53,11 @@ import Testing
         #expect(rendered.contains("background = #0c0c0c"))
     }
 
-    /// Regression (ADR-10): Ghostty's default keybinds claimed ⌘W and other app shortcuts.
     @Test func clearsGhosttyKeybinds() {
         let rendered = TerminalAppearance.configuration(for: ThemeCatalog.builtin.defaultTheme).rendered
         #expect(rendered.contains("keybind = clear"))
     }
 
-    /// Regression: the wrapper's default theme is rendered last and used to override our colors.
     @MainActor @Test func controllerRendersTheAletheThemeLast() throws {
         let controller = TerminalController(theme: TerminalAppearance.terminalTheme(for: ThemeCatalog.builtin.defaultTheme))
         let lastBackground = controller.renderedConfig

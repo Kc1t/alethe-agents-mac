@@ -1,7 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// TodoSidebar.module.css: projectInputWrap and projectLink hover/focus surfaces.
 struct WebTodoChoiceSurface: ViewModifier {
     let compact: Bool
     let state: WebDropdownTriggerState

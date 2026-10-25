@@ -2,7 +2,6 @@ import Foundation
 import Security
 import Darwin
 
-/// Serialized discovery also coalesces concurrent polls. Failed/denied reads are remembered until reconnect.
 final class UsageCredentialCache: @unchecked Sendable {
     struct Credential {
         var token: String
@@ -30,7 +29,6 @@ final class UsageCredentialCache: @unchecked Sendable {
         return value.token
     }
 
-    /// Refresh each rejected token only once, even if the CLI has not replaced it yet.
     @discardableResult
     func reject(key: String, token: String, status: Int) -> Bool {
         guard status == 401 || status == 403 else { return false }
@@ -50,7 +48,6 @@ final class UsageCredentialCache: @unchecked Sendable {
     }
 }
 
-/// Uses Apple's stable signing identity rather than a changing development app signature.
 struct UsageKeychainReader {
     var toolExists: () -> Bool = { FileManager.default.isExecutableFile(atPath: "/usr/bin/security") }
     var run: ([String]) -> Data? = Self.runSecurity
@@ -67,7 +64,6 @@ struct UsageKeychainReader {
         guard toolExists() else { return Self.containsSecurityFramework(service: service, account: account) }
         var arguments = ["find-generic-password", "-s", service]
         if let account { arguments += ["-a", account] }
-        // Attributes only: never request -w or -g during sign-in discovery.
         return run(arguments) != nil
     }
 

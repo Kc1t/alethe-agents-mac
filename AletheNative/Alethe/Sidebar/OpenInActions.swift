@@ -3,8 +3,6 @@ import AletheGit
 import AletheModel
 import AppKit
 
-/// Open in VS Code, Reveal in Finder and Open in Browser from the project and terminal menus
-/// (P5-7; upstream `open_in_vscode`, `open_in_browser`). Lookups run off the main thread.
 @MainActor
 enum OpenInActions {
     static func vsCode(_ path: String, launchers: LauncherCache) {
@@ -22,8 +20,6 @@ enum OpenInActions {
                 process.standardInput = FileHandle.nullDevice
                 process.standardOutput = FileHandle.nullDevice
                 process.standardError = FileHandle.nullDevice
-                // The `code` script finds its app through PATH-independent paths, but Node-based
-                // shims (from a version manager) need the resolver's directories.
                 var environment = ProcessInfo.processInfo.environment
                 environment["PATH"] = launchers.searchDirectories.joined(separator: ":")
                 process.environment = environment
@@ -50,7 +46,6 @@ enum OpenInActions {
         NSWorkspace.shared.activateFileViewerSelecting([URL(filePath: path)])
     }
 
-    /// The project's repository page: the URL it was cloned from, else its `origin` remote.
     static func browser(_ project: Project) {
         let folder = URL(filePath: project.folder, directoryHint: .isDirectory)
         let cloneURL = project.githubURL

@@ -1,17 +1,11 @@
 import CoreGraphics
 
-/// How a project arranges its panes (upstream `LayoutMode`).
 public enum PaneLayoutMode: String, Codable, CaseIterable, Sendable {
-    /// Rows of two (`AutoLayout`).
     case auto
-    /// The first pane large on the left, the others stacked on the right.
     case spotlight
-    /// The others stacked in a narrow list on the left, the first pane large on the right.
     case sidebar
-    /// The project's custom grid (`Project.gridLayout`, P2-19).
     case grid
 
-    /// Default column shares of the two tracks (upstream panel `defaultSize`).
     var defaultColumns: [Double] {
         switch self {
         case .auto, .grid: []
@@ -21,8 +15,6 @@ public enum PaneLayoutMode: String, Codable, CaseIterable, Sendable {
     }
 }
 
-/// Upstream's "Auto" layout (`PaneArea.tsx` `AutoLayout`): one pane fills the area, two sit side by
-/// side, three or more go in rows of two with an odd last pane spanning its row.
 public enum AutoLayout {
     public static func rows(for count: Int) -> [Int] {
         guard count > 0 else { return [] }
@@ -33,10 +25,7 @@ public enum AutoLayout {
     public static let columns = 2
 }
 
-/// Weighted tracks (columns, rows or containers) separated by fixed gaps.
 public enum TrackMath {
-    /// Track sizes for `count` tracks sharing `total` minus the gaps. Missing or mismatched weights
-    /// mean equal tracks.
     public static func sizes(count: Int, weights: [Double], total: CGFloat, gap: CGFloat) -> [CGFloat] {
         guard count > 0 else { return [] }
         let available = max(0, total - gap * CGFloat(count - 1))
@@ -46,7 +35,6 @@ public enum TrackMath {
         return effective.map { CGFloat($0 / sum) * available }
     }
 
-    /// Where each track starts.
     public static func offsets(_ sizes: [CGFloat], gap: CGFloat, origin: CGFloat = 0) -> [CGFloat] {
         var offsets: [CGFloat] = []
         var position = origin
@@ -57,9 +45,6 @@ public enum TrackMath {
         return offsets
     }
 
-    /// Moves the boundary after track `divider` by `delta`. Tracks never go below `minimum`; with a
-    /// `rubberBand` function (`Motion.rubberBand`), a drag past it gives with progressive resistance
-    /// instead of stopping dead, and the caller settles back by calling again without it on release.
     public static func drag(_ sizes: [CGFloat], divider: Int, delta: CGFloat, minimum: CGFloat,
                             rubberBand: ((_ overshoot: CGFloat, _ dimension: CGFloat) -> CGFloat)? = nil) -> [CGFloat] {
         guard sizes.indices.contains(divider), sizes.indices.contains(divider + 1) else { return sizes }
@@ -81,7 +66,6 @@ public enum TrackMath {
         return result
     }
 
-    /// Sizes as persisted weights (fractions that sum to 1).
     public static func weights(_ sizes: [CGFloat]) -> [Double] {
         let sum = sizes.reduce(0, +)
         guard sum > 0 else { return [] }
@@ -89,22 +73,14 @@ public enum TrackMath {
     }
 }
 
-/// Pane frames and resize handles of one project's pane area.
 public struct PaneGridGeometry: Equatable, Sendable {
     public enum Divider: Hashable, Sendable {
-        /// Between the two columns of `row` (all two-pane rows share the column weights). Spotlight
-        /// and Sidebar have one, `row: 0`, between the main pane and the stack.
         case column(row: Int)
-        /// Between row `index` and the next one (in Spotlight and Sidebar: of the stack).
         case row(Int)
-        /// A custom grid's boundary after column `boundary` (0-based), one piece per run of rows it
-        /// separates.
         case gridColumn(boundary: Int, segment: Int)
-        /// A custom grid's boundary after row `boundary` (0-based), one piece per run of columns.
         case gridRow(boundary: Int, segment: Int)
     }
 
-    /// A free slot of a custom grid (1-based), where a pane can be dropped.
     public struct Slot: Equatable, Sendable {
         public var col: Int
         public var row: Int
@@ -117,15 +93,12 @@ public struct PaneGridGeometry: Equatable, Sendable {
     public var rowSizes: [CGFloat]
     public var freeSlots: [Slot] = []
 
-    /// - Parameter handle: thickness of a divider's hit area, centered on its gap.
-    /// - Parameter handlesInsideLeadingCell: places custom-grid handles inside right/bottom cell edges.
     public init(count: Int, in rect: CGRect, weights: GridWeights, gap: CGFloat, handle: CGFloat,
                 mode: PaneLayoutMode = .auto, grid: CustomGrid? = nil, ids: [String] = [],
                 handlesInsideLeadingCell: Bool = false) {
         if mode == .grid, let grid, count > 1 {
             self = Self.custom(grid: grid, ids: ids, in: rect, weights: weights, gap: gap, handle: handle)
             if handlesInsideLeadingCell {
-                // Web GridCellHandles lives inside the right/bottom edge of the leading cell.
                 for (divider, frame) in dividers {
                     switch divider {
                     case .gridColumn: dividers[divider] = frame.offsetBy(dx: -(handle + gap) / 2, dy: 0)
@@ -139,7 +112,6 @@ public struct PaneGridGeometry: Equatable, Sendable {
         paneFrames = []
         dividers = [:]
         if mode == .spotlight || mode == .sidebar, count > 1 {
-            // Two columns: the main pane and a stack of the others (upstream Spotlight/Sidebar).
             let columnWeights = weights.columns.count == 2 ? weights.columns : mode.defaultColumns
             columnSizes = TrackMath.sizes(count: 2, weights: columnWeights, total: rect.width, gap: gap)
             let columnX = TrackMath.offsets(columnSizes, gap: gap, origin: rect.minX)
@@ -184,8 +156,6 @@ public struct PaneGridGeometry: Equatable, Sendable {
         }
     }
 
-    /// A custom grid: cells span tracks; dividers only where a boundary separates two different
-    /// cells (or a cell and a free slot), so a spanning pane is never crossed by a handle.
     private static func custom(grid: CustomGrid, ids: [String], in rect: CGRect, weights: GridWeights, gap: CGFloat,
                                handle: CGFloat) -> PaneGridGeometry {
         var result = PaneGridGeometry(count: 0, in: rect, weights: GridWeights(), gap: gap, handle: handle)

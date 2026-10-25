@@ -2,9 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// Settings › Profiles (P5-9, upstream `ProfilesModal`): every profile with its projects, terminals and
-/// size on disk; create, rename, duplicate, delete (asks once, never the running one) and switch
-/// (asks once, then relaunches into it).
 struct ProfileSettings: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme

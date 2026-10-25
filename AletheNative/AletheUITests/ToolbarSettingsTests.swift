@@ -1,7 +1,5 @@
 import XCTest
 
-/// Toolbar configuration (P5-13): Settings › Toolbar hides and restores items; View › Customize
-/// Toolbar… is offered.
 @MainActor
 final class ToolbarSettingsTests: XCTestCase {
     override func setUp() async throws {
@@ -79,7 +77,6 @@ final class ToolbarSettingsTests: XCTestCase {
         relaunched.terminate()
     }
 
-    /// The usage pill toggles are the same choice in AI Usage and Settings › Toolbar.
     func testUsagePillToggleIsSharedWithAIUsage() {
         let (app, _) = launchAlethe()
         XCTAssertTrue(element(app, "workspace.empty").waitForExistence(timeout: 5))
@@ -102,7 +99,6 @@ final class ToolbarSettingsTests: XCTestCase {
         app.terminate()
     }
 
-    /// Hit targets at three zoom levels: every toggle flips where it is drawn.
     func testToolbarTogglesReceiveClicksAtThreeZoomLevels() {
         let items = ["home", "usage.claude", "usage.codex", "usage.antigravity", "usage",
                      "notifications", "memory", "profile", "remote", "router9", "sync"]

@@ -1,6 +1,5 @@
 import XCTest
 
-/// Diff pane (P2-11): unified and side-by-side, staged toggle; hit targets at three zoom levels.
 @MainActor
 final class DiffPaneTests: XCTestCase {
     override func setUp() async throws {

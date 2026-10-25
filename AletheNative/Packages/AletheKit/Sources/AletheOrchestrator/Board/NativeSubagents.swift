@@ -2,8 +2,6 @@ import Foundation
 import AletheAgents
 import AletheIntegrations
 
-/// A planner's own subagent, teammate or background shell as its hooks describe it (the fields of
-/// upstream `AgentNode` the board reads). The tracker that fills these lives in the app (P6-11).
 public struct NativeSubagent: Hashable, Sendable, Identifiable {
     public enum Kind: String, Hashable, Sendable {
         case subagent
@@ -20,14 +18,10 @@ public struct NativeSubagent: Hashable, Sendable, Identifiable {
     public var id: String
     public var agentType: String
     public var kind: Kind
-    /// The terminal it belongs to; nil when the hook carried none.
     public var plannerID: String?
-    /// Which CLI spawned it (`claude`, `codex`).
     public var sourceAgent: String
-    /// The prompt of the tool call that created it. User data.
     public var prompt: String?
     public var status: Status
-    /// Milliseconds since 1970.
     public var startedAt: UInt64
     public var endedAt: UInt64?
     public var result: String?
@@ -64,10 +58,6 @@ public enum NativeSubagents {
         "native-subagents:" + (plannerID ?? "none")
     }
 
-    /// Upstream `nativeSubagentJobs`: subagents reshaped as job snapshots, so they land on the same
-    /// planner tree as delegated workers, in one shared run per planner. `costs` is the transcript
-    /// spend by node id; a background shell never carries agent spend. There is no routing note:
-    /// Alethe never picked an agent for these, the planner spawned them in its own process.
     public static func jobs(_ nodes: [NativeSubagent], costs: [String: SessionCost] = [:], nowMs: UInt64) -> [JobSnapshot] {
         nodes.map { node in
             let cost = node.kind == .background ? nil : costs[node.id]

@@ -5,7 +5,6 @@ extension Notification.Name {
     static let aletheToggleWebSidebar = Notification.Name("alethe.toggleWebSidebar")
 }
 
-/// Changes the existing window in place, so Interface settings apply without relaunching.
 struct WindowChromeBridge: NSViewRepresentable {
     let web: Bool
     let barHeight: CGFloat
@@ -16,7 +15,6 @@ struct WindowChromeBridge: NSViewRepresentable {
     func updateNSView(_ view: ChromeView, context: Context) {
         let trailingEdgeBinding = $trafficLightTrailingEdge
         view.trafficLightTrailingEdgeChanged = { value in
-            // AppKit can notify during a SwiftUI update; publish on the next main turn.
             Task { @MainActor in
                 if trailingEdgeBinding.wrappedValue != value { trailingEdgeBinding.wrappedValue = value }
             }
@@ -47,7 +45,6 @@ struct WindowChromeBridge: NSViewRepresentable {
 
         override var isFlipped: Bool { true }
 
-        // This overlay owns only the standard buttons; all other events reach SwiftUI below it.
         override func hitTest(_ point: NSPoint) -> NSView? {
             guard web else { return nil }
             let hit = super.hitTest(point)
@@ -124,9 +121,6 @@ struct WindowChromeBridge: NSViewRepresentable {
             positionLights()
         }
 
-        /// SwiftUI drops pointer events inside the title-bar safe-area band of a full-size content view, which
-        /// left the whole web title bar dead in windowed mode. The bar ignores that inset anyway, so cancel it
-        /// where it exists; native full screen has no title bar and needs no correction.
         private func syncTitleBarSafeArea() {
             guard let window, let content = window.contentView else { return }
             let titleBar = web ? max(0, window.frame.height - window.contentLayoutRect.height) : 0
@@ -140,9 +134,6 @@ struct WindowChromeBridge: NSViewRepresentable {
             var trailingEdge: CGFloat = 0
             for (index, kind) in [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton].enumerated() {
                 guard let button = window.standardWindowButton(kind) else { continue }
-                // SwiftUI hides the system title-bar host when its toolbar is hidden. Keep the
-                // real buttons in our overlay so their target/actions and accessibility survive.
-                // Native full screen hides them by default; the web bar keeps them on screen there too.
                 if button.superview !== self { addSubview(button) }
                 if button.isHidden { button.isHidden = false }
                 let scale = barHeight / 32
@@ -153,7 +144,6 @@ struct WindowChromeBridge: NSViewRepresentable {
                     trailingEdge = max(trailingEdge, button.frame.maxX)
                 }
             }
-            // Reserve only the actual visible buttons, never a nominal traffic-light width.
             if previousTrailingEdge != trailingEdge {
                 previousTrailingEdge = trailingEdge
                 trafficLightTrailingEdgeChanged?(trailingEdge)
@@ -162,7 +152,6 @@ struct WindowChromeBridge: NSViewRepresentable {
     }
 }
 
-/// Only unhandled mouse events reach this background; buttons and tabs keep their own events.
 struct WindowDragRegion: NSViewRepresentable {
     func makeNSView(context: Context) -> DragView { DragView() }
     func updateNSView(_ view: DragView, context: Context) {}

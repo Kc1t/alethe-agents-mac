@@ -2,12 +2,10 @@ import AletheGit
 import Foundation
 import Observation
 
-/// One entry of a directory listing (upstream `DirectoryEntry`).
 public struct FileNode: Hashable, Sendable, Identifiable {
     public var url: URL
     public var name: String
     public var isDirectory: Bool
-    /// Byte size for regular files; `nil` for directories.
     public var size: Int?
 
     public var id: URL { url }
@@ -28,8 +26,6 @@ public struct FileNode: Hashable, Sendable, Identifiable {
     }
 }
 
-/// Which entries a listing shows. Upstream lists everything (dotfiles, `.git`, `node_modules`);
-/// the default here matches that and only drops Finder metadata, which never appears on Windows.
 public struct FileTreeFilter: Hashable, Sendable {
     public var showDotfiles: Bool
     public var hiddenNames: Set<String>
@@ -48,7 +44,6 @@ public struct FileTreeFilter: Hashable, Sendable {
     }
 }
 
-/// A visible row of the flattened tree.
 public struct FileTreeRow: Hashable, Sendable, Identifiable {
     public var node: FileNode
     public var depth: Int
@@ -56,15 +51,12 @@ public struct FileTreeRow: Hashable, Sendable, Identifiable {
     public var id: URL { node.url }
 }
 
-/// Lazily loaded file tree: a directory's children are read only when it is expanded, and
-/// `reload()` re-reads the root and every expanded directory (e.g. on a watcher signal).
 @MainActor
 @Observable
 public final class FileTree {
     public let root: URL
     public var filter: FileTreeFilter
     public private(set) var expanded: Set<URL> = []
-    /// Loaded listings keyed by directory URL; the root is always loaded after `reload()`.
     public private(set) var listings: [URL: [FileNode]] = [:]
     public var gitBadges: GitBadgeIndex?
 
@@ -99,8 +91,6 @@ public final class FileTree {
         if isExpanded(directory) { collapse(directory) } else { try expand(directory) }
     }
 
-    /// Re-reads the root and expanded directories; directories that vanished are dropped.
-    /// Cached listings of collapsed directories are discarded so they reload on the next expand.
     public func reload() throws {
         var fresh: [URL: [FileNode]] = [root: try Self.list(root, filter: filter)]
         var keep: Set<URL> = []
@@ -113,7 +103,6 @@ public final class FileTree {
         expanded = keep
     }
 
-    /// Depth-first rows under expanded directories, in display order.
     public func visibleRows() -> [FileTreeRow] {
         var rows: [FileTreeRow] = []
         func walk(_ directory: URL, depth: Int) {
@@ -131,14 +120,12 @@ public final class FileTree {
         gitBadges?.badge(for: node.url, isDirectory: node.isDirectory)
     }
 
-    /// Reloads on every (debounced) watcher signal until the stream ends or the task is cancelled.
     public func follow(_ changes: AsyncStream<Void>) async {
         for await _ in changes {
             try? reload()
         }
     }
 
-    /// Lists one directory, sorted folders first then case-insensitively by name (upstream order).
     public nonisolated static func list(_ directory: URL, filter: FileTreeFilter = .default) throws -> [FileNode] {
         let keys: [URLResourceKey] = [.isDirectoryKey, .fileSizeKey]
         let urls = try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: keys, options: [])
@@ -164,6 +151,4 @@ public final class FileTree {
     }
 }
 
-/// FSEvents watcher for a tree root, debounced; one signal per burst of changes.
-/// Reuses `GitWatcher`, which already skips `.git` object-store and lock-file noise.
 public typealias FileTreeWatcher = GitWatcher

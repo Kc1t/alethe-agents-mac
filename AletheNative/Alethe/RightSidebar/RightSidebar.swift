@@ -5,7 +5,6 @@ import AletheModel
 import AletheTodos
 import SwiftUI
 
-/// Maps a contributed `viewID` to the app's SwiftUI view and localized title (ADR-9).
 enum PluginViewRegistry {
     static func title(for tab: SidebarTabContribution) -> LocalizedStringKey {
         switch tab.viewID {
@@ -38,7 +37,6 @@ enum PluginViewRegistry {
         }
     }
 
-    /// The sheet a `SheetContribution` names, for a project.
     @MainActor @ViewBuilder
     static func sheet(for viewID: String, workspace: WorkspaceModel, undoManager: UndoManager?,
                       projectID: ProjectID?) -> some View {
@@ -51,7 +49,6 @@ enum PluginViewRegistry {
     }
 }
 
-/// A third-party extension's tab (P4-19), or a placeholder for an unknown `viewID`.
 private struct ExtensionOrUnavailable: View {
     let viewID: String
     @Environment(AppEnvironment.self) private var environment
@@ -64,7 +61,6 @@ private struct ExtensionOrUnavailable: View {
         }
     }
 
-    /// The sheet a `SheetContribution` names, for a project.
     @MainActor @ViewBuilder
     static func sheet(for viewID: String, workspace: WorkspaceModel, undoManager: UndoManager?,
                       projectID: ProjectID?) -> some View {
@@ -77,7 +73,6 @@ private struct ExtensionOrUnavailable: View {
     }
 }
 
-/// The inspector column (P4-3): the right-side contributed tabs, in `ViewPlacements` order.
 private struct TabStripState: Equatable {
     var offset: CGFloat = 0
     var content: CGFloat = 0
@@ -184,7 +179,6 @@ struct RightSidebar: View {
         }
     }
 
-    /// Tabs as a carousel: no scroll bar, small chevrons only while tabs hide off-screen (no gradients allowed).
     private var tabCarousel: some View {
         HStack(spacing: metrics.size(2)) {
             if tabStrip.canBack { carouselChevron("chevron.left") { pageTabs(-1) } }
@@ -289,7 +283,6 @@ struct RightSidebar: View {
     }
 }
 
-/// Shared web panel header; native panels retain their original header layouts.
 struct WebSidebarHeader<Content: View>: View {
     @Environment(\.metrics) private var metrics
     @Environment(\.theme) private var theme
@@ -343,7 +336,6 @@ struct WebSidebarEmpty: View {
     }
 }
 
-/// Voice-command history retains an honest availability state until Jev has a native backend.
 struct NativeVoiceHistoryPanel: View {
     @Environment(\.metrics) private var metrics
     @Environment(\.theme) private var theme

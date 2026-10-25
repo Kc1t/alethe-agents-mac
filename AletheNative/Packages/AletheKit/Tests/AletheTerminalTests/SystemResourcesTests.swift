@@ -3,9 +3,6 @@ import Foundation
 import Testing
 @testable import AletheTerminal
 
-/// Memory sampling (P2-24). The P case: a process tree's memory is measured, and nothing is left
-/// once the tree is ended, which is what a hibernated terminal gives back.
-// Spawns real processes: a rare intermittent hang must fail the test, not stall the run.
 @Suite(.timeLimit(.minutes(1))) struct SystemResourcesTests {
     @Test func systemMemoryIsSane() {
         let memory = SystemResources.memory()

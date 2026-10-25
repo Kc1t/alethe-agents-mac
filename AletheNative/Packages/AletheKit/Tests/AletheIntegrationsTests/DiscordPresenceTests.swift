@@ -3,7 +3,6 @@ import Synchronization
 import Testing
 @testable import AletheIntegrations
 
-/// Records what the session sends, in order.
 private final class FakeDiscordClient: DiscordPresenceClient {
     enum Call: Equatable {
         case set(DiscordActivity)
@@ -76,7 +75,6 @@ private final class FakeDiscordClient: DiscordPresenceClient {
         await session.settle()
         #expect(client.calls == [.set(session.activity(for: .dashboard)), .clear])
         #expect(session.current == nil)
-        // Back on: sent again even though the view did not change.
         session.update(enabled: true, view: .dashboard)
         await session.settle()
         #expect(client.calls.last == .set(session.activity(for: .dashboard)))
@@ -99,7 +97,6 @@ private final class FakeDiscordClient: DiscordPresenceClient {
         let client = FakeDiscordClient()
         let session = DiscordPresenceSession(client: client, startedAt: launch, refreshInterval: .milliseconds(20))
         session.update(enabled: true, view: .terminals)
-        // Waits for two refreshes after the first send rather than assuming how many fit in a fixed sleep.
         let deadline = ContinuousClock.now.advanced(by: .seconds(10))
         while client.sets.count < 3, ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(10))

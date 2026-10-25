@@ -3,9 +3,6 @@ import AletheIntegrations
 import AletheModel
 import SwiftUI
 
-/// Project menu › Agent Library… (P5-16; upstream shows the library only in the Agent Canvas POC,
-/// EXP-1): Claude Code subagents from the library installed in the project or in `~/.claude/agents`,
-/// the economy (Haiku) agents toggle, and the other agents found there.
 struct AgentLibrarySheet: View {
     let workspace: WorkspaceModel
     let projectID: ProjectID?
@@ -300,7 +297,6 @@ struct AgentLibrarySheet: View {
     }
 }
 
-/// One template: name, category, cost badge, summary and installed state; `actions` trail.
 private struct AgentTemplateRow<Actions: View>: View {
     let template: AgentTemplate
     let installed: InstalledAgent?
@@ -385,7 +381,6 @@ extension AgentCost {
 }
 
 extension AgentTemplate {
-    /// The localized summary; the English one in the template is the fallback.
     var summaryKey: LocalizedStringKey {
         switch name {
         case "orchestrator": LocalizedStringKey("agentLibrary.summary.orchestrator")

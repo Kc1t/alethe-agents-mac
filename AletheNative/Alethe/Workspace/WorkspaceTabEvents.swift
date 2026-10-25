@@ -1,7 +1,6 @@
 import AppKit
 import SwiftUI
 
-/// Handles pointer buttons and numbered shortcuts without intercepting terminal text input.
 struct WorkspaceTabEvents: NSViewRepresentable {
     var number: Int? = nil
     var listensForMiddleClick = true

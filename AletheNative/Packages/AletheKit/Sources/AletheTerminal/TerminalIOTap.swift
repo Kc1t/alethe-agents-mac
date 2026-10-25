@@ -1,8 +1,5 @@
 import Foundation
 
-/// Observes a terminal's traffic without owning it: bytes the user sent to the PTY and bytes the
-/// PTY produced. Callbacks run on the thread that moved the bytes (main for input, the PTY queue
-/// for output) and must return quickly.
 public final class TerminalIOTap: @unchecked Sendable {
     private let lock = NSLock()
     private var inputObservers: [UUID: @Sendable (Data) -> Void] = [:]

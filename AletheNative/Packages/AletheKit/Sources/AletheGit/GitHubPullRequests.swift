@@ -1,26 +1,18 @@
 import Foundation
 
-// MARK: - Model
-
-/// Aggregated state of a PR's status checks (`statusCheckRollup`).
 public enum PullRequestChecksState: String, Sendable, Equatable {
     case success, failure, pending, none
 }
 
-/// GitHub's review decision; `nil` on the model when the repo has no review requirement.
 public enum PullRequestReviewDecision: String, Sendable, Equatable {
     case approved = "APPROVED"
     case changesRequested = "CHANGES_REQUESTED"
     case reviewRequired = "REVIEW_REQUIRED"
 }
 
-/// One open PR the signed-in user is involved in. `gh search prs` returns the list fields; review
-/// decision, checks and head SHA come from `gh pr view` (search cannot return them) and stay unset
-/// until the details are merged in.
 public struct PullRequestSummary: Sendable, Equatable, Identifiable {
     public var number: Int
     public var title: String
-    /// `owner/name`.
     public var repo: String
     public var url: URL?
     public var author: String
@@ -49,13 +41,11 @@ public struct PullRequestSummary: Sendable, Equatable, Identifiable {
         self.headSHA = headSHA
     }
 
-    /// The URL to open in the browser; falls back to the canonical github.com path.
     public var browserURL: URL? {
         if let url, url.scheme == "https" { return url }
         return URL(string: "https://github.com/\(repo)/pull/\(number)")
     }
 
-    /// Merges the fields `gh pr view` returns.
     public func merging(_ details: PullRequestDetails) -> PullRequestSummary {
         var copy = self
         copy.reviewDecision = details.reviewDecision
@@ -73,7 +63,6 @@ public struct PullRequestDetails: Sendable, Equatable {
     public var isDraft: Bool?
 }
 
-/// Whether `gh` can be used; the UI shows a dedicated state for each failure.
 public enum GitHubCLIStatus: Sendable, Equatable {
     case ready(executable: URL)
     case missing
@@ -89,15 +78,10 @@ public enum GitHubPullRequestError: Error, Equatable, Sendable {
     case invalidArgument(String)
 }
 
-// MARK: - Parsing
-
 public enum GitHubPullRequestParser {
-    /// Same fields upstream (`github_pr_list_mine`) requests from `gh search prs`.
     public static let searchFields = "number,title,url,repository,author,isDraft,updatedAt"
     public static let detailFields = "headRefOid,reviewDecision,statusCheckRollup,isDraft"
 
-    /// Parses `gh search prs --json <searchFields>`. Entries without a number or repository are
-    /// skipped; other missing fields get neutral defaults.
     public static func parseSearch(_ data: Data) throws -> [PullRequestSummary] {
         guard let array = try json(data) as? [[String: Any]] else {
             throw GitHubPullRequestError.parseFailed("expected a JSON array")
@@ -122,7 +106,6 @@ public enum GitHubPullRequestParser {
         }
     }
 
-    /// Parses `gh pr view --json <detailFields>`.
     public static func parseDetails(_ data: Data) throws -> PullRequestDetails {
         guard let object = try json(data) as? [String: Any] else {
             throw GitHubPullRequestError.parseFailed("expected a JSON object")
@@ -135,8 +118,6 @@ public enum GitHubPullRequestParser {
         )
     }
 
-    /// Rolls up CheckRun (`status`/`conclusion`) and StatusContext (`state`) entries: any failure wins,
-    /// then anything unfinished, then success.
     static func checksState(_ value: Any?) -> PullRequestChecksState {
         guard let entries = value as? [[String: Any]], !entries.isEmpty else { return .none }
         var pending = false
@@ -177,8 +158,6 @@ public enum GitHubPullRequestParser {
     }
 }
 
-// MARK: - Commands
-
 public enum GitHubPullRequestCommands {
     public static func searchArguments() -> [String] {
         ["search", "prs", "--involves=@me", "--state", "open", "--json", GitHubPullRequestParser.searchFields]
@@ -189,8 +168,6 @@ public enum GitHubPullRequestCommands {
         return ["pr", "view", String(number), "-R", repo, "--json", GitHubPullRequestParser.detailFields]
     }
 
-    /// Squash merge guarded by the reviewed head SHA (P4-15): GitHub refuses the merge if the branch
-    /// moved after the review.
     public static func squashMergeArguments(pr: PullRequestSummary, headSHA: String) throws -> [String] {
         try validate(repo: pr.repo, number: pr.number)
         let sha = headSHA.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -209,14 +186,10 @@ public enum GitHubPullRequestCommands {
     }
 }
 
-// MARK: - Client
-
-/// Runs `gh` with arguments; injectable so tests can fake outputs.
 public protocol GitHubCLIRunning: Sendable {
     func run(_ arguments: [String]) async throws -> GitOutput
 }
 
-/// Runs the real `gh` through `GitRunner`, which terminates the process when the task is cancelled.
 public struct GitHubCLIRunner: GitHubCLIRunning {
     public var executable: URL?
 
@@ -259,7 +232,6 @@ public struct GitHubPullRequests: Sendable {
         self.runner = runner ?? GitHubCLIRunner(executable: executable)
     }
 
-    /// `missing` without a binary, `signedOut` when `gh auth status` fails.
     public func status() async throws -> GitHubCLIStatus {
         guard let executable else { return .missing }
         do {
@@ -270,7 +242,6 @@ public struct GitHubPullRequests: Sendable {
         }
     }
 
-    /// Open PRs involving the signed-in user.
     public func listMine() async throws -> [PullRequestSummary] {
         guard executable != nil else { throw GitHubPullRequestError.ghMissing }
         let output = try await runner.run(GitHubPullRequestCommands.searchArguments())
@@ -278,7 +249,6 @@ public struct GitHubPullRequests: Sendable {
         return try GitHubPullRequestParser.parseSearch(output.stdout)
     }
 
-    /// Review decision, checks and head SHA for one PR.
     public func details(for pr: PullRequestSummary) async throws -> PullRequestDetails {
         guard executable != nil else { throw GitHubPullRequestError.ghMissing }
         let output = try await runner.run(GitHubPullRequestCommands.detailArguments(repo: pr.repo, number: pr.number))
@@ -286,7 +256,6 @@ public struct GitHubPullRequests: Sendable {
         return try GitHubPullRequestParser.parseDetails(output.stdout)
     }
 
-    /// Squash merges only if the PR head is still `headSHA`.
     public func squashMerge(_ pr: PullRequestSummary, headSHA: String) async throws {
         guard executable != nil else { throw GitHubPullRequestError.ghMissing }
         let output = try await runner.run(GitHubPullRequestCommands.squashMergeArguments(pr: pr, headSHA: headSHA))

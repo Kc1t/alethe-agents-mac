@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheAgents
 
-/// Conversation history (P3-7; upstream `list_claude_sessions`, `get_codex_session_title`).
 @Suite struct ConversationHistoryTests {
     private func temporaryHome() throws -> String {
         let home = FileManager.default.temporaryDirectory.appending(path: "alethe-history-\(UUID().uuidString)").path

@@ -3,7 +3,6 @@ import Synchronization
 import Testing
 @testable import AletheAgents
 
-/// Hook bridge (P3-9).
 @Suite struct AgentHooksTests {
     @Test func claudeEventsMapToActivityAndSession() {
         func event(_ json: String) -> AgentHookEvent? { AgentHookEvent.claude(Data(json.utf8)) }
@@ -27,8 +26,6 @@ import Testing
         #expect((stop.first?["headers"] as? [String: String]) == ["X-Alethe-Token": "tok", "X-Alethe-Tab": "t1"])
     }
 
-    /// P6-11: a planner's settings add the subagent events and in-process teammates; without the
-    /// orchestrator feature they stay as P3-9 wrote them.
     @Test func plannerSettingsAddTheSubagentEvents() throws {
         func settings(_ orchestrator: Bool) throws -> [String: Any] {
             let data = AgentHookWiring.claudeSettings(endpoint: "http://127.0.0.1:5000", token: "tok", tab: "t1", orchestrator: orchestrator)
@@ -87,7 +84,7 @@ import Testing
         var monitor = ActivityMonitor()
         #expect(monitor.input("fix it", at: 0) == nil)
         #expect(monitor.input("\r", at: 0) == .working)
-        monitor.output("fix it", at: 0.1)            // the echo
+        monitor.output("fix it", at: 0.1)
         #expect(monitor.deadline == nil)
         monitor.output("\u{1B}[32mWorking on the fix now…\u{1B}[0m", at: 1)
         #expect(monitor.deadline == 1 + ActivityMonitor.responseIdle)
@@ -106,7 +103,6 @@ import Testing
         #expect(HTTPRequest.parse(Data((raw + "lo").utf8), bodyLimit: 4) == .tooLarge)
     }
 
-    /// P: a real request reaches the handler over loopback; a wrong token does not.
     @Test func serverRoundTrip() async throws {
         let received = Mutex<[String]>([])
         let server = AgentHookServer(token: "secret") { agent, tab, body in
@@ -126,8 +122,6 @@ import Testing
         #expect(try await post(token: "wrong") == 401)
         #expect(received.withLock { $0 } == [#"claude|tab1|{"hook_event_name":"Stop"}"#])
     }
-
-    // MARK: POST /mcp (P6-9)
 
     private static func request(_ path: String, token: String = "secret", headers: [String: String] = [:],
                                 method: String = "POST", body: String = "{}") -> HTTPRequest {
@@ -165,7 +159,6 @@ import Testing
         #expect(status(server.route(Self.request("/mcp"))) == 404)
     }
 
-    /// P: an MCP body goes out and its answer comes back over loopback; a notification gets 202.
     @Test func mcpRoundTrip() async throws {
         let server = AgentHookServer(token: "secret") { _, _, _ in }
         server.setMcpHandler { body, planner in

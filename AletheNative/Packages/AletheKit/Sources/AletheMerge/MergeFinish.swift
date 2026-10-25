@@ -4,17 +4,13 @@ import Foundation
 public enum MergeFinishError: Error, Equatable, Sendable {
     case invalidEnvironmentID(String)
     case environmentNotFound
-    /// A path that would resolve outside the allowed base directory.
     case invalidPath
 }
 
-/// A merge environment prepared under `.alethe/merge-envs/<id>` on branch `alethe/merge-<id>`
-/// (upstream `merge_prepare` layout).
 public struct MergeEnvHandle: Codable, Hashable, Sendable {
     public var id: String
     public var source: String
     public var target: String
-    /// Files that were conflicted at prepare time; scanned for leftover markers before finishing.
     public var conflictPaths: [String]
 
     public init(id: String, source: String, target: String, conflictPaths: [String] = []) {
@@ -32,13 +28,11 @@ public struct MergeEnvHandle: Codable, Hashable, Sendable {
         MergeAnalyzer.mergeEnvsDirectory(root: root).appendingPathComponent("\(id).json")
     }
 
-    /// Upstream `validate_env_id`: ASCII alphanumerics, `-` and `_` only.
     public static func isValidID(_ id: String) -> Bool {
         !id.isEmpty && id.unicodeScalars.allSatisfy { $0.isASCII && (CharacterSet.alphanumerics.contains($0) || $0 == "-" || $0 == "_") }
     }
 }
 
-/// Upstream `MergeOutcome` — `stage` mirrors upstream strings so persisted history reads the same.
 public struct MergeFinishOutcome: Codable, Equatable, Sendable {
     public enum Stage: String, Codable, Sendable {
         case conflictMarkers = "conflict_markers"
@@ -56,7 +50,6 @@ public struct MergeFinishOutcome: Codable, Equatable, Sendable {
     public var stage: Stage
     public var output: String
     public var validation: ValidationReport?
-    /// API contract warnings (upstream shield layer 3); `nil` when the check did not run.
     public var contractWarnings: [ContractWarning]? = nil
 
     public init(merged: Bool, stage: Stage, output: String, validation: ValidationReport? = nil,
@@ -71,22 +64,17 @@ public struct MergeFinishOutcome: Codable, Equatable, Sendable {
     public var validationRan: Bool { validation?.ranAnyCommand ?? false }
 }
 
-/// Upstream `ForceCleanupResult`. Force cleanup deletes files, so the UI must confirm it once first.
 public struct MergeForceCleanupResult: Codable, Equatable, Sendable {
     public var deleted: Bool
     public var pruned: Bool
     public static let requiresConfirmation = true
 }
 
-/// One pending change in a worktree (`git status --porcelain`).
 public struct WorktreePendingChange: Codable, Equatable, Sendable {
     public var status: String
     public var path: String
 }
 
-/// Validate, finalize, abort and clean up a merge environment (upstream `conflict_resolution.rs`
-/// finish commands and `worktrees.rs` commit/remove). The user's working tree only ever moves by
-/// fast-forward of the checked-out target branch.
 public struct MergeFinisher: Sendable {
     public static let promptFile = "ALETHE_CONFLICT.md"
 
@@ -100,9 +88,6 @@ public struct MergeFinisher: Sendable {
         self.validator = validator
     }
 
-    // MARK: Validate
-
-    /// Markers → stage everything → validation pipeline; never commits (upstream `merge_validate`).
     public func validate(_ env: MergeEnvHandle, settings: ValidationSettings) async throws -> MergeFinishOutcome {
         let dir = try existingDirectory(env)
         var outcome = try await validateAndStage(env, dir: dir, settings: settings)
@@ -111,19 +96,16 @@ public struct MergeFinisher: Sendable {
         return outcome
     }
 
-    /// Best-effort: a failing check is an empty list, never a blocker (upstream `unwrap_or_default`).
     static func contractWarnings(in dir: URL) -> [ContractWarning] {
         (try? ContractCheck.check(root: dir)) ?? []
     }
 
-    /// Returns a blocking outcome, or a `.validated` one carrying the report.
     private func validateAndStage(_ env: MergeEnvHandle, dir: URL, settings: ValidationSettings) async throws -> MergeFinishOutcome? {
         let markers = Self.leftoverMarkers(in: dir, paths: env.conflictPaths)
         if !markers.isEmpty {
             return MergeFinishOutcome(merged: false, stage: .conflictMarkers,
                                       output: "Conflict markers remaining in: \(markers.joined(separator: ", "))")
         }
-        // The prompt file must leave before `add -A`, or it lands in the merge commit.
         try? FileManager.default.removeItem(at: dir.appendingPathComponent(Self.promptFile))
         _ = try await runner.run(["add", "-A"], in: dir)
         let still = try await MergeAnalyzer(root: root, runner: runner).unmergedFiles(in: dir)
@@ -146,10 +128,6 @@ public struct MergeFinisher: Sendable {
         }
     }
 
-    // MARK: Finalize
-
-    /// Revalidates, commits the staged merge, fast-forwards the checked-out target and tears the
-    /// environment down (upstream `merge_finalize`). Any non-merged outcome preserves the environment.
     public func finalize(_ env: MergeEnvHandle, settings: ValidationSettings = ValidationSettings(),
                          healthProbe: HealthProbe? = HealthProbe()) async throws -> MergeFinishOutcome {
         let dir = try existingDirectory(env)
@@ -208,16 +186,11 @@ public struct MergeFinisher: Sendable {
                                   contractWarnings: contract)
     }
 
-    // MARK: Abort / cleanup
-
-    /// Destroys the environment without integrating (upstream `merge_abort`); idempotent.
     public func abort(_ env: MergeEnvHandle) async throws {
         guard MergeEnvHandle.isValidID(env.id) else { throw MergeFinishError.invalidEnvironmentID(env.id) }
         await teardown(env, deleteBranch: "-D")
     }
 
-    /// Clears an unfinished merge/rebase inside the environment only (upstream `merge_preflight_abort`);
-    /// "nothing in progress" is a no-op, anything else propagates.
     public func preflightAbort(_ env: MergeEnvHandle) async throws {
         let dir = try existingDirectory(env)
         for args in [["merge", "--abort"], ["rebase", "--abort"]] {
@@ -229,8 +202,6 @@ public struct MergeFinisher: Sendable {
         }
     }
 
-    /// Deletes the environment directory outright, then `worktree prune` (upstream `merge_force_cleanup`).
-    /// Destructive: callers confirm once (`MergeForceCleanupResult.requiresConfirmation`).
     public func forceCleanup(_ env: MergeEnvHandle) async throws -> MergeForceCleanupResult {
         guard MergeEnvHandle.isValidID(env.id) else { throw MergeFinishError.invalidEnvironmentID(env.id) }
         let fm = FileManager.default
@@ -246,17 +217,11 @@ public struct MergeFinisher: Sendable {
         return MergeForceCleanupResult(deleted: deleted, pruned: pruned)
     }
 
-    // MARK: Worktree commit / removal
-
-    /// Pending real work in a worktree; agent scaffolding (`.planning/`, `.opencode/`, `opencode.json`)
-    /// is ignored as upstream `is_real_work`. Shown by the confirm-commit sheet before integrating.
     public func pendingChanges(in worktree: URL) async throws -> [WorktreePendingChange] {
         let out = try await runner.run(["status", "--porcelain"], in: worktree)
         return Self.parsePorcelain(out.text)
     }
 
-    /// Commits all pending work with the user-confirmed message; `false` when nothing was pending
-    /// (upstream `worktree_commit_worktree`).
     @discardableResult
     public func commitPending(in worktree: URL, message: String) async throws -> Bool {
         guard try await !pendingChanges(in: worktree).isEmpty else { return false }
@@ -266,8 +231,6 @@ public struct MergeFinisher: Sendable {
         return true
     }
 
-    /// Removes an agent worktree after its branch was merged; `force` discards uncommitted work.
-    /// Only paths inside `<repo>/.alethe/worktrees` are accepted (upstream `worktree_remove`).
     public func removeWorktree(at worktree: URL, force: Bool = false) async throws {
         let base = root.appendingPathComponent(".alethe/worktrees", isDirectory: true).resolvingSymlinksInPath().path + "/"
         let path = worktree.resolvingSymlinksInPath().path
@@ -276,8 +239,6 @@ public struct MergeFinisher: Sendable {
         _ = try await runner.run(["worktree", "remove"] + (force ? ["--force"] : []) + [path], in: root)
         _ = try? await runner.run(["worktree", "prune"], in: root)
     }
-
-    // MARK: Helpers
 
     static func parsePorcelain(_ text: String) -> [WorktreePendingChange] {
         text.split(separator: "\n").compactMap { line in

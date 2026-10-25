@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// MainMenu.module.css: flat 13-point rows, 14-point icons and 7×10 padding.
 public struct AletheTitleBarMenuRowStyle: ButtonStyle {
     public init() {}
     public func makeBody(configuration: Configuration) -> some View {
@@ -31,7 +30,6 @@ private struct TitleBarMenuRow: View {
     }
 }
 
-/// MainMenu and usagePopover share an elevated, bordered surface.
 public struct AletheTitleBarSurface: ViewModifier {
     public var usage: Bool
     @Environment(\.theme) private var theme

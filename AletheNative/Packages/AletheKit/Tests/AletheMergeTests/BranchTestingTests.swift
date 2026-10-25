@@ -4,7 +4,6 @@ import Foundation
 import Testing
 @testable import AletheMerge
 
-// Spawns real processes: a hang must fail the test, not stall the run.
 @Suite(.timeLimit(.minutes(1))) struct BranchTestingTests {
     static let runner = GitRunner(environment: ["GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1"])
 
@@ -16,7 +15,6 @@ import Testing
         return dir
     }
 
-    /// Polls until `pid` is gone (a killed orphan is reaped by launchd shortly after).
     static func gone(_ pid: pid_t, within seconds: Double = 3) async -> Bool {
         let deadline = Date().addingTimeInterval(seconds)
         while Date() < deadline {
@@ -31,12 +29,9 @@ import Testing
             .flatMap { pid_t($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
     }
 
-    // MARK: G — health probe kills the whole tree
-
     @Test func healthProbeKillsChildrenInItsGroup() async throws {
         let dir = try Self.tempDir("alethe-probe-group")
         defer { try? FileManager.default.removeItem(at: dir) }
-        // A backgrounded child in the shell's group, plus one that leaves the group (setpgrp).
         let command = """
             sleep 300 & echo $! > child.pid
             perl -e 'setpgrp(0, 0); sleep 300' & echo $! > detached.pid
@@ -69,17 +64,14 @@ import Testing
                                              directory: dir, environment: ProcessInfo.processInfo.environment)
         #expect(getpgid(process.pid) == process.pid)
         #expect(getpgid(process.pid) != getpgrp())
-        // Read before killing: `pwd` must have run, or the kill can land before the shell prints.
         let printed = Self.read(process.output, within: 10)
         process.killTree()
         #expect(!process.isRunning)
         let output = String(decoding: printed, as: UTF8.self)
-        // `pwd` prints the real path (`/private/var/…`); compare both sides resolved.
         let printedPath = URL(fileURLWithPath: output.trimmingCharacters(in: .whitespacesAndNewlines))
         #expect(printedPath.resolvingSymlinksInPath().path == dir.resolvingSymlinksInPath().path, "pwd printed \(output)")
     }
 
-    /// Waits up to `seconds` for the first output instead of blocking a test thread forever.
     private static func read(_ handle: FileHandle, within seconds: Double) -> Data {
         var descriptor = pollfd(fd: handle.fileDescriptor, events: Int16(POLLIN), revents: 0)
         guard poll(&descriptor, 1, Int32(seconds * 1000)) > 0 else { return Data() }
@@ -92,9 +84,6 @@ import Testing
         #expect(GroupProcess.descendants(of: 99, parents: parents) == [99])
     }
 
-    // MARK: G — branch testing
-
-    /// `main` checked out; `feature` adds a script the validation runs, and an API mismatch.
     static func repo() async throws -> URL {
         let root = try tempDir("alethe-branch-test")
         func git(_ args: String...) async throws { _ = try await runner.run(args, in: root) }
@@ -127,7 +116,6 @@ import Testing
         #expect(result.contractWarnings.map(\.call.pathPattern) == ["/api/v2/users"])
         #expect(result.hasWarnings)
         #expect(result.commit.count == 40)
-        // The user's tree is untouched and the checkout is gone.
         #expect(!FileManager.default.fileExists(atPath: root.appendingPathComponent("check.sh").path))
         let leftovers = (try? FileManager.default.contentsOfDirectory(atPath: BranchTester.directory(root: root).path)) ?? []
         #expect(leftovers.isEmpty)

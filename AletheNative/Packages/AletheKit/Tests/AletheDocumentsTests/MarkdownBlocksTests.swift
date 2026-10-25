@@ -121,7 +121,6 @@ import Testing
         defer { file.close() }
         #expect(await waitFor { file.source == "first" })
         try await Task.sleep(for: .milliseconds(100))
-        // An atomic save (rename over the file), the way editors and agents write.
         try Data("second".utf8).write(to: url, options: .atomic)
         #expect(await waitFor { file.source == "second" })
         try await Task.sleep(for: .milliseconds(100))

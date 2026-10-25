@@ -3,22 +3,14 @@ import AletheModel
 import Foundation
 import Synchronization
 
-/// `-AletheUITestSeed` cases for GitHub gist sync; each hook ignores names it does not own.
-///
-/// `gistSync`: a project to sync, and a stub GitHub in this process (`GistSyncStub`) in place of the
-/// real API — the token `ghp_uitest` is valid, any other is refused (401); pushed gists are kept in
-/// memory and can be pulled back.
 extension TestSeeds {
-    /// Into the (empty) workspace being seeded.
     static func seedGistSync(_ name: String, into doc: inout WorkspaceDocument) {
         guard name == "gistSync" else { return }
         doc.addProject(name: "synced", folder: "/private/tmp", color: .blue)
     }
 
-    /// Into the preferences, with the workspace seed.
     static func seedGistSync(_ name: String, into preferences: inout PreferencesDocument) {}
 
-    /// Into the running app, once its controllers started (Keychain items, stubs, toggles).
     @MainActor
     static func seedGistSync(_ name: String, environment: AppEnvironment) {
         guard name == "gistSync" else { return }
@@ -28,11 +20,9 @@ extension TestSeeds {
     }
 }
 
-/// A minimal GitHub gist API for UI tests: `GET /user`, `POST /gists`, `PATCH` and `GET /gists/{id}`.
 final class GistSyncStub: URLProtocol {
     static let apiBase = URL(string: "https://github-stub.invalid")!
     static let validToken = "ghp_uitest"
-    /// Gist id → file name → content.
     private static let gists = Mutex<[String: [String: String]]>([:])
 
     override class func canInit(with request: URLRequest) -> Bool { request.url?.host() == apiBase.host() }
@@ -75,7 +65,6 @@ final class GistSyncStub: URLProtocol {
         }
     }
 
-    /// The `files` of a create or update body (URLSession hands bodies over as a stream).
     private func files() -> [String: String] {
         var data = request.httpBody ?? Data()
         if data.isEmpty, let stream = request.httpBodyStream {

@@ -21,7 +21,6 @@ private final class ThemesPlugin: AlethePlugin {
     }
 }
 
-/// Registers a contribution, then throws: nothing it registered may survive.
 private final class FailingPlugin: AlethePlugin {
     static let manifest = PluginManifest(id: "test.failing", version: "1.0.0", name: "Failing")
     func activate(context: PluginContext) throws {
@@ -30,7 +29,6 @@ private final class FailingPlugin: AlethePlugin {
     }
 }
 
-/// Uses storage without declaring it.
 private final class SneakyPlugin: AlethePlugin {
     static let manifest = PluginManifest(id: "test.sneaky", version: "1.0.0", name: "Sneaky")
     func activate(context: PluginContext) throws {
@@ -116,7 +114,6 @@ func temporaryDirectory() -> URL {
             Issue.record("sneaky not failed"); return
         }
         #expect(sneaky.contains("undeclaredCapability"))
-        // Disabling and re-enabling retries it; it fails the same way without affecting others.
         try await host.setEnabled(false, for: "test.failing")
         #expect(host.record(for: "test.failing")?.state == .disabled)
         try await host.setEnabled(true, for: "test.failing")

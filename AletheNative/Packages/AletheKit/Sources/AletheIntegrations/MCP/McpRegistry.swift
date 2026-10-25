@@ -1,9 +1,5 @@
 import Foundation
 
-// Port of upstream `mcp_catalog.rs`: the official MCP registry searched with cursor paging, entries
-// mapped to runnable install options, and the first page of each query cached for the offline case.
-
-/// An environment variable (or HTTP header) the server expects.
 public struct McpEnvHint: Hashable, Sendable, Codable {
     public var name: String
     public var description: String?
@@ -47,8 +43,6 @@ public struct McpInstallOption: Hashable, Sendable, Codable {
         self.headers = headers
     }
 
-    /// The server this option installs: env (stdio) or headers (remote) take `values` by name, else the
-    /// hint's default; hints left without a value are omitted.
     public func server(named name: String, values: [String: String] = [:]) -> McpServer {
         func entries(_ hints: [McpEnvHint]) -> McpEnvMap {
             var map: McpEnvMap = [:]
@@ -84,7 +78,6 @@ public struct McpCatalogEntry: Hashable, Sendable, Codable, Identifiable {
 public struct McpRegistryPage: Hashable, Sendable, Codable {
     public var entries: [McpCatalogEntry]
     public var nextCursor: String?
-    /// Set when the network failed and this page came from the on-disk copy fetched at that time.
     public var staleSince: Date?
 
     public init(entries: [McpCatalogEntry], nextCursor: String? = nil, staleSince: Date? = nil) {
@@ -101,13 +94,9 @@ public enum McpRegistryError: Error, Hashable, Sendable {
     case cancelled
 }
 
-// MARK: - Parsing
-
 public enum McpRegistryParser {
     private typealias Object = [String: Any]
 
-    /// Upstream `page_from`: `{servers: [{server, _meta}], metadata: {nextCursor}}`; servers without an
-    /// installable option are dropped.
     public static func page(from data: Data) -> McpRegistryPage? {
         guard let body = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return nil }
         return page(from: body)
@@ -144,7 +133,6 @@ public enum McpRegistryParser {
         )
     }
 
-    /// Registry ids look like `com.pulsemcp/playwright-stealth`; agents want a short, filename-safe handle.
     public static func suggestedName(_ id: String) -> String {
         let tail = id.split(omittingEmptySubsequences: false, whereSeparator: { $0 == "/" || $0 == "." }).last ?? Substring(id)
         let cleaned = String(String.UnicodeScalarView(tail.unicodeScalars.map { scalar in
@@ -178,7 +166,6 @@ public enum McpRegistryParser {
         }
     }
 
-    /// Registry arguments are either positional (`value`) or named (`name` plus optional `value`).
     private static func argumentValues(_ value: Any?) -> [String] {
         objects(value).flatMap { item -> [String] in
             let named = text(item, "name")
@@ -205,7 +192,6 @@ public enum McpRegistryParser {
         guard let identifier = text(package, "identifier") else { return nil }
         let registryType = text(package, "registryType") ?? ""
         guard let runtime = runtime(registryType: registryType, hint: text(package, "runtimeHint")) else { return nil }
-        // A package declaring a remote transport has no URL here: its `remotes` entry covers it.
         let transport = text(package["transport"] as? Object, "type") ?? "stdio"
         guard transport == "stdio" else { return nil }
 
@@ -227,10 +213,6 @@ public enum McpRegistryParser {
     }
 }
 
-// MARK: - Search
-
-/// Upstream `mcp_registry_search`. An actor, so cache reads and writes are serialized and run off the
-/// main thread; the network call honors task cancellation and an 8 s timeout.
 public actor McpRegistry {
     public typealias Fetch = @Sendable (URLRequest) async throws -> (Data, URLResponse)
 
@@ -246,7 +228,6 @@ public actor McpRegistry {
         return URLSession(configuration: configuration)
     }()
 
-    /// The live network call: an ephemeral session with the request timeout.
     public static let urlSessionFetch: Fetch = { try await session.data(for: $0) }
 
     public nonisolated let cacheURL: URL
@@ -271,7 +252,6 @@ public actor McpRegistry {
         return version.map { "Alethe/\($0)" } ?? "Alethe"
     }
 
-    /// `<profile>/mcp/registry-cache.json`.
     public static func cacheURL(profileDirectory: URL) -> URL {
         profileDirectory.appending(path: "mcp", directoryHint: .isDirectory).appending(path: "registry-cache.json")
     }
@@ -297,8 +277,6 @@ public actor McpRegistry {
         (query ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
-    /// One page of results. A first page fetched is cached under its query; when the network fails on a
-    /// first page, the cached copy comes back with `staleSince` set. Later pages are never cached.
     public func search(query: String? = nil, cursor: String? = nil,
                        limit: Int? = nil) async throws(McpRegistryError) -> McpRegistryPage {
         let key = Self.cacheKey(query)
@@ -342,10 +320,7 @@ public actor McpRegistry {
         return page
     }
 
-    // MARK: Cache
-
     struct CachedPage: Codable {
-        /// Milliseconds since 1970, as upstream stores it.
         var fetchedAt: UInt64
         var page: McpRegistryPage
     }
@@ -375,7 +350,6 @@ public actor McpRegistry {
               let oldest = cache.queries.min(by: { $0.value.fetchedAt < $1.value.fetchedAt })?.key {
             cache.queries[oldest] = nil
         }
-        // Best effort, like upstream: a cache that cannot be written only costs the offline fallback.
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         guard let data = try? encoder.encode(cache) else { return }

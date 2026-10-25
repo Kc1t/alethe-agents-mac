@@ -1,8 +1,6 @@
 import AletheGit
 import Foundation
 
-/// One branch test: the validation pipeline, the optional health probe and the contract check,
-/// run in a temporary checkout of the branch (upstream `BranchTestingModal`'s automated part).
 public struct BranchTestResult: Codable, Hashable, Sendable {
     public enum Status: String, Codable, Sendable {
         case passed, failed, cancelled, unverified
@@ -25,7 +23,6 @@ public struct BranchTestResult: Codable, Hashable, Sendable {
         self.finishedAt = finishedAt
     }
 
-    /// The validation status; the probe and the contract check are warnings, never failures.
     public var status: Status {
         switch validation.status {
         case .passed: .passed
@@ -40,7 +37,6 @@ public struct BranchTestResult: Codable, Hashable, Sendable {
     }
 }
 
-/// Branch test results kept per branch, newest last, at most `limit` each; Codable for persistence.
 public struct BranchTestLog: Codable, Equatable, Sendable {
     public static let limit = 10
     public private(set) var results: [String: [BranchTestResult]] = [:]
@@ -58,12 +54,10 @@ public struct BranchTestLog: Codable, Equatable, Sendable {
     public func history(for branch: String) -> [BranchTestResult] { results[branch] ?? [] }
     public mutating func forget(branch: String) { results[branch] = nil }
 
-    /// `<repo>/.alethe/branch-tests/results.json`.
     public static func fileURL(root: URL) -> URL {
         BranchTester.directory(root: root).appendingPathComponent("results.json")
     }
 
-    /// The saved log, or an empty one when missing or unreadable.
     public static func load(root: URL) -> BranchTestLog {
         guard let data = try? Data(contentsOf: fileURL(root: root)) else { return BranchTestLog() }
         return (try? JSONDecoder().decode(BranchTestLog.self, from: data)) ?? BranchTestLog()
@@ -77,13 +71,10 @@ public struct BranchTestLog: Codable, Equatable, Sendable {
     }
 }
 
-/// Long steps reported while testing a branch.
 public enum BranchTestStep: String, Sendable, Hashable, CaseIterable {
     case checkingOut, validating, probing, checkingContract, cleaningUp
 }
 
-/// Checks a branch out into a throwaway detached worktree under `.alethe/branch-tests/`, runs the
-/// project's checks there and always removes the worktree. The user's tree is never touched.
 public struct BranchTester: Sendable {
     public let root: URL
     public let runner: GitRunner
@@ -138,7 +129,6 @@ public struct BranchTester: Sendable {
         }
     }
 
-    /// Best-effort; runs even if the calling task was cancelled.
     private func teardown(_ dir: URL) async {
         let root = root, runner = runner
         await Task.detached {

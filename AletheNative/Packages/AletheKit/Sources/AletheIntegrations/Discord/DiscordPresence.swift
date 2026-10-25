@@ -1,13 +1,10 @@
 import Foundation
 
-/// What the user is looking at, as Discord shows it (upstream `useDiscordPresence` `VIEW_LABELS`).
-/// Never a project name: upstream promises presence without exposing them.
 public enum DiscordPresenceView: Hashable, Sendable {
     case dashboard
     case terminals
     case orchestration
 
-    /// Upstream sends these in English regardless of the interface language.
     public var state: String {
         switch self {
         case .dashboard: "Viewing the dashboard"
@@ -17,9 +14,6 @@ public enum DiscordPresenceView: Hashable, Sendable {
     }
 }
 
-/// Drives a `DiscordPresenceClient` from the app's state (upstream `useDiscordPresence`): while on, the
-/// activity is sent at once, on every view change and every `refreshInterval`; turning it off or
-/// stopping clears it. Calls reach the client one at a time, in the order they were made.
 @MainActor
 public final class DiscordPresenceSession {
     public static let details = "Working with Alethe"
@@ -28,7 +22,6 @@ public final class DiscordPresenceSession {
     private let client: any DiscordPresenceClient
     private let startedAt: Int64
     private let refreshInterval: Duration
-    /// The view sent while on; nil while off.
     private(set) public var current: DiscordPresenceView?
     private var wasEnabled = false
     private var stopped = false
@@ -46,7 +39,6 @@ public final class DiscordPresenceSession {
         DiscordActivity(details: Self.details, state: view.state, startedAt: startedAt)
     }
 
-    /// Applies the preference and the current view; repeated identical calls change nothing.
     public func update(enabled: Bool, view: DiscordPresenceView) {
         guard !stopped else { return }
         guard enabled else {
@@ -73,7 +65,6 @@ public final class DiscordPresenceSession {
         }
     }
 
-    /// Stops refreshing and clears the activity (at quit); later updates are ignored.
     public func stop() async {
         guard !stopped else { return }
         stopped = true
@@ -85,7 +76,6 @@ public final class DiscordPresenceSession {
         await queue?.value
     }
 
-    /// Waits for the calls made so far to reach the client.
     public func settle() async {
         await queue?.value
     }

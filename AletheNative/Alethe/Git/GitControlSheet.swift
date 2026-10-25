@@ -4,10 +4,6 @@ import AletheGitControl
 import AletheModel
 import SwiftUI
 
-/// Git Control (P4-5; upstream `plugins/git-control`) for a project's folder: changes grouped
-/// staged / unstaged / conflicts, stage and discard, commit with amend, branch switcher, and
-/// fetch / pull / push. Clicking a file opens its diff in a diff pane of the project. Rendered for
-/// the `GitControlPlugin` sheet contribution.
 struct GitControlSheet: View {
     let workspace: WorkspaceModel
     let undoManager: UndoManager?
@@ -120,8 +116,6 @@ struct GitControlSheet: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    // MARK: Repository
-
     func repositoryView(_ model: GitControlModel) -> some View {
         VStack(spacing: 0) {
             header(model)
@@ -152,7 +146,6 @@ struct GitControlSheet: View {
         }
     }
 
-    /// The History tab's model, created on first use for the discovered repository.
     func makeHistory(_ model: GitControlModel) -> GitHistoryModel? {
         guard let repository = model.repository else { return nil }
         return GitHistoryModel(repository: repository) { [weak model] in await model?.refresh() }
@@ -289,7 +282,6 @@ struct GitControlSheet: View {
         }
     }
 
-    /// Incoming or outgoing commits against the upstream (P4-7; upstream `IncomingOutgoing`).
     @ViewBuilder
     func commitSection(_ title: LocalizedStringKey, commits: [GitCommit], id: String) -> some View {
         if !commits.isEmpty {
@@ -412,7 +404,6 @@ struct GitControlSheet: View {
         .padding(metrics.space(.l))
     }
 
-    /// Opens the file's diff in a new diff pane of the project, then closes the sheet.
     func openDiff(_ entry: GitStatusEntry, staged: Bool) {
         guard let projectID else { return }
         workspace.update(undoManager: undoManager, actionName: String(localized: "undo.addContent")) {
@@ -422,7 +413,6 @@ struct GitControlSheet: View {
     }
 }
 
-/// A new branch from the current HEAD, with its name validated as it is typed and an optional switch.
 struct NewBranchSheet: View {
     let model: GitControlModel
     @State var name = ""
@@ -505,7 +495,6 @@ struct NewBranchSheet: View {
         .accessibilityIdentifier("git.newBranch.sheet")
     }
 
-    /// Nothing while the field is empty; the rule broken otherwise.
     var issueMessage: LocalizedStringKey? {
         switch issue {
         case .invalid: "git.newBranch.invalid"

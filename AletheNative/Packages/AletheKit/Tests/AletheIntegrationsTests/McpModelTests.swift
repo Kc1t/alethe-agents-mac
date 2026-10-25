@@ -7,7 +7,6 @@ func stdioServer(_ name: String) -> McpServer {
     McpServer(name: name, transport: .stdio(command: "node", arguments: ["server.js"], cwd: nil))
 }
 
-/// Upstream `mcp_model.rs` tests plus the masking and per-launch alignment.
 @Suite struct McpModelTests {
     @Test func agentParsingAcceptsTheCLINames() {
         #expect(McpAgent(parsing: "agy") == .antigravity)
@@ -90,7 +89,6 @@ func stdioServer(_ name: String) -> McpServer {
         let blocked = server.unsupportedFields(for: .claude)
         #expect(blocked.map(\.field) == ["headers.Authorization"])
         #expect(server.unsupportedFields(for: .opencode).isEmpty)
-        // Codex cannot send headers at all.
         #expect(server.unsupportedFields(for: .codex).map(\.field) == ["headers"])
     }
 

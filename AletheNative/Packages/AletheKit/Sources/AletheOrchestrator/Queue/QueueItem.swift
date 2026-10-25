@@ -1,7 +1,6 @@
 import Foundation
 import AletheIntegrations
 
-/// A deferred prompt, separate from jobs already accepted into the concurrency queue.
 public struct QueueItem: Codable, Hashable, Sendable, Identifiable {
     public enum Release: Codable, Hashable, Sendable {
         case whenAgentHasRoom
@@ -102,7 +101,6 @@ public struct QueueItem: Codable, Hashable, Sendable, Identifiable {
         return .object(object)
     }
 
-    /// A dated release still respects agent headroom. Run now explicitly overrides both.
     public func isEligible(now: Date, fitness: AgentFitness?, settledJobs: Set<String>) -> Bool {
         guard state.pending else { return false }
         if case .waitingLimit(let date) = state {

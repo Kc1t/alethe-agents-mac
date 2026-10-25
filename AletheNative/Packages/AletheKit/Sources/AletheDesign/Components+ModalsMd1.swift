@@ -1,7 +1,5 @@
 import SwiftUI
 
-/// agentActions.module.css `.installBtn` / `.linkBtn` / `.dangerBtn` / `.quietBtn`: the 28-point
-/// action row used inside the install modals. Only colour tells the kinds apart.
 public struct AletheInstallActionStyle: ButtonStyle {
     public enum Kind: Sendable { case primary, link, danger, quiet }
     let kind: Kind

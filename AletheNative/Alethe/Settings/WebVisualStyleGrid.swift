@@ -2,8 +2,6 @@ import AletheDesign
 import AletheModel
 import SwiftUI
 
-/// PreferencesModal.module.css `visualStyleGrid`: the two style cards with a miniature preview.
-/// Shared by Settings › Appearance and the theme picker modal.
 struct WebVisualStyleGrid: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics

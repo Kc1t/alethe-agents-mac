@@ -2,8 +2,6 @@ import AletheDesign
 import AletheOrchestrator
 import SwiftUI
 
-/// The planner tab strip (upstream `PlannerTab`): one tab per planner with its agent, name and run
-/// count, or what needs the person when it is not the open one; a closed planner tab says so.
 struct BoardPlannerTabs: View {
     let board: OrchestratorBoardModel
     let label: (PlannerGroup) -> String?
@@ -98,9 +96,6 @@ struct BoardPlannerTabs: View {
     }
 }
 
-/// The summary rail (upstream `rail`): what the open planner has finished, every lane's count and
-/// the slots in use, its runs with their workers (the ones needing the person first, finished runs
-/// folded), and the other planners that need the person.
 struct BoardRail: View {
     let board: OrchestratorBoardModel
     let snapshot: OrchestratorSnapshot
@@ -272,7 +267,6 @@ struct BoardRail: View {
                     .foregroundStyle(theme[selected ? .textPrimary : .textSecondary])
                     .lineLimit(1)
                 Spacer(minLength: 0)
-                // A blocked worker's clock still runs, but the state is what the row has to report.
                 Group {
                     if lane == .blocked || elapsed == nil { Text(lane.title) } else { Text(verbatim: elapsed ?? "") }
                 }
@@ -297,7 +291,6 @@ struct BoardRail: View {
             guard BoardData.key(group) != board.activeKey, let attention = group.counts.attention else { return nil }
             return (group, attention)
         }
-        // Blocked first: a failure is already over, a blocked worker still holds its slot.
         .sorted { ($0.1.lane == .blocked ? 0 : 1) < ($1.1.lane == .blocked ? 0 : 1) }
         if !rows.isEmpty {
             VStack(alignment: .leading, spacing: metrics.space(.xxs)) {

@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import AletheMerge
 
-/// Golden ports of upstream `contract_check.rs` tests plus its pure helpers.
 struct ContractCheckTests {
     func tempDir(_ name: String) throws -> URL {
         let dir = FileManager.default.temporaryDirectory
@@ -16,8 +15,6 @@ struct ContractCheckTests {
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try text.write(to: url, atomically: true, encoding: .utf8)
     }
-
-    // MARK: Upstream tests
 
     @Test func flagsCallWithNoMatchingRoute() throws {
         let root = try tempDir("mismatch")
@@ -54,8 +51,6 @@ struct ContractCheckTests {
         try write(root, "server.js", "app.get('/api/x', handler)\n")
         #expect(try ContractCheck.check(root: root).isEmpty)
     }
-
-    // MARK: Native additions
 
     @Test func missingDirectoryThrows() {
         #expect(throws: ContractCheckError.environmentNotFound) {

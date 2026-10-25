@@ -2,7 +2,6 @@ import AletheDesign
 import AletheMerge
 import SwiftUI
 
-/// Validation commands of a run: status per command, exit code, duration and expandable output.
 struct ValidationStepsView: View {
     let steps: [ValidationStepResult]
     @Environment(\.theme) private var theme
@@ -40,7 +39,6 @@ struct ValidationStepsView: View {
     }
 }
 
-/// The health probe line: a warning signal only, never a blocker.
 struct HealthProbeSummaryView: View {
     @Environment(\.metrics) private var metrics
     let result: HealthProbeResult
@@ -64,7 +62,6 @@ struct HealthProbeSummaryView: View {
     }
 }
 
-/// API contract check result (upstream shield layer 3): calls without a matching backend route.
 struct ContractWarningsView: View {
     let warnings: [ContractWarning]
     @Environment(\.theme) private var theme

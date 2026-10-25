@@ -1,13 +1,10 @@
 import Foundation
 
-/// How long a hidden web pane keeps its page alive (upstream `BrowserResourceMode`).
 public enum WebResourceMode: String, Codable, CaseIterable, Hashable, Sendable {
     case appFirst = "app-first"
     case balanced
     case keepAlive = "keep-alive"
 
-    /// Seconds a hidden page may stay loaded before it is released; nil: never released. Under memory
-    /// pressure every hidden page goes at once (upstream `browserHiddenEvictionDelay`).
     public func hiddenEvictionDelay(underMemoryPressure: Bool) -> Duration? {
         if underMemoryPressure { return .zero }
         switch self {
@@ -18,8 +15,6 @@ public enum WebResourceMode: String, Codable, CaseIterable, Hashable, Sendable {
     }
 }
 
-/// Per-pane browser settings (upstream `BrowserPaneConfig`, minus the CDP engine the native app does
-/// not have).
 public struct WebPaneOptions: Codable, Hashable, Sendable {
     public var resourceMode: WebResourceMode
     public var javascriptEnabled: Bool
@@ -46,8 +41,6 @@ public struct WebPaneOptions: Codable, Hashable, Sendable {
 }
 
 public enum WebAddress {
-    /// What was typed, as an http(s) URL (upstream `normalizeBrowserUrl`): public hosts default to
-    /// https, local development addresses to http; other schemes and junk are refused.
     public static func normalize(_ value: String) -> URL? {
         let input = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !input.isEmpty else { return nil }
@@ -62,7 +55,6 @@ public enum WebAddress {
         guard var components = URLComponents(string: candidate),
               let scheme = components.scheme?.lowercased(), scheme == "http" || scheme == "https",
               let host = components.host, !host.isEmpty else { return nil }
-        // WHATWG URL (upstream) gives a bare origin a "/" path.
         if components.path.isEmpty { components.path = "/" }
         return components.url
     }

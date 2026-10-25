@@ -1,16 +1,11 @@
 import Foundation
 
-/// A saved plan under `<repo>/.alethe/plans/` (upstream `PlanItem`).
 public struct ProjectPlan: Hashable, Sendable, Identifiable {
-    /// The file name without its extension.
     public var name: String
     public var projectID: String
-    /// Set when the plan sits under `.alethe/plans/<terminal id>/`.
     public var terminalID: String?
-    /// The first `# ` heading, else the file name.
     public var title: String
     public var fileURL: URL
-    /// Relative to the repository, with `/` separators.
     public var relativePath: String
     public var createdAt: Date
     public var modifiedAt: Date
@@ -18,13 +13,11 @@ public struct ProjectPlan: Hashable, Sendable, Identifiable {
     public var id: URL { fileURL }
 }
 
-/// Upstream `list_project_plans`. Runs synchronously; call it off the main thread.
 public enum ProjectPlans {
     public static func folder(of root: URL) -> URL {
         root.appending(path: ".alethe/plans", directoryHint: .isDirectory)
     }
 
-    /// Every `.md`/`.markdown` file under `.alethe/plans/`, newest first; empty without the folder.
     public static func list(root: URL, projectID: String) -> [ProjectPlan] {
         let plansFolder = folder(of: root).standardizedFileURL
         let keys: [URLResourceKey] = [.isRegularFileKey, .contentModificationDateKey, .creationDateKey]
@@ -54,7 +47,6 @@ public enum ProjectPlans {
         return plans.sorted { $0.modifiedAt > $1.modifiedAt }
     }
 
-    /// The first non-empty `# ` heading (upstream `extract_plan_title`).
     static func title(of url: URL) -> String? {
         guard let text = try? String(contentsOf: url, encoding: .utf8) else { return nil }
         for line in text.split(whereSeparator: \.isNewline) {

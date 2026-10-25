@@ -1,6 +1,5 @@
 import XCTest
 
-/// Spotlight and Sidebar layouts (P2-18): the layout picker in the container header.
 @MainActor
 final class LayoutModeTests: XCTestCase {
     override func setUp() async throws {
@@ -19,7 +18,6 @@ final class LayoutModeTests: XCTestCase {
 
     func testSpotlightAndSidebar() {
         let (app, _) = launchAlethe(arguments: ["-AletheUITestSeed", "panes"])
-        // The panes, not their headers (headers all have the same height).
         let one = element(app, "pane.one"), two = element(app, "pane.two")
         XCTAssertTrue(one.waitForExistence(timeout: 5))
 
@@ -33,7 +31,6 @@ final class LayoutModeTests: XCTestCase {
         app.terminate()
     }
 
-    /// HT: the layout picker opens where it is drawn at 90 %, 100 % and 120 %.
     func testLayoutPickerReceivesClicksAtThreeZoomLevels() {
         for (label, keys) in [("90 %", ["-"]), ("100 %", []), ("120 %", ["+", "+"])] {
             let (app, _) = launchAlethe(arguments: ["-AletheUITestSeed", "panes"])

@@ -1,8 +1,6 @@
 import AppKit
 import Observation
 
-/// On-device command recognition uses the same command registry as Find/Jump. No generated shell
-/// text is executed, and every match must be confirmed against the current workspace.
 @Observable @MainActor
 final class JevController {
     enum Status: String { case deciding, ran, waiting, blocked, failed }
@@ -67,7 +65,6 @@ final class JevController {
         message = pending == nil ? String(localized: "jev.noMatch") : entry.summary
     }
 
-    /// Speech punctuation and case do not affect a command title; ambiguous matches stay blocked.
     static func normalized(_ text: String) -> String {
         text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
             .components(separatedBy: CharacterSet.alphanumerics.inverted)
@@ -87,7 +84,6 @@ final class JevController {
         self.pending = nil
         pendingID = nil
         open = false
-        // Dismiss the voice surface before opening an editor or Settings.
         DispatchQueue.main.async { current.perform() }
     }
 

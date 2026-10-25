@@ -1,7 +1,6 @@
 import Testing
 @testable import AletheTerminal
 
-/// Ports of upstream `terminalWrite.test.ts` (`applyPromptHistoryInput`) plus recall and escapes.
 @Suite struct PromptHistoryTests {
     @Test func recordsSeveralSubmittedLinesAtOnce() {
         var history = PromptHistory()

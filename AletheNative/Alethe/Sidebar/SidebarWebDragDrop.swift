@@ -5,8 +5,6 @@ import Observation
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Rows register their live AppKit view with the surface; the drag engine reads the frames when it needs them.
-/// (SwiftUI named-space frames are not reliable inside List cells, so geometry comes from the views on demand.)
 struct SidebarWebDrop: ViewModifier {
     let target: SidebarWebDropTarget
     let actions: SidebarActions
@@ -31,8 +29,6 @@ struct SidebarWebDrop: ViewModifier {
     }
 }
 
-/// Live row geometry for the drag surface: every row registers its AppKit view and the frames are converted to
-/// surface coordinates only when a drag asks for them, so scrolling and expanding can never leave them stale.
 @MainActor final class SidebarDropGeometry {
     private struct Entry {
         let target: SidebarWebDropTarget
@@ -45,7 +41,6 @@ struct SidebarWebDrop: ViewModifier {
     weak var surface: NSView?
 
     func register(_ token: UUID, target: SidebarWebDropTarget, unit: CGFloat, view: NSView) {
-        // List cells are reused: one view must never keep a stale registration under another token.
         entries = entries.filter { $0.key == token ? false : $0.value.view != nil && $0.value.view !== view }
         entries[token] = Entry(target: target, unit: unit, view: view)
     }
@@ -63,11 +58,9 @@ struct SidebarWebDrop: ViewModifier {
     func rect(of token: UUID) -> CGRect? { entries[token]?.view.flatMap(local) }
 
     #if DEBUG
-    /// Self-test seam: a scripted pointer, in surface coordinates, used instead of the mouse.
     var pointerOverride: CGPoint?
     #endif
 
-    /// The mouse in screen coordinates.
     func screenPointer() -> CGPoint {
         #if DEBUG
         if let point = pointerOverride, let surface, let window = surface.window {
@@ -78,7 +71,6 @@ struct SidebarWebDrop: ViewModifier {
         return NSEvent.mouseLocation
     }
 
-    /// The mouse in surface coordinates (top-left origin), or nil while the surface is off screen.
     func pointer() -> CGPoint? {
         guard let surface, let window = surface.window else { return nil }
         var point = surface.convert(window.convertPoint(fromScreen: screenPointer()), from: nil)
@@ -86,7 +78,6 @@ struct SidebarWebDrop: ViewModifier {
         return point
     }
 
-    /// Every registered row with its hit cell and the element the user sees inside it.
     func regions() -> [SidebarDropRegion] {
         var result: [SidebarDropRegion] = []
         for entry in entries.values {
@@ -105,9 +96,6 @@ struct SidebarWebDrop: ViewModifier {
         return result
     }
 
-    // MARK: Auto-scroll
-
-    /// Scrolls the list while the pointer is inside its top or bottom 20% (dnd-kit's default threshold).
     func autoscroll(pointer: CGPoint, unit: CGFloat) {
         guard let surface, let scroll = scrollView() else { return }
         let size = surface.bounds.size
@@ -129,7 +117,6 @@ struct SidebarWebDrop: ViewModifier {
         scroll.reflectScrolledClipView(clip)
     }
 
-    /// The list's `NSScrollView`: the one that covers the surface.
     private func scrollView() -> NSScrollView? {
         if let cachedScroll, cachedScroll.window != nil { return cachedScroll }
         guard let surface else { return nil }
@@ -154,7 +141,6 @@ struct SidebarWebDrop: ViewModifier {
     }
 }
 
-/// Zero-size-hit AppKit view that lets the drop surface read a row's real frame.
 struct SidebarDropProbe: NSViewRepresentable {
     let token: UUID
     let target: SidebarWebDropTarget
@@ -180,7 +166,6 @@ struct SidebarDropProbe: NSViewRepresentable {
     }
 }
 
-/// Marks the drop surface's own view so row frames can be converted into its coordinates.
 private struct SidebarDropSurfaceProbe: NSViewRepresentable {
     let geometry: SidebarDropGeometry
 
@@ -197,7 +182,6 @@ private struct SidebarDropSurfaceProbe: NSViewRepresentable {
     func updateNSView(_ view: View, context: Context) { geometry.surface = view }
 }
 
-/// A group's body includes descendants, but excludes its own header and its top margin.
 struct SidebarWebGroupRegion: ViewModifier {
     let group: GroupID
     @Environment(\.metrics) private var metrics
@@ -215,7 +199,6 @@ extension EnvironmentValues {
     @Entry var sidebarDropGeometry: SidebarDropGeometry? = nil
 }
 
-/// The terminal and pane rows under a project count as part of that project's node when something is dropped.
 struct SidebarWebTerminalBodyDrop: ViewModifier {
     let enabled: Bool
     let project: ProjectID?
@@ -237,7 +220,6 @@ struct SidebarWebDropSurface: ViewModifier {
     @Environment(\.metrics) private var metrics
     @Environment(\.theme) private var theme
     @State private var state = SidebarWebDragState()
-    /// Live row frames, read lazily while dragging (never SwiftUI state, so scrolling does not re-render).
     @State private var store = SidebarDropGeometry()
 
     @ViewBuilder func body(content: Content) -> some View {
@@ -247,7 +229,6 @@ struct SidebarWebDropSurface: ViewModifier {
                 .environment(\.sidebarDropGeometry, store)
                 .background(SidebarDropSurfaceProbe(geometry: store))
                 .overlay(alignment: .topLeading) {
-                    // Web `.dropBefore` / `.dropAfter`: a 2px accent line 2px outside the element, inset 5px.
                     if case .line(let rect, let edge, let indent)? = state.plan?.mark {
                         Capsule().fill(theme[.accent])
                             .frame(width: max(0, rect.width - indent - metrics.size(10)), height: metrics.size(2))
@@ -257,7 +238,6 @@ struct SidebarWebDropSurface: ViewModifier {
                     }
                 }
                 .overlay(alignment: .topLeading) {
-                    // Web `.dropInside`: panel-hover fill (drawn by the row) and a 1px inset strong border.
                     if case .box(let rect)? = state.plan?.mark {
                         RoundedRectangle(cornerRadius: metrics.radius(.sm))
                             .strokeBorder(theme[.borderStrong], lineWidth: metrics.size(1))
@@ -267,7 +247,6 @@ struct SidebarWebDropSurface: ViewModifier {
                     }
                 }
                 .clipped()
-                // Only Finder folders use the system drag session; sidebar items are dragged by `SidebarWebDragState`.
                 .onDrop(of: [.fileURL], delegate: SidebarFileDropDelegate(
                     state: state, geometry: store, actions: actions, unit: metrics.size(1)))
                 .onAppear {
@@ -284,7 +263,6 @@ struct SidebarWebDropSurface: ViewModifier {
                     #endif
                 }
                 .task {
-                    // SwiftUI does not guarantee dropExited on Escape or a release outside the window.
                     while !Task.isCancelled {
                         try? await Task.sleep(for: .milliseconds(100))
                         if !state.isDragging, state.plan != nil, NSEvent.pressedMouseButtons == 0 { state.clearHover() }
@@ -295,7 +273,6 @@ struct SidebarWebDropSurface: ViewModifier {
     }
 }
 
-/// Finder folders dropped on the list: added as projects in the container under the pointer.
 private struct SidebarFileDropDelegate: DropDelegate {
     let state: SidebarWebDragState
     let geometry: SidebarDropGeometry
@@ -340,7 +317,6 @@ private struct SidebarFileDropDelegate: DropDelegate {
 }
 
 extension SidebarActions {
-    /// Applies what the drag engine decided (undoable). Finder folders are added by the file drop delegate.
     func webDrop(_ action: SidebarDropPlan.Action) {
         workspace.update(undoManager: undoManager, actionName: String(localized: "undo.move")) { doc in
             switch action {
@@ -352,7 +328,6 @@ extension SidebarActions {
     }
 }
 
-/// Starts the pointer drag of `SidebarWebDragState` from a row (web `useDraggable` + `PointerSensor`, 8px).
 struct SidebarWebDragSource: ViewModifier {
     let payload: String
     let name: String
@@ -363,7 +338,6 @@ struct SidebarWebDragSource: ViewModifier {
     @State private var rowView = SidebarViewBox()
     @State private var started = false
 
-    /// Web `.dragSource`: the picked-up item (and, for a group, everything inside it) fades to 45%.
     private var dimmed: Bool {
         guard let drag else { return false }
         if drag.source == payload { return true }
@@ -395,7 +369,6 @@ final class SidebarViewBox {
     weak var view: NSView?
 }
 
-/// Lets a drag source read its row's screen frame to place the preview where the mouse grabbed it.
 private struct SidebarRowViewProbe: NSViewRepresentable {
     let box: SidebarViewBox
 
@@ -412,7 +385,6 @@ private struct SidebarRowViewProbe: NSViewRepresentable {
     func updateNSView(_ view: View, context: Context) { box.view = view }
 }
 
-/// An empty ungrouped list must remain reachable when all projects belong to groups.
 struct SidebarUngroupedDropArea: View {
     let actions: SidebarActions
     @Environment(\.metrics) private var metrics
@@ -423,7 +395,6 @@ struct SidebarUngroupedDropArea: View {
         if let source = drag?.source, !source.hasPrefix(SidebarDrag.panePrefix) {
             Text("sidebar.drag.ungrouped")
                 .font(metrics.font(size: 10)).foregroundStyle(theme[.fgFaint])
-                // Web `.ungroupedEmptyDrop`: 24pt (clean: 22pt, no margin), normal adds a 2pt margin above the section.
                 .frame(maxWidth: .infinity, minHeight: metrics.size(metrics.style == .clean ? 22 : 24))
                 .modifier(SidebarWebDrop(target: .ungrouped, actions: actions))
                 .padding(.top, metrics.size(metrics.style == .clean ? 0 : 2))
@@ -434,7 +405,6 @@ struct SidebarUngroupedDropArea: View {
     }
 }
 
-/// Preserve the original native row delegates and their accepted payloads.
 struct SidebarGroupRowDrop: ViewModifier {
     let target: GroupID
     let actions: SidebarActions
@@ -472,7 +442,6 @@ struct SidebarProjectRowDrop: ViewModifier {
     }
 }
 
-/// The web surface handles Finder folders together with internal ranked targets.
 struct SidebarNativeFolderDrop: ViewModifier {
     let actions: SidebarActions
     @Environment(\.metrics) private var metrics

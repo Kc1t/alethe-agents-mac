@@ -1,11 +1,8 @@
 import Foundation
 
-/// An append-only text file capped at `maxBytes`: when full it becomes `<name>.1` (older ones shift
-/// up to `<name>.<keep - 1>`, the oldest is dropped). Not synchronized; callers serialize access.
 public struct RotatingLogFile: Sendable {
     public let url: URL
     public let maxBytes: Int
-    /// Files kept, the live one included.
     public let keep: Int
 
     public init(url: URL, maxBytes: Int, keep: Int) {
@@ -29,13 +26,11 @@ public struct RotatingLogFile: Sendable {
         }
     }
 
-    /// Every kept file, oldest first.
     public var files: [URL] {
         let archives = (1..<keep).reversed().map(archive)
         return (archives + [url]).filter { FileManager.default.fileExists(atPath: $0.path) }
     }
 
-    /// The contents of every kept file, oldest first.
     public func readAll() -> String {
         files.compactMap { try? String(contentsOf: $0, encoding: .utf8) }.joined()
     }

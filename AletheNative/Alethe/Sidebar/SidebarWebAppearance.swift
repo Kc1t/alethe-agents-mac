@@ -28,7 +28,6 @@ struct SidebarListAppearance: ViewModifier {
     }
 }
 
-/// A custom disclosure keeps List selection and insertion while removing system source-list chrome.
 struct SidebarDisclosure<Content: View, Label: View>: View {
     let isGroup: Bool
     let firstRootGroup: Bool
@@ -145,7 +144,6 @@ struct SidebarWebRow: ViewModifier {
     let kind: Kind
     var first = false
     var focused = false
-    /// The project a terminal row belongs to, so a drop on it counts as a drop on that project.
     var project: ProjectID?
     @Environment(\.metrics) private var metrics
     @Environment(\.theme) private var theme
@@ -190,7 +188,6 @@ struct SidebarWebRow: ViewModifier {
     }
 }
 
-/// Native disclosures own their descendants; web disclosures expose separate List rows.
 struct SidebarNativeDragSource: ViewModifier {
     let payload: String
     @Environment(\.metrics) private var metrics

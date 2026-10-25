@@ -44,7 +44,6 @@ private func frontmatterValue(_ content: String, _ field: String) -> String? {
 }
 
 @Suite struct AgentLibraryCatalogTests {
-    /// Upstream `agentLibrary.test.ts`: frontmatter matches the metadata and the marker closes the file.
     @Test(arguments: AgentLibraryCatalog.templates + EconomyAgents.templates)
     func templateMetadataIsConsistent(_ template: AgentTemplate) {
         #expect(frontmatterValue(template.content, "name") == template.name)

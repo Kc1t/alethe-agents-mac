@@ -1,6 +1,5 @@
 import XCTest
 
-/// Conversations sheet ⌘Y (P3-7).
 @MainActor
 final class ConversationsTests: XCTestCase {
     override func setUp() async throws {

@@ -1,7 +1,5 @@
 import XCTest
 
-/// Web pane (P2-12): load failure shown with reload, address validation, page options, close; hit
-/// targets at three zoom levels. No network: the seed points at a closed local port.
 @MainActor
 final class WebPaneTests: XCTestCase {
     override func setUp() async throws {

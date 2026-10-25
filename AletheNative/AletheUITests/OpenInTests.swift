@@ -1,6 +1,5 @@
 import XCTest
 
-/// Open in VS Code, Reveal in Finder and Open in Browser in the project and terminal menus (P5-7).
 @MainActor
 final class OpenInTests: XCTestCase {
     override func setUp() async throws {
@@ -23,7 +22,6 @@ final class OpenInTests: XCTestCase {
         app.terminate()
     }
 
-    /// `/private/tmp` has no clone URL and no remote: a clear message instead of a silent no-op.
     func testOpenInBrowserExplainsAMissingWebAddress() {
         let (app, _) = launchAlethe(arguments: ["-AletheUITestSeed", "sidebar"])
         let project = element(app, "sidebar.project.scratch")

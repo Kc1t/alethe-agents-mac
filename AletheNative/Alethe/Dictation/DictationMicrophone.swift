@@ -3,7 +3,6 @@ import AVFoundation
 import CoreAudio
 
 extension DictationEngine {
-    /// Resolve the persisted capture-device UID on each start; never change the system default.
     static func selectMicrophone(_ uid: String, audio: AVAudioEngine) throws {
         guard !uid.isEmpty else { return }
         var address = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyDevices,

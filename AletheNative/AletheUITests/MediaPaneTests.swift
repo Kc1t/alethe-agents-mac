@@ -1,6 +1,5 @@
 import XCTest
 
-/// Image pane (P2-10): fit / actual size and close, with hit targets at three zoom levels.
 @MainActor
 final class MediaPaneTests: XCTestCase {
     override func setUp() async throws {

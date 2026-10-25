@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// Choice groups that Router9Settings and onboarding/FeaturesStep draw as segments, not selects.
 public struct AletheWebChoiceSegments<Value: Hashable, Label: View>: View {
     @Binding private var selection: Value
     private let options: [Value]

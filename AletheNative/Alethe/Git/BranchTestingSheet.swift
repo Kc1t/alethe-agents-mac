@@ -5,9 +5,6 @@ import AletheMerge
 import AletheModel
 import SwiftUI
 
-/// Branch testing (P4-12; upstream `BranchTestingModal`): checks a branch out into a temporary
-/// worktree, runs the validation commands, the optional health probe and the API contract check
-/// there, and keeps the results per branch (`.alethe/branch-tests/results.json`).
 struct BranchTestingSheet: View {
     let folder: URL?
     var initialBranch: String?
@@ -184,7 +181,6 @@ struct BranchTestingSheet: View {
     }
 }
 
-/// Branch list, the per-run settings, and the saved results of a repository.
 @MainActor @Observable
 final class BranchTestingModel {
     let folder: URL
@@ -237,7 +233,6 @@ final class BranchTestingModel {
         step = nil
         error = nil
         task = Task {
-            // Git and the validation commands run off the main actor; cancelling terminates them.
             let work = Task.detached { () -> Result<BranchTestResult, Error> in
                 do {
                     return .success(try await BranchTester(root: root).test(branch: branch, settings: settings) { step in

@@ -1,8 +1,6 @@
 import AletheDesign
 import SwiftUI
 
-/// The toolbar's `router9` item (upstream `Router9PillButton`): shown while 9router is enabled and
-/// installed; the status dot and a click that starts or stops it.
 struct Router9ToolbarItem: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.theme) private var theme
@@ -17,7 +15,6 @@ struct Router9ToolbarItem: View {
                 else { Color.clear.frame(width: 0, height: 0).accessibilityHidden(true) }
             }
         }
-        // Probes only while the item is on screen and 9router is on.
         .task(id: controller.preferences.enabled) {
             if controller.preferences.enabled { await controller.watch() }
         }

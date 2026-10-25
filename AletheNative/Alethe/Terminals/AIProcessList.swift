@@ -4,8 +4,6 @@ import AletheTerminal
 import AppKit
 import SwiftUI
 
-/// The AI terminals that are running, each with what it started below it (dev servers, language
-/// servers...), their memory and listening ports, and buttons to kill a session or one child.
 struct AIProcessList: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics
@@ -42,8 +40,6 @@ struct AIProcessList: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("memory.ai.list")
     }
-
-    // MARK: Rows
 
     private func session(_ usage: ResourceMonitor.TerminalUsage) -> some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -116,8 +112,6 @@ struct AIProcessList: View {
         .accessibilityIdentifier(id)
     }
 
-    // MARK: Kill
-
     @ViewBuilder private func confirmation(_ kill: Kill) -> some View {
         switch kill {
         case .session(let tab, let name, let children):
@@ -139,8 +133,6 @@ struct AIProcessList: View {
         }
     }
 
-    /// Kills `pid` and its children, only while it is still below the session: a pid freed and
-    /// reused by an unrelated process since the last sample must not be hit.
     private func terminateChild(_ pid: pid_t, under root: pid_t) {
         Task.detached(priority: .userInitiated) {
             guard ProcessTree.descendants(of: root, parents: ProcessTree.currentParents()).contains(pid) else { return }
@@ -148,7 +140,6 @@ struct AIProcessList: View {
         }
     }
 
-    /// The next sample would show the change only after a full interval.
     private func refreshSoon() {
         Task {
             try? await Task.sleep(for: .seconds(1))

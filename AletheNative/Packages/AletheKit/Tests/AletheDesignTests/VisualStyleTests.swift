@@ -1,7 +1,6 @@
 import Testing
 @testable import AletheDesign
 
-/// Clean visual style and reduced motion (P2-27).
 @Suite struct VisualStyleTests {
     private var theme: Theme { ThemeCatalog.builtin.defaultTheme }
 

@@ -6,10 +6,6 @@ import AletheModel
 import AletheOrchestrator
 import SwiftUI
 
-/// The selected worker's actions, at the end of its detail on the board (upstream `ApprovalAsk`, the
-/// composer and the diff viewer): the pending ask, the steer/send field, the diff, Cancel, Release
-/// and Show in Finder. Nothing is answered without a click; failures are shown here and recorded in
-/// Diagnostics. A native subagent (`job.native`) has no worker to act on.
 struct OrchestratorWorkerActions: View {
     let job: JobSnapshot
     let project: ProjectID
@@ -63,8 +59,6 @@ struct OrchestratorWorkerActions: View {
             }
         }
     }
-
-    // MARK: The ask
 
     private func askView(_ ask: WorkerAsk) -> some View {
         VStack(alignment: .leading, spacing: units.space(.xs)) {
@@ -151,8 +145,6 @@ struct OrchestratorWorkerActions: View {
         }
     }
 
-    // MARK: The composer
-
     private var composer: some View {
         let mode = WorkerMessageMode(job)
         return VStack(alignment: .leading, spacing: units.space(.xxs)) {
@@ -213,8 +205,6 @@ struct OrchestratorWorkerActions: View {
             }
         }
     }
-
-    // MARK: Diff, cancel, release, Finder
 
     @ViewBuilder private var actionRow: some View {
         let canCancel = WorkerActions.canCancel(job)
@@ -281,13 +271,10 @@ struct OrchestratorWorkerActions: View {
         }
     }
 
-    /// Reloads the open diff when the worker moves on (a new turn, a new report of its changes).
     private var diffKey: String {
         "\(diffOpen)|\(job.status.rawValue)|\(job.hasDiff)|\(job.summary.count)"
     }
 
-    /// The text comes from the core, the parse runs off main; the previous diff stays up while a
-    /// newer one loads.
     private func loadDiff() async {
         if case .loaded = diff {} else { diff = .loading }
         guard let text = await service.diff(job: job.id) else {
@@ -337,8 +324,6 @@ struct OrchestratorWorkerActions: View {
         .accessibilityIdentifier("orchestrator.worker.\(job.id).diff")
     }
 
-    /// The Diff pane's styling: file header, hunk header on the accent tint, added and removed lines
-    /// on the status tints.
     @ViewBuilder private func diffFile(_ file: DiffFile) -> some View {
         Text(verbatim: file.path)
             .font(units.font(.caption).weight(.semibold))
@@ -372,15 +357,12 @@ struct OrchestratorWorkerActions: View {
         }
     }
 
-    /// Up to about 18 rows tall; a longer diff scrolls inside the card.
     private func diffHeight(_ document: DiffDocument) -> CGFloat {
         let rows = document.files.reduce(0) { total, file in
             total + 1 + file.hunks.reduce(0) { $0 + 1 + $1.lines.count }
         }
         return units.size(CGFloat(min(rows, 18)) * 14 + 4)
     }
-
-    // MARK: Pieces
 
     private func failureView(_ failure: WorkerActionFailure) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: units.space(.xs)) {
@@ -424,13 +406,7 @@ struct OrchestratorWorkerActions: View {
     }
 }
 
-// MARK: - Rules
-
-/// When each action applies (upstream `canMessage`, `messageMode`, `askIn`, plus Cancel/Release).
 enum WorkerActions {
-    /// Cancelled workers are gone for good. An interrupted or released one is not: a message
-    /// starts it again on its thread (`alethe_send` revives a job with no process), which is what
-    /// makes Release reversible.
     static func canMessage(_ job: JobSnapshot) -> Bool {
         if job.native { return false }
         switch job.status {
@@ -440,18 +416,14 @@ enum WorkerActions {
         }
     }
 
-    /// Anything not settled can be stopped.
     static func canCancel(_ job: JobSnapshot) -> Bool {
         !job.native && !job.status.settled
     }
 
-    /// Cancelling ends a turn in flight, so it asks once; a queued job just leaves the queue.
     static func cancelAsks(_ job: JobSnapshot) -> Bool {
         job.status == .running || job.status == .blocked
     }
 
-    /// A settled worker that still may hold a process (a parked one, a failed one, an interrupted
-    /// one) is let go; its record stays.
     static func canRelease(_ job: JobSnapshot) -> Bool {
         guard !job.native else { return false }
         switch job.status {
@@ -460,7 +432,6 @@ enum WorkerActions {
         }
     }
 
-    /// The folder an ask runs in when it is outside the worker's own folder (upstream `askIn`).
     static func elsewhere(ask: WorkerAsk, job: JobSnapshot) -> String? {
         guard let cwd = ask.cwd, !cwd.isEmpty else { return nil }
         let own = standardized(job.cwd)
@@ -483,7 +454,6 @@ enum WorkerActions {
     }
 }
 
-/// What a message does to this worker right now (upstream `MessageMode`).
 enum WorkerMessageMode: String {
     case steer, resume, next
 
@@ -520,8 +490,6 @@ enum WorkerMessageMode: String {
     }
 }
 
-/// The question a worker is stopped on, read off `pendingApproval`; nothing is inferred when a field
-/// is missing.
 struct WorkerAsk: Equatable {
     var kind: CodexApprovalRequest.Kind
     var command: String?
@@ -537,7 +505,6 @@ struct WorkerAsk: Equatable {
     }
 }
 
-/// The four answers, in upstream's order.
 struct WorkerDecision: Identifiable {
     let decision: CodexApprovalDecision
     let label: LocalizedStringKey
@@ -576,17 +543,11 @@ struct WorkerActionFailure: Equatable {
     var logLine: String { "\(title): \(detail)" }
 }
 
-// MARK: - Service
-
 extension OrchestratorService {
-    /// Stops a worker that has not settled (upstream `alethe_cancel`): its turn is interrupted and
-    /// it ends as cancelled.
     func cancel(job: String) async throws -> OrderedJSON {
         try await boardTool("alethe_cancel", ["jobIds": .array([.string(job)])])
     }
 
-    /// Lets go of a worker that is not running a turn (upstream `alethe_release`): its process ends,
-    /// its record and thread stay, so a message starts it again.
     func release(job: String) async throws -> OrderedJSON {
         try await boardTool("alethe_release", ["jobIds": .array([.string(job)])])
     }

@@ -21,18 +21,14 @@ public struct GraphRect: Hashable, Sendable {
     public var center: GraphPoint { GraphPoint(x: (minX + maxX) / 2, y: (minY + maxY) / 2) }
 }
 
-/// Node positions for a `GraphData`, index-aligned with its `nodes`; edges as index pairs so drawing
-/// needs no lookups.
 public struct GraphLayout: Hashable, Sendable {
     public var positions: [GraphPoint]
     public var edges: [Link]
-    /// Each node's number of edges (self-loops and duplicates included, as drawn).
     public var degrees: [Int]
 
     public struct Link: Hashable, Sendable {
         public var source: Int
         public var target: Int
-        /// Index into `GraphData.edges`.
         public var edge: Int
     }
 
@@ -48,7 +44,6 @@ public struct GraphLayout: Hashable, Sendable {
         return rect
     }
 
-    /// The node nearest `point` within `radius`, if any.
     public func node(near point: GraphPoint, radius: Double) -> Int? {
         var best: Int?
         var bestDistance = radius * radius
@@ -64,15 +59,10 @@ public struct GraphLayout: Hashable, Sendable {
     }
 }
 
-/// Fruchterman–Reingold force layout with grid-cell repulsion (the paper's own speed-up), so the
-/// 3000-node cap stays near linear per step. Deterministic for a seed: a seeded generator places the
-/// nodes and every sum runs in node and edge order. Blocking and cancelable: run it off the main
-/// thread; it throws `CancellationError` once its task is cancelled.
 public enum ForceLayout {
     public struct Options: Hashable, Sendable {
         public var seed: UInt64
         public var iterations: Int
-        /// The ideal edge length (FR's `k`).
         public var spacing: Double
 
         public init(seed: UInt64 = 1, iterations: Int = 250, spacing: Double = 40) {
@@ -125,7 +115,6 @@ public enum ForceLayout {
                 dys[node] = 0
             }
 
-            // Repulsion from nodes in the 3×3 neighbouring cells, closer than 2k.
             var cells: [Cell: [Int]] = [:]
             for node in 0..<count { cells[Cell(xs[node], ys[node], cellSize), default: []].append(node) }
             for node in 0..<count {
@@ -137,7 +126,6 @@ public enum ForceLayout {
                             var ddx = xs[node] - xs[other], ddy = ys[node] - ys[other]
                             var distance2 = ddx * ddx + ddy * ddy
                             if distance2 < 1e-6 {
-                                // Coincident nodes part along a direction fixed by their indices.
                                 let angle = Double((node &* 31 &+ other) % 360) * .pi / 180
                                 ddx = cos(angle) * 0.01
                                 ddy = sin(angle) * 0.01
@@ -164,7 +152,6 @@ public enum ForceLayout {
             }
 
             for node in 0..<count {
-                // Gravity keeps disconnected parts from drifting apart.
                 let dx = dxs[node] - xs[node] * gravity * k
                 let dy = dys[node] - ys[node] * gravity * k
                 let length = (dx * dx + dy * dy).squareRoot()
@@ -194,7 +181,6 @@ public enum ForceLayout {
     }
 }
 
-/// A small seeded generator (SplitMix64): the same seed places the nodes the same way on every run.
 struct SplitMix64 {
     private var state: UInt64
 
@@ -208,13 +194,10 @@ struct SplitMix64 {
         return z ^ (z >> 31)
     }
 
-    /// Uniform in [0, 1).
     mutating func nextUnit() -> Double { Double(next() >> 11) / Double(1 << 53) }
 }
 
 extension GraphData {
-    /// Each node's community as an ordinal in order of first appearance (nil without a group), so a
-    /// view can give communities stable colors from a fixed palette.
     public var communityOrdinals: [Int?] {
         var ordinals: [String: Int] = [:]
         return nodes.map { node in
@@ -226,8 +209,6 @@ extension GraphData {
         }
     }
 
-    /// Indices of the nodes whose label, id or source file contains `query` (case and diacritics
-    /// ignored), labels that start with it first; empty for a blank query.
     public func search(_ query: String, limit: Int = 50) -> [Int] {
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !needle.isEmpty else { return [] }

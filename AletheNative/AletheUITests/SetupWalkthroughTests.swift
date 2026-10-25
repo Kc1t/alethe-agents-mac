@@ -1,6 +1,5 @@
 import XCTest
 
-/// Setup steps on Home (P3-16): shown until done, hidden on request, back from the Help menu.
 @MainActor
 final class SetupWalkthroughTests: XCTestCase {
     func testHideAndShowAgain() {

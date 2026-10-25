@@ -1,8 +1,6 @@
 import AppKit
 import SwiftUI
 
-/// An sRGB color stored as `#RRGGBBAA`. The only place in the app allowed to build colors from
-/// channel values — everything else reads semantic tokens from `Theme`.
 public struct ThemeColor: Hashable, Sendable, Codable {
     public let red: Double
     public let green: Double
@@ -28,13 +26,11 @@ public struct ThemeColor: Hashable, Sendable, Codable {
     public var color: Color { Color(.sRGB, red: red, green: green, blue: blue, opacity: alpha) }
     public var nsColor: NSColor { NSColor(srgbRed: red, green: green, blue: blue, alpha: alpha) }
 
-    /// WCAG relative luminance (alpha ignored).
     public var relativeLuminance: Double {
         func linear(_ c: Double) -> Double { c <= 0.03928 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4) }
         return 0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue)
     }
 
-    /// WCAG contrast ratio between two opaque colors.
     public func contrastRatio(against other: ThemeColor) -> Double {
         let (a, b) = (relativeLuminance, other.relativeLuminance)
         return (max(a, b) + 0.05) / (min(a, b) + 0.05)

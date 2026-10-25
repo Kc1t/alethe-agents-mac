@@ -85,7 +85,6 @@ import XCTest
     }
 }
 
-/// P: the cost of persisting ten busy terminals (plan P2-7).
 final class ScrollbackFilePerformanceTests: XCTestCase {
     func testTenBusyTerminalsFlushCost() {
         let directory = FileManager.default.temporaryDirectory.appending(path: "alethe-scrollback-perf-\(UUID().uuidString)")
@@ -93,7 +92,7 @@ final class ScrollbackFilePerformanceTests: XCTestCase {
         let chunk = Data(repeating: 0x41, count: 16 * 1024)
         measure(metrics: [XCTClockMetric(), XCTStorageMetric()]) {
             let files = (0..<10).map { ScrollbackFile(url: directory.appending(path: "\($0).bin")) }
-            for _ in 0..<64 { for file in files { file.append(chunk) } }  // 10 MiB in all
+            for _ in 0..<64 { for file in files { file.append(chunk) } }
             for file in files { file.flush() }
         }
     }
@@ -102,7 +101,6 @@ final class ScrollbackFilePerformanceTests: XCTestCase {
 struct ReplayResetTests {
     @Test func replayResetTurnsOffInputModes() {
         let reset = String(decoding: ScrollbackFile.replayReset, as: UTF8.self)
-        // Focus reporting left on made the new process echo `^[[O`; cursor-key mode turns arrows into `ESC O A`.
         for mode in ["\u{1b}[?1004l", "\u{1b}[?1l", "\u{1b}[?2004l", "\u{1b}[?1049l", "\u{1b}[=0;1u"] {
             #expect(reset.contains(mode))
         }
@@ -152,7 +150,6 @@ struct ScrollbackFailureTests {
     @Test func failedWriteRetainsPendingBytesUntilDiskRecovers() throws {
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
-        // A regular file blocks creation of the scrollback's parent directory.
         try Data().write(to: directory)
         let file = ScrollbackFile(url: directory.appending(path: "pane.bin"), flushInterval: .seconds(60))
         file.append(Data("first".utf8))

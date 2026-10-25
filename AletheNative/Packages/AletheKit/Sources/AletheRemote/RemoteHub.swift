@@ -1,17 +1,14 @@
 import Foundation
 
-/// A paired device as the Settings and pairing UI list it (upstream `RemoteDeviceInfo`).
 public struct RemoteDeviceInfo: Codable, Equatable, Sendable, Identifiable {
     public var id: Int
     public var name: String
     public var address: String
     public var connectedAt: Date
     public var expiresAt: Date
-    /// A WebSocket is attached.
     public var online: Bool
 }
 
-/// Remote control's state for the UI (upstream `RemoteInfo`; the QR comes from `RemotePairingQR`).
 public struct RemoteInfo: Codable, Equatable, Sendable {
     public var enabled: Bool
     public var connectedDevices: Int
@@ -29,7 +26,6 @@ public struct RemoteInfo: Codable, Equatable, Sendable {
     public var wsURL: String?
 }
 
-/// A successful pairing: the device id and its session token (sent once, to that device).
 public struct RemotePairing: Equatable, Sendable {
     public var deviceID: Int
     public var sessionToken: String
@@ -38,7 +34,6 @@ public struct RemotePairing: Equatable, Sendable {
 public enum RemotePairingError: Error, Equatable, Sendable {
     case windowClosed, invalidToken, deviceLimitReached
 
-    /// Upstream's wire message (`{"error": …}` on a 401).
     public var message: String {
         switch self {
         case .windowClosed: "Pairing window is closed"
@@ -48,9 +43,6 @@ public enum RemotePairingError: Error, Equatable, Sendable {
     }
 }
 
-/// Pairing, sessions and limits for remote control (upstream `remote/state.rs`). Pure state: no
-/// sockets. Tokens live here only, in memory, and are compared in constant time; they are never
-/// logged.
 public actor RemoteHub {
     public typealias Clock = @Sendable () -> Date
 
@@ -98,7 +90,6 @@ public actor RemoteHub {
     private var messageRates: [Int: MessageRate] = [:]
     private var lastActive: Date
 
-    /// Events for the app (single consumer: the remote control controller).
     public nonisolated let events: AsyncStream<RemoteEvent>
     private nonisolated let eventSink: AsyncStream<RemoteEvent>.Continuation
 
@@ -115,15 +106,12 @@ public actor RemoteHub {
         eventSink.yield(event)
     }
 
-    // MARK: Run state
-
     public var isEnabled: Bool { running }
 
     public func isActive(generation: UInt64) -> Bool {
         running && self.generation == generation
     }
 
-    /// Marks remote control running; returns whether it already was.
     @discardableResult
     public func beginRun() -> Bool {
         defer { running = true }
@@ -140,8 +128,6 @@ public actor RemoteHub {
         return generation
     }
 
-    /// Starts a run (upstream `remote::start` before the listeners spawn): resolves the host and
-    /// returns the generation the listeners run under, or `nil` when already running.
     public func start() async -> UInt64? {
         guard !beginRun() else { return nil }
         await refreshHost()
@@ -149,8 +135,6 @@ public actor RemoteHub {
         return nextGeneration()
     }
 
-    /// Stops the run (upstream `remote::stop`): listeners of the old generation wind down, every
-    /// device is revoked and pairing closes.
     public func stop() {
         endRun()
         nextGeneration()
@@ -176,8 +160,6 @@ public actor RemoteHub {
         wsPort = 0
     }
 
-    // MARK: Preferences
-
     public func setMaxDevices(_ value: Int) {
         maxDevices = min(max(value, RemoteLimits.deviceRange.lowerBound), RemoteLimits.deviceRange.upperBound)
     }
@@ -189,15 +171,11 @@ public actor RemoteHub {
     public func setReadOnly(_ value: Bool) { isReadOnly = value }
     public func setAllowShellInput(_ value: Bool) { shellInputAllowed = value }
 
-    /// Returns whether the mode changed — only then must running listeners rebind (upstream
-    /// `remote_control_set_reach_mode`).
     @discardableResult
     public func setReachMode(_ mode: RemoteReachMode) -> Bool {
         defer { reachMode = mode }
         return reachMode != mode
     }
-
-    // MARK: Connections
 
     public func tryAcquireConnection(max: Int = RemoteLimits.maxConnections) -> Bool {
         guard connections < max else { return false }
@@ -209,15 +187,9 @@ public actor RemoteHub {
         connections = Swift.max(0, connections - 1)
     }
 
-    // MARK: Host
-
-    /// Resolves the host for the reach mode. Tailscale chosen but missing leaves `""`, which no
-    /// listener can bind (fail closed).
     public func refreshHost() async {
         host = await resolver.host(for: reachMode)
     }
-
-    // MARK: Pairing
 
     public func openPairingWindow() {
         pairingToken = RemoteText.randomToken(length: RemoteLimits.pairingTokenLength)
@@ -229,19 +201,16 @@ public actor RemoteHub {
         pairingUntil = nil
     }
 
-    /// Whole seconds left in the pairing window; 0 when closed or remote control is off.
     public var pairingRemaining: Int {
         guard running, let pairingUntil else { return 0 }
         return Swift.max(0, Int(pairingUntil.timeIntervalSince(clock())))
     }
 
-    /// The URL the QR carries, while pairing is open and the HTTP listener is up.
     public var pairingURL: String? {
         guard pairingRemaining > 0, httpPort != 0 else { return nil }
         return "http://\(host):\(httpPort)/?pair=\(pairingToken)"
     }
 
-    /// Exchanges the pairing token for a device session and closes the window.
     public func pair(token provided: String, name: String, address: String) throws(RemotePairingError) -> RemotePairing {
         guard pairingRemaining > 0 else { throw .windowClosed }
         guard RemoteText.tokensEqual(provided, pairingToken) else { throw .invalidToken }
@@ -266,8 +235,6 @@ public actor RemoteHub {
         RemoteLog.logger.info("device \(id, privacy: .public) paired from \(address, privacy: .private)")
         return RemotePairing(deviceID: id, sessionToken: token)
     }
-
-    // MARK: Info
 
     public func info() -> RemoteInfo {
         pruneExpired()
@@ -296,7 +263,6 @@ public actor RemoteHub {
         )
     }
 
-    /// The `Origin` a WebSocket upgrade may carry: the HTTP listener's URL.
     public var allowedOrigin: String { "http://\(host):\(httpPort)" }
 
     public func connectedDeviceCount() -> Int {
@@ -305,9 +271,6 @@ public actor RemoteHub {
         return sessions.count
     }
 
-    // MARK: Sessions
-
-    /// Drops expired sessions, ending their output streams.
     public func pruneExpired() {
         let now = clock()
         sessions.removeAll { session in
@@ -321,7 +284,6 @@ public actor RemoteHub {
     public func sessionID(for token: String) -> Int? {
         guard !token.isEmpty else { return nil }
         pruneExpired()
-        // Compare against every session so the time taken does not reveal which one matched.
         var match: Int?
         for session in sessions where RemoteText.tokensEqual(token, session.token) && match == nil {
             match = session.id
@@ -343,8 +305,6 @@ public actor RemoteHub {
         sessions[index].name = RemoteText.truncated(name, to: RemoteLimits.maxDeviceName)
     }
 
-    /// Opens the session's output stream (its WebSocket). One per session: a newer socket
-    /// replaces the older one, whose stream ends. `nil` when the session is gone.
     public func attach(_ id: Int) -> AsyncStream<String>? {
         guard let index = sessions.firstIndex(where: { $0.id == id }) else { return nil }
         sessions[index].outbox?.finish()
@@ -353,7 +313,6 @@ public actor RemoteHub {
         return stream
     }
 
-    /// The session's socket closed: its stream ends and its subscription is dropped.
     public func detach(_ id: Int) {
         guard let index = sessions.firstIndex(where: { $0.id == id }) else { return }
         sessions[index].outbox?.finish()
@@ -361,7 +320,6 @@ public actor RemoteHub {
         sessions[index].subscription = nil
     }
 
-    /// The terminal the session follows (one at a time; `nil` follows none).
     public func setSubscription(_ id: Int, terminalID: String?) {
         guard let index = sessions.firstIndex(where: { $0.id == id }) else { return }
         sessions[index].subscription = terminalID
@@ -371,8 +329,6 @@ public actor RemoteHub {
         sessions.first { $0.id == id }?.subscription
     }
 
-    /// Sends a frame to every live session following `terminalID`. `payload` runs only when at
-    /// least one does. Returns how many sessions received it.
     @discardableResult
     public func publish(terminalID: String, payload: @Sendable () -> String) -> Int {
         let now = clock()
@@ -413,14 +369,10 @@ public actor RemoteHub {
         messageRates.removeAll()
     }
 
-    // MARK: Activity
-
-    /// A device is using remote control; the idle check counts from the last call.
     public func touchActivity() {
         lastActive = clock()
     }
 
-    /// True once nobody has been paired for `threshold` seconds straight (0 disables the check).
     public func isIdle(threshold: TimeInterval = RemoteLimits.idleDisable) -> Bool {
         connectedDeviceCount() == 0
             && Self.idleExpired(now: clock().timeIntervalSince1970, lastActive: lastActive.timeIntervalSince1970, threshold: threshold)
@@ -430,8 +382,6 @@ public actor RemoteHub {
         threshold > 0 && Swift.max(0, now - lastActive) >= threshold
     }
 
-    /// Per-session input throttle (`/api/message`, answers, interrupts), separate from the
-    /// auth-failure lockout: bounds how fast a paired device can send.
     public func allowMessage(_ sessionID: Int) -> Bool {
         let now = clock()
         var rate = messageRates[sessionID] ?? MessageRate(count: 0, windowStart: now)
@@ -443,15 +393,11 @@ public actor RemoteHub {
         return rate.count <= RemoteLimits.messageRateLimit
     }
 
-    // MARK: Auth failures
-
     public func authBlocked(_ address: String) -> Bool {
         guard let ip = RemoteHost.peerIP(address), let lockedUntil = failures[ip]?.lockedUntil else { return false }
         return lockedUntil > clock()
     }
 
-    /// Counts a failed pairing or session check; `authFailureLimit` within the window locks the
-    /// address out for `authLockout`.
     public func recordAuthFailure(_ address: String) {
         guard let ip = RemoteHost.peerIP(address) else { return }
         let now = clock()

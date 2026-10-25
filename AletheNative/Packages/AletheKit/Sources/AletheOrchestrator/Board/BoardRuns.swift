@@ -1,8 +1,6 @@
 import Foundation
 import AletheIntegrations
 
-/// The column a worker sits in on the board (upstream `lib/orchestratorRuns.ts`). Declared in the
-/// board's lane order: `allCases` is `RUN_LANE_ORDER`.
 public enum RunLane: String, Hashable, Sendable, CaseIterable {
     case blocked
     case running
@@ -11,7 +9,6 @@ public enum RunLane: String, Hashable, Sendable, CaseIterable {
     case failed
     case finished
 
-    /// Upstream `LANE_OF`: every settled-for-good status reads as finished.
     public init(_ status: JobStatus) {
         switch status {
         case .blocked: self = .blocked
@@ -23,13 +20,9 @@ public enum RunLane: String, Hashable, Sendable, CaseIterable {
         }
     }
 
-    // Worst-first: a blocked worker leads because it is stopped on a person and still holds its
-    // slot, a failure outranks live workers, and interrupted work outranks them too because only the
-    // user can bring it back.
     static let statePriority: [RunLane] = [.blocked, .failed, .interrupted, .running, .queued, .finished]
 }
 
-/// How many workers sit in each lane.
 public struct RunCounts: Hashable, Sendable {
     public private(set) var values: [RunLane: Int]
 
@@ -37,7 +30,6 @@ public struct RunCounts: Hashable, Sendable {
         self.values = values.filter { $0.value != 0 }
     }
 
-    /// Upstream `countLanes`.
     public init(jobs: some Sequence<JobSnapshot>) {
         var counts = RunCounts()
         for job in jobs { counts[RunLane(job.status)] += 1 }
@@ -51,20 +43,16 @@ public struct RunCounts: Hashable, Sendable {
 
     public var total: Int { values.values.reduce(0, +) }
 
-    /// Upstream `worstState`: the worst lane anything is in, finished when empty.
     public var worstState: RunLane {
         RunLane.statePriority.first { self[$0] > 0 } ?? .finished
     }
 
-    /// Upstream `attentionOf`: what waits on the user, or nil when nothing does.
     public var attention: RunAttention? {
         RunAttention.Lane.allCases.first { self[$0.runLane] > 0 }.map { RunAttention(lane: $0, count: self[$0.runLane]) }
     }
 }
 
-/// Work only a person can clear, worst lane first.
 public struct RunAttention: Hashable, Sendable {
-    /// Declared worst first: blocked still costs a slot, a failure is already over.
     public enum Lane: String, Hashable, Sendable, CaseIterable {
         case blocked
         case failed
@@ -88,7 +76,6 @@ public struct RunAttention: Hashable, Sendable {
     }
 }
 
-/// One delegate call's workers (upstream `OrchestratorRun`).
 public struct BoardRun: Hashable, Sendable, Identifiable {
     public var id: String
     public var label: String
@@ -104,7 +91,6 @@ public struct BoardRun: Hashable, Sendable, Identifiable {
         state = counts.worstState
     }
 
-    /// Upstream `groupRuns`: by run id in first-seen order; the label is the first non-blank one.
     public static func group(_ jobs: [JobSnapshot]) -> [BoardRun] {
         var order: [String] = []
         var grouped: [String: [JobSnapshot]] = [:]
@@ -120,8 +106,6 @@ public struct BoardRun: Hashable, Sendable, Identifiable {
     }
 }
 
-/// A tab on the board: the terminal that asked for the work, with every run it started (upstream
-/// `PlannerGroup`). `id`, `label` and `agent` are nil for work delegated from outside a terminal.
 public struct PlannerGroup: Hashable, Sendable {
     public var id: String?
     public var label: String?
@@ -141,9 +125,6 @@ public struct PlannerGroup: Hashable, Sendable {
         state = counts.worstState
     }
 
-    /// Upstream `groupPlanners`: one group per declared planner (sorted by label, then id, so the tab
-    /// strip never reshuffles between snapshots), then one per planner id seen on a job but no longer
-    /// declared, in first-seen order, then one last group for jobs that carry no planner.
     public static func group(jobs: [JobSnapshot], planners: [Planner]) -> [PlannerGroup] {
         var order: [String?] = []
         var buckets: [String?: [JobSnapshot]] = [:]
@@ -175,13 +156,11 @@ public struct PlannerGroup: Hashable, Sendable {
         return groups
     }
 
-    // A fixed collation stands in for `localeCompare`, so the order never depends on the user's locale.
     private static func collate(_ lhs: String, _ rhs: String) -> ComparisonResult {
         lhs.compare(rhs, locale: Locale(identifier: "en_US_POSIX"))
     }
 }
 
-/// Session spend for one worker provider (upstream `AgentSpend`).
 public struct AgentSpend: Hashable, Sendable {
     public var agent: String
     public var totalTokens: Double
@@ -197,8 +176,6 @@ public struct AgentSpend: Hashable, Sendable {
         self.unpricedWorkers = unpricedWorkers
     }
 
-    /// Upstream `aggregateAgentSpend`: per provider in first-seen order, skipping workers that have
-    /// reported neither tokens nor a price yet.
     public static func aggregate(_ jobs: [JobSnapshot]) -> [AgentSpend] {
         var order: [String] = []
         var byAgent: [String: AgentSpend] = [:]

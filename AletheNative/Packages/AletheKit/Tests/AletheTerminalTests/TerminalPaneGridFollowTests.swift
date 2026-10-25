@@ -4,12 +4,10 @@ import Foundation
 import Testing
 @testable import AletheTerminal
 
-/// Collects what the child prints (it reports `stty size` on start and on every SIGWINCH).
 private final class Reports: @unchecked Sendable {
     private let lock = NSLock()
     private var text = ""
     func add(_ data: Data) { lock.withLock { text += String(decoding: data, as: UTF8.self) } }
-    /// Last "rows cols" line printed.
     var raw: String { lock.withLock { text } }
     var last: (rows: Int, cols: Int)? {
         lock.withLock {
@@ -105,7 +103,6 @@ private final class Reports: @unchecked Sendable {
         }
     }
 
-    /// A busy TUI keeps printing while the pane is resized.
     @Test func childFollowsWhileFlooding() throws {
         let flood = "trap 'echo; stty size' WINCH; stty size; while :; do printf '\\033[2J\\033[H'; seq 1 400; sleep 0.01; done"
         let (window, _, pane, reports) = try makeHost(script: flood)
@@ -125,8 +122,6 @@ private final class Reports: @unchecked Sendable {
 }
 
 @Suite(.serialized) struct PTYReassertTests {
-    /// A winsize the child never heard about (set behind the process's back) is repaired by the
-    /// settle safety net: the PTY gets the grid again and the child gets a SIGWINCH.
     @Test func reassertSendsSizeAndSigwinchWhenItDiffers() throws {
         let process = try PTYProcess(
             PTYLaunch(executable: "/bin/sh",

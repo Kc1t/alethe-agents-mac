@@ -1,7 +1,6 @@
 import AletheModel
 import SwiftUI
 
-/// Pane drags only target project rows; groups never advertise a terminal drop target.
 struct SidebarProjectDrop: DropDelegate {
     @Binding var targeted: Bool
     @Binding var inside: Bool

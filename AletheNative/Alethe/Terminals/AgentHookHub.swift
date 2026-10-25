@@ -2,32 +2,22 @@ import AletheAgents
 import AletheModel
 import Foundation
 
-/// The app side of the hook bridge (P3-9): runs the loopback endpoint, prepares each launch's
-/// wiring (a Claude settings file per tab, the Codex forwarder script) and routes incoming events to
-/// the terminal registry on the main actor. With the orchestrator feature on, a planner's subagent
-/// hooks also feed `subagents` (P6-11), and the same listener serves the orchestrator's `POST /mcp`
-/// (P6-9).
 @MainActor
 final class AgentHookHub {
-    /// The planners' own subagents and teammates, for the board.
     let subagents = SubagentTracker()
     private var server: AgentHookServer?
     private var endpoint: String?
-    /// Private (0700) per-run folder for launch files; MCP wiring (P5-4) writes here too.
     static let folder = FileManager.default.temporaryDirectory.appending(path: "alethe-hooks-\(getpid())", directoryHint: .isDirectory)
     private var folder: URL { Self.folder }
     private var codexScript: URL?
     private var codexHookScript: URL?
     private var mcpHandler: AgentHookServer.McpHandler?
 
-    /// The loopback endpoint and its token, once listening; the orchestrator's per-launch MCP config
-    /// carries both. The token is a secret: it only goes into private (0600) files.
     var connection: (endpoint: String, token: String)? {
         guard let endpoint, let server else { return nil }
         return (endpoint, server.token)
     }
 
-    /// Serves `POST /mcp` through `handler` (nil: 404), now or once the listener starts.
     func serveMcp(_ handler: AgentHookServer.McpHandler?) {
         mcpHandler = handler
         server?.setMcpHandler(handler)
@@ -65,8 +55,6 @@ final class AgentHookHub {
         }
     }
 
-    /// Wiring for one launch, or nil when the bridge is not running or the agent has no hooks. With
-    /// `orchestrator` on, the launch also reports its own subagents (a planner, P6-11).
     func launch(for tab: TabID, kind: AgentKind, orchestrator: Bool = false) -> AgentLaunchRequest.HookLaunch? {
         guard let endpoint, let server else { return nil }
         switch kind {
@@ -89,7 +77,6 @@ final class AgentHookHub {
         }
     }
 
-    /// Whether this agent's turns end through hooks (so traffic heuristics must not end them).
     func reportsTurns(_ kind: AgentKind) -> Bool { endpoint != nil && kind == .claude }
 
     func stop() {

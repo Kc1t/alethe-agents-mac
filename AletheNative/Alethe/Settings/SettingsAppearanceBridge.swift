@@ -3,7 +3,6 @@ import AletheTerminal
 import AppKit
 import SwiftUI
 
-/// Attached to the web titlebar so changing interface removes the opacity override.
 struct SettingsWindowOpacity: NSViewRepresentable {
     let value: Double
     func makeNSView(context: Context) -> OpacityView { OpacityView() }
@@ -22,7 +21,6 @@ struct SettingsWindowOpacity: NSViewRepresentable {
     }
 }
 
-/// Reapply the terminal-only palette after a terminal mounts or the app theme changes.
 struct SettingsTerminalThemeBridge: View {
     @Environment(AppEnvironment.self) private var environment
     private struct Appearance: Equatable {
@@ -49,7 +47,6 @@ struct SettingsTerminalThemeBridge: View {
                     environment.terminals.applyAppearance(theme: environment.theme, fontSize: environment.terminalFontSize)
                 }
                 guard let id = appearance.terminal else { return }
-                // Let the shell's theme observer finish before applying the independent palette.
                 await Task.yield()
                 guard !Task.isCancelled else { return }
                 environment.terminals.applyAppearance(theme: environment.themeCatalog.resolved(id: id),

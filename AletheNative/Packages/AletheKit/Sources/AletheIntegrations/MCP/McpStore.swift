@@ -1,11 +1,6 @@
 import Foundation
 import Synchronization
 
-// Port of upstream `mcp_store.rs`: scans every agent's MCP config with an mtime cache, and upserts,
-// removes, enables, syncs and reveals servers in the right file. Every write goes through
-// `ConfigFileWriter` (re-read, backup into the profile, atomic).
-
-/// One config file an agent reads for a scope (upstream `McpConfigPath`).
 public struct McpConfigPath: Hashable, Sendable {
     public let agent: McpAgent
     public let scope: McpScope
@@ -14,19 +9,14 @@ public struct McpConfigPath: Hashable, Sendable {
     public let exists: Bool
 }
 
-/// Store errors carry codes and field names, never a value from the file.
 public enum McpStoreError: Error, Equatable, Sendable, CustomStringConvertible {
-    /// The agent has no config for this scope (Antigravity projects), or not of the requested kind.
     case unsupportedScope
     case notFound
     case invalidName
     case invalidCommand
     case invalidURL
-    /// The target agent cannot express these fields; nothing was written.
     case unsupportedFields([McpUnsupportedField])
-    /// The edited file would have changed servers other than the target; nothing was written.
     case selfCheckFailed
-    /// The backup belongs to another agent or file.
     case backupMismatch
     case cancelled
     case config(McpConfigError)
@@ -69,8 +59,6 @@ public enum McpMutation: Hashable, Sendable {
         return false
     }
 
-    /// Removing a server drops its config, env values included: the UI asks once before applying it.
-    /// Everything else applies at once with undo.
     public var needsConfirmation: Bool {
         if case .remove = self { return true }
         return false
@@ -78,14 +66,12 @@ public enum McpMutation: Hashable, Sendable {
 }
 
 public enum McpWriteWarning: Hashable, Sendable {
-    /// Antigravity: the server came from a plugin import that may write it back.
     case managedByImport(String)
 }
 
 public struct McpWriteReport: Equatable, Sendable {
     public let url: URL
     public let kind: McpSourceKind
-    /// The previous contents; nil when the file was created.
     public let backup: ConfigBackup?
     public let changed: [String]
     public var warnings: [McpWriteWarning]
@@ -94,9 +80,7 @@ public struct McpWriteReport: Equatable, Sendable {
 public struct McpSyncOutcome: Equatable, Sendable {
     public enum Status: Equatable, Sendable {
         case written(URL)
-        /// The agent already has a server with that name and overwrite was off.
         case skipped
-        /// Fields the agent cannot express; nothing was written.
         case blocked([McpUnsupportedField])
         case failed(McpStoreError)
     }
@@ -105,12 +89,10 @@ public struct McpSyncOutcome: Equatable, Sendable {
     public let status: Status
 }
 
-/// Servers with the same name across agents (upstream `groupServersByName`, `lib/mcp.ts`).
 public struct McpServerGroup: Hashable, Sendable {
     public let name: String
     public let records: [McpServerRecord]
     public let agents: [McpAgent]
-    /// Readable agents that lack the server: what Sync All fills.
     public let missingAgents: [McpAgent]
     public let hasDisabled: Bool
 }
@@ -121,15 +103,11 @@ public struct McpGroupSyncResult: Equatable, Sendable {
 }
 
 extension McpAgentSnapshot {
-    /// Only an agent whose every source parsed can be said to miss a server: with an unreadable file
-    /// it cannot be told, and with no source the question does not apply.
     public var isReadable: Bool {
         !sources.isEmpty && sources.allSatisfy { $0.parseError == nil }
     }
 }
 
-/// Every method ending in `Now` does file I/O synchronously; the async forms run it off the main
-/// thread and inherit the caller's cancellation. Revealed values are returned, never logged.
 public final class McpStore: Sendable {
     public let home: McpHome
     public let writer: ConfigFileWriter
@@ -160,9 +138,6 @@ public final class McpStore: Sendable {
         McpAdapters.adapter(for: agent).configSources(scope: scope, repository: repository, home: home)
     }
 
-    // MARK: Input parsing (upstream `requested_agents`, `repo_path`)
-
-    /// Unknown names are dropped; nil or nothing known means every agent.
     public static func requestedAgents(_ raw: [String]?) -> [McpAgent] {
         let picked = (raw ?? []).compactMap(McpAgent.init(parsing:))
         return picked.isEmpty ? McpAgent.allCases : picked
@@ -173,8 +148,6 @@ public final class McpStore: Sendable {
         return URL(filePath: trimmed, directoryHint: .isDirectory)
     }
 
-    /// Upstream `to_server`: trims the name, command and URL, drops blank env and header keys, and
-    /// refuses a name no config can hold as a key.
     public static func validated(_ server: McpServer) throws(McpStoreError) -> McpServer {
         let name = server.name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty, !name.contains(where: { "/\\\"\n".contains($0) }) else { throw .invalidName }
@@ -209,13 +182,10 @@ public final class McpStore: Sendable {
         return out
     }
 
-    // MARK: Scan
-
     public func scan(scope: McpScope, repository: URL?, agents: [McpAgent] = McpAgent.allCases) async throws -> [McpAgentSnapshot] {
         try await Self.offMain { try self.scanNow(scope: scope, repository: repository, agents: agents) }
     }
 
-    /// One snapshot per agent (all when `agents` is empty), in the order given.
     public func scanNow(scope: McpScope, repository: URL?, agents: [McpAgent] = McpAgent.allCases) throws -> [McpAgentSnapshot] {
         let picked = agents.isEmpty ? McpAgent.allCases : agents
         let imports = picked.contains(.antigravity) ? antigravityImports() : []
@@ -253,7 +223,6 @@ public final class McpStore: Sendable {
         return snapshot
     }
 
-    /// Parsed servers, reused while the file's modification date and size are unchanged.
     private func readServers(_ agent: McpAgent, _ source: McpSource, _ stat: FileStat) throws(McpConfigError) -> [McpServer] {
         let key = Self.cacheKey(agent, source)
         if let entry = cache.withLock({ $0[key] }), entry.modificationDate == stat.modificationDate, entry.size == stat.size {
@@ -280,7 +249,6 @@ public final class McpStore: Sendable {
         let size: Int64
     }
 
-    /// Follows symlinks, like upstream's `fs::metadata`.
     private static func stat(_ url: URL) -> FileStat? {
         let path = url.resolvingSymlinksInPath().path(percentEncoded: false)
         guard let attributes = try? FileManager.default.attributesOfItem(atPath: path) else { return nil }
@@ -288,7 +256,6 @@ public final class McpStore: Sendable {
                         size: (attributes[.size] as? NSNumber)?.int64Value ?? 0)
     }
 
-    /// A missing file is writable when its folder exists (upstream `is_writable`).
     static func isWritable(_ url: URL) -> Bool {
         let fileManager = FileManager.default
         let path = url.path(percentEncoded: false)
@@ -298,13 +265,10 @@ public final class McpStore: Sendable {
             && isDirectory.boolValue
     }
 
-    /// Antigravity names the plugin imports it applied, not the servers they added.
     func antigravityImports() -> [String] {
         guard let data = try? Data(contentsOf: AntigravityMcpAdapter.importManifestURL(home: home)) else { return [] }
         return AntigravityMcpAdapter.importNames(manifest: String(decoding: data, as: UTF8.self))
     }
-
-    // MARK: Paths
 
     public func configPaths(scope: McpScope, repository: URL?) async throws -> [McpConfigPath] {
         try await Self.offMain { self.configPathsNow(scope: scope, repository: repository) }
@@ -321,11 +285,6 @@ public final class McpStore: Sendable {
         }
     }
 
-    // MARK: Source picking
-
-    /// Upstream `pick_source`: an existing server is edited where it lives; a new one goes to the
-    /// agent's first source, which for Claude at project scope is the `local` entry in
-    /// `~/.claude.json` (where `claude mcp add` writes). `kind` forces one source.
     func pickSource(_ agent: McpAgent, scope: McpScope, repository: URL?, name: String,
                     kind: McpSourceKind?, creating: Bool) throws(McpStoreError) -> McpSource {
         let sources = sources(agent, scope, repository)
@@ -341,13 +300,10 @@ public final class McpStore: Sendable {
         return first
     }
 
-    /// The source's servers, or nil when it is missing or unparsable.
     private static func servers(_ agent: McpAgent, _ source: McpSource) -> [McpServer]? {
         guard let data = try? Data(contentsOf: source.url) else { return nil }
         return try? McpAdapters.adapter(for: agent).parse(String(decoding: data, as: UTF8.self), source: source)
     }
-
-    // MARK: Mutations
 
     public func mutate(_ mutation: McpMutation, agent: McpAgent, scope: McpScope, repository: URL?,
                        sourceKind: McpSourceKind? = nil) async throws -> McpWriteReport {
@@ -356,7 +312,6 @@ public final class McpStore: Sendable {
         }
     }
 
-    /// Upserts (validated first), removes or switches a server in the file it belongs to.
     public func mutateNow(_ mutation: McpMutation, agent: McpAgent, scope: McpScope, repository: URL?,
                           sourceKind: McpSourceKind? = nil) throws(McpStoreError) -> McpWriteReport {
         var mutation = mutation
@@ -373,7 +328,6 @@ public final class McpStore: Sendable {
         return report
     }
 
-    /// Upstream `apply_to_source`: parse, guard, generate, re-validate, back up, write atomically.
     func apply(_ mutation: McpMutation, agent: McpAgent, to source: McpSource) throws(McpStoreError) -> McpWriteReport {
         if source.isJSONC { throw .config(.jsoncUnsupported) }
         let snapshot: ConfigFileSnapshot
@@ -428,9 +382,6 @@ public final class McpStore: Sendable {
         servers.map(\.name).filter { $0 != target }.sorted()
     }
 
-    // MARK: Read one server
-
-    /// The first source of the scope holding `name`.
     func readServer(_ agent: McpAgent, scope: McpScope, repository: URL?, name: String) throws(McpStoreError) -> McpServer {
         let sources = sources(agent, scope, repository)
         guard !sources.isEmpty else { throw .unsupportedScope }
@@ -440,8 +391,6 @@ public final class McpStore: Sendable {
         throw .notFound
     }
 
-    // MARK: Sync
-
     public func sync(name: String, from: McpAgent, to targets: [McpAgent], scope: McpScope, repository: URL?,
                      overwrite: Bool = false) async throws -> [McpSyncOutcome] {
         try await Self.offMain {
@@ -449,9 +398,6 @@ public final class McpStore: Sendable {
         }
     }
 
-    /// Copies one server to other agents inside the store, so a stored secret never travels through
-    /// the UI. `overwrite` replaces a server the target already has: the UI asks once before passing it.
-    /// Cancelling stops before the next target; the rest report `.failed(.cancelled)`.
     public func syncNow(name: String, from: McpAgent, to targets: [McpAgent], scope: McpScope, repository: URL?,
                         overwrite: Bool = false) throws(McpStoreError) -> [McpSyncOutcome] {
         let server = try readServer(from, scope: scope, repository: repository, name: name)
@@ -503,8 +449,6 @@ public final class McpStore: Sendable {
         try await Self.offMain { self.syncAllNow(groups, scope: scope, repository: repository) }
     }
 
-    /// Onboarding's Sync All (upstream `McpStep`): each group's gaps filled from its first record,
-    /// never overwriting.
     public func syncAllNow(_ groups: [McpServerGroup], scope: McpScope, repository: URL?) -> [McpGroupSyncResult] {
         groups.filter { !$0.missingAgents.isEmpty }.compactMap { group in
             guard let from = group.records.first?.agent else { return nil }
@@ -515,8 +459,6 @@ public final class McpStore: Sendable {
         }
     }
 
-    // MARK: Reveal
-
     public func reveal(agent: McpAgent, scope: McpScope, repository: URL?, name: String, key: String,
                        header: Bool = false) async throws -> String {
         try await Self.offMain {
@@ -524,7 +466,6 @@ public final class McpStore: Sendable {
         }
     }
 
-    /// The only way a stored literal leaves the store, one key per request. Callers never log it.
     public func revealNow(agent: McpAgent, scope: McpScope, repository: URL?, name: String, key: String,
                           header: Bool = false) throws(McpStoreError) -> String {
         let server = try readServer(agent, scope: scope, repository: repository, name: name)
@@ -539,10 +480,6 @@ public final class McpStore: Sendable {
         return literal
     }
 
-    // MARK: Backups
-
-    /// `<agent>-<kind>`; a repository file gets a slot of its own (`<agent>-project_<hash>`) so a
-    /// backup of one repository is never offered for another (upstream shares one prefix).
     public func backupSlot(agent: McpAgent, source: McpSource) -> ConfigBackupSlot {
         guard source.kind == .project else { return ConfigBackupSlot(agent: agent.rawValue, kind: source.kind.rawValue) }
         let path = source.url.standardizedFileURL.path(percentEncoded: false)
@@ -558,7 +495,6 @@ public final class McpStore: Sendable {
         return String(format: "%08x", hash)
     }
 
-    /// The backups of a source's file, newest first.
     public func backups(agent: McpAgent, source: McpSource) -> [ConfigBackup] {
         writer.backups(in: backupSlot(agent: agent, source: source))
     }
@@ -567,9 +503,6 @@ public final class McpStore: Sendable {
         try await Self.offMain { try self.restoreNow(backup, agent: agent, source: source) }
     }
 
-    /// Puts a backup back into the source's file, backing up the current contents first so the
-    /// restore can itself be undone. Destructive: the UI asks once. A backup the agent cannot parse
-    /// is refused rather than leaving a broken config.
     public func restoreNow(_ backup: ConfigBackup, agent: McpAgent, source: McpSource) throws(McpStoreError) -> McpWriteReport {
         guard backup.slot == backupSlot(agent: agent, source: source) else { throw .backupMismatch }
         if source.isJSONC { throw .config(.jsoncUnsupported) }
@@ -588,8 +521,6 @@ public final class McpStore: Sendable {
         invalidate(agent, source)
         return McpWriteReport(url: source.url, kind: source.kind, backup: written.backup, changed: [], warnings: [])
     }
-
-    // MARK: Off main
 
     private static func offMain<T: Sendable>(_ work: @escaping @Sendable () throws -> T) async throws -> T {
         let task = Task.detached(priority: .userInitiated) { try work() }
