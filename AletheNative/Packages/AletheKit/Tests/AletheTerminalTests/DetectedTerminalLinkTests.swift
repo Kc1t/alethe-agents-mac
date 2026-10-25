@@ -29,7 +29,11 @@ import Testing
          ["/pt-br/vitrine-dupla/projects", "/en/double-showcase/projects"]),
         ("see (/tmp/my folder/readme.md) now", ["/tmp/my folder/readme.md"]),
         (#"Written to D:\vault\content\projection.md with two projections"#, [#"D:\vault\content\projection.md"#]),
-        (#"D:\Videos\motion-kit-hype-video.mp4 and listen"#, [#"D:\Videos\motion-kit-hype-video.mp4"#])
+        (#"D:\Videos\motion-kit-hype-video.mp4 and listen"#, [#"D:\Videos\motion-kit-hype-video.mp4"#]),
+        ("worktrees/std/AletheNative/build/Debug/Alethe.app", ["worktrees/std/AletheNative/build/Debug/Alethe.app"]),
+        ("open /Users/me/build/Debug/Alethe.app now", ["/Users/me/build/Debug/Alethe.app"]),
+        ("/Users/me/nostromo/UK-2026/context.md.", ["/Users/me/nostromo/UK-2026/context.md"]),
+        ("vercel.app", ["vercel.app"])
     ])
     func detection(_ input: String, _ expected: [String]) {
         #expect(TerminalLinks.detect(input).map(\.text) == expected)

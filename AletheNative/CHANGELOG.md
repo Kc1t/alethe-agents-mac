@@ -9,6 +9,11 @@ baseline lacks is tagged `[Mac-only]`, one about a baseline feature that works d
 
 ## [Unreleased]
 
+### Terminal links
+- Relative paths that end in a `.app` bundle (for example `worktrees/std/build/Alethe.app`) are now detected as a whole
+  path and resolved against the terminal's directory. Before, the trailing `Alethe.app` was read as the `.app` web domain
+  and the path was never linked. A name that follows a `/` is no longer taken for a bare domain.
+
 ### Profile photo
 - The profile row in the sidebar now shows the photo set in Settings or in onboarding. It used to ignore it and keep the default
   avatar. Choosing or removing the photo from the sidebar menu updates the same setting, so Settings and the sidebar agree.

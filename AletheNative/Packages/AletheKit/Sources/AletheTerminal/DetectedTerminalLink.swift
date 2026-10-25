@@ -13,20 +13,20 @@ public struct DetectedTerminalLink: Equatable, Sendable {
 
 public enum TerminalLinks {
     private static let start =
-        #"https?:\/\/|(?<![@\w.-])(?:localhost(?::\d{1,5})?|"#
+        #"https?:\/\/|(?<![@\w./-])(?:localhost(?::\d{1,5})?|"#
         + #"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:app|ai|biz|br|ca|cloud|co|com|de|dev|edu|fr|gg|"#
         + #"gov|info|io|jp|live|me|net|online|org|page|sh|site|tech|tools|tv|uk|"#
         + #"xyz))(?::\d{1,5})?(?:\/[^\s<>"'`|]*)?|(?:[A-Za-z]:\\|\\\\)|(?<![\w])(?:~[\\/]|"#
         + #"\/)(?=[A-Za-z0-9_.~])|(?<![@\w.-])(?:\.\.?[\\/])?(?:[A-Za-z0-9_.-]+[\\/])*[A-Za-z0-9_.-]+\.(?:m"#
         + #"d|markdown|mdx|png|jpe?g|gif|webp|bmp|avif|ico|svg|txt|tsx?|jsx?|json|ya?ml|toml|csv|pdf|mp4|"#
-        + #"m4v|mov|avi|mkv|webm|mp3|wav|flac|m4a|zip|7z|rar|tar|gz|exe|msi|dll)(?=$|[\s),.;:\]}`])"#
+        + #"m4v|mov|avi|mkv|webm|mp3|wav|flac|m4a|zip|7z|rar|tar|gz|exe|msi|dll|app)(?=$|[\s),.;:\]}`])"#
     private static let bareURL =
         #"^(?:localhost(?::\d{1,5})?|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:app|ai|biz|br|ca|"#
         + #"cloud|co|com|de|dev|edu|fr|gg|gov|info|io|jp|live|me|net|online|org|page|sh|site|tech|tools|tv|"#
         + #"uk|xyz))(?::\d{1,5})?(?:\/[^\s<>"'`|]*)?"#
     private static let extensionBoundary =
         #"\.(?:md|markdown|mdx|png|jpe?g|gif|webp|bmp|avif|ico|svg|txt|tsx?|jsx?|json|ya?ml|toml|csv|pdf|"#
-        + #"mp4|m4v|mov|avi|mkv|webm|mp3|wav|flac|m4a|zip|7z|rar|tar|gz|exe|msi|dll)(?=$|[\s),.;:])"#
+        + #"mp4|m4v|mov|avi|mkv|webm|mp3|wav|flac|m4a|zip|7z|rar|tar|gz|exe|msi|dll|app)(?=$|[\s),.;:])"#
 
     private static let startExpression = try? NSRegularExpression(pattern: start, options: .caseInsensitive)
 
