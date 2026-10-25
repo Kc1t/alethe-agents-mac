@@ -9,6 +9,10 @@ baseline lacks is tagged `[Mac-only]`, one about a baseline feature that works d
 
 ## [Unreleased]
 
+### Profile photo
+- The profile row in the sidebar now shows the photo set in Settings or in onboarding. It used to ignore it and keep the default
+  avatar. Choosing or removing the photo from the sidebar menu updates the same setting, so Settings and the sidebar agree.
+
 ### Memory panel
 - [Mac-only] The RAM pill shows how many AI terminals are running (`5 | 6000 MB`), and the memory panel has an AI
   terminals tab. It lists each running agent with its memory, the processes it started (dev servers such as an API

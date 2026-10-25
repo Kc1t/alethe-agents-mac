@@ -18,7 +18,7 @@ struct SidebarWebProfile: View {
     var body: some View {
         Button { showingMenu.toggle() } label: {
             HStack(spacing: metrics.size(metrics.style == .clean ? 8 : 10)) {
-                avatar
+                avatar(side: rowSide)
                     .aspectRatio(contentMode: .fill)
                     .frame(width: metrics.size(metrics.style == .clean ? 24 : 34),
                            height: metrics.size(metrics.style == .clean ? 24 : 34))
@@ -91,7 +91,7 @@ struct SidebarWebProfile: View {
     private var webMenu: some View {
         VStack(alignment: .leading, spacing: metrics.size(2)) {
             HStack(spacing: metrics.size(metrics.style == .clean ? 8 : 10)) {
-                avatar.aspectRatio(contentMode: .fill)
+                avatar(side: menuSide).scaledToFill()
                     .frame(width: metrics.size(metrics.style == .clean ? 28 : 36),
                            height: metrics.size(metrics.style == .clean ? 28 : 36))
                     .clipShape(Circle())
@@ -143,7 +143,7 @@ struct SidebarWebProfile: View {
     private var nativeMenu: some View {
         VStack(alignment: .leading, spacing: metrics.size(2)) {
             HStack(spacing: metrics.size(metrics.style == .clean ? 8 : 10)) {
-                avatar.aspectRatio(contentMode: .fill)
+                avatar(side: menuSide).scaledToFill()
                     .frame(width: metrics.size(metrics.style == .clean ? 28 : 36),
                            height: metrics.size(metrics.style == .clean ? 28 : 36))
                     .clipShape(Circle())
@@ -168,7 +168,7 @@ struct SidebarWebProfile: View {
                 openSettings()
             }
             SidebarMenuButton("sidebar.web.chooseAvatar", symbol: "photo") { chooseAvatar() }
-            if customAvatar != nil {
+            if customAvatar != nil || photoSource != nil {
                 SidebarMenuButton("sidebar.web.resetAvatar", symbol: "arrow.counterclockwise") { setAvatar(nil) }
             }
             Divider()
@@ -215,9 +215,25 @@ struct SidebarWebProfile: View {
         return NSImage(data: data)
     }
 
-    private var avatar: some View {
+    private var rowSide: CGFloat { metrics.style == .clean ? 24 : 34 }
+
+    private var menuSide: CGFloat { metrics.style == .clean ? 28 : 36 }
+
+    private var photoSource: String? {
+        environment.preferences?.document.profileImageUrl.flatMap { $0.isEmpty ? nil : $0 }
+    }
+
+    private func avatar(side: CGFloat) -> some View {
         Group {
-            if let customAvatar { Image(nsImage: customAvatar).resizable() } else { Image("DefaultProfile").resizable() }
+            if let photoSource {
+                SidebarCoverImage(source: photoSource, side: side, cornerRadius: side / 2) {
+                    Image("DefaultProfile").resizable()
+                }
+            } else if let customAvatar {
+                Image(nsImage: customAvatar).resizable()
+            } else {
+                Image("DefaultProfile").resizable()
+            }
         }
     }
 
@@ -240,5 +256,8 @@ struct SidebarWebProfile: View {
         avatars[profileKey] = data?.base64EncodedString()
         guard let encoded = try? JSONEncoder().encode(avatars), let text = String(data: encoded, encoding: .utf8) else { return }
         avatarImages = text
+        environment.preferences?.update {
+            $0.profileImageUrl = data.map { "data:image/png;base64," + $0.base64EncodedString() }
+        }
     }
 }
