@@ -27,27 +27,26 @@ struct OrchestratorApplyAction: View {
     }
 
     @ViewBuilder private func content(_ phase: ApplyWorktreePhase) -> some View {
-        switch phase {
-        case .idle:
+        if case .idle = phase {
             button("orchestrator.apply.action", symbol: "arrow.triangle.merge", prominent: true, id: "action") {
                 center.review(job)
             }
             .help(Text("orchestrator.apply.help"))
-        case .previewing:
+        } else if case .previewing = phase {
             progress(Text("orchestrator.apply.previewing"), cancelable: true)
-        case .confirming(let preview):
+        } else if case .confirming(let preview) = phase {
             confirmation(preview)
-        case .running(let step):
+        } else if case .running(let step) = phase {
             progress(Text(step.title), cancelable: step.isCancelable)
-        case .applied(let target):
+        } else if case .applied(let target) = phase {
             note(String(format: String(localized: "orchestrator.apply.applied"), target),
                  symbol: "checkmark.circle", token: .statusWorking, id: "applied")
-        case .nothingToApply:
+        } else if case .nothingToApply = phase {
             HStack(spacing: units.space(.s)) {
                 note(String(localized: "orchestrator.apply.nothing"), symbol: "minus.circle", token: .textSecondary, id: "nothing")
                 dismissButton
             }
-        case .handedOff(let environmentID):
+        } else if case .handedOff(let environmentID) = phase {
             VStack(alignment: .leading, spacing: units.space(.xs)) {
                 note(String(localized: "orchestrator.apply.handedOff"), symbol: "exclamationmark.triangle",
                      token: .statusWaiting, id: "handedOff")
@@ -58,7 +57,7 @@ struct OrchestratorApplyAction: View {
                     dismissButton
                 }
             }
-        case .failed(let message):
+        } else if case .failed(let message) = phase {
             VStack(alignment: .leading, spacing: units.space(.xs)) {
                 note(String(format: String(localized: "orchestrator.apply.failed"), message),
                      symbol: "xmark.octagon", token: .statusOffline, id: "failed")
@@ -187,13 +186,14 @@ struct OrchestratorApplyAction: View {
 }
 
 extension WorktreeApplyStep {
+    private static let titleValues: [WorktreeApplyStep: String] = [
+        .committing: "orchestrator.apply.step.committing",
+        .fetching: "orchestrator.apply.step.fetching",
+        .analyzing: "orchestrator.apply.step.analyzing",
+        .preparing: "orchestrator.apply.step.preparing",
+    ]
+
     var title: LocalizedStringKey {
-        switch self {
-        case .committing: "orchestrator.apply.step.committing"
-        case .fetching: "orchestrator.apply.step.fetching"
-        case .analyzing: "orchestrator.apply.step.analyzing"
-        case .preparing: "orchestrator.apply.step.preparing"
-        case .finalizing: "orchestrator.apply.step.finalizing"
-        }
+        LocalizedStringKey(Self.titleValues[self] ?? "orchestrator.apply.step.finalizing")
     }
 }

@@ -48,7 +48,9 @@ struct OrchestratorSpendHeader: View {
 
     private func quotaChip(_ warning: QuotaWarning, now: Date) -> some View {
         let name = AgentLabels.name(for: warning.agent)
-        let resets = warning.resetsAt.map { QuotaWarning.countdown(to: $0, now: now) ?? String(localized: "orchestrator.quotaResetsNow") } ?? "—"
+        let resets = warning.resetsAt.map {
+            QuotaWarning.countdown(to: $0, now: now) ?? String(localized: "orchestrator.quotaResetsNow")
+        } ?? "—"
         let title = warning.rateLimited
             ? String(format: String(localized: "orchestrator.quotaRateLimitedTitle"), name)
             : String(format: String(localized: "orchestrator.quotaWarningTitle"), name, warning.used)

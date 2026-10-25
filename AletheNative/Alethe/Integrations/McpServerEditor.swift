@@ -47,7 +47,8 @@ struct McpServerEditor: View {
     private func close() { if let closeOverlay { closeOverlay() } else { dismiss() } }
 
     private var webBody: some View {
-        ModalsM2WebModal(title: Text((editing == nil ? "mcp.add.title" : "mcp.edit.title") as LocalizedStringKey), close: close, width: 620) {
+        ModalsM2WebModal(title: Text((editing == nil ? "mcp.add.title" : "mcp.edit.title") as LocalizedStringKey),
+            close: close, width: 620) {
             VStack(alignment: .leading, spacing: metrics.size(12)) {
                 if editing == nil {
                     ModalsM2Segments(selection: $source, options: [(.registry, "mcp.add.registry"), (.manual, "mcp.add.manual")])
@@ -139,12 +140,11 @@ struct McpServerEditor: View {
             if let stale = page?.staleSince {
                 note(format("mcp.registry.stale", stale.formatted(date: .abbreviated, time: .shortened)))
             }
-            switch registryState {
-            case .loading:
+            if case .loading = registryState {
                 ProgressView().frame(maxWidth: .infinity)
-            case .offline:
+            } else if case .offline = registryState {
                 note(String(localized: "mcp.registry.offline")).accessibilityIdentifier("mcp.registry.offline")
-            case .idle:
+            } else if case .idle = registryState {
                 if filtered.isEmpty {
                     note(String(localized: "mcp.registry.noResults"))
                 } else {
@@ -161,10 +161,12 @@ struct McpServerEditor: View {
 
     private var filtered: [McpCatalogEntry] {
         entries.filter { entry in
-            switch filter {
-            case .all: true
-            case .local: entry.installs.contains { $0.kind == .stdio }
-            case .remote: entry.installs.contains { $0.kind != .stdio }
+            if case .all = filter {
+                return true
+            } else if case .local = filter {
+                return entry.installs.contains { $0.kind == .stdio }
+            } else {
+                return entry.installs.contains { $0.kind != .stdio }
             }
         }
     }
@@ -197,7 +199,8 @@ struct McpServerEditor: View {
         }
         .padding(metrics.space(.m))
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme[metrics.isWebInterface ? .bgSunken : .surfaceCardDefault], in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
+        .background(theme[metrics.isWebInterface ? .bgSunken : .surfaceCardDefault],
+            in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("mcp.registry.entry.\(entry.id)")
     }

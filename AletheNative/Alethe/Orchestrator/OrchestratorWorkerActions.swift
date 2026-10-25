@@ -13,14 +13,14 @@ struct OrchestratorWorkerActions: View {
     let units: BoardUnits
 
     @Environment(AppEnvironment.self) private var environment
-    @Environment(\.theme) private var theme
+    @Environment(\.theme) var theme
     @State private var answering = false
     @State private var draft = ""
     @State private var sending = false
     @State private var busy = false
     @State private var confirmingCancel = false
     @State private var diffOpen = false
-    @State private var diff: WorkerDiffState = .idle
+    @State var diff: WorkerDiffState = .idle
     @State private var failure: WorkerActionFailure? {
         didSet { if let failure, failure != oldValue { AppLog.shown(failure.logLine, .orchestrator) } }
     }
@@ -76,17 +76,7 @@ struct OrchestratorWorkerActions: View {
                 .font(units.font(.footnote).weight(.medium))
                 .foregroundStyle(theme[.textPrimary])
             if let command = ask.command {
-                Text(verbatim: command)
-                    .font(units.font(.caption).monospaced())
-                    .foregroundStyle(theme[.textPrimary])
-                    .lineLimit(4)
-                    .textSelection(.enabled)
-                    .padding(.horizontal, units.space(.s))
-                    .padding(.vertical, units.space(.xxs))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(theme[.bgSunken], in: RoundedRectangle(cornerRadius: units.radius(.sm)))
-                    .help(Text(verbatim: command))
-                    .accessibilityIdentifier("orchestrator.worker.\(job.id).askCommand")
+                askCommand(command)
             }
             if let reason = ask.reason {
                 Text(verbatim: reason)
@@ -129,6 +119,20 @@ struct OrchestratorWorkerActions: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("orchestrator.worker.\(job.id).ask")
+    }
+
+    private func askCommand(_ command: String) -> some View {
+        Text(verbatim: command)
+            .font(units.font(.caption).monospaced())
+            .foregroundStyle(theme[.textPrimary])
+            .lineLimit(4)
+            .textSelection(.enabled)
+            .padding(.horizontal, units.space(.s))
+            .padding(.vertical, units.space(.xxs))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme[.bgSunken], in: RoundedRectangle(cornerRadius: units.radius(.sm)))
+            .help(Text(verbatim: command))
+            .accessibilityIdentifier("orchestrator.worker.\(job.id).askCommand")
     }
 
     private func answer(_ decision: CodexApprovalDecision) {
@@ -289,81 +293,6 @@ struct OrchestratorWorkerActions: View {
         diff = .loaded(document)
     }
 
-    @ViewBuilder private var diffView: some View {
-        Group {
-            switch diff {
-            case .idle, .loading:
-                Text("orchestrator.diffLoading")
-                    .font(units.font(.caption))
-                    .foregroundStyle(theme[.textTertiary])
-                    .padding(units.space(.s))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            case .loaded(let document) where document.isEmpty:
-                Text("diff.empty")
-                    .font(units.font(.caption))
-                    .foregroundStyle(theme[.textTertiary])
-                    .padding(units.space(.s))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            case .loaded(let document):
-                ScrollView([.vertical, .horizontal]) {
-                    LazyVStack(alignment: .leading, spacing: 0) {
-                        ForEach(document.files) { file in
-                            diffFile(file)
-                        }
-                    }
-                    .font(units.font(.caption).monospaced())
-                    .textSelection(.enabled)
-                }
-                .frame(height: diffHeight(document))
-            }
-        }
-        .background(theme[.bg], in: RoundedRectangle(cornerRadius: units.radius(.sm)))
-        .clipShape(RoundedRectangle(cornerRadius: units.radius(.sm)))
-        .overlay { RoundedRectangle(cornerRadius: units.radius(.sm)).strokeBorder(theme[.borderSubtle], lineWidth: 1) }
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("orchestrator.worker.\(job.id).diff")
-    }
-
-    @ViewBuilder private func diffFile(_ file: DiffFile) -> some View {
-        Text(verbatim: file.path)
-            .font(units.font(.caption).weight(.semibold))
-            .foregroundStyle(theme[.textPrimary])
-            .padding(.horizontal, units.space(.s))
-            .padding(.vertical, units.space(.xxs))
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme[.bgElevated])
-        ForEach(Array(file.hunks.enumerated()), id: \.offset) { _, hunk in
-            Text(verbatim: hunk.header)
-                .foregroundStyle(theme[.accent])
-                .padding(.horizontal, units.space(.s))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(theme[.accentFaint])
-            ForEach(Array(hunk.lines.enumerated()), id: \.offset) { _, line in
-                Text(verbatim: WorkerActions.diffText(line))
-                    .foregroundStyle(theme[line.kind == .note ? .textTertiary : .textPrimary])
-                    .fixedSize()
-                    .padding(.horizontal, units.space(.s))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(diffBackground(line.kind))
-            }
-        }
-    }
-
-    private func diffBackground(_ kind: DiffLine.Kind) -> Color {
-        switch kind {
-        case .added: theme[.statusActive].opacity(0.14)
-        case .removed: theme[.statusStopped].opacity(0.14)
-        case .context, .note: .clear
-        }
-    }
-
-    private func diffHeight(_ document: DiffDocument) -> CGFloat {
-        let rows = document.files.reduce(0) { total, file in
-            total + 1 + file.hunks.reduce(0) { $0 + 1 + $1.lines.count }
-        }
-        return units.size(CGFloat(min(rows, 18)) * 14 + 4)
-    }
-
     private func failureView(_ failure: WorkerActionFailure) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: units.space(.xs)) {
             Image(systemName: "exclamationmark.octagon.fill").accessibilityHidden(true)
@@ -403,157 +332,5 @@ struct OrchestratorWorkerActions: View {
         .buttonStyle(.plain)
         .help(help.map { Text($0) } ?? Text(verbatim: ""))
         .accessibilityIdentifier(id)
-    }
-}
-
-enum WorkerActions {
-    static func canMessage(_ job: JobSnapshot) -> Bool {
-        if job.native { return false }
-        switch job.status {
-        case .cancelled: return false
-        case .interrupted, .released: return job.threadID != nil
-        default: return true
-        }
-    }
-
-    static func canCancel(_ job: JobSnapshot) -> Bool {
-        !job.native && !job.status.settled
-    }
-
-    static func cancelAsks(_ job: JobSnapshot) -> Bool {
-        job.status == .running || job.status == .blocked
-    }
-
-    static func canRelease(_ job: JobSnapshot) -> Bool {
-        guard !job.native else { return false }
-        switch job.status {
-        case .done, .failed, .interrupted: return true
-        default: return false
-        }
-    }
-
-    static func elsewhere(ask: WorkerAsk, job: JobSnapshot) -> String? {
-        guard let cwd = ask.cwd, !cwd.isEmpty else { return nil }
-        let own = standardized(job.cwd)
-        let asked = standardized(cwd)
-        if asked == own || asked.hasPrefix(own.hasSuffix("/") ? own : own + "/") { return nil }
-        return cwd
-    }
-
-    private static func standardized(_ path: String) -> String {
-        URL(filePath: (path as NSString).expandingTildeInPath).standardizedFileURL.resolvingSymlinksInPath().path
-    }
-
-    static func diffText(_ line: DiffLine) -> String {
-        switch line.kind {
-        case .added: "+" + line.text
-        case .removed: "-" + line.text
-        case .context: " " + line.text
-        case .note: line.text
-        }
-    }
-}
-
-enum WorkerMessageMode: String {
-    case steer, resume, next
-
-    init(_ job: JobSnapshot) {
-        switch job.status {
-        case .running: self = .steer
-        case .interrupted, .released: self = .resume
-        default: self = .next
-        }
-    }
-
-    var placeholder: LocalizedStringKey {
-        switch self {
-        case .steer: "orchestrator.steerPlaceholder"
-        case .resume: "orchestrator.resumePlaceholder"
-        case .next: "orchestrator.sendPlaceholder"
-        }
-    }
-
-    var label: LocalizedStringKey {
-        switch self {
-        case .steer: "orchestrator.modeSteer"
-        case .resume: "orchestrator.modeResume"
-        case .next: "orchestrator.modeNext"
-        }
-    }
-
-    var hint: LocalizedStringKey {
-        switch self {
-        case .steer: "orchestrator.steerHint"
-        case .resume: "orchestrator.resumeHint"
-        case .next: "orchestrator.sendHint"
-        }
-    }
-}
-
-struct WorkerAsk: Equatable {
-    var kind: CodexApprovalRequest.Kind
-    var command: String?
-    var cwd: String?
-    var reason: String?
-
-    init?(_ job: JobSnapshot) {
-        guard let object = job.pendingApproval?.objectValue else { return nil }
-        kind = object["kind"]?.stringValue.flatMap(CodexApprovalRequest.Kind.init(rawValue:)) ?? .command
-        command = object["command"]?.stringValue.flatMap { $0.isEmpty ? nil : $0 }
-        cwd = object["cwd"]?.stringValue.flatMap { $0.isEmpty ? nil : $0 }
-        reason = object["reason"]?.stringValue.flatMap { $0.isEmpty ? nil : $0 }
-    }
-}
-
-struct WorkerDecision: Identifiable {
-    let decision: CodexApprovalDecision
-    let label: LocalizedStringKey
-    let hint: LocalizedStringKey
-    var id: String { decision.rawValue }
-
-    static var all: [WorkerDecision] {
-        [
-            WorkerDecision(decision: .accept, label: "orchestrator.answerAccept", hint: "orchestrator.answerAcceptTitle"),
-            WorkerDecision(decision: .acceptForSession, label: "orchestrator.answerSession", hint: "orchestrator.answerSessionTitle"),
-            WorkerDecision(decision: .decline, label: "orchestrator.answerDecline", hint: "orchestrator.answerDeclineTitle"),
-            WorkerDecision(decision: .abort, label: "orchestrator.answerAbort", hint: "orchestrator.answerAbortTitle"),
-        ]
-    }
-}
-
-enum WorkerDiffState: Equatable {
-    case idle, loading
-    case loaded(DiffDocument)
-}
-
-struct WorkerActionFailure: Equatable {
-    var title: String
-    var detail: String
-
-    init(title: String, detail: String) {
-        self.title = title
-        self.detail = detail
-    }
-
-    init(title: String, error: any Error) {
-        self.title = title
-        detail = (error as? OrchestratorToolError)?.message ?? error.localizedDescription
-    }
-
-    var logLine: String { "\(title): \(detail)" }
-}
-
-extension OrchestratorService {
-    func cancel(job: String) async throws -> OrderedJSON {
-        try await boardTool("alethe_cancel", ["jobIds": .array([.string(job)])])
-    }
-
-    func release(job: String) async throws -> OrderedJSON {
-        try await boardTool("alethe_release", ["jobIds": .array([.string(job)])])
-    }
-
-    private func boardTool(_ name: String, _ arguments: OrderedJSONObject) async throws -> OrderedJSON {
-        guard let core = await prepared() else { throw OrchestratorToolError("the orchestrator is not running") }
-        return try await core.callTool(name: name, arguments: arguments, planner: nil)
     }
 }

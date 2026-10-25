@@ -103,22 +103,34 @@ final class NowPlayingController {
     }
 
     static func message(_ error: SpotifyError) -> String {
-        switch error {
-        case .missingCredentials: String(localized: "spotify.error.missingCredentials")
-        case .loginInProgress: String(localized: "spotify.error.loginInProgress")
-        case .portBusy: String(localized: "spotify.error.portBusy")
-        case .browserUnavailable: String(localized: "spotify.error.browser")
-        case .timedOut: String(localized: "spotify.error.timedOut")
-        case .cancelled: String(localized: "spotify.error.cancelled")
-        case .stateMismatch: String(localized: "spotify.error.stateMismatch")
-        case .authorizationDenied: String(localized: "spotify.error.denied")
-        case .refreshRejected: String(localized: "spotify.error.refreshRejected")
-        case .network: String(localized: "spotify.error.network")
-        case .secretStore: String(localized: "spotify.error.keychain")
-        case .tokenRequestFailed(let status, _), .requestFailed(let status):
-            String(format: String(localized: "spotify.error.status"), status)
-        case .listenerFailed, .missingCode, .missingRefreshToken, .invalidResponse:
-            String(localized: "spotify.error.generic")
+        if case .missingCredentials = error {
+            return String(localized: "spotify.error.missingCredentials")
+        } else if case .loginInProgress = error {
+            return String(localized: "spotify.error.loginInProgress")
+        } else if case .portBusy = error {
+            return String(localized: "spotify.error.portBusy")
+        } else if case .browserUnavailable = error {
+            return String(localized: "spotify.error.browser")
+        } else if case .timedOut = error {
+            return String(localized: "spotify.error.timedOut")
+        } else if case .cancelled = error {
+            return String(localized: "spotify.error.cancelled")
+        } else if case .stateMismatch = error {
+            return String(localized: "spotify.error.stateMismatch")
+        } else if case .authorizationDenied = error {
+            return String(localized: "spotify.error.denied")
+        } else if case .refreshRejected = error {
+            return String(localized: "spotify.error.refreshRejected")
+        } else if case .network = error {
+            return String(localized: "spotify.error.network")
+        } else if case .secretStore = error {
+            return String(localized: "spotify.error.keychain")
+        } else if case .tokenRequestFailed(let status, _) = error {
+            return String(format: String(localized: "spotify.error.status"), status)
+        } else if case .requestFailed(let status) = error {
+            return String(format: String(localized: "spotify.error.status"), status)
+        } else {
+            return String(localized: "spotify.error.generic")
         }
     }
 }

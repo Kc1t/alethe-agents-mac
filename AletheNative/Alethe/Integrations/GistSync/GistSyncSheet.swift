@@ -30,7 +30,8 @@ struct GistSyncSheet: View {
     }
 
     private var webBody: some View {
-        ModalsM2WebModal(title: Text("modalsM2.sync.title"), close: { if let closeOverlay { closeOverlay() } else { dismiss() } }, width: 580) {
+        ModalsM2WebModal(title: Text("modalsM2.sync.title"),
+            close: { if let closeOverlay { closeOverlay() } else { dismiss() } }, width: 580) {
             VStack(alignment: .leading, spacing: metrics.size(14)) {
                 Text("modalsM2.sync.subtitle").font(metrics.font(size: 12)).foregroundStyle(theme[.fgMuted])
                 HStack(alignment: .top, spacing: metrics.size(12)) {
@@ -94,7 +95,8 @@ struct GistSyncSheet: View {
                     }
                     .padding(metrics.size(10))
                     .background(theme[.statusWaitingSoft], in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
-                    .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.statusWaiting], lineWidth: metrics.size(1)))
+                    .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md))
+                        .strokeBorder(theme[.statusWaiting], lineWidth: metrics.size(1)))
                 }
                 VStack(alignment: .leading, spacing: metrics.size(2)) {
                     Text(verbatim: when("gistSync.lastPush", sync.status?.lastPushAt)).accessibilityIdentifier("gistSync.lastPush")
@@ -198,7 +200,8 @@ struct GistSyncSheet: View {
             pullStarted = true
             sync.confirmPull()
         }
-        .confirmationDialog(Text("gistSync.pull.confirm"), isPresented: Binding(get: { !metrics.isWebInterface && askingPull }, set: { askingPull = $0 })) {
+        .confirmationDialog(Text("gistSync.pull.confirm"),
+            isPresented: Binding(get: { !metrics.isWebInterface && askingPull }, set: { askingPull = $0 })) {
             Button("gistSync.pull.action", role: .destructive) {
                 pullStarted = true
                 sync.confirmPull()

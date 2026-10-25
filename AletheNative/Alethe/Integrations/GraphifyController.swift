@@ -93,19 +93,17 @@ final class GraphifyController {
 
     private func finished(_ root: URL, _ outcome: GraphifyGenerationOutcome, action: String) {
         generating.remove(root)
-        switch outcome {
-        case .generated:
+        if case .generated = outcome {
             failures[root] = nil
             revisions[root, default: 0] += 1
             events.publish(.graphGenerated(repository: root.path, action: action))
-        case .failed(let message):
+        } else if case .failed(let message) = outcome {
             failures[root] = message.isEmpty ? String(localized: "graphify.generationFailed") : message
             AppLog.record(.warning, .integrations, "Graphify generation failed: \(message)")
-        case .timedOut:
+        } else if case .timedOut = outcome {
             failures[root] = String(localized: "graphify.generationTimedOut")
             AppLog.record(.warning, .integrations, "Graphify generation timed out")
-        case .cancelled:
-            break
+        } else if case .cancelled = outcome {
         }
     }
 

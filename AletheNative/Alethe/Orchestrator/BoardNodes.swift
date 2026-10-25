@@ -90,10 +90,12 @@ struct BoardRunNode: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        let fill: ThemeToken = switch run.state {
-        case .failed: .statusOfflineSoft
-        case .blocked: .statusWaitingSoft
-        default: .bgElevated
+        let fill: ThemeToken = if case .failed = run.state {
+            .statusOfflineSoft
+        } else if case .blocked = run.state {
+            .statusWaitingSoft
+        } else {
+            .bgElevated
         }
         BoardCard(units: units, fill: fill, border: .borderStrong) {
             Button(action: onClick) {
@@ -158,10 +160,12 @@ struct BoardWorkerNode: View {
 
     var body: some View {
         let lane = RunLane(job.status)
-        let fill: ThemeToken = switch job.status {
-        case .failed: .statusOfflineSoft
-        case .blocked: .statusWaitingSoft
-        default: .bgElevated
+        let fill: ThemeToken = if case .failed = job.status {
+            .statusOfflineSoft
+        } else if case .blocked = job.status {
+            .statusWaitingSoft
+        } else {
+            .bgElevated
         }
         let share = BoardFormat.contextShare(job)
         BoardCard(units: units, fill: fill, border: lane == .finished ? .borderSubtle : .border, selected: selected) {
@@ -404,20 +408,19 @@ struct BoardMediaNode: View {
     }
 
     @ViewBuilder private var preview: some View {
-        switch item.kind {
-        case .imageLocal:
+        if case .imageLocal = item.kind {
             if let thumbnail {
                 Image(decorative: thumbnail.image, scale: 1).resizable().scaledToFill()
             } else {
                 Image(systemName: "photo").foregroundStyle(theme[.textTertiary])
             }
-        case .imageURL:
+        } else if case .imageURL = item.kind {
             AsyncImage(url: URL(string: item.value)) { image in
                 image.resizable().scaledToFill()
             } placeholder: {
                 Image(systemName: "photo").foregroundStyle(theme[.textTertiary])
             }
-        case .link:
+        } else if case .link = item.kind {
             Image(systemName: "globe").foregroundStyle(theme[.textTertiary])
         }
     }

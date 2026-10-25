@@ -180,13 +180,12 @@ final class Router9Controller {
 
     func command(for action: InstallAction) async -> String? {
         guard let service else { return nil }
-        switch action {
-        case .install:
+        if case .install = action {
             do throws(Router9Error) { return try await service.installCommand() } catch {
                 failure = .service(error)
                 return nil
             }
-        case .uninstall:
+        } else {
             return service.uninstallCommand()
         }
     }

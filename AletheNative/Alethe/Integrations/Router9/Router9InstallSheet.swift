@@ -96,16 +96,17 @@ struct Router9InstallSheet: View {
 
     @ViewBuilder
     private var webResult: some View {
-        switch installer.status {
-        case .succeeded:
+        if case .succeeded = installer.status {
             Text(installing ? "router9.web.installDone" : "router9.web.uninstallDone")
                 .font(metrics.font(size: 13)).foregroundStyle(theme[.statusWorking])
                 .accessibilityIdentifier("router9.install.succeeded")
-        case .failed:
+        } else if case .failed = installer.status {
             Text(installing ? "router9.web.installFailed" : "router9.web.uninstallFailed")
                 .font(metrics.font(size: 13)).foregroundStyle(theme[.statusOffline])
                 .accessibilityIdentifier("router9.install.failed")
-        case .running, .idle:
+        } else if case .running = installer.status {
+            EmptyView()
+        } else if case .idle = installer.status {
             EmptyView()
         }
     }
@@ -205,18 +206,17 @@ struct Router9InstallSheet: View {
 
     @ViewBuilder
     private var result: some View {
-        switch installer.status {
-        case .succeeded:
+        if case .succeeded = installer.status {
             Label(installing ? "router9.install.succeeded" : "router9.uninstall.succeeded", systemImage: "checkmark.circle.fill")
                 .foregroundStyle(theme[.statusActive])
                 .accessibilityIdentifier("router9.install.succeeded")
-        case .failed:
+        } else if case .failed = installer.status {
             Label("router9.install.failed", systemImage: "exclamationmark.triangle.fill")
                 .foregroundStyle(theme[.statusStopped])
                 .accessibilityIdentifier("router9.install.failed")
-        case .running:
+        } else if case .running = installer.status {
             ProgressView().controlSize(.small)
-        case .idle:
+        } else if case .idle = installer.status {
             EmptyView()
         }
     }

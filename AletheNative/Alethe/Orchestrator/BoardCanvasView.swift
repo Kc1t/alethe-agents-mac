@@ -191,8 +191,8 @@ struct BoardCanvasView: View {
     }
 }
 
-private extension BoardBox {
-    func intersects(_ other: BoardBox) -> Bool {
+extension BoardBox {
+    fileprivate func intersects(_ other: BoardBox) -> Bool {
         x < other.x + other.width && other.x < x + width && y < other.y + other.height && other.y < y + height
     }
 }
@@ -218,8 +218,8 @@ private struct BoardNodesLayout: Layout {
     }
 }
 
-private extension View {
-    func boardNode(_ node: GraphNode, view: ViewTransform, ui: Double, units: BoardUnits,
+extension View {
+    fileprivate func boardNode(_ node: GraphNode, view: ViewTransform, ui: Double, units: BoardUnits,
                    board: OrchestratorBoardModel) -> some View {
         let unit = Double(units.unit)
         let frame = CGRect(
@@ -291,16 +291,15 @@ private struct BoardEdgesCanvas: View {
     private func draw(_ edge: GraphEdge, in context: inout GraphicsContext, phase: Double) {
         var path = Path()
         for step in edge.steps {
-            switch step {
-            case .move(let point):
+            if case .move(let point) = step {
                 path.move(to: screen(point))
-            case .vertical(let y):
+            } else if case .vertical(let y) = step {
                 let current = path.currentPoint ?? .zero
                 path.addLine(to: CGPoint(x: current.x, y: screen(BoardPoint(x: 0, y: y)).y))
-            case .horizontal(let x):
+            } else if case .horizontal(let x) = step {
                 let current = path.currentPoint ?? .zero
                 path.addLine(to: CGPoint(x: screen(BoardPoint(x: x, y: 0)).x, y: current.y))
-            case .quad(let control, let to):
+            } else if case .quad(let control, let to) = step {
                 path.addQuadCurve(to: screen(to), control: screen(control))
             }
         }
@@ -310,24 +309,23 @@ private struct BoardEdgesCanvas: View {
         var cap = CGLineCap.butt
         var opacity = 0.7
         let token: ThemeToken
-        switch edge.lane {
-        case .finished:
+        if case .finished = edge.lane {
             token = .fgFaint
-        case .queued:
+        } else if case .queued = edge.lane {
             token = .statusWaiting
             dash = [3, 4]
-        case .interrupted:
+        } else if case .interrupted = edge.lane {
             token = .statusWaiting
             dash = [1, 4]
             cap = .round
-        case .running:
+        } else if case .running = edge.lane {
             token = .statusWorking
             width = 1.6
             dash = [7, 5]
-        case .failed:
+        } else if case .failed = edge.lane {
             token = .statusOffline
             width = 1.4
-        case .blocked:
+        } else {
             token = .statusWaiting
             width = 2
             opacity = 1

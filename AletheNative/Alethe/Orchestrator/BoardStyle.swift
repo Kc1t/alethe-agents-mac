@@ -15,56 +15,64 @@ struct BoardUnits {
 }
 
 extension RunLane {
+    private static let tokenValues: [RunLane: ThemeToken] = [
+        .running: .statusWorking,
+        .queued: .statusWaiting,
+        .interrupted: .statusWaiting,
+        .blocked: .statusWaiting,
+        .failed: .statusOffline,
+    ]
+
     var token: ThemeToken {
-        switch self {
-        case .running: .statusWorking
-        case .queued, .interrupted, .blocked: .statusWaiting
-        case .failed: .statusOffline
-        case .finished: .statusStopped
-        }
+        Self.tokenValues[self] ?? .statusStopped
     }
+
+    private static let titleValues: [RunLane: String] = [
+        .blocked: "orchestrator.lane.blocked",
+        .running: "orchestrator.lane.running",
+        .queued: "orchestrator.lane.queued",
+        .interrupted: "orchestrator.lane.interrupted",
+        .failed: "orchestrator.lane.failed",
+    ]
 
     var title: LocalizedStringKey {
-        switch self {
-        case .blocked: "orchestrator.lane.blocked"
-        case .running: "orchestrator.lane.running"
-        case .queued: "orchestrator.lane.queued"
-        case .interrupted: "orchestrator.lane.interrupted"
-        case .failed: "orchestrator.lane.failed"
-        case .finished: "orchestrator.lane.finished"
-        }
+        LocalizedStringKey(Self.titleValues[self] ?? "orchestrator.lane.finished")
     }
 
+    private static let explanationValues: [RunLane: String] = [
+        .blocked: "orchestrator.blockedTitle",
+        .interrupted: "orchestrator.interruptedTitle",
+    ]
+
     var explanation: LocalizedStringKey? {
-        switch self {
-        case .blocked: "orchestrator.blockedTitle"
-        case .interrupted: "orchestrator.interruptedTitle"
-        default: nil
-        }
+        Self.explanationValues[self].map { LocalizedStringKey($0) }
     }
 }
 
 extension JobStatus {
+    private static let titleValues: [JobStatus: String] = [
+        .queued: "orchestrator.status.queued",
+        .running: "orchestrator.status.running",
+        .blocked: "orchestrator.status.blocked",
+        .done: "orchestrator.status.done",
+        .failed: "orchestrator.status.failed",
+        .cancelled: "orchestrator.status.cancelled",
+        .released: "orchestrator.status.released",
+    ]
+
     var title: LocalizedStringKey {
-        switch self {
-        case .queued: "orchestrator.status.queued"
-        case .running: "orchestrator.status.running"
-        case .blocked: "orchestrator.status.blocked"
-        case .done: "orchestrator.status.done"
-        case .failed: "orchestrator.status.failed"
-        case .cancelled: "orchestrator.status.cancelled"
-        case .released: "orchestrator.status.released"
-        case .interrupted: "orchestrator.status.interrupted"
-        }
+        LocalizedStringKey(Self.titleValues[self] ?? "orchestrator.status.interrupted")
     }
 }
 
 extension RunAttention {
     var text: String {
-        let key: String.LocalizationValue = switch lane {
-        case .blocked: "orchestrator.runBlocked"
-        case .failed: "orchestrator.runFailed"
-        case .interrupted: "orchestrator.runInterrupted"
+        let key: String.LocalizationValue = if case .blocked = lane {
+            "orchestrator.runBlocked"
+        } else if case .failed = lane {
+            "orchestrator.runFailed"
+        } else {
+            "orchestrator.runInterrupted"
         }
         return String(format: String(localized: key), count)
     }

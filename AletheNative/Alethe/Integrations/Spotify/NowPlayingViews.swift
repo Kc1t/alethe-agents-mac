@@ -232,7 +232,8 @@ struct SidebarNowPlaying: View {
         .padding(.vertical, metrics.isWebInterface ? 0 : metrics.space(.s))
         .frame(height: metrics.isWebInterface ? metrics.size(40) : nil)
         .overlay(alignment: .top) {
-            Rectangle().fill(theme[metrics.isWebInterface ? .border : .borderSubtle]).frame(height: metrics.isWebInterface ? metrics.size(1) : 1)
+            Rectangle().fill(theme[metrics.isWebInterface ? .border : .borderSubtle])
+                .frame(height: metrics.isWebInterface ? metrics.size(1) : 1)
         }
         .help(Text(verbatim: NowPlayingText.summary(track)))
         .accessibilityElement(children: .ignore)
@@ -345,7 +346,8 @@ private struct CoverArt: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: sidebarWeb ? metrics.size(3) : metrics.radius(.sm)).fill(theme[sidebarWeb ? .bgElevated : .bgSunken])
+            RoundedRectangle(cornerRadius: sidebarWeb ? metrics.size(3) : metrics.radius(.sm))
+                .fill(theme[sidebarWeb ? .bgElevated : .bgSunken])
             if let image {
                 Image(nsImage: image)
                     .resizable()
@@ -409,8 +411,8 @@ private actor CoverArtCache {
     }
 }
 
-private extension View {
-    func nowPlayingVisibility(_ model: NowPlayingModel) -> some View {
+extension View {
+    fileprivate func nowPlayingVisibility(_ model: NowPlayingModel) -> some View {
         onAppear { model.viewAppeared() }
             .onDisappear { model.viewDisappeared() }
     }

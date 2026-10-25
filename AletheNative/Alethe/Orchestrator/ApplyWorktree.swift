@@ -16,9 +16,12 @@ enum ApplyWorktreePhase: Equatable {
     case failed(String)
 
     var isBusy: Bool {
-        switch self {
-        case .previewing, .running: true
-        default: false
+        if case .previewing = self {
+            return true
+        } else if case .running = self {
+            return true
+        } else {
+            return false
         }
     }
 }
@@ -45,9 +48,10 @@ final class ApplyWorktreeCenter {
                 do { return .success(try await apply.preview(worktree: worktree, agentID: id)) } catch { return .failure(error) }
             }.value
             guard self.isCurrent(id, generation) else { return }
-            switch result {
-            case .success(let preview): self.phases[id] = .confirming(preview)
-            case .failure(let error): self.fail(id, error)
+            if case .success(let preview) = result {
+                self.phases[id] = .confirming(preview)
+            } else if case .failure(let error) = result {
+                self.fail(id, error)
             }
         }
     }
@@ -67,32 +71,38 @@ final class ApplyWorktreeCenter {
             let outcome = await withTaskCancellationHandler { await work.value } onCancel: { work.cancel() }
             guard self.isCurrent(job, generation) else { return }
             self.tasks[job] = nil
-            switch outcome {
-            case .success(let result):
+            if case .success(let result) = outcome {
                 Self.publish(result, preview: preview, projectID: projectID, to: events)
                 self.finish(job, result, preview: preview, openMergeCenter: openMergeCenter)
-            case .failure(let error):
+            } else if case .failure(let error) = outcome {
                 self.fail(job, error)
             }
         }
     }
 
     func cancel(_ job: String) {
-        switch phase(job) {
-        case .previewing, .confirming:
+        let matchedValue = phase(job)
+        if case .previewing = matchedValue {
             stop(job)
             phases[job] = nil
-        case .running(let step) where step.isCancelable:
+        } else if case .confirming = matchedValue {
+            stop(job)
+            phases[job] = nil
+        } else if case .running(let step) = matchedValue, step.isCancelable {
             tasks[job]?.cancel()
-        default:
-            break
+        } else {
         }
     }
 
     func dismiss(_ job: String) {
-        switch phase(job) {
-        case .failed, .nothingToApply, .handedOff: phases[job] = nil
-        default: break
+        let matchedValue = phase(job)
+        if case .failed = matchedValue {
+            phases[job] = nil
+        } else if case .nothingToApply = matchedValue {
+            phases[job] = nil
+        } else if case .handedOff = matchedValue {
+            phases[job] = nil
+        } else {
         }
     }
 
@@ -119,17 +129,16 @@ final class ApplyWorktreeCenter {
 
     private func finish(_ job: String, _ result: WorktreeApplyResult, preview: WorktreeApplyPreview,
                         openMergeCenter: @MainActor (String) -> Void) {
-        switch result.outcome {
-        case .applied:
+        if case .applied = result.outcome {
             phases[job] = .applied(target: preview.target)
-        case .nothingToApply:
+        } else if case .nothingToApply = result.outcome {
             phases[job] = .nothingToApply
-        case .cancelled:
+        } else if case .cancelled = result.outcome {
             phases[job] = nil
-        case .conflicted(let environment):
+        } else if case .conflicted(let environment) = result.outcome {
             phases[job] = .handedOff(environmentID: environment)
             openMergeCenter(environment)
-        case .notMerged(let environment, let stage, let output):
+        } else if case .notMerged(let environment, let stage, let output) = result.outcome {
             AppLog.shown("Applying \(job) stopped at \(stage.rawValue): \(output)", .orchestrator, level: .warning)
             phases[job] = .handedOff(environmentID: environment)
             openMergeCenter(environment)
@@ -144,15 +153,14 @@ final class ApplyWorktreeCenter {
     }
 
     static func describe(_ error: Error) -> String {
-        switch error {
-        case WorktreeApplyError.detachedTarget:
-            String(localized: "orchestrator.apply.error.detached")
-        case WorktreeApplyError.sameBranch(let branch):
-            String(format: String(localized: "orchestrator.apply.error.sameBranch"), branch)
-        case GitWorktreeError.notFound:
-            String(localized: "orchestrator.apply.error.gone")
-        default:
-            String(describing: error)
+        if case WorktreeApplyError.detachedTarget = error {
+            return String(localized: "orchestrator.apply.error.detached")
+        } else if case WorktreeApplyError.sameBranch(let branch) = error {
+            return String(format: String(localized: "orchestrator.apply.error.sameBranch"), branch)
+        } else if case GitWorktreeError.notFound = error {
+            return String(localized: "orchestrator.apply.error.gone")
+        } else {
+            return String(describing: error)
         }
     }
 

@@ -117,10 +117,12 @@ struct SpotifySettingsSection: View {
 
     private var status: Text {
         if controller.isConnecting { return Text("nowPlaying.connecting") }
-        switch controller.model?.connected {
-        case true: return Text("settings.spotify.status.connected")
-        case false: return Text("settings.spotify.status.disconnected")
-        default: return Text(verbatim: "…")
+        if case true = controller.model?.connected {
+            return Text("settings.spotify.status.connected")
+        } else if case false = controller.model?.connected {
+            return Text("settings.spotify.status.disconnected")
+        } else {
+            return Text(verbatim: "…")
         }
     }
 

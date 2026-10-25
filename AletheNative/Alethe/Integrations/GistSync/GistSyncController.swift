@@ -80,10 +80,10 @@ final class GistSyncController {
 
     func pull() {
         run(.pull) { service in
-            switch try await service.pull() {
-            case .replacesProfile(let staged):
+            let matchedValue = try await service.pull()
+            if case .replacesProfile(let staged) = matchedValue {
                 self.confirmingPull = staged
-            case .tauriImport(let staged):
+            } else if case .tauriImport(let staged) = matchedValue {
                 self.tauriPull = staged
             }
         }
@@ -143,29 +143,41 @@ final class GistSyncController {
     }
 
     static func message(for error: any Error) -> String {
-        switch error {
-        case let failure as GistSyncError:
-            switch failure {
-            case .emptyToken: String(localized: "gistSync.error.emptyToken")
-            case .invalidToken: String(localized: "gistSync.error.invalidToken")
-            case .notConnected: String(localized: "gistSync.error.notConnected")
-            case .nothingToSync: String(localized: "gistSync.error.nothingToSync")
-            case .noRemote: String(localized: "gistSync.error.noRemote")
-            case .remoteMissingWorkspace: String(localized: "gistSync.error.remoteMissingWorkspace")
-            case .malformedGist: String(localized: "gistSync.error.malformedGist")
-            case .invalidRemoteFile(let name): String(format: String(localized: "gistSync.error.invalidFile"), name)
-            case .newerFormat: String(localized: "gistSync.error.newerFormat")
-            case .http(let status): String(format: String(localized: "gistSync.error.http"), status)
-            case .transport(let code):
-                String(format: String(localized: "gistSync.error.generic"),
-                       URLError(URLError.Code(rawValue: code)).localizedDescription)
-            }
-        case let failure as BackupError:
-            failure.localizedMessage
-        case let failure as ProfileError:
-            failure.localizedMessage
-        default:
-            String(format: String(localized: "gistSync.error.generic"), error.localizedDescription)
+        if let failure = error as? GistSyncError {
+            return message(for: failure)
+        } else if let failure = error as? BackupError {
+            return failure.localizedMessage
+        } else if let failure = error as? ProfileError {
+            return failure.localizedMessage
+        } else {
+            return String(format: String(localized: "gistSync.error.generic"), error.localizedDescription)
+        }
+    }
+
+    private static func message(for failure: GistSyncError) -> String {
+        if case .invalidToken = failure {
+            return String(localized: "gistSync.error.invalidToken")
+        } else if case .notConnected = failure {
+            return String(localized: "gistSync.error.notConnected")
+        } else if case .nothingToSync = failure {
+            return String(localized: "gistSync.error.nothingToSync")
+        } else if case .noRemote = failure {
+            return String(localized: "gistSync.error.noRemote")
+        } else if case .remoteMissingWorkspace = failure {
+            return String(localized: "gistSync.error.remoteMissingWorkspace")
+        } else if case .malformedGist = failure {
+            return String(localized: "gistSync.error.malformedGist")
+        } else if case .invalidRemoteFile(let name) = failure {
+            return String(format: String(localized: "gistSync.error.invalidFile"), name)
+        } else if case .newerFormat = failure {
+            return String(localized: "gistSync.error.newerFormat")
+        } else if case .http(let status) = failure {
+            return String(format: String(localized: "gistSync.error.http"), status)
+        } else if case .transport(let code) = failure {
+            return String(format: String(localized: "gistSync.error.generic"),
+                   URLError(URLError.Code(rawValue: code)).localizedDescription)
+        } else {
+            return String(localized: "gistSync.error.emptyToken")
         }
     }
 }

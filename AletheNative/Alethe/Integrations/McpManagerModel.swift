@@ -245,13 +245,12 @@ final class McpManagerModel {
             if !skipped.isEmpty { parts.append(format("mcp.note.skipped", Self.labels(skipped))) }
             var problems: [String] = []
             for outcome in outcomes {
-                switch outcome.status {
-                case .blocked(let fields):
+                if case .blocked(let fields) = outcome.status {
                     problems.append(format("mcp.sync.blocked", outcome.agent.label, fields.map(\.field).joined(separator: ", ")))
-                case .failed(let failure):
+                } else if case .failed(let failure) = outcome.status {
                     problems.append("\(outcome.agent.label): \(Self.describe(failure))")
-                case .written, .skipped:
-                    break
+                } else if case .written = outcome.status {
+                } else if case .skipped = outcome.status {
                 }
             }
             note = parts.isEmpty ? nil : parts.joined(separator: " ")
@@ -357,44 +356,58 @@ final class McpManagerModel {
         guard let error = error as? McpStoreError else {
             return error is CancellationError ? String(localized: "mcp.error.cancelled") : error.localizedDescription
         }
-        switch error {
-        case .unsupportedScope: return String(localized: "mcp.error.unsupportedScope")
-        case .notFound: return String(localized: "mcp.error.notFound")
-        case .invalidName: return String(localized: "mcp.error.invalidName")
-        case .invalidCommand: return String(localized: "mcp.error.invalidCommand")
-        case .invalidURL: return String(localized: "mcp.error.invalidURL")
-        case .unsupportedFields(let fields):
+        if case .unsupportedScope = error {
+            return String(localized: "mcp.error.unsupportedScope")
+        } else if case .notFound = error {
+            return String(localized: "mcp.error.notFound")
+        } else if case .invalidName = error {
+            return String(localized: "mcp.error.invalidName")
+        } else if case .invalidCommand = error {
+            return String(localized: "mcp.error.invalidCommand")
+        } else if case .invalidURL = error {
+            return String(localized: "mcp.error.invalidURL")
+        } else if case .unsupportedFields(let fields) = error {
             return format("mcp.error.unsupportedFields", fields.map(\.field).joined(separator: ", "))
-        case .selfCheckFailed: return String(localized: "mcp.error.selfCheck")
-        case .backupMismatch: return String(localized: "mcp.error.backupMismatch")
-        case .cancelled: return String(localized: "mcp.error.cancelled")
-        case .config(.jsoncUnsupported): return String(localized: "mcp.error.jsonc")
-        case .config(.unsupportedDisable): return String(localized: "mcp.error.unsupportedDisable")
-        case .config(let config): return format("mcp.error.config", config.description)
-        case .file(.changedSinceRead): return String(localized: "mcp.error.changed")
-        case .file: return format("mcp.error.file", error.description)
+        } else if case .selfCheckFailed = error {
+            return String(localized: "mcp.error.selfCheck")
+        } else if case .backupMismatch = error {
+            return String(localized: "mcp.error.backupMismatch")
+        } else if case .cancelled = error {
+            return String(localized: "mcp.error.cancelled")
+        } else if case .config(.jsoncUnsupported) = error {
+            return String(localized: "mcp.error.jsonc")
+        } else if case .config(.unsupportedDisable) = error {
+            return String(localized: "mcp.error.unsupportedDisable")
+        } else if case .config(let config) = error {
+            return format("mcp.error.config", config.description)
+        } else if case .file(.changedSinceRead) = error {
+            return String(localized: "mcp.error.changed")
+        } else {
+            return format("mcp.error.file", error.description)
         }
     }
 }
 
 extension McpAgent {
+    private static let labelValues: [McpAgent: String] = [
+        .claude: "Claude Code",
+        .codex: "Codex",
+        .cursor: "Cursor",
+        .opencode: "OpenCode",
+    ]
+
     var label: String {
-        switch self {
-        case .claude: "Claude Code"
-        case .codex: "Codex"
-        case .cursor: "Cursor"
-        case .opencode: "OpenCode"
-        case .antigravity: "Antigravity"
-        }
+        Self.labelValues[self] ?? "Antigravity"
     }
 
+    private static let colorTokenValues: [McpAgent: ThemeToken] = [
+        .claude: .agentClaude,
+        .codex: .agentCodex,
+        .cursor: .agentCursor,
+        .opencode: .agentOpencode,
+    ]
+
     var colorToken: ThemeToken {
-        switch self {
-        case .claude: .agentClaude
-        case .codex: .agentCodex
-        case .cursor: .agentCursor
-        case .opencode: .agentOpencode
-        case .antigravity: .agentAntigravity
-        }
+        Self.colorTokenValues[self] ?? .agentAntigravity
     }
 }

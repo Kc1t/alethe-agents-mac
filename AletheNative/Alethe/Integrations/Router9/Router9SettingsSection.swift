@@ -213,19 +213,26 @@ struct Router9SettingsSection: View {
     }
 
     private var stateText: String {
-        switch state {
-        case .probing: String(localized: "router9.state.probing")
-        case .off: String(localized: "router9.state.off")
-        case .ready: String(localized: "router9.state.ready")
-        case .running: String(format: String(localized: "router9.state.running"), Router9.baseURL(port: preferences.port))
+        if case .probing = state {
+            return String(localized: "router9.state.probing")
+        } else if case .off = state {
+            return String(localized: "router9.state.off")
+        } else if case .ready = state {
+            return String(localized: "router9.state.ready")
+        } else {
+            return String(format: String(localized: "router9.state.running"), Router9.baseURL(port: preferences.port))
         }
     }
 
     private var stateToken: ThemeToken {
-        switch state {
-        case .probing, .off: .statusDisabled
-        case .ready: .statusIdle
-        case .running: .statusActive
+        if case .probing = state {
+            return .statusDisabled
+        } else if case .off = state {
+            return .statusDisabled
+        } else if case .ready = state {
+            return .statusIdle
+        } else {
+            return .statusActive
         }
     }
 
@@ -287,17 +294,28 @@ struct Router9SettingsSection: View {
 
 extension Router9Controller.Failure {
     var message: String {
-        switch self {
-        case .keychain: String(localized: "router9.error.keychain")
-        case .service(let error):
-            switch error {
-            case .notInstalled: String(localized: "router9.error.notInstalled")
-            case .nodeNotFound: String(localized: "router9.error.node")
-            case .portInUse: String(localized: "router9.error.portInUse")
-            case .cancelled: String(localized: "router9.error.cancelled")
-            case .fileSystem(let detail), .spawnFailed(let detail):
-                String(format: String(localized: "router9.error.failed"), detail)
-            }
+        if case .service(let error) = self {
+            return Self.message(error)
         }
+        return String(localized: "router9.error.keychain")
+    }
+
+    private static func message(_ error: Router9Error) -> String {
+        if case .nodeNotFound = error {
+            return String(localized: "router9.error.node")
+        }
+        if case .portInUse = error {
+            return String(localized: "router9.error.portInUse")
+        }
+        if case .cancelled = error {
+            return String(localized: "router9.error.cancelled")
+        }
+        if case .fileSystem(let detail) = error {
+            return String(format: String(localized: "router9.error.failed"), detail)
+        }
+        if case .spawnFailed(let detail) = error {
+            return String(format: String(localized: "router9.error.failed"), detail)
+        }
+        return String(localized: "router9.error.notInstalled")
     }
 }

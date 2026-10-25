@@ -160,13 +160,14 @@ struct GSDSyncActivitySheet: View {
     }
 
     private static func message(for error: OpenCodeExportError) -> String {
-        switch error {
-        case .invalidSessionID: String(localized: "gsdActivity.invalidSession")
-        case .notJSON: String(localized: "gsdActivity.unreadable")
-        case .failed(_, let stderr):
-            stderr.isEmpty ? String(localized: "gsdActivity.failed") : format("gsdActivity.failedDetail", stderr)
-        case .command(let error): format("gsdActivity.failedDetail", String(describing: error))
+        if case .notJSON = error {
+            return String(localized: "gsdActivity.unreadable")
+        } else if case .failed(_, let stderr) = error {
+            return stderr.isEmpty ? String(localized: "gsdActivity.failed") : format("gsdActivity.failedDetail", stderr)
+        } else if case .command(let error) = error {
+            return format("gsdActivity.failedDetail", String(describing: error))
         }
+        return String(localized: "gsdActivity.invalidSession")
     }
 }
 
@@ -177,8 +178,7 @@ private struct GSDActivityMessage: View {
     @State private var expanded = false
 
     var body: some View {
-        switch message.role {
-        case .user:
+        if case .user = message.role {
             DisclosureGroup(isExpanded: $expanded) {
                 parts
             } label: {
@@ -192,7 +192,7 @@ private struct GSDActivityMessage: View {
                 .foregroundStyle(theme[.textSecondary])
             }
             .accessibilityIdentifier("gsdActivity.instruction")
-        case .assistant:
+        } else if case .assistant = message.role {
             VStack(alignment: .leading, spacing: metrics.space(.s)) {
                 Label("gsdActivity.roleAssistant", systemImage: "sparkles")
                     .font(metrics.font(.footnote).weight(.semibold))
@@ -222,19 +222,18 @@ private struct GSDActivityPart: View {
     @Environment(\.metrics) private var metrics
 
     var body: some View {
-        switch part {
-        case .text(let text):
+        if case .text(let text) = part {
             if let text = trimmed(text) {
                 Text(verbatim: text).font(metrics.font(.body)).textSelection(.enabled)
             }
-        case .reasoning(let text):
+        } else if case .reasoning(let text) = part {
             if let text = trimmed(text) {
                 Text(verbatim: text)
                     .font(metrics.font(.body).italic())
                     .foregroundStyle(theme[.textSecondary])
                     .textSelection(.enabled)
             }
-        case .tool(let name, let status, let input, let output):
+        } else if case .tool(let name, let status, let input, let output) = part {
             VStack(alignment: .leading, spacing: metrics.space(.xs)) {
                 HStack(spacing: metrics.space(.xs)) {
                     Image(systemName: "wrench.and.screwdriver")
@@ -261,11 +260,11 @@ private struct GSDActivityPart: View {
             .background(theme[.bgSunken], in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
             .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).stroke(theme[.borderSubtle]))
             .accessibilityIdentifier("gsdActivity.tool")
-        case .patch:
+        } else if case .patch = part {
             Text("gsdActivity.patchApplied")
                 .font(metrics.font(.footnote))
                 .foregroundStyle(theme[.textSecondary])
-        case .other:
+        } else if case .other = part {
             EmptyView()
         }
     }
