@@ -66,12 +66,14 @@ final class PlaywrightBrowser {
     }
 
     static func message(_ error: BrowserSessionError) -> String {
-        switch error {
-        case .browserNotFound: String(localized: "settings.playwright.error.notFound")
-        case .notReady: String(localized: "settings.playwright.error.notReady")
-        case .profileDirectory(let reason), .spawnFailed(let reason):
-            String(format: String(localized: "settings.playwright.error.other"), reason)
-        case .noFreePort: String(localized: "settings.playwright.error.noPort")
+        if case .browserNotFound = error { return String(localized: "settings.playwright.error.notFound") }
+        if case .notReady = error { return String(localized: "settings.playwright.error.notReady") }
+        if case .profileDirectory(let reason) = error {
+            return String(format: String(localized: "settings.playwright.error.other"), reason)
         }
+        if case .spawnFailed(let reason) = error {
+            return String(format: String(localized: "settings.playwright.error.other"), reason)
+        }
+        return String(localized: "settings.playwright.error.noPort")
     }
 }

@@ -23,10 +23,12 @@ enum ProjectGridPrompts {
             guard alert.runModal() == .alertFirstButtonReturn else { return nil }
             value = field.stringValue
             guard let issue = problem(value) else { return value }
-            message = switch issue {
-            case .empty: String(localized: "projectGrid.error.empty")
-            case .taken: String(localized: "projectGrid.error.taken")
-            case .reserved: String(localized: "projectGrid.error.reserved")
+            message = if case .empty = issue {
+                String(localized: "projectGrid.error.empty")
+            } else if case .taken = issue {
+                String(localized: "projectGrid.error.taken")
+            } else {
+                String(localized: "projectGrid.error.reserved")
             }
         }
     }
@@ -44,11 +46,11 @@ enum ProjectGridPrompts {
         let outcome = await WebDialogCenter.shared.present(width: 540) { finish in
             ProjectGridWebModal(mode: .delete(name: grid, count: paneCount), finish: finish)
         }
-        switch outcome {
-        case .confirmed: return .keepPanes
-        case .alternate: return .closePanes
-        case .cancelled: return nil
+        if case .confirmed = outcome {
+            return .keepPanes
         }
+        if case .alternate = outcome { return .closePanes }
+        return nil
     }
 
     static func createGrid(in project: ProjectID, workspace: WorkspaceModel, undoManager: UndoManager?) {
@@ -84,10 +86,13 @@ enum ProjectGridPrompts {
             alert.buttons.last?.hasDestructiveAction = true
         }
         alert.addButton(withTitle: String(localized: "editor.cancel"))
-        switch alert.runModal() {
-        case .alertFirstButtonReturn: return .keepPanes
-        case .alertSecondButtonReturn: return paneCount > 0 ? .closePanes : nil
-        default: return nil
+        let selection = alert.runModal()
+        if case .alertFirstButtonReturn = selection {
+            return .keepPanes
+        } else if case .alertSecondButtonReturn = selection {
+            return paneCount > 0 ? .closePanes : nil
+        } else {
+            return nil
         }
     }
 }

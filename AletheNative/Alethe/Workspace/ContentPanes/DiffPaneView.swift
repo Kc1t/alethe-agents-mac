@@ -39,11 +39,11 @@ final class DiffModel {
         Task {
             let result = await GitDiff.run(folder: folder, path: path, staged: staged)
             guard generation == self.generation else { return }
-            switch result {
-            case .success(let text):
+            if case .success(let text) = result {
                 source = text
                 state = .loaded(DiffParser.parse(text))
-            case .failure(let error): state = .failed(error)
+            } else if case .failure(let error) = result {
+                state = .failed(error)
             }
         }
     }
@@ -114,14 +114,13 @@ struct DiffPaneView: View {
 
     @ViewBuilder
     private var webContent: some View {
-        switch model.state {
-        case .loading:
+        if case .loading = model.state {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .failed(let error):
+        } else if case .failed(let error) = model.state {
             message(errorText(error)).accessibilityIdentifier("diff.error")
-        case .loaded where model.source.isEmpty:
+        } else if case .loaded = model.state, model.source.isEmpty {
             message(String(localized: "diff.empty")).accessibilityIdentifier("diff.empty")
-        case .loaded:
+        } else if case .loaded = model.state {
             ScrollView([.vertical, .horizontal]) {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(model.source.components(separatedBy: "\n").enumerated()), id: \.offset) { _, line in
@@ -158,14 +157,13 @@ struct DiffPaneView: View {
 
     @ViewBuilder
     private var content: some View {
-        switch model.state {
-        case .loading:
+        if case .loading = model.state {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .failed(let error):
+        } else if case .failed(let error) = model.state {
             message(errorText(error)).accessibilityIdentifier("diff.error")
-        case .loaded(let document) where document.isEmpty:
+        } else if case .loaded(let document) = model.state, document.isEmpty {
             message(String(localized: "diff.empty")).accessibilityIdentifier("diff.empty")
-        case .loaded(let document):
+        } else if case .loaded(let document) = model.state {
             ScrollView([.vertical, .horizontal]) {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     ForEach(document.files) { file in
@@ -233,10 +231,12 @@ struct DiffPaneView: View {
     }
 
     private func lineText(_ line: DiffLine) -> some View {
-        let sign = switch line.kind {
-        case .added: "+"
-        case .removed: "-"
-        case .context, .note: " "
+        let sign = if case .added = line.kind {
+            "+"
+        } else if case .removed = line.kind {
+            "-"
+        } else {
+            " "
         }
         return Text(verbatim: line.kind == .note ? line.text : sign + line.text)
             .foregroundStyle(theme[line.kind == .note ? .textTertiary : .textPrimary])
@@ -246,10 +246,12 @@ struct DiffPaneView: View {
     }
 
     private func background(_ kind: DiffLine.Kind) -> Color {
-        switch kind {
-        case .added: theme[.statusActive].opacity(0.14)
-        case .removed: theme[.statusStopped].opacity(0.14)
-        case .context, .note: .clear
+        if case .added = kind {
+            theme[.statusActive].opacity(0.14)
+        } else if case .removed = kind {
+            theme[.statusStopped].opacity(0.14)
+        } else {
+            .clear
         }
     }
 
@@ -262,11 +264,10 @@ struct DiffPaneView: View {
     }
 
     private func errorText(_ error: GitDiffError) -> String {
-        switch error {
-        case .notARepository: String(localized: "diff.error.notARepository")
-        case .tooLarge: String(localized: "diff.error.tooLarge")
-        case .binary: String(localized: "diff.error.binary")
-        case .failed(let detail): format("diff.error.generic", detail)
-        }
+        if case .notARepository = error { return String(localized: "diff.error.notARepository") }
+        if case .tooLarge = error { return String(localized: "diff.error.tooLarge") }
+        if case .binary = error { return String(localized: "diff.error.binary") }
+        guard case .failed(let detail) = error else { preconditionFailure("Invalid diff error") }
+        return format("diff.error.generic", detail)
     }
 }

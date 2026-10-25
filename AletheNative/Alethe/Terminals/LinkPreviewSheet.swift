@@ -22,10 +22,11 @@ struct LinkPreviewSheet: View {
     @Environment(\.metrics) private var metrics
 
     private var title: String {
-        switch target {
-        case .web(let url): url.absoluteString
-        case .file(let path): (path as NSString).lastPathComponent
+        if case .web(let url) = target {
+            return url.absoluteString
         }
+        guard case .file(let path) = target else { preconditionFailure("Invalid preview target") }
+        return (path as NSString).lastPathComponent
     }
 
     var body: some View {
@@ -75,14 +76,13 @@ struct LinkPreviewSheet: View {
 
     @ViewBuilder
     private var content: some View {
-        switch target {
-        case .web(let url):
+        if case .web(let url) = target {
             PreviewWebView(url: url)
-        case .file(let path):
-            switch PaneContent.forFile(path) {
-            case .markdown?:
+        } else if case .file(let path) = target {
+            let selection = PaneContent.forFile(path)
+            if case .markdown? = selection {
                 MarkdownPreview(file: MarkdownFile(path: path, watch: false))
-            case .image?:
+            } else if case .image? = selection {
                 if let image = NSImage(contentsOf: URL(filePath: path)) {
                     if metrics.isWebInterface {
                         GeometryReader { geometry in
@@ -96,9 +96,9 @@ struct LinkPreviewSheet: View {
                 } else {
                     unavailable
                 }
-            case .video?:
+            } else if case .video? = selection {
                 VideoPlayer(player: AVPlayer(url: URL(filePath: path)))
-            default:
+            } else {
                 if let text = Self.textPreview(path) {
                     ScrollView([.vertical, .horizontal]) {
                         Text(verbatim: text)
@@ -129,9 +129,10 @@ struct LinkPreviewSheet: View {
     }
 
     private func openExternally() {
-        switch target {
-        case .web(let url): NSWorkspace.shared.open(url)
-        case .file(let path): NSWorkspace.shared.open(URL(filePath: path))
+        if case .web(let url) = target {
+            NSWorkspace.shared.open(url)
+        } else if case .file(let path) = target {
+            NSWorkspace.shared.open(URL(filePath: path))
         }
         dismiss()
     }

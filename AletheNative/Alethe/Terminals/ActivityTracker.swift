@@ -24,11 +24,13 @@ final class ActivityTracker {
         guard loop == nil else { return }
         self.environment = environment
         store = ActivityStore(url: file)
-        monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .leftMouseDown, .rightMouseDown, .mouseMoved, .scrollWheel]) { [weak self] event in
+        monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .leftMouseDown, .rightMouseDown,
+            .mouseMoved, .scrollWheel]) { [weak self] event in
             self?.lastInteraction = Date()
             return event
         }
-        NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
+        NotificationCenter.default.addObserver(forName: NSApplication.didResignActiveNotification, object: nil,
+            queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.flushNow() }
         }
         lastSample = Date()

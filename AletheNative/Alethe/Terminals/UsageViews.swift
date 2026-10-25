@@ -103,7 +103,8 @@ struct AIUsageSheet: View {
                     confirmTitle: String(localized: "usage.credit.use")) {
             if let credit = confirmCredit { Task { creditFailed = !(await environment.usage.consumeResetCredit(credit)) } }
         }
-        .confirmationDialog(Text("usage.credit.confirm"), isPresented: Binding { !metrics.isWebInterface && confirmCredit != nil } set: { if !$0 { confirmCredit = nil } },
+        .confirmationDialog(Text("usage.credit.confirm"), isPresented: Binding { !metrics.isWebInterface
+            && confirmCredit != nil } set: { if !$0 { confirmCredit = nil } },
                             presenting: confirmCredit) { credit in
             Button("usage.credit.use") {
                 Task { creditFailed = !(await environment.usage.consumeResetCredit(credit)) }
@@ -126,8 +127,7 @@ struct AIUsageSheet: View {
                 Toggle("usage.showPill", isOn: pill(provider)).toggleStyle(.checkbox)
                     .accessibilityIdentifier("usage.pillToggle.\(provider.rawValue)")
             }
-            switch usage?.status {
-            case .ready?:
+            if case .ready? = usage?.status {
                 ForEach(usage?.windows ?? []) { window in
                     VStack(alignment: .leading, spacing: metrics.space(.xxs)) {
                         HStack {
@@ -155,11 +155,14 @@ struct AIUsageSheet: View {
                     }
                     if creditFailed { Text("usage.credit.failed").font(metrics.font(.footnote)).foregroundStyle(theme[.statusStopped]) }
                 }
-            case .noCLI?: Text("usage.noCLI").foregroundStyle(theme[.textTertiary])
-            case .noAuth?: Text("usage.noAuth").foregroundStyle(theme[.textTertiary])
-            case .unavailable(let reason)?:
+            } else if case .noCLI? = usage?.status {
+                Text("usage.noCLI").foregroundStyle(theme[.textTertiary])
+            } else if case .noAuth? = usage?.status {
+                Text("usage.noAuth").foregroundStyle(theme[.textTertiary])
+            } else if case .unavailable(let reason)? = usage?.status {
                 Text(String(format: String(localized: "usage.unavailable"), reason)).foregroundStyle(theme[.textTertiary])
-            case nil: WebBusyIndicator()
+            } else if case nil = usage?.status {
+                WebBusyIndicator()
             }
         }
     }

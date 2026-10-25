@@ -107,10 +107,9 @@ struct OrchestratorPaneView: View {
     }
 
     private func open(_ item: MediaItem) {
-        switch item.kind {
-        case .imageLocal:
+        if case .imageLocal = item.kind {
             environment.open(.image(path: (item.value as NSString).expandingTildeInPath), in: project)
-        case .imageURL, .link:
+        } else {
             environment.open(.web(url: item.value, options: WebPaneOptions()), in: project)
         }
     }
@@ -129,7 +128,8 @@ struct OrchestratorPaneView: View {
                 counts
             }
             if metrics.isWebInterface && !detached, let paneID {
-                ContentPaneButton(symbol: "macwindow", label: "orchestrator.openInWindow", id: "orchestrator.openInWindow", webSize: 22, webIconSize: 14) {
+                ContentPaneButton(symbol: "macwindow", label: "orchestrator.openInWindow",
+                    id: "orchestrator.openInWindow", webSize: 22, webIconSize: 14) {
                     openWindow(id: "orchestration", value: DetachedBoardID(profile: environment.profileID, pane: paneID))
                 }
             }

@@ -62,9 +62,10 @@ enum MemoryTab: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     var title: LocalizedStringKey {
-        switch self {
-        case .overview: "memModal.tab.overview"
-        case .ai: "memModal.tab.ai"
+        if case .overview = self {
+            "memModal.tab.overview"
+        } else {
+            "memModal.tab.ai"
         }
     }
 }
@@ -242,44 +243,54 @@ struct ResourceSettings: View {
 
 extension MemoryPressure {
     var token: ThemeToken {
-        switch self {
-        case .normal: .statusActive
-        case .warning: .statusWaiting
-        case .critical: .statusStopped
+        if case .normal = self {
+            .statusActive
+        } else if case .warning = self {
+            .statusWaiting
+        } else {
+            .statusStopped
         }
     }
 
     var title: LocalizedStringKey {
-        switch self {
-        case .normal: "memory.pressure.normal"
-        case .warning: "memory.pressure.warning"
-        case .critical: "memory.pressure.critical"
+        if case .normal = self {
+            "memory.pressure.normal"
+        } else if case .warning = self {
+            "memory.pressure.warning"
+        } else {
+            "memory.pressure.critical"
         }
     }
 }
 
 extension ResourcePolicy.Mode {
     var title: LocalizedStringKey {
-        switch self {
-        case .manual: "resources.mode.manual"
-        case .pressure: "resources.mode.pressure"
-        case .idle: "resources.mode.idle"
+        if case .manual = self {
+            "resources.mode.manual"
+        } else if case .pressure = self {
+            "resources.mode.pressure"
+        } else {
+            "resources.mode.idle"
         }
     }
 
     var titleText: String {
-        switch self {
-        case .manual: String(localized: "resources.mode.manual")
-        case .pressure: String(localized: "resources.mode.pressure")
-        case .idle: String(localized: "resources.mode.idle")
+        if case .manual = self {
+            String(localized: "resources.mode.manual")
+        } else if case .pressure = self {
+            String(localized: "resources.mode.pressure")
+        } else {
+            String(localized: "resources.mode.idle")
         }
     }
 
     var detail: LocalizedStringKey {
-        switch self {
-        case .manual: "resources.mode.manual.detail"
-        case .pressure: "resources.mode.pressure.detail"
-        case .idle: "resources.mode.idle.detail"
+        if case .manual = self {
+            "resources.mode.manual.detail"
+        } else if case .pressure = self {
+            "resources.mode.pressure.detail"
+        } else {
+            "resources.mode.idle.detail"
         }
     }
 }

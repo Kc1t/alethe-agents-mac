@@ -166,10 +166,12 @@ final class ResourceMonitor {
     }
 
     static func upstreamLevel(_ pressure: MemoryPressure) -> String {
-        switch pressure {
-        case .normal: "Ok"
-        case .warning: "Medium"
-        case .critical: "Critical"
+        if case .normal = pressure {
+            "Ok"
+        } else if case .warning = pressure {
+            "Medium"
+        } else {
+            "Critical"
         }
     }
 }

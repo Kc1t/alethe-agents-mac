@@ -35,7 +35,8 @@ struct SubTabsLane: View {
                         .font(metrics.font(size: 12))
                         .frame(width: metrics.size(26), height: metrics.size(26))
                         .overlay(RoundedRectangle(cornerRadius: metrics.size(6))
-                            .strokeBorder(theme[addHovered ? .accentBorder : .borderStrong], style: StrokeStyle(lineWidth: metrics.size(1), dash: [metrics.size(3), metrics.size(2)])))
+                            .strokeBorder(theme[addHovered ? .accentBorder : .borderStrong],
+                                style: StrokeStyle(lineWidth: metrics.size(1), dash: [metrics.size(3), metrics.size(2)])))
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(theme[addHovered ? .fg : .fgFaint])
@@ -47,7 +48,8 @@ struct SubTabsLane: View {
                 .accessibilityLabel(Text("subtabs.new"))
                 .accessibilityIdentifier("subtabs.new")
             }
-            .animation(metrics.style == .clean ? nil : Motion.WorkspaceEffect.insertion.animation(reduceMotion: metrics.reducesMotion), value: pane.tabs.map(\.id))
+            .animation(metrics.style == .clean ? nil
+                : Motion.WorkspaceEffect.insertion.animation(reduceMotion: metrics.reducesMotion), value: pane.tabs.map(\.id))
             .padding(.vertical, metrics.size(6))
             .frame(maxWidth: .infinity)
         }
@@ -67,10 +69,12 @@ struct SubTabsLane: View {
         .onMoveCommand { direction in
             guard let index = pane.tabs.firstIndex(where: { $0.id == pane.activeTab?.id }), !pane.tabs.isEmpty else { return }
             let delta: Int
-            switch direction {
-            case .up, .left: delta = -1
-            case .down, .right: delta = 1
-            default: return
+            if (direction == .up || direction == .left) {
+                delta = -1
+            } else if (direction == .down || direction == .right) {
+                delta = 1
+            } else {
+                return
             }
             onActivate(pane.tabs[(index + delta + pane.tabs.count) % pane.tabs.count].id)
         }
@@ -156,7 +160,9 @@ private struct SubTabItem: View {
                         .fill(isActive ? theme[.surfaceCardSelected] : theme[.accentSoft].opacity(isHovered ? 1 : 0))
                 )
                 .overlay {
-                    if isActive && (!metrics.isWebInterface || metrics.style != .clean) { RoundedRectangle(cornerRadius: metrics.size(6)).strokeBorder(theme[.border], lineWidth: metrics.isWebInterface ? metrics.size(1) : 1) }
+                    if isActive && (!metrics.isWebInterface || metrics.style != .clean) {
+                        RoundedRectangle(cornerRadius: metrics.size(6)).strokeBorder(theme[.border],
+                        lineWidth: metrics.isWebInterface ? metrics.size(1) : 1) }
                 }
                 .contentShape(Rectangle())
         }
@@ -166,7 +172,8 @@ private struct SubTabItem: View {
                 RoundedRectangle(cornerRadius: metrics.size(1))
                     .fill(theme[metrics.isWebInterface || isFocused ? .accent : .borderStrong])
                     .frame(width: metrics.size(2), height: metrics.size(16))
-                    .shadow(color: isFocused && (!metrics.isWebInterface || metrics.style != .clean) ? theme[.accentRing] : .clear, radius: metrics.size(4))
+                    .shadow(color: isFocused && (!metrics.isWebInterface || metrics.style != .clean)
+                        ? theme[.accentRing] : .clear, radius: metrics.size(4))
                     .offset(x: -metrics.size(5))
             }
         }
@@ -205,12 +212,15 @@ private struct SubTabItem: View {
                 .opacity(isHovered ? 1 : 0)
                 .allowsHitTesting(isHovered)
                 .accessibilityHidden(!isHovered)
-                .animation(metrics.isWebInterface ? Motion.WorkspaceEffect.action.animation(reduceMotion: metrics.reducesMotion) : nil, value: isHovered)
+                .animation(metrics.isWebInterface
+                    ? Motion.WorkspaceEffect.action.animation(reduceMotion: metrics.reducesMotion) : nil, value: isHovered)
             }
         }
         .opacity(metrics.isWebInterface && metrics.style == .clean && !isActive ? 0.46 : 1)
-        .animation(metrics.isWebInterface ? Motion.WorkspaceEffect.tab.animation(reduceMotion: metrics.reducesMotion) : nil, value: isHovered)
-        .animation(metrics.isWebInterface ? Motion.WorkspaceEffect.laneSelection.animation(reduceMotion: metrics.reducesMotion) : nil, value: isActive)
+        .animation(metrics.isWebInterface
+            ? Motion.WorkspaceEffect.tab.animation(reduceMotion: metrics.reducesMotion) : nil, value: isHovered)
+        .animation(metrics.isWebInterface
+            ? Motion.WorkspaceEffect.laneSelection.animation(reduceMotion: metrics.reducesMotion) : nil, value: isActive)
         .onHover { isHovered = $0 }
         .help(Text(verbatim: name))
         .contextMenu {

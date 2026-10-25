@@ -146,7 +146,8 @@ struct ContentPaneButton: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(metrics.isWebInterface ? metrics.font(size: webIconSize) : metrics.font(.caption).weight(.semibold))
-                .frame(width: metrics.size(metrics.isWebInterface ? webSize : 18), height: metrics.size(metrics.isWebInterface ? webSize : 18))
+                .frame(width: metrics.size(metrics.isWebInterface ? webSize : 18),
+                    height: metrics.size(metrics.isWebInterface ? webSize : 18))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.borderless)

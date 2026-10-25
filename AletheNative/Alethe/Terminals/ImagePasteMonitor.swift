@@ -12,7 +12,8 @@ enum ImagePasteMonitor {
     static func install(metrics: @escaping @MainActor () -> Metrics? = { nil }) {
         TerminalPaneView.inputMetrics = metrics
         guard monitor == nil else { return }
-        monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .rightMouseDown, .rightMouseUp, .leftMouseDown, .leftMouseUp, .mouseMoved, .scrollWheel]) { event in
+        monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .rightMouseDown, .rightMouseUp,
+            .leftMouseDown, .leftMouseUp, .mouseMoved, .scrollWheel]) { event in
             let handled = MainActor.assumeIsolated { handle(event) }
             return handled ? nil : event
         }
@@ -26,44 +27,10 @@ enum ImagePasteMonitor {
             return true
         }
         if web, [.mouseMoved, .scrollWheel, .leftMouseDown].contains(event.type) {
-            guard WebMenuHost.shared.presentation == nil else {
-                hoverTerminal?.highlightWebLink(at: nil)
-                return false
-            }
-            let content = event.window?.contentView
-            let terminal = content.flatMap { $0.hitTest($0.convert(event.locationInWindow, from: nil))?.enclosingTerminal }
-            if hoverTerminal !== terminal { hoverTerminal?.highlightWebLink(at: nil) }
-            hoverTerminal = terminal
-            if event.type == .scrollWheel { terminal?.highlightWebLink(at: nil); return false }
-            terminal?.highlightWebLink(at: event.locationInWindow)
-            if event.type == .leftMouseDown, let terminal,
-               let hit = terminal.webLink(at: event.locationInWindow) {
-                terminal.terminalView.performBindingAction("clear_selection")
-                terminal.terminalDidRequestOpenURL(hit.link.target, kind: .text)
-                terminal.highlightWebLink(at: nil)
-                consumedLinkDown = true
-                return true
-            }
-            return false
+            return handleLinkEvent(event)
         }
         if event.type == .rightMouseDown || event.type == .rightMouseUp {
-            guard web else { return false }
-            if event.type == .rightMouseDown {
-                guard let content = event.window?.contentView,
-                      let terminal = content.hitTest(content.convert(event.locationInWindow, from: nil))?.enclosingTerminal
-                else { return false }
-                rightClickTerminal = terminal
-                terminal.focus()
-                return true
-            }
-            guard let terminal = rightClickTerminal else { return false }
-            rightClickTerminal = nil
-            if event.modifierFlags.contains(.shift), let metrics {
-                TerminalInputMenu(terminal: terminal, metrics: metrics).show(with: event)
-            } else {
-                terminal.copyOrPaste()
-            }
-            return true
+            return handleRightClick(event, metrics: metrics)
         }
         guard event.type == .keyDown else { return false }
         guard let responder = event.window?.firstResponder as? NSView,
@@ -75,15 +42,7 @@ enum ImagePasteMonitor {
                 && event.charactersIgnoringModifiers == "v" && terminal.pasteImageIfNeeded()
         }
         guard !terminal.terminalView.hasMarkedText() else { return false }
-        if flags == .command {
-            switch key {
-            case "c": terminal.copyOrInterrupt(); return true
-            case "v": terminal.pasteClipboard(); return true
-            case "a": terminal.terminalView.performBindingAction("select_all"); return true
-            case "f": terminal.showSearch(); return true
-            default: break
-            }
-        }
+        if flags == .command { return handleCommandKey(key, terminal: terminal) }
         if flags == .control {
             if key == "c" { terminal.copyOrInterrupt(); return true }
             if key == "v" { terminal.pasteClipboard(); return true }
@@ -91,6 +50,64 @@ enum ImagePasteMonitor {
             if event.keyCode == 125 { terminal.recallPrompt(.newer); return true }
         }
         return false
+    }
+    private static func handleCommandKey(_ key: String?, terminal: TerminalPaneView) -> Bool {
+        if key == "c" {
+            terminal.copyOrInterrupt(); return true
+        }
+        if key == "v" {
+            terminal.pasteClipboard(); return true
+        }
+        if key == "a" {
+            terminal.terminalView.performBindingAction("select_all"); return true
+        }
+        if key == "f" {
+            terminal.showSearch(); return true
+        }
+        return false
+    }
+
+    private static func handleLinkEvent(_ event: NSEvent) -> Bool {
+        guard WebMenuHost.shared.presentation == nil else {
+            hoverTerminal?.highlightWebLink(at: nil)
+            return false
+        }
+        let content = event.window?.contentView
+        let terminal = content.flatMap { $0.hitTest($0.convert(event.locationInWindow, from: nil))?.enclosingTerminal }
+        if hoverTerminal !== terminal { hoverTerminal?.highlightWebLink(at: nil) }
+        hoverTerminal = terminal
+        if event.type == .scrollWheel { terminal?.highlightWebLink(at: nil); return false }
+        terminal?.highlightWebLink(at: event.locationInWindow)
+        if event.type == .leftMouseDown, let terminal,
+           let hit = terminal.webLink(at: event.locationInWindow) {
+            terminal.terminalView.performBindingAction("clear_selection")
+            terminal.terminalDidRequestOpenURL(hit.link.target, kind: .text)
+            terminal.highlightWebLink(at: nil)
+            consumedLinkDown = true
+            return true
+        }
+        return false
+    }
+
+    private static func handleRightClick(_ event: NSEvent, metrics: Metrics?) -> Bool {
+        let web = metrics?.isWebInterface == true
+        guard web else { return false }
+        if event.type == .rightMouseDown {
+            guard let content = event.window?.contentView,
+                  let terminal = content.hitTest(content.convert(event.locationInWindow, from: nil))?.enclosingTerminal
+            else { return false }
+            rightClickTerminal = terminal
+            terminal.focus()
+            return true
+        }
+        guard let terminal = rightClickTerminal else { return false }
+        rightClickTerminal = nil
+        if event.modifierFlags.contains(.shift), let metrics {
+            TerminalInputMenu(terminal: terminal, metrics: metrics).show(with: event)
+        } else {
+            terminal.copyOrPaste()
+        }
+        return true
     }
 }
 
@@ -141,8 +158,8 @@ private final class TerminalInputMenu: NSObject {
     @objc private func run(_ item: NSMenuItem) { actions[item.tag]() }
 }
 
-private extension NSView {
-    var enclosingTerminal: TerminalPaneView? {
+extension NSView {
+    fileprivate var enclosingTerminal: TerminalPaneView? {
         var view: NSView? = self
         while let current = view {
             if let terminal = current as? TerminalPaneView { return terminal }

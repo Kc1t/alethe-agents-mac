@@ -65,6 +65,95 @@ struct WorkspaceTabBar: View {
         let label = document.label(of: tab)
         let name = label?.name ?? String(localized: "workspaceTabs.empty")
         let radius = metrics.radius(.sm)
+        return tabContents(tab, name: name, more: label?.more, isActive: isActive, isHovered: isHovered)
+        .padding(.leading, metrics.size(8))
+        .padding(.trailing, metrics.size(4))
+        .frame(minWidth: metrics.size(96), maxWidth: metrics.size(190))
+        .frame(height: metrics.size(26))
+        .background(
+            RoundedRectangle(cornerRadius: radius)
+                .fill(isActive ? theme[metrics.isWebInterface && metrics.style == .clean ? .panelHover
+                    : .bgSunken] : theme[.panelHover].opacity(isHovered ? 1 : 0))
+                .shadow(color: isActive && (!metrics.isWebInterface || metrics.style != .clean) ? theme.shadow(.sm).color.color : .clear,
+                        radius: metrics.size(4), y: metrics.size(2))
+        )
+        .overlay {
+            if (isActive || (metrics.isWebInterface && tab.pinned)) && (!metrics.isWebInterface
+                || metrics.style != .clean) {
+                RoundedRectangle(cornerRadius: radius).strokeBorder(theme[.borderStrong],
+                lineWidth: metrics.isWebInterface ? metrics.size(1) : 1) }
+        }
+        .offset(y: (isActive || isHovered) && metrics.style == .normal ? -metrics.size(1) : 0)
+        .animation(metrics.isWebInterface
+            ? Motion.WorkspaceEffect.tab.animation(reduceMotion: metrics.reducesMotion) : nil, value: isHovered)
+        .animation(metrics.isWebInterface
+            ? Motion.WorkspaceEffect.tab.animation(reduceMotion: metrics.reducesMotion) : nil, value: isActive)
+        .opacity(dragging == tab.id ? 0.5 : 1)
+        .contentShape(Rectangle())
+        .onHover { hovered = $0 ? tab.id : (hovered == tab.id ? nil : hovered) }
+        .onTapGesture {
+            workspace.update { $0.activateWorkspaceTab(tab.id) }
+            if metrics.isWebInterface { environment.showingHome = false }
+        }
+        .background {
+            if metrics.isWebInterface {
+                WorkspaceTabEvents(
+                    activate: {
+                        workspace.update { $0.activateWorkspaceTab(tab.id) }
+                        environment.showingHome = false
+                    }, close: { workspace.update { $0.closeWorkspaceTab(tab.id) } })
+            }
+        }
+        .onDrag {
+            dragging = tab.id
+            return NSItemProvider(object: tab.id.rawValue as NSString)
+        }
+        .onDrop(of: [.text], delegate: TabDropDelegate(target: tab.id, dragging: $dragging, workspace: workspace))
+        .webContextMenu {
+            tabMenu(tab)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(isActive ? [.isSelected, .isButton] : .isButton)
+        .accessibilityLabel(Text(verbatim: name))
+        .accessibilityIdentifier("workspaceTabs.tab.\(name)")
+    }
+
+    private func navigate(_ direction: Int) {
+        workspace.update { $0.navigateHistory(direction) }
+        if metrics.isWebInterface { environment.showingHome = false }
+    }
+
+    private func navigationButton(_ symbol: String, label: LocalizedStringKey, id: String, enabled: Bool,
+                                  action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(label, systemImage: symbol)
+        }
+        .buttonStyle(AletheIconButtonStyle(side: 24))
+        .disabled(!enabled)
+        .help(Text(label))
+        .accessibilityLabel(Text(label))
+        .accessibilityIdentifier(id)
+    }
+    private func closeButton(_ tab: WorkspaceTab, name: String, isActive: Bool, isHovered: Bool) -> some View {
+        Image(systemName: "xmark")
+            .font(metrics.font(size: metrics.isWebInterface ? 11 : 8, weight: .bold))
+            .frame(width: metrics.size(metrics.isWebInterface && !isActive && !isHovered ? 0 : 18), height: metrics.size(18))
+            .background(theme[metrics.isWebInterface ? .bgSunken : .panelHover].opacity(closeHovered == tab.id ? 1 : 0), in: Circle())
+            .contentShape(Circle())
+            .onHover { closeHovered = $0 ? tab.id : (closeHovered == tab.id ? nil : closeHovered) }
+            .onTapGesture { workspace.update { $0.closeWorkspaceTab(tab.id) } }
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { workspace.update { $0.closeWorkspaceTab(tab.id) } }
+        .foregroundStyle(theme[closeHovered == tab.id ? .fg : .fgFaint])
+        .opacity(isActive || isHovered ? 1 : 0)
+        .animation(metrics.isWebInterface
+            ? Motion.WorkspaceEffect.close.animation(reduceMotion: metrics.reducesMotion) : nil, value: isHovered)
+        .help(Text("workspaceTabs.close"))
+        .accessibilityLabel(Text("workspaceTabs.close"))
+        .accessibilityIdentifier("workspaceTabs.close.\(name)")
+    }
+
+    private func tabContents(_ tab: WorkspaceTab, name: String, more: Int?, isActive: Bool, isHovered: Bool) -> some View {
         return HStack(spacing: metrics.isWebInterface ? metrics.size(2) : metrics.space(.s)) {
             if tab.pinned {
                 Image(systemName: "pin.fill")
@@ -102,112 +191,42 @@ struct WorkspaceTabBar: View {
                     .padding(.horizontal, metrics.size(5))
                     .frame(minWidth: metrics.size(18), minHeight: metrics.size(14))
                     .background(theme[.panel].opacity(metrics.style == .clean ? 0 : 1), in: Capsule())
-            } else if let more = label?.more, more > 0 {
+            } else if let more, more > 0 {
                 AletheCountPill(more)
             }
-            Image(systemName: "xmark")
-                .font(metrics.font(size: metrics.isWebInterface ? 11 : 8, weight: .bold))
-                .frame(width: metrics.size(metrics.isWebInterface && !isActive && !isHovered ? 0 : 18), height: metrics.size(18))
-                .background(theme[metrics.isWebInterface ? .bgSunken : .panelHover].opacity(closeHovered == tab.id ? 1 : 0), in: Circle())
-                .contentShape(Circle())
-                .onHover { closeHovered = $0 ? tab.id : (closeHovered == tab.id ? nil : closeHovered) }
-                .onTapGesture { workspace.update { $0.closeWorkspaceTab(tab.id) } }
-                .accessibilityAddTraits(.isButton)
-                .accessibilityAction { workspace.update { $0.closeWorkspaceTab(tab.id) } }
-            .foregroundStyle(theme[closeHovered == tab.id ? .fg : .fgFaint])
-            .opacity(isActive || isHovered ? 1 : 0)
-            .animation(metrics.isWebInterface ? Motion.WorkspaceEffect.close.animation(reduceMotion: metrics.reducesMotion) : nil, value: isHovered)
-            .help(Text("workspaceTabs.close"))
-            .accessibilityLabel(Text("workspaceTabs.close"))
-            .accessibilityIdentifier("workspaceTabs.close.\(name)")
+            closeButton(tab, name: name, isActive: isActive, isHovered: isHovered)
         }
-        .padding(.leading, metrics.size(8))
-        .padding(.trailing, metrics.size(4))
-        .frame(minWidth: metrics.size(96), maxWidth: metrics.size(190))
-        .frame(height: metrics.size(26))
-        .background(
-            RoundedRectangle(cornerRadius: radius)
-                .fill(isActive ? theme[metrics.isWebInterface && metrics.style == .clean ? .panelHover : .bgSunken] : theme[.panelHover].opacity(isHovered ? 1 : 0))
-                .shadow(color: isActive && (!metrics.isWebInterface || metrics.style != .clean) ? theme.shadow(.sm).color.color : .clear,
-                        radius: metrics.size(4), y: metrics.size(2))
-        )
-        .overlay {
-            if (isActive || (metrics.isWebInterface && tab.pinned)) && (!metrics.isWebInterface || metrics.style != .clean) { RoundedRectangle(cornerRadius: radius).strokeBorder(theme[.borderStrong], lineWidth: metrics.isWebInterface ? metrics.size(1) : 1) }
-        }
-        .offset(y: (isActive || isHovered) && metrics.style == .normal ? -metrics.size(1) : 0)
-        .animation(metrics.isWebInterface ? Motion.WorkspaceEffect.tab.animation(reduceMotion: metrics.reducesMotion) : nil, value: isHovered)
-        .animation(metrics.isWebInterface ? Motion.WorkspaceEffect.tab.animation(reduceMotion: metrics.reducesMotion) : nil, value: isActive)
-        .opacity(dragging == tab.id ? 0.5 : 1)
-        .contentShape(Rectangle())
-        .onHover { hovered = $0 ? tab.id : (hovered == tab.id ? nil : hovered) }
-        .onTapGesture {
-            workspace.update { $0.activateWorkspaceTab(tab.id) }
-            if metrics.isWebInterface { environment.showingHome = false }
-        }
-        .background {
-            if metrics.isWebInterface {
-                WorkspaceTabEvents(
-                    activate: {
-                        workspace.update { $0.activateWorkspaceTab(tab.id) }
-                        environment.showingHome = false
-                    }, close: { workspace.update { $0.closeWorkspaceTab(tab.id) } })
-            }
-        }
-        .onDrag {
-            dragging = tab.id
-            return NSItemProvider(object: tab.id.rawValue as NSString)
-        }
-        .onDrop(of: [.text], delegate: TabDropDelegate(target: tab.id, dragging: $dragging, workspace: workspace))
-        .webContextMenu {
-            if metrics.isWebInterface {
-                Button("workspaceTabs.openIndividually") {
-                    workspace.update { $0.activateWorkspaceTab(tab.id) }
-                    environment.showingHome = false
-                }
-                Button("workspaceTabs.addToCurrent") {
-                    workspace.update { document in
-                        for project in tab.snapshot.openProjectIDs { document.open(project) }
-                    }
-                    environment.showingHome = false
-                }
-                WebMenuDivider()
-                Button { workspace.update { $0.togglePinned(tab.id) } } label: {
-                    Label(tab.pinned ? LocalizedStringKey("workspaceTabs.unpin") : "workspaceTabs.pin",
-                          systemImage: tab.pinned ? "pin.slash" : "pin")
-                }
-                WebMenuDivider()
-                Button { workspace.update { $0.closeWorkspaceTab(tab.id) } } label: {
-                    Label("workspaceTabs.close", systemImage: "xmark")
-                }
-            } else {
-                Button(tab.pinned ? LocalizedStringKey("workspaceTabs.unpin") : "workspaceTabs.pin") {
-                    workspace.update { $0.togglePinned(tab.id) }
-                }
-                WebMenuDivider()
-                Button("workspaceTabs.close") { workspace.update { $0.closeWorkspaceTab(tab.id) } }
-            }
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityAddTraits(isActive ? [.isSelected, .isButton] : .isButton)
-        .accessibilityLabel(Text(verbatim: name))
-        .accessibilityIdentifier("workspaceTabs.tab.\(name)")
     }
 
-    private func navigate(_ direction: Int) {
-        workspace.update { $0.navigateHistory(direction) }
-        if metrics.isWebInterface { environment.showingHome = false }
-    }
-
-    private func navigationButton(_ symbol: String, label: LocalizedStringKey, id: String, enabled: Bool,
-                                  action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Label(label, systemImage: symbol)
+    @ViewBuilder
+    private func tabMenu(_ tab: WorkspaceTab) -> some View {
+        if metrics.isWebInterface {
+            Button("workspaceTabs.openIndividually") {
+                workspace.update { $0.activateWorkspaceTab(tab.id) }
+                environment.showingHome = false
+            }
+            Button("workspaceTabs.addToCurrent") {
+                workspace.update { document in
+                    for project in tab.snapshot.openProjectIDs { document.open(project) }
+                }
+                environment.showingHome = false
+            }
+            WebMenuDivider()
+            Button { workspace.update { $0.togglePinned(tab.id) } } label: {
+                Label(tab.pinned ? LocalizedStringKey("workspaceTabs.unpin") : "workspaceTabs.pin",
+                      systemImage: tab.pinned ? "pin.slash" : "pin")
+            }
+            WebMenuDivider()
+            Button { workspace.update { $0.closeWorkspaceTab(tab.id) } } label: {
+                Label("workspaceTabs.close", systemImage: "xmark")
+            }
+        } else {
+            Button(tab.pinned ? LocalizedStringKey("workspaceTabs.unpin") : "workspaceTabs.pin") {
+                workspace.update { $0.togglePinned(tab.id) }
+            }
+            WebMenuDivider()
+            Button("workspaceTabs.close") { workspace.update { $0.closeWorkspaceTab(tab.id) } }
         }
-        .buttonStyle(AletheIconButtonStyle(side: 24))
-        .disabled(!enabled)
-        .help(Text(label))
-        .accessibilityLabel(Text(label))
-        .accessibilityIdentifier(id)
     }
 }
 

@@ -295,43 +295,9 @@ final class TerminalRegistry {
         )
         do {
             let command = try environment.agentLauncher.command(for: request)
-            var before: Task<Set<String>, Never>?
-            if SessionResume.discoversNewSessions(kind) && command.sessionID == nil {
-                if kind == .opencode {
-                    let executable = command.executable
-                    before = Task.detached { Set(await SessionResume.snapshot(kind, cwd: cwd, executable: executable).map(\.id)) }
-                } else {
-                    let ids = Set(SessionResume.sessions(kind, cwd: cwd).map(\.id))
-                    before = Task { ids }
-                }
-            }
-            let scrollbackFile = scrollback(for: tab.id, environment: environment)
-            if kind != .shell { scrollbackFile?.clear() }
-            let view = try TerminalPaneView(launch: command.ptyLaunch(size: PTYSize(columns: 80, rows: 24)),
-                                            theme: environment.theme, fontSize: environment.terminalFontSize,
-                                            forceKillNotice: String(localized: "terminal.forceKilled"),
-                                            promptHistory: environment.promptHistory?.document.histories[tab.id.rawValue] ?? [],
-                                            scrollback: scrollbackFile)
-            view.onOpenLink = { [weak environment, weak view] link in
-                guard let environment, let view else { return }
-                environment.openTerminalLink(link, from: view, tab: tab, project: project)
-            }
-            view.onLocalServer = { [weak self] url in self?.pageOffers[tab.id] = url }
-            view.onPromptHistoryChange = { [weak environment] entries in
-                environment?.promptHistory?.update { $0.histories[tab.id.rawValue] = entries }
-            }
-            view.onExit = { [weak self, weak view, weak environment] code in
-                guard let self, let view, self.views[tab.id] === view else { return }
-                if !view.wasForceKilled, let launch = self.launches[tab.id], let environment,
-                   SessionResume.shouldRetryFresh(resumed: launch.resumed, elapsed: .now - launch.startedAt,
-                                                  alreadyRetried: self.retriedFresh.contains(tab.id)) {
-                    self.retriedFresh.insert(tab.id)
-                    self.restart(tab, in: project, environment: environment, fresh: true)
-                    return
-                }
-                self.states[tab.id] = view.wasForceKilled ? .forceKilled : .exited(code: code)
-                self.output.exit(tab.id, reason: view.wasForceKilled ? "killed" : "exited")
-            }
+            let before = sessionSnapshot(kind: kind, command: command, cwd: cwd)
+            let view = try makeTerminal(command: command, tab: tab, kind: kind, environment: environment)
+            wire(view, tab: tab, project: project, environment: environment)
             let relay = output, tabID = tab.id
             view.tap.observeOutput { data in relay.output(tabID, data) }
             views[tab.id] = view
@@ -369,6 +335,54 @@ final class TerminalRegistry {
             AppLog.record(.error, .terminal, "\(kind.rawValue) did not start: \(error)")
         }
         generations[tab.id, default: 0] += 1
+    }
+    private func wire(_ view: TerminalPaneView, tab: PaneTab, project: Project, environment: AppEnvironment) {
+        view.onOpenLink = { [weak environment, weak view] link in
+            guard let environment, let view else { return }
+            environment.openTerminalLink(link, from: view, tab: tab, project: project)
+        }
+        view.onLocalServer = { [weak self] url in self?.pageOffers[tab.id] = url }
+        view.onPromptHistoryChange = { [weak environment] entries in
+            environment?.promptHistory?.update { $0.histories[tab.id.rawValue] = entries }
+        }
+        view.onExit = { [weak self, weak view, weak environment] code in
+            guard let self, let view, self.views[tab.id] === view else { return }
+            if !view.wasForceKilled, let launch = self.launches[tab.id], let environment,
+               SessionResume.shouldRetryFresh(resumed: launch.resumed, elapsed: .now - launch.startedAt,
+                                              alreadyRetried: self.retriedFresh.contains(tab.id)) {
+                self.retriedFresh.insert(tab.id)
+                self.restart(tab, in: project, environment: environment, fresh: true)
+                return
+            }
+            self.states[tab.id] = view.wasForceKilled ? .forceKilled : .exited(code: code)
+            self.output.exit(tab.id, reason: view.wasForceKilled ? "killed" : "exited")
+        }
+    }
+
+    private func sessionSnapshot(kind: AgentKind, command: AgentCommand, cwd: String) -> Task<Set<String>, Never>? {
+        var before: Task<Set<String>, Never>?
+        if SessionResume.discoversNewSessions(kind) && command.sessionID == nil {
+            if kind == .opencode {
+                let executable = command.executable
+                before = Task.detached { Set(await SessionResume.snapshot(kind, cwd: cwd, executable: executable).map(\.id)) }
+            } else {
+                let ids = Set(SessionResume.sessions(kind, cwd: cwd).map(\.id))
+                before = Task { ids }
+            }
+        }
+        return before
+    }
+
+    private func makeTerminal(command: AgentCommand, tab: PaneTab, kind: AgentKind,
+                              environment: AppEnvironment) throws -> TerminalPaneView {
+        let scrollbackFile = scrollback(for: tab.id, environment: environment)
+        if kind != .shell { scrollbackFile?.clear() }
+        let view = try TerminalPaneView(launch: command.ptyLaunch(size: PTYSize(columns: 80, rows: 24)),
+                                        theme: environment.theme, fontSize: environment.terminalFontSize,
+                                        forceKillNotice: String(localized: "terminal.forceKilled"),
+                                        promptHistory: environment.promptHistory?.document.histories[tab.id.rawValue] ?? [],
+                                        scrollback: scrollbackFile)
+        return view
     }
 }
 

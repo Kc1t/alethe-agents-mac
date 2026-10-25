@@ -54,7 +54,8 @@ struct StartupLoadingView: View {
             .background(theme[.surfaceModal], in: RoundedRectangle(cornerRadius: metrics.radius(.lg)))
             .overlay(RoundedRectangle(cornerRadius: metrics.radius(.lg))
                 .strokeBorder(theme[.border], lineWidth: metrics.size(1)))
-            .shadow(color: metrics.isWebInterface && metrics.style == .clean ? .clear : theme.shadow(.lg).color.color, radius: metrics.size(theme.shadow(.lg).blur),
+            .shadow(color: metrics.isWebInterface && metrics.style == .clean ? .clear
+                : theme.shadow(.lg).color.color, radius: metrics.size(theme.shadow(.lg).blur),
                     x: metrics.size(theme.shadow(.lg).x), y: metrics.size(theme.shadow(.lg).y))
             .opacity(appeared || metrics.reducesMotion ? 1 : 0)
             .offset(y: appeared || metrics.reducesMotion || (metrics.isWebInterface && metrics.style == .clean) ? 0 : metrics.size(5))

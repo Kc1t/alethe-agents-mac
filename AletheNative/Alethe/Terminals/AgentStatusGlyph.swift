@@ -13,25 +13,24 @@ struct AgentStatusGlyph: View {
         let activity = environment.terminals.activity[tab]
         let unread = environment.terminals.unread.contains(tab)
         Group {
-            switch activity {
-            case .working:
+            if case .working = activity {
                 AletheActivitySpinner()
                     .help(Text("agentStatus.working"))
                     .accessibilityLabel(Text("agentStatus.working"))
-            case .needsInput:
+            } else if case .needsInput = activity {
                 Image(systemName: "questionmark.bubble.fill").webProfileSized(14)
                     .font(metrics.font(.caption))
                     .foregroundStyle(theme[.statusWaiting])
                     .help(Text("agentStatus.needsInput"))
                     .accessibilityLabel(Text("agentStatus.needsInput"))
-            case .done where unread:
+            } else if case .done = activity, unread {
                 Text(verbatim: "✓")
                     .font(metrics.monoFont(size: 11, weight: .bold))
                     .foregroundStyle(theme[.statusWorking])
                     .opacity(0.55)
                     .help(Text("agentStatus.done"))
                     .accessibilityLabel(Text("agentStatus.done"))
-            default:
+            } else {
                 EmptyView()
             }
         }

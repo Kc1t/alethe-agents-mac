@@ -50,25 +50,7 @@ final class PaneHostView: NSView {
         FrameAnimator.reducesMotion = context.metrics.reducesMotion
 
         let flat = state.flat && state.fullscreenProjectID.map { !openIDs.contains($0) } ?? true && !openIDs.isEmpty
-        var projects: [ProjectID: Project] = [:]
-        flatOwners = [:]
-        if flat {
-            let open = openIDs.compactMap(document.project)
-            for project in open { for pane in project.visiblePanes { flatOwners[pane.id] = project } }
-            var combined = Project(id: Self.flatID, name: "", folder: "", panes: open.flatMap(\.visiblePanes))
-            combined.paneGroups = open.flatMap { $0.paneGroups ?? [] }
-            projects[Self.flatID] = combined
-        } else {
-            for id in openIDs {
-                guard var project = document.project(id) else { continue }
-                if context.metrics.isWebInterface, let isolated = document.activeWorkspaceTab?.webPaneID {
-                    project.panes = project.panes.filter { $0.id == isolated }
-                    for index in project.panes.indices { project.panes[index].gridID = nil }
-                    project.activeGridID = nil
-                }
-                projects[id] = project
-            }
-        }
+        let projects = visibleProjects(document: document, flat: flat, context: context)
         let ids = flat ? [Self.flatID] : state.fullscreenProjectID.flatMap { openIDs.contains($0) ? [$0] : nil } ?? openIDs
         let groupGrid = document.activeWorkspaceTab?.webGroupID.flatMap { id in
             document.groups.first { $0.id == id }?.gridLayout
@@ -91,7 +73,7 @@ final class PaneHostView: NSView {
                 containers[id] = view
                 return view
             }()
-            view.configure(project: project, isSelected: state.selectedProjectID == id,
+            view.configure(project: project, configuration: ContainerView.Configuration(isSelected: state.selectedProjectID == id,
                            focusedPane: state.focusedPaneID,
                            weights: flat ? state.gridWeights[WorkspaceState.flatWeightsKey] ?? GridWeights()
                                : project.layout == .grid
@@ -101,7 +83,7 @@ final class PaneHostView: NSView {
                            isFullscreen: state.fullscreenProjectID == id,
                            isolatedPane: state.fullscreenProjectID == id ? state.isolatedPaneID : nil,
                            owners: flat ? flatOwners : [:],
-                           showsHeader: !flat && (!context.metrics.isWebInterface || openIDs.count > 1),
+                           showsHeader: !flat && (!context.metrics.isWebInterface || openIDs.count > 1)),
                            context: context) { [weak self] translation in
                 self?.containerDragged(id, translation: translation)
             }
@@ -356,6 +338,29 @@ final class PaneHostView: NSView {
                 context.focus(pane.paneID, in: owner)
             }
         }
+    }
+    private func visibleProjects(document: WorkspaceDocument, flat: Bool,
+                                 context: PaneHostContext) -> [ProjectID: Project] {
+        var projects: [ProjectID: Project] = [:]
+        flatOwners = [:]
+        if flat {
+            let open = openIDs.compactMap(document.project)
+            for project in open { for pane in project.visiblePanes { flatOwners[pane.id] = project } }
+            var combined = Project(id: Self.flatID, name: "", folder: "", panes: open.flatMap(\.visiblePanes))
+            combined.paneGroups = open.flatMap { $0.paneGroups ?? [] }
+            projects[Self.flatID] = combined
+        } else {
+            for id in openIDs {
+                guard var project = document.project(id) else { continue }
+                if context.metrics.isWebInterface, let isolated = document.activeWorkspaceTab?.webPaneID {
+                    project.panes = project.panes.filter { $0.id == isolated }
+                    for index in project.panes.indices { project.panes[index].gridID = nil }
+                    project.activeGridID = nil
+                }
+                projects[id] = project
+            }
+        }
+        return projects
     }
 }
 

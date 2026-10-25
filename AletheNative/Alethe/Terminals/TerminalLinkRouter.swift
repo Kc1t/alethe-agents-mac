@@ -17,24 +17,23 @@ extension AppEnvironment {
             return
         }
         let inPane = NSEvent.modifierFlags.contains(.option)
-        switch link {
-        case .web(let url):
+        if case .web(let url) = link {
             if inPane && features.isOn(.browser) {
                 open(.web(url: url.absoluteString, options: WebPaneOptions()), in: project.id)
             } else {
                 NSWorkspace.shared.open(url)
             }
-        case .file(let path, _):
+        } else if case .file(let path, _) = link {
             if let content = PaneContent.forFile(path) {
                 open(content, in: project.id)
             } else {
                 NSWorkspace.shared.open(URL(filePath: path))
             }
-        case .directory(let path):
+        } else if case .directory(let path) = link {
             NSWorkspace.shared.activateFileViewerSelecting([URL(filePath: path, directoryHint: .isDirectory)])
-        case .other(let url):
+        } else if case .other(let url) = link {
             NSWorkspace.shared.open(url)
-        case .none:
+        } else if case .none = link {
             NSSound.beep()
         }
     }
@@ -71,8 +70,7 @@ private final class LinkActionsMenu: NSObject {
 
     func show(in view: NSView) {
         let menu = NSMenu()
-        switch link {
-        case .web(let url):
+        if case .web(let url) = link {
             add(menu, "linkMenu.openInBrowser") { NSWorkspace.shared.open(url) }
             if environment.features.isOn(.browser) {
                 add(menu, "linkMenu.openInPane") { [environment, project] in
@@ -80,20 +78,20 @@ private final class LinkActionsMenu: NSObject {
                 }
             }
             add(menu, "linkMenu.preview") { [environment] in environment.editorRequest = .previewLink(.web(url)) }
-        case .file(let path, _):
+        } else if case .file(let path, _) = link {
             if let content = PaneContent.forFile(path) {
                 add(menu, "linkMenu.openInPane") { [environment, project] in environment.open(content, in: project) }
             }
             add(menu, "linkMenu.preview") { [environment] in environment.editorRequest = .previewLink(.file(path)) }
             add(menu, "linkMenu.openWithDefaultApp") { NSWorkspace.shared.open(URL(filePath: path)) }
             add(menu, "linkMenu.showInFinder") { NSWorkspace.shared.activateFileViewerSelecting([URL(filePath: path)]) }
-        case .directory(let path):
+        } else if case .directory(let path) = link {
             add(menu, "linkMenu.showInFinder") {
                 NSWorkspace.shared.activateFileViewerSelecting([URL(filePath: path, directoryHint: .isDirectory)])
             }
-        case .other(let url):
+        } else if case .other(let url) = link {
             add(menu, "linkMenu.openWithDefaultApp") { NSWorkspace.shared.open(url) }
-        case .none:
+        } else if case .none = link {
             let item = NSMenuItem(title: String(localized: "linkMenu.notFound"), action: nil, keyEquivalent: "")
             item.isEnabled = false
             menu.addItem(item)

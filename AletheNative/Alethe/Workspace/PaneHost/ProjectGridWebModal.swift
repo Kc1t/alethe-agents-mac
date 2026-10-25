@@ -33,13 +33,12 @@ struct ProjectGridWebModal: View {
             Text(title)
         } content: {
             VStack(alignment: .leading, spacing: metrics.size(8)) {
-                switch mode {
-                case .delete(let grid, let count):
+                if case .delete(let grid, let count) = mode {
                     Text(verbatim: format("projectGrid.web.deleteDescription", grid, count))
                         .font(metrics.font(size: 13))
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("projectGrid.deleteDescription")
-                case .create, .rename:
+                } else {
                     ProjectGroupWebField(title: "projectGrid.web.name") {
                         TextField(text: $name) { Text("projectGrid.web.name") }
                             .modifier(ProjectGroupWebInput(focus: $focused))
@@ -60,14 +59,13 @@ struct ProjectGridWebModal: View {
             Spacer(minLength: 0)
             Button("editor.cancel") { finish(.cancelled) }
                 .accessibilityIdentifier("projectGrid.cancel")
-            switch mode {
-            case .delete:
+            if case .delete = mode {
                 Button("projectGrid.web.keepTerminals") { finish(.confirmed("")) }
                     .accessibilityIdentifier("projectGrid.keep")
                 Button("projectGrid.web.deleteTerminals") { finish(.alternate) }
                     .buttonStyle(AletheButtonStyle(.danger))
                     .accessibilityIdentifier("projectGrid.deleteTerminals")
-            case .create, .rename:
+            } else {
                 Button("editor.save", action: save)
                     .buttonStyle(AletheButtonStyle(.primary))
                     .keyboardShortcut(.defaultAction)
@@ -78,10 +76,12 @@ struct ProjectGridWebModal: View {
     }
 
     private var title: LocalizedStringKey {
-        switch mode {
-        case .create: "projectGrid.web.create"
-        case .rename: "projectGrid.web.rename"
-        case .delete: "projectGrid.web.delete"
+        if case .create = mode {
+            "projectGrid.web.create"
+        } else if case .rename = mode {
+            "projectGrid.web.rename"
+        } else {
+            "projectGrid.web.delete"
         }
     }
 

@@ -57,22 +57,21 @@ final class AgentHookHub {
 
     func launch(for tab: TabID, kind: AgentKind, orchestrator: Bool = false) -> AgentLaunchRequest.HookLaunch? {
         guard let endpoint, let server else { return nil }
-        switch kind {
-        case .claude:
+        if case .claude = kind {
             let file = folder.appending(path: "claude-\(tab.rawValue).json")
             guard (try? AgentHookWiring.claudeSettings(endpoint: endpoint, token: server.token, tab: tab.rawValue,
                                                        orchestrator: orchestrator)
                 .write(to: file)) != nil else { return nil }
             try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
             return AgentLaunchRequest.HookLaunch(claudeSettingsPath: file.path)
-        case .codex:
+        } else if case .codex = kind {
             guard let codexScript else { return nil }
             var arguments = AgentHookWiring.codexArguments(script: codexScript.path, tab: tab.rawValue)
             if orchestrator, let codexHookScript {
                 arguments += AgentHookWiring.codexSubagentArguments(script: codexHookScript.path, tab: tab.rawValue)
             }
             return AgentLaunchRequest.HookLaunch(codexArguments: arguments)
-        default:
+        } else {
             return nil
         }
     }

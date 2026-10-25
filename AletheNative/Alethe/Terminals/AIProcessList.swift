@@ -15,10 +15,11 @@ struct AIProcessList: View {
         case child(sessionPID: pid_t, node: ProcessNode)
 
         var id: String {
-            switch self {
-            case .session(let tab, _, _): "session.\(tab.rawValue)"
-            case .child(_, let node): "child.\(node.pid)"
+            if case .session(let tab, _, _) = self {
+                return "session.\(tab.rawValue)"
             }
+            guard case .child(_, let node) = self else { preconditionFailure("Invalid kill target") }
+            return "child.\(node.pid)"
         }
     }
 
@@ -113,8 +114,7 @@ struct AIProcessList: View {
     }
 
     @ViewBuilder private func confirmation(_ kill: Kill) -> some View {
-        switch kill {
-        case .session(let tab, let name, let children):
+        if case .session(let tab, let name, let children) = kill {
             WebConfirmationModal(
                 title: Text(verbatim: String(format: String(localized: "memory.ai.killSession.title"), name)),
                 message: Text(verbatim: String(format: String(localized: "memory.ai.killSession.message"), children)),
@@ -122,7 +122,7 @@ struct AIProcessList: View {
                     environment.terminals.view(for: tab)?.forceKillTree()
                     refreshSoon()
                 }
-        case .child(let sessionPID, let node):
+        } else if case .child(let sessionPID, let node) = kill {
             WebConfirmationModal(
                 title: Text(verbatim: String(format: String(localized: "memory.ai.killChild.title"), node.name)),
                 message: Text("memory.ai.killChild.message"),

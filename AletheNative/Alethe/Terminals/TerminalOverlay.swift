@@ -14,9 +14,10 @@ struct TerminalOverlay: View {
     @Environment(\.metrics) private var metrics
 
     static func isNeeded(for state: TerminalRegistry.State?) -> Bool {
-        switch state {
-        case .running, nil: false
-        default: true
+        if (state == .running || state == nil) {
+            false
+        } else {
+            true
         }
     }
 
@@ -46,20 +47,19 @@ struct TerminalOverlay: View {
     private var nativeOverlay: some View {
         ZStack {
             Color.clear
-            switch environment.terminals.states[tab.id] {
-            case .exited(let code):
+            if case .exited(let code) = environment.terminals.states[tab.id] {
                 overlay {
                     Text(verbatim: format("terminal.exited", Int(code)))
                         .foregroundStyle(theme[.textPrimary])
                     restartButton
                 }
-            case .forceKilled:
+            } else if case .forceKilled = environment.terminals.states[tab.id] {
                 overlay {
                     Text("terminal.forceKilled.overlay")
                         .foregroundStyle(theme[.textPrimary])
                     restartButton
                 }
-            case .notFound(let command):
+            } else if case .notFound(let command) = environment.terminals.states[tab.id] {
                 overlay {
                     Text(verbatim: format("terminal.notFound", AgentLabels.name(for: tab.agent), command))
                         .foregroundStyle(theme[.textPrimary])
@@ -69,13 +69,13 @@ struct TerminalOverlay: View {
                         restartButton
                     }
                 }
-            case .failed(let message):
+            } else if case .failed(let message) = environment.terminals.states[tab.id] {
                 overlay {
                     Text("terminal.failed").foregroundStyle(theme[.textPrimary])
                     Text(verbatim: message).font(metrics.font(.footnote)).foregroundStyle(theme[.textSecondary])
                     restartButton
                 }
-            case .running, nil:
+            } else if (environment.terminals.states[tab.id] == .running || environment.terminals.states[tab.id] == nil) {
                 EmptyView()
             }
         }

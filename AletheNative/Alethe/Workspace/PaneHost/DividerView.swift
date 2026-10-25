@@ -63,10 +63,12 @@ final class DividerView: NSView {
         let thickness = m.size(1), gripWidth = m.size(3), gripLength = m.size(36)
         if axis == .vertical {
             centerLine.frame = CGRect(x: (bounds.width - thickness) / 2, y: 0, width: thickness, height: bounds.height)
-            grip.frame = CGRect(x: (bounds.width - gripWidth) / 2, y: (bounds.height - gripLength) / 2, width: gripWidth, height: gripLength)
+            grip.frame = CGRect(x: (bounds.width - gripWidth) / 2, y: (bounds.height - gripLength) / 2,
+                width: gripWidth, height: gripLength)
         } else {
             centerLine.frame = CGRect(x: 0, y: (bounds.height - thickness) / 2, width: bounds.width, height: thickness)
-            grip.frame = CGRect(x: (bounds.width - gripLength) / 2, y: (bounds.height - gripWidth) / 2, width: gripLength, height: gripWidth)
+            grip.frame = CGRect(x: (bounds.width - gripLength) / 2, y: (bounds.height - gripWidth) / 2,
+                width: gripLength, height: gripWidth)
         }
         CATransaction.commit()
     }

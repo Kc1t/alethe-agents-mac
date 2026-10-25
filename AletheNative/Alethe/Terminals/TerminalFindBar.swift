@@ -65,12 +65,11 @@ struct TerminalFindBar: View {
     }
 
     private var statusText: String {
-        switch search.status {
-        case .none: ""
-        case .noResults: String(localized: "find.noResults")
-        case .match(let position, let total): format("find.position", position, total)
-        case .count(let total): format("find.count", total)
-        }
+        if case .none = search.status { return "" }
+        if case .noResults = search.status { return String(localized: "find.noResults") }
+        if case .match(let position, let total) = search.status { return format("find.position", position, total) }
+        guard case .count(let total) = search.status else { preconditionFailure("Invalid search status") }
+        return format("find.count", total)
     }
 
     private func button(_ symbol: String, label: LocalizedStringKey, id: String,

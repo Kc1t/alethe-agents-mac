@@ -104,14 +104,17 @@ struct WebPaneView: View {
                 Text("web.javascript")
             }
             Divider()
-            Button("web.zoomIn") { update { options, _ in options.zoom = min(options.zoom + 0.1, WebPaneOptions.zoomRange.upperBound) }(()) }
-            Button("web.zoomOut") { update { options, _ in options.zoom = max(options.zoom - 0.1, WebPaneOptions.zoomRange.lowerBound) }(()) }
+            Button("web.zoomIn") { update { options, _ in options.zoom = min(options.zoom + 0.1,
+                WebPaneOptions.zoomRange.upperBound) }(()) }
+            Button("web.zoomOut") { update { options, _ in options.zoom = max(options.zoom - 0.1,
+                WebPaneOptions.zoomRange.lowerBound) }(()) }
             Button("web.actualSize") { update { options, _ in options.zoom = 1 }(()) }
             Divider()
             if metrics.isWebInterface {
                 ForEach([WebResourceMode.appFirst, .balanced, .keepAlive], id: \.self) { mode in
                     Button { update { $0.resourceMode = $1 }(mode) } label: {
-                        WebMenuCheckRow(title: Text(mode == .appFirst ? "web.mode.appFirst" : mode == .balanced ? "web.mode.balanced" : "web.mode.keepAlive"),
+                        WebMenuCheckRow(title: Text(mode == .appFirst ? "web.mode.appFirst" : mode == .balanced
+                            ? "web.mode.balanced" : "web.mode.keepAlive"),
                             symbol: "memorychip", selected: mode == page.options.resourceMode)
                     }
                 }

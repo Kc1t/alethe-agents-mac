@@ -10,7 +10,7 @@ import SwiftUI
 final class PaneView: NSView {
     let paneID: PaneID
     private(set) var tabID: TabID?
-    private let header = NSHostingView(rootView: AnyView(EmptyView()))
+    let header = NSHostingView(rootView: AnyView(EmptyView()))
     private var lane: NSHostingView<AnyView>?
     private let content = NSView()
     private var overlay: NSHostingView<AnyView>?
@@ -39,7 +39,8 @@ final class PaneView: NSView {
         content.setAccessibilityIdentifier("terminal.pane")
         setAccessibilityElement(true)
         setAccessibilityRole(.group)
-        defaultsObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
+        defaultsObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification,
+            object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self, let context = self.context, let last = self.lastStyle else { return }
                 self.style(focused: last.focused, dropTarget: last.dropTarget, context: context)
@@ -52,7 +53,7 @@ final class PaneView: NSView {
 
     override var isFlipped: Bool { true }
 
-    private var webTopbarPinned = true
+    var webTopbarPinned = true
     private var headerHeight: CGFloat = 28
     private var laneWidth: CGFloat = 36
     private let focusInset = CALayer()
@@ -97,11 +98,13 @@ final class PaneView: NSView {
         let isMedia = media == .image || media == .video
         let showFocus = focusEnabled && focused && (!web || isMedia || context.environment.focusModePaneID != paneID)
         let frameColor = context.theme.nsColor(dropTarget ? (web ? .focusRing : .accent) : showFocus ? focusToken : .border)
-        layer?.borderColor = (showFocus && !dropTarget ? frameColor.withAlphaComponent(frameColor.alphaComponent * focusOpacity) : frameColor).cgColor
+        layer?.borderColor = (showFocus && !dropTarget
+            ? frameColor.withAlphaComponent(frameColor.alphaComponent * focusOpacity) : frameColor).cgColor
         layer?.backgroundColor = context.theme.nsColor(.bgSunken).cgColor
         if web && focusEnabled && focused && context.environment.focusModePaneID != paneID {
             if focusInset.superlayer == nil { layer?.addSublayer(focusInset) }
-            focusInset.borderColor = context.theme.nsColor(focusToken).withAlphaComponent((context.metrics.style == .clean ? 1 : 0.7) * focusOpacity).cgColor
+            focusInset.borderColor
+                = context.theme.nsColor(focusToken).withAlphaComponent((context.metrics.style == .clean ? 1 : 0.7) * focusOpacity).cgColor
             focusInset.borderWidth = context.metrics.size(1)
             focusInset.zPosition = 10
         } else { focusInset.removeFromSuperlayer() }
@@ -126,32 +129,8 @@ final class PaneView: NSView {
         header.alphaValue = 1
         alphaValue = context.metrics.isWebInterface && pane.isDisabled ? 0.85 : 1
         laneWidth = context.metrics.size(36)
-        let isIsolated = context.workspace?.document.workspace.isolatedPaneID == pane.id
-        header.rootView = context.hosted(PaneHeader(
-            tab: tab, isFocused: focused, isLaneVisible: pane.isLaneVisible, canHideLane: pane.tabs.count == 1,
-            isIsolated: isIsolated,
-            onClose: { context.closePane(pane.id) },
-            onNewSubTab: { context.newSubTab(in: pane.id) },
-            onToggleLane: { context.setLaneVisible(!pane.isLaneVisible, for: pane.id) },
-            onToggleIsolation: { context.isolate(isIsolated ? nil : pane.id) },
-            onFillFreeSpace: canFill(pane: pane, project: project) ? { context.fillFreeSpace(pane.id) } : nil,
-            gridTargets: GridTarget.all(for: pane, in: project),
-            onMoveToGrid: { context.movePane(pane.id, toGrid: $0) },
-            isInFocusMode: context.environment.focusModePaneID == pane.id,
-            onToggleFocus: { context.setFocusMode(context.environment.focusModePaneID == pane.id ? nil : pane.id) },
-            onDisable: { context.setDisabled(pane.id, true) },
-            isRemoteShared: pane.isRemoteShared,
-            onToggleRemoteShared: { environment.remoteControl.setShared(pane.id, !pane.isRemoteShared) },
-            onSessionCost: tab.sessionID == nil ? nil : { context.environment.editorRequest = .sessionCost(tab.id) },
-            onHandoff: Handoff.supports(AgentKind(rawValue: tab.agent)) ? { context.environment.editorRequest = .handoff(tab.id) } : nil,
-            onDrag: onDrag,
-            topbarPinned: webTopbarPinned,
-            canDragPane: project.visiblePanes.count > 1 && environment.focusModePaneID != pane.id,
-            onToggleTopbar: { [weak self] in
-                guard let self else { return }
-                UserDefaults.standard.set(self.webTopbarPinned, forKey: "pane.web.unpinned." + pane.id.rawValue)
-                self.configure(pane: pane, project: project, focused: focused, dropTarget: dropTarget, context: context, onDrag: onDrag)
-            }))
+        configureHeader(pane: pane, project: project, focused: focused, dropTarget: dropTarget,
+                        context: context, onDrag: onDrag)
         updateHeaderVisibility()
         onPaneDrag = onDrag
         configureLane(pane: pane, project: project, focused: focused, context: context)
@@ -202,57 +181,7 @@ final class PaneView: NSView {
         overlay = nil
         style(focused: focused, dropTarget: dropTarget, context: context)
 
-        let view: AnyView
-        switch pane.content {
-        case .markdown(let path):
-            setAccessibilityIdentifier("pane.\((path as NSString).lastPathComponent)")
-            let file = context.environment.contentPanes.markdown(for: pane.id, path: path)
-            view = context.hosted(MarkdownPaneView(file: file, isFocused: focused,
-                                                   onClose: { context.closePane(pane.id) }, onDrag: onDrag))
-        case .image(let path):
-            setAccessibilityIdentifier("pane.\((path as NSString).lastPathComponent)")
-            let file = context.environment.contentPanes.image(for: pane.id, path: path)
-            view = context.hosted(ImagePaneView(file: file, isFocused: focused,
-                                                onClose: { context.closePane(pane.id) }, onDrag: onDrag))
-        case .video(let path):
-            setAccessibilityIdentifier("pane.\((path as NSString).lastPathComponent)")
-            let player = context.environment.contentPanes.player(for: pane.id, path: path)
-            view = context.hosted(VideoPaneView(url: URL(filePath: path), player: player, isFocused: focused,
-                                                onClose: { context.closePane(pane.id) }, onDrag: onDrag))
-        case .diff(let path, let staged):
-            setAccessibilityIdentifier("pane.diff")
-            let model = context.environment.contentPanes.diff(for: pane.id, folder: project.folder, path: path, staged: staged)
-            view = context.hosted(DiffPaneView(
-                model: model, isFocused: focused,
-                onStagedChange: { context.setContent(.diff(path: path, staged: $0), for: pane.id) },
-                onClose: { context.closePane(pane.id) }, onDrag: onDrag))
-        case .web(let url, let options):
-            setAccessibilityIdentifier("pane.web")
-            let page = context.environment.contentPanes.page(for: pane.id, url: url, options: options)
-            page.onAddressChange = { [weak page] address in
-                context.setContent(.web(url: address.absoluteString, options: page?.options ?? options), for: pane.id)
-            }
-            view = context.hosted(WebPaneView(
-                page: page, isFocused: focused,
-                onOptionsChange: { [weak page] in
-                    context.setContent(.web(url: page?.url?.absoluteString ?? url, options: $0), for: pane.id)
-                },
-                onClose: { context.closePane(pane.id) }, onDrag: onDrag))
-        case .graphify:
-            setAccessibilityIdentifier("pane.graphify")
-            let graphify = context.environment.graphify
-            let model = context.environment.contentPanes.graph(for: pane.id, root: graphify.root(for: project.folder),
-                                                                controller: graphify)
-            view = context.hosted(GraphifyPaneView(model: model, project: project.id, isFocused: focused,
-                                                   onClose: { context.closePane(pane.id) }, onDrag: onDrag))
-        case .orchestrator:
-            setAccessibilityIdentifier("pane.orchestrator")
-            view = context.hosted(OrchestratorPaneView(project: project.id, isFocused: focused,
-                                                       onClose: { context.closePane(pane.id) },
-                                                       onDrag: onDrag))
-        case .terminal:
-            view = AnyView(EmptyView())
-        }
+        let view = contentView(pane: pane, project: project, focused: focused, context: context, onDrag: onDrag)
         let identified = AnyView(view.environment(\.contentPaneID, pane.id))
         if let contentHost {
             contentHost.rootView = identified
@@ -432,7 +361,7 @@ final class PaneView: NSView {
         }
     }
 
-    private func canFill(pane: Pane, project: Project) -> Bool {
+    func canFill(pane: Pane, project: Project) -> Bool {
         guard project.layout == .grid else { return false }
         let grid = project.effectiveGrid, ids = project.visiblePanes.map(\.id.rawValue)
         return grid.fillingFreeSpace(ids, pane.id.rawValue) != grid

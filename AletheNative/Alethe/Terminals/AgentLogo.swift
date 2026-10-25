@@ -13,7 +13,8 @@ struct AgentLogo: View {
     var body: some View {
         let side = metrics.size(size)
         Group {
-            if metrics.isWebInterface, Self.asset(for: agent, isLight: theme.isLight) == nil, let definition = environment.preferences?.document.customAgents?.first(where: { $0.id == agent }) {
+            if metrics.isWebInterface, Self.asset(for: agent, isLight: theme.isLight) == nil, let definition
+                = environment.preferences?.document.customAgents?.first(where: { $0.id == agent }) {
                 CustomAgentIcon(definition: definition, size: size)
             } else if let asset = Self.asset(for: agent, isLight: theme.isLight),
                metrics.isWebInterface || !Self.webOnlyAgents.contains(agent) {
@@ -73,23 +74,26 @@ struct AgentLogo: View {
         let template: Bool
     }
 
+    private static let assets: [String: Asset] = [
+        "claude": Asset(name: "AgentLogo-claude", template: false),
+        "codex": Asset(name: "AgentLogo-codex", template: false),
+        "freebuff": Asset(name: "AgentLogo-freebuff", template: false),
+        "antigravity": Asset(name: "AgentLogo-antigravity", template: false),
+        "kiro": Asset(name: "AgentLogo-kiro", template: false),
+        "mimo": Asset(name: "AgentLogo-mimo", template: true),
+        "cursor": Asset(name: "AgentLogo-cursor", template: true),
+        "copilot": Asset(name: "AgentLogo-copilot", template: true),
+        "kimi": Asset(name: "AgentLogo-kimi", template: true),
+        "grok": Asset(name: "AgentLogo-grok", template: true),
+        "codewhale": Asset(name: "AgentLogo-codewhale", template: true),
+        "wsl": Asset(name: "AgentLogo-wsl", template: true),
+        "shell": Asset(name: "AgentLogo-shell", template: true)
+    ]
+
     static func asset(for agent: String, isLight: Bool) -> Asset? {
-        switch agent {
-        case "claude": Asset(name: "AgentLogo-claude", template: false)
-        case "codex": Asset(name: "AgentLogo-codex", template: false)
-        case "freebuff": Asset(name: "AgentLogo-freebuff", template: false)
-        case "antigravity": Asset(name: "AgentLogo-antigravity", template: false)
-        case "kiro": Asset(name: "AgentLogo-kiro", template: false)
-        case "opencode": Asset(name: isLight ? "AgentLogo-opencode-light" : "AgentLogo-opencode-dark", template: false)
-        case "mimo": Asset(name: "AgentLogo-mimo", template: true)
-        case "cursor": Asset(name: "AgentLogo-cursor", template: true)
-        case "copilot": Asset(name: "AgentLogo-copilot", template: true)
-        case "kimi": Asset(name: "AgentLogo-kimi", template: true)
-        case "grok": Asset(name: "AgentLogo-grok", template: true)
-        case "codewhale": Asset(name: "AgentLogo-codewhale", template: true)
-        case "wsl": Asset(name: "AgentLogo-wsl", template: true)
-        case "shell": Asset(name: "AgentLogo-shell", template: true)
-        default: nil
+        if agent == "opencode" {
+            return Asset(name: isLight ? "AgentLogo-opencode-light" : "AgentLogo-opencode-dark", template: false)
         }
+        return assets[agent]
     }
 }

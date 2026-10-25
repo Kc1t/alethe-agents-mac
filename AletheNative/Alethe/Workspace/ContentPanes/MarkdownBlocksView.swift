@@ -24,8 +24,7 @@ private struct MarkdownBlockView: View {
     @Environment(\.metrics) private var metrics
 
     var body: some View {
-        switch block {
-        case .heading(let level, let text):
+        if case .heading(let level, let text) = block {
             VStack(alignment: .leading, spacing: metrics.space(.xs)) {
                 Text(text)
                     .font(headingFont(level))
@@ -34,15 +33,15 @@ private struct MarkdownBlockView: View {
             }
             .padding(.top, level <= 2 ? metrics.space(.s) : 0)
             .accessibilityAddTraits(.isHeader)
-        case .paragraph(let text):
+        } else if case .paragraph(let text) = block {
             Text(text)
                 .font(metrics.isWebInterface ? metrics.font(size: 14) : metrics.font(.body))
                 .foregroundStyle(theme[.textPrimary])
                 .lineSpacing(metrics.isWebInterface ? metrics.size(9.1) : metrics.space(.xxs))
                 .fixedSize(horizontal: false, vertical: true)
-        case .image(let source, let alt):
+        } else if case .image(let source, let alt) = block {
             MarkdownImage(source: source, alt: alt)
-        case .code(_, let code):
+        } else if case .code(_, let code) = block {
             ScrollView(.horizontal) {
                 Text(verbatim: code)
                     .font(metrics.font(.body).monospaced())
@@ -53,18 +52,18 @@ private struct MarkdownBlockView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(theme[.bgSunken], in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
             .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.borderSubtle]))
-        case .html(let html):
+        } else if case .html(let html) = block {
             Text(verbatim: html)
                 .font(metrics.font(.body).monospaced())
                 .foregroundStyle(theme[.textSecondary])
-        case .quote(let blocks):
+        } else if case .quote(let blocks) = block {
             HStack(alignment: .top, spacing: metrics.space(.m)) {
                 Rectangle().fill(theme[.borderStrong]).frame(width: metrics.size(3))
                 MarkdownBlocksView(blocks: blocks)
                     .foregroundStyle(theme[.textSecondary])
             }
             .fixedSize(horizontal: false, vertical: true)
-        case .list(let ordered, let start, let items):
+        } else if case .list(let ordered, let start, let items) = block {
             VStack(alignment: .leading, spacing: metrics.space(.xs)) {
                 ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                     HStack(alignment: .firstTextBaseline, spacing: metrics.space(.s)) {
@@ -73,7 +72,7 @@ private struct MarkdownBlockView: View {
                     }
                 }
             }
-        case .table(let header, let alignments, let rows):
+        } else if case .table(let header, let alignments, let rows) = block {
             ScrollView(.horizontal) {
                 Grid(alignment: .leading, horizontalSpacing: 0, verticalSpacing: 0) {
                     GridRow {
@@ -92,7 +91,7 @@ private struct MarkdownBlockView: View {
                 .overlay(Rectangle().strokeBorder(theme[.border]))
             }
             .webScrollStyle()
-        case .rule:
+        } else if case .rule = block {
             Rectangle().fill(theme[.border]).frame(height: metrics.size(1))
         }
     }
@@ -102,11 +101,14 @@ private struct MarkdownBlockView: View {
             let multiplier: CGFloat = level == 1 ? 1.7 : level == 2 ? 1.4 : level == 3 ? 1.18 : 1
             return metrics.font(size: 14 * multiplier, weight: .semibold)
         }
-        return switch level {
-        case 1: metrics.font(.title1)
-        case 2: metrics.font(.title2)
-        case 3: metrics.font(.title3)
-        default: metrics.font(.headline)
+        return if case 1 = level {
+            metrics.font(.title1)
+        } else if case 2 = level {
+            metrics.font(.title2)
+        } else if case 3 = level {
+            metrics.font(.title3)
+        } else {
+            metrics.font(.headline)
         }
     }
 

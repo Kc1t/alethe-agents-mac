@@ -67,10 +67,12 @@ final class UsageMonitor {
     }
 
     nonisolated private static func fetch(_ provider: AgentKind, executable: String?) async -> ProviderUsage {
-        switch provider {
-        case .claude: await AIUsage.claude()
-        case .codex: await AIUsage.codex(executable: executable)
-        default: await AIUsage.antigravity(executable: executable)
+        if case .claude = provider {
+            await AIUsage.claude()
+        } else if case .codex = provider {
+            await AIUsage.codex(executable: executable)
+        } else {
+            await AIUsage.antigravity(executable: executable)
         }
     }
 
@@ -79,7 +81,8 @@ final class UsageMonitor {
     }
 
     func consumeResetCredit(_ credit: CodexResetCredit?) async -> Bool {
-        guard let environment, let executable = environment.launchers.resolve("codex", override: environment.preferences?.document.cliPaths?["codex"]),
+        guard let environment, let executable = environment.launchers.resolve("codex",
+            override: environment.preferences?.document.cliPaths?["codex"]),
               let fresh = await AIUsage.consumeCodexResetCredit(executable: executable, credit: credit?.id) else { return false }
         store(fresh)
         return true

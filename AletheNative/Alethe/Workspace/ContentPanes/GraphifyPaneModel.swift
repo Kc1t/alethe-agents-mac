@@ -40,7 +40,8 @@ final class GraphifyPaneModel {
     var isLayingOut: Bool { state == .loaded && layout == nil }
     var searchResults: [Int] { graph?.search(query) ?? [] }
 
-    var selectedNodeInfo: GraphNode? { selectedNode.flatMap { index in graph?.nodes.indices.contains(index) == true ? graph?.nodes[index] : nil } }
+    var selectedNodeInfo: GraphNode? { selectedNode.flatMap {
+        index in graph?.nodes.indices.contains(index) == true ? graph?.nodes[index] : nil } }
 
     var neighbors: [Int] {
         guard let selectedNode, let layout else { return [] }
@@ -74,13 +75,12 @@ final class GraphifyPaneModel {
             let list = await snapshots
             guard generation == self.generation else { return }
             self.snapshots = list
-            switch result {
-            case .success(let graph):
+            if case .success(let graph) = result {
                 show(graph, generation: generation)
-            case .failure(GraphifyError.graphNotFound):
+            } else if case .failure(GraphifyError.graphNotFound) = result {
                 clearGraph()
                 state = .empty
-            case .failure:
+            } else if case .failure = result {
                 clearGraph()
                 state = .failed(String(localized: "graphify.readFailed"))
             }
