@@ -162,7 +162,10 @@ struct McpFilterPresentation: ViewModifier {
     let selected: Bool
     @Environment(\.metrics) private var metrics
     func body(content: Content) -> some View {
-        if metrics.isWebInterface { content.buttonStyle(AletheSidebarFilterStyle(selected: selected, kind: .agent)) }
-        else { content.buttonStyle(.plain) }
+        if metrics.isWebInterface {
+            content.buttonStyle(AletheSidebarFilterStyle(selected: selected, kind: .agent))
+        } else {
+            content.buttonStyle(.plain)
+        }
     }
 }

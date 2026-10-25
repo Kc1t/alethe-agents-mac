@@ -1,8 +1,8 @@
 import AletheFoundation
 import AletheGit
+@testable import AletheIntegrations
 import Foundation
 import Testing
-@testable import AletheIntegrations
 
 private struct PlanningRepo {
     static let runner = GitRunner(environment: [

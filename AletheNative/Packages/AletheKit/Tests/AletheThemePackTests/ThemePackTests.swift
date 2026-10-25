@@ -1,8 +1,8 @@
 import AletheDesign
 import AlethePluginKit
+@testable import AletheThemePack
 import Foundation
 import Testing
-@testable import AletheThemePack
 
 @Suite struct ThemePackTests {
     @Test(arguments: ThemePack.themeIDs)

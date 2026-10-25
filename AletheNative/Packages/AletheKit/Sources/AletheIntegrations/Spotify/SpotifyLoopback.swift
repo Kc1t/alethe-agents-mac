@@ -102,7 +102,10 @@ final class SpotifyLoopbackListener: @unchecked Sendable {
     }
 
     private func start(ready: @escaping @Sendable () async -> Bool) {
-        guard let endpointPort = NWEndpoint.Port(rawValue: port) else { return finish(.failure(.listenerFailed("port"))) }
+        guard let endpointPort = NWEndpoint.Port(rawValue: port) else {
+            finish(.failure(.listenerFailed("port")))
+            return
+        }
         let parameters = NWParameters.tcp
         parameters.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: endpointPort)
         parameters.allowLocalEndpointReuse = false
@@ -110,14 +113,18 @@ final class SpotifyLoopbackListener: @unchecked Sendable {
         do {
             listener = try NWListener(using: parameters)
         } catch {
-            return finish(.failure(Self.map(error)))
+            finish(.failure(Self.map(error)))
+            return
         }
         let proceed = lock.withLock { () -> Bool in
             guard result == nil else { return false }
             self.listener = listener
             return true
         }
-        guard proceed else { return listener.cancel() }
+        guard proceed else {
+            listener.cancel()
+            return
+        }
         listener.newConnectionHandler = { [weak self] connection in self?.accept(connection) }
         listener.stateUpdateHandler = { [weak self] state in
             guard let self else { return }

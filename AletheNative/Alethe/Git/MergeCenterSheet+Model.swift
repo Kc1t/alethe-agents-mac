@@ -95,8 +95,7 @@ final class MergeCenterModel {
         task = Task {
             let work = Task.detached {
                 do { return Result<MergeAnalysis, Error>.success(
-                    try await MergeAnalyzer(root: root).analyze(source: source, target: target)) }
-                catch { return .failure(error) }
+                    try await MergeAnalyzer(root: root).analyze(source: source, target: target)) } catch { return .failure(error) }
             }
             let outcome = await withTaskCancellationHandler { await work.value } onCancel: { work.cancel() }
             guard !Task.isCancelled else { return }

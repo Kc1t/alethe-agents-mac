@@ -1,6 +1,6 @@
+@testable import AletheModel
 import Foundation
 import Testing
-@testable import AletheModel
 
 @Suite struct ResourcePolicyTests {
     private func runtime(_ id: String, shell: Bool = false, lastOutput: TimeInterval = 1, started: TimeInterval = 1,

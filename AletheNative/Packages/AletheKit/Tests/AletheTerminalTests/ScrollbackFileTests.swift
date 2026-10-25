@@ -1,7 +1,7 @@
+@testable import AletheTerminal
 import Foundation
 import Testing
 import XCTest
-@testable import AletheTerminal
 
 @Suite struct ScrollbackFileTests {
     private func file(cap: Int = 1024) -> (ScrollbackFile, URL) {

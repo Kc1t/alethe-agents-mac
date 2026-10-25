@@ -126,8 +126,11 @@ struct AgentInstallSheet: View {
                 .accessibilityIdentifier("agentInstall.succeeded")
         } else if case .failed = installer.status {
             Group {
-                if mode == .install { Text("agentInstall.web.failed") }
-                else { Text(verbatim: String(format: String(localized: "agentInstall.failed"), agent.displayName)) }
+                if mode == .install {
+                    Text("agentInstall.web.failed")
+                } else {
+                    Text(verbatim: String(format: String(localized: "agentInstall.failed"), agent.displayName))
+                }
             }
             .font(metrics.font(size: 13)).foregroundStyle(theme[.statusOffline])
             .accessibilityIdentifier("agentInstall.failed")
@@ -236,7 +239,8 @@ struct AgentInstallSheet: View {
                 Button("agentInstall.installNode") {
                     Task { await installer.run(node, for: agent.kind, cli: "npm", launchers: environment.launchers)
                         toolchain = await installer.toolchain(launchers: environment.launchers)
-                        selection = methods.first?.id }
+                        selection = methods.first?.id
+                    }
                 }
                 .disabled(installer.isBusy)
             } else {
@@ -252,12 +256,14 @@ struct AgentInstallSheet: View {
     private var result: some View {
         if case .succeeded = installer.status {
             Label { Text(String(format: String(localized: mode.success), agent.displayName)) } icon: {
-                Image(systemName: "checkmark.circle.fill").webProfileSized(14) }
+                Image(systemName: "checkmark.circle.fill").webProfileSized(14)
+            }
                 .foregroundStyle(theme[.statusActive])
                 .accessibilityIdentifier("agentInstall.succeeded")
         } else if case .failed = installer.status {
             Label { Text(String(format: String(localized: "agentInstall.failed"), agent.displayName)) } icon: {
-                Image(systemName: "exclamationmark.triangle.fill").webProfileSized(14) }
+                Image(systemName: "exclamationmark.triangle.fill").webProfileSized(14)
+            }
                 .foregroundStyle(theme[.statusStopped])
                 .accessibilityIdentifier("agentInstall.failed")
         } else if case .running = installer.status {

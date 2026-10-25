@@ -1,7 +1,7 @@
 #if DEBUG
+@testable import AletheModel
 import Foundation
 import Testing
-@testable import AletheModel
 
 @Suite struct DebugSampleProjectTests {
     @Test func webPreviewOpensItsOwnTabAndReusesIt() {

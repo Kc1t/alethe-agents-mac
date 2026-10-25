@@ -121,8 +121,11 @@ public struct ActivityTotals: Codable, Hashable, Sendable {
             if sample.userActive { totals.userActiveMs += duration } else { totals.userIdleMs += duration }
             if let project = sample.activeProjectID {
                 projects[project, default: ProjectTotals()].focusedMs += duration
-                if sample.userActive { projects[project, default: ProjectTotals()].activeMs += duration }
-                else { projects[project, default: ProjectTotals()].idleMs += duration }
+                if sample.userActive {
+                    projects[project, default: ProjectTotals()].activeMs += duration
+                } else {
+                    projects[project, default: ProjectTotals()].idleMs += duration
+                }
             }
         }
 

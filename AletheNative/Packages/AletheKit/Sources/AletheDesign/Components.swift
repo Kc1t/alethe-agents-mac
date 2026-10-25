@@ -71,15 +71,23 @@ private struct AletheButtonBody: View {
     }
 
     private var background: Color {
-        if case .secondary = kind { return theme[hovering ? .panelHover : .panel] }
-        else if case .primary = kind { return theme[hovering ? .accentStrong : .accent] }
-        else { return theme[.statusOffline].opacity(hovering ? 0.85 : 1) }
+        if case .secondary = kind {
+            return theme[hovering ? .panelHover : .panel]
+        } else if case .primary = kind {
+            return theme[hovering ? .accentStrong : .accent]
+        } else {
+            return theme[.statusOffline].opacity(hovering ? 0.85 : 1)
+        }
     }
 
     private var border: Color {
-        if case .secondary = kind { return theme[hovering ? .borderStrong : .border] }
-        else if case .primary = kind { return .clear }
-        else { return .clear }
+        if case .secondary = kind {
+            return theme[hovering ? .borderStrong : .border]
+        } else if case .primary = kind {
+            return .clear
+        } else {
+            return .clear
+        }
     }
 }
 

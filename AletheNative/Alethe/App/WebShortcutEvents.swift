@@ -80,10 +80,15 @@ struct WebShortcutEvents: NSViewRepresentable {
                                workspace: WorkspaceModel, environment: AppEnvironment) -> Bool {
             let flags = event.modifierFlags.intersection([.command, .control, .option, .shift])
             let direction: Int
-            if flags == .control, event.keyCode == 116 { direction = -1 }
-            else if flags == .control, event.keyCode == 121 { direction = 1 }
-            else if flags == .shift, event.keyCode == 48, !editable, !terminalFocused { direction = 1 }
-            else { return false }
+            if flags == .control, event.keyCode == 116 {
+                direction = -1
+            } else if flags == .control, event.keyCode == 121 {
+                direction = 1
+            } else if flags == .shift, event.keyCode == 48, !editable, !terminalFocused {
+                direction = 1
+            } else {
+                return false
+            }
             let doc = workspace.document
             let group = doc.activeWorkspaceTab?.webGroupID
             let scoped: Set<ProjectID>

@@ -1,5 +1,5 @@
-import Testing
 @testable import AletheAgents
+import Testing
 
 @Suite struct AgentInstallTests {
     private let everything = InstallToolchain(node: "22.1.0", npm: true, brew: true)

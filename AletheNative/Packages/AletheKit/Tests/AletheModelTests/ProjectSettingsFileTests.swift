@@ -1,6 +1,6 @@
+@testable import AletheModel
 import Foundation
 import Testing
-@testable import AletheModel
 
 struct ProjectSettingsFileTests {
     private func project() -> Project {

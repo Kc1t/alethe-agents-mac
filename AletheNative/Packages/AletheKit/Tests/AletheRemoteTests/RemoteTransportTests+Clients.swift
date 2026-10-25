@@ -1,7 +1,7 @@
+@testable import AletheRemote
 import Foundation
 import Network
 import Testing
-@testable import AletheRemote
 
 private func callback<Value: Sendable>(
     timeout: Duration,

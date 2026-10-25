@@ -22,7 +22,6 @@ func eventually(timeout: TimeInterval = 5, _ condition: () -> Bool) -> Bool {
     return condition()
 }
 
-
 @MainActor
 func paste(_ text: String, into app: XCUIApplication) {
     let pasteboard = NSPasteboard.general

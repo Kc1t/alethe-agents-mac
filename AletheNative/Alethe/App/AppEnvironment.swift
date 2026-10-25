@@ -5,9 +5,9 @@ import AletheGitControl
 import AletheIntegrations
 import AletheModel
 import AlethePluginKit
-import AletheTodos
 import AletheTerminal
 import AletheThemePack
+import AletheTodos
 import AppKit
 import Foundation
 import Observation

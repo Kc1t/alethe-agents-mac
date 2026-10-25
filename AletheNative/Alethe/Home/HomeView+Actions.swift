@@ -66,8 +66,7 @@ struct HomeActions: View {
         Button(action: action) {
             HStack(spacing: metrics.space(.m)) {
                 Image(systemName: icon).webProfileSized(14).frame(width: metrics.size(18)).foregroundStyle(theme[.textSecondary])
-                if metrics.isWebInterface { Text(webTitle(id)).font(metrics.font(size: 12)) }
-                else { Text(title) }
+                if metrics.isWebInterface { Text(webTitle(id)).font(metrics.font(size: 12)) } else { Text(title) }
                 Spacer()
                 if let keys, !metrics.isWebInterface { Text(verbatim: keys).font(metrics.font(.footnote))
                     .foregroundStyle(theme[.textTertiary]) }
@@ -89,4 +88,3 @@ struct HomeActions: View {
         .accessibilityIdentifier(id)
     }
 }
-

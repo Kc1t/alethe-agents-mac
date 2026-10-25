@@ -1,6 +1,6 @@
+@testable import AletheGit
 import Foundation
 import Testing
-@testable import AletheGit
 
 @Suite struct GitParsersTests {
     @Test func parsesBranchHeadersAndEveryEntryKind() {

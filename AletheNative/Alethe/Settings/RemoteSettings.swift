@@ -197,7 +197,8 @@ struct RemoteSettings: View {
                 .settingsRowSurface(.option)
                 WebSelectRow(title: "settings.remote.expiry", detail: "settings.remote.expiry.help",
                              selection: Binding(get: { remote.sessionExpirySecs }, set: { value in update {
-                                 $0.sessionExpirySecs = value } }),
+                                 $0.sessionExpirySecs = value
+                             } }),
                              options: Self.expiryOptions(including: remote.sessionExpirySecs), triggerWidth: nil,
                              titleSize: 12, titleWeight: .medium, detailSize: 10.5, spacing: 14) { Self.expiryLabel($0) }
                     .accessibilityIdentifier("settings.remote.expiry")

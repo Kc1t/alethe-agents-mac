@@ -1,6 +1,6 @@
+@testable import AletheFoundation
 import Foundation
 import Testing
-@testable import AletheFoundation
 
 @Suite struct AppLanguageTests {
     private func withDomain(_ body: (UserDefaults, LanguageSetting) -> Void) {

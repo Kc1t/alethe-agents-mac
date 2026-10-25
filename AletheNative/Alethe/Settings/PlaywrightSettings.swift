@@ -111,16 +111,17 @@ struct PlaywrightOptions: View {
     }
 
     private func status(_ state: PlaywrightBrowser.State) -> Text {
-        if case .stopped = state {
-            Text("settings.playwright.status.stopped")
-        } else if case .starting = state {
-            Text("settings.playwright.status.starting")
-        } else if case .running(let info) = state {
-            Text(verbatim: String(format: String(localized: "settings.playwright.status.running"),
-                                  info.endpoint, info.executable.lastPathComponent))
-        } else if case .failed(let error) = state {
-            Text(verbatim: error.map(PlaywrightBrowser.message) ?? String(localized: "settings.playwright.status.stopped"))
+        if case .running(let info) = state {
+            return Text(verbatim: String(format: String(localized: "settings.playwright.status.running"),
+                                         info.endpoint, info.executable.lastPathComponent))
+        }
+        if case .failed(let error) = state {
+            return Text(verbatim: error.map(PlaywrightBrowser.message) ?? String(localized: "settings.playwright.status.stopped"))
                 .foregroundStyle(theme[.statusStopped])
         }
+        if case .starting = state {
+            return Text("settings.playwright.status.starting")
+        }
+        return Text("settings.playwright.status.stopped")
     }
 }

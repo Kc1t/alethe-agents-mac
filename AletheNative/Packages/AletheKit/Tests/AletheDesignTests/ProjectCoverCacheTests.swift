@@ -1,7 +1,7 @@
+@testable import AletheDesign
 import AppKit
 import ImageIO
 import Testing
-@testable import AletheDesign
 
 @Suite struct ProjectCoverCacheTests {
     private func png() throws -> Data {

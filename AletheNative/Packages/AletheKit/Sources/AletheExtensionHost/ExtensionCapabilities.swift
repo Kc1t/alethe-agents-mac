@@ -1,5 +1,5 @@
-import Foundation
 import AlethePluginKit
+import Foundation
 
 public struct ExtensionDescriptor: Hashable, Sendable, Codable {
     public var bundleIdentifier: String

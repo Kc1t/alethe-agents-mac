@@ -62,7 +62,9 @@ struct MultiagentSettings: View {
                     WebDropdown(selection: $model.projectID,
                                  options: [String?.none] + projects.map { Optional($0.id.rawValue) }) { id in
                         Text(verbatim: id.flatMap { id in projects.first {
-                            $0.id.rawValue == id }?.name } ?? String(localized: "settings.multiagent.project.none"))
+                            $0.id.rawValue == id
+                        }?.name
+                        } ?? String(localized: "settings.multiagent.project.none"))
                     }
                     .accessibilityLabel(Text("settings.multiagent.project"))
                     .accessibilityIdentifier("multiagent.project")

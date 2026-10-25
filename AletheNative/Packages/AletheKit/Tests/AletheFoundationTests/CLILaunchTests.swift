@@ -1,6 +1,6 @@
+@testable import AletheFoundation
 import Foundation
 import Testing
-@testable import AletheFoundation
 
 @Suite struct CLILaunchTests {
     private func temporaryRoot() throws -> URL {

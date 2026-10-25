@@ -49,7 +49,8 @@ struct ProjectContextMenu: View {
         projectGroup("sidebar.web.group.openIn", symbol: "arrow.up.forward.app") {
             SidebarMenuButton("sidebar.revealInFinder", symbol: "folder") { actions.revealInFinder(project) }
             SidebarMenuButton("openIn.vscode", symbol: "chevron.left.forwardslash.chevron.right") {
-                OpenInActions.vsCode(project.folder, launchers: environment.launchers) }
+                OpenInActions.vsCode(project.folder, launchers: environment.launchers)
+            }
                 .accessibilityIdentifier("openIn.vscode")
             if metrics.isWebInterface, environment.features.isOn(.browser) {
                 SidebarMenuButton("menu.addBrowser", symbol: "globe") { environment.editorRequest = .addBrowser(project.id) }
@@ -59,10 +60,13 @@ struct ProjectContextMenu: View {
         }
         projectGroup("sidebar.web.group.layout", symbol: "rectangle.split.2x2") {
             SidebarMenuButton("sidebar.designLayout", symbol: "rectangle.split.2x2") {
-                environment.editorRequest = .layoutDesigner(.project(project.id)) }
+                environment.editorRequest = .layoutDesigner(.project(project.id))
+            }
             WebSubmenu("sidebar.grids") {
                 SidebarMenuButton("projectGrid.main", symbol: "square.grid.2x2") { actions.workspace.update {
-                    $0.activateGrid(nil, in: project.id) } }
+                    $0.activateGrid(nil, in: project.id)
+                }
+                }
                 ForEach(project.namedGrids) { grid in
                     Button { actions.workspace.update { $0.activateGrid(grid.id, in: project.id) } } label: { Text(verbatim: grid.name) }
                 }
@@ -75,17 +79,20 @@ struct ProjectContextMenu: View {
         projectGroup("sidebar.web.group.git", symbol: "arrow.triangle.branch") {
             if environment.hasPluginCommand(GitControlPlugin.openCommandID) {
                 SidebarMenuButton("menu.git.control", symbol: "arrow.triangle.branch") {
-                    environment.openPluginSheet(GitControlPlugin.sheetID, project: project.id) }
+                    environment.openPluginSheet(GitControlPlugin.sheetID, project: project.id)
+                }
             }
             SidebarMenuButton("menu.merge.center", symbol: "arrow.triangle.merge") { environment.editorRequest = .mergeCenter(project.id) }
             SidebarMenuButton("worktrees.manageEllipsis", symbol: "arrow.triangle.branch") {
-                environment.editorRequest = .worktrees(project.id) }
+                environment.editorRequest = .worktrees(project.id)
+            }
             SidebarMenuButton("menu.merge.branchTesting", symbol: "testtube.2") { environment.editorRequest = .branchTesting(project.id) }
         }
         projectGroup("sidebar.web.group.content", symbol: "books.vertical") {
             SidebarMenuButton("menu.history.conversations", symbol: "clock") { environment.editorRequest = .conversations(project.id) }
             SidebarMenuButton("agentLibrary.openEllipsis", symbol: "books.vertical") {
-                environment.editorRequest = .agentLibrary(project.id) }
+                environment.editorRequest = .agentLibrary(project.id)
+            }
             if environment.features.isOn(.graphify) {
                 SidebarMenuButton("graphify.openInProject", symbol: "point.3.connected.trianglepath.dotted") {
                     environment.open(.graphify, in: project.id, actionName: String(localized: "undo.addContent"))
@@ -139,10 +146,12 @@ struct ProjectContextMenu: View {
         }
         if doc.isProjectDisabled(project.id) {
             SidebarMenuButton("sidebar.enableProject", symbol: metrics.isWebInterface ? "power" : "play") {
-                actions.setProjectDisabled(project.id, false) }
+                actions.setProjectDisabled(project.id, false)
+            }
         } else {
             SidebarMenuButton("sidebar.disableProject", symbol: metrics.isWebInterface ? "power" : "pause") {
-                actions.setProjectDisabled(project.id, true) }
+                actions.setProjectDisabled(project.id, true)
+            }
                 .disabled(project.panes.isEmpty)
         }
         WebMenuDivider()

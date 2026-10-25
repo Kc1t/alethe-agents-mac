@@ -1,7 +1,7 @@
+@testable import AletheRemote
 import CoreImage
 import Foundation
 import Testing
-@testable import AletheRemote
 
 struct RemoteUtilGoldenTests {
     @Test func percentEncodedQueryValuesAreDecoded() {

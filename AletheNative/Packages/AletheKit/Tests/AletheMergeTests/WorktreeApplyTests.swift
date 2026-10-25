@@ -1,7 +1,7 @@
 import AletheGit
+@testable import AletheMerge
 import Foundation
 import Testing
-@testable import AletheMerge
 
 struct WorktreeApplyTests {
     final class Stub: @unchecked Sendable {

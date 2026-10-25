@@ -1,5 +1,5 @@
-import Testing
 @testable import AletheTerminal
+import Testing
 
 @MainActor
 @Suite struct TerminalSearchTests {

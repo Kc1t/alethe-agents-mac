@@ -1,6 +1,6 @@
+@testable import AletheModel
 import Foundation
 import Testing
-@testable import AletheModel
 
 @Suite struct SidebarChildOrderTests {
     private func check(_ doc: WorkspaceDocument) {
@@ -111,7 +111,8 @@ import Testing
         doc.moveGroup(d, toParent: a, at: 0); check(doc)
         #expect(doc.sidebarChildren(of: a) == [.project(p), .group(d), .project(r)])
         doc.updateGroup(a) { $0.childOrder = ["unknown", SidebarChild.project(p).orderToken,
-            SidebarChild.project(p).orderToken, SidebarChild.group(c).orderToken] }
+            SidebarChild.project(p).orderToken, SidebarChild.group(c).orderToken]
+        }
         check(doc)
         #expect(doc.sidebarChildren(of: a) == [.project(p), .group(d), .project(r)])
     }
@@ -187,10 +188,13 @@ import Testing
                 doc.place(next(2) == 0 ? .group(g) : .project(p), in: container, before: sibling)
             } else if case 1 = matchedValue {
                 doc.moveProject(p, to: container.map { .group($0) } ?? .ungrouped, at: next(15))
+            } else if case 2 = matchedValue {
+                doc.moveGroup(g, toParent: container, at: next(7))
+            } else if case 3 = matchedValue {
+                doc.removeProject(p)
+            } else {
+                doc.deleteGroup(g)
             }
-            else if case 2 = matchedValue { doc.moveGroup(g, toParent: container, at: next(7)) }
-            else if case 3 = matchedValue { doc.removeProject(p) }
-            else { doc.deleteGroup(g) }
             check(doc)
         }
     }

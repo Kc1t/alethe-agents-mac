@@ -1,5 +1,5 @@
-import Foundation
 import AletheIntegrations
+import Foundation
 
 public enum QueueLimit {
     public static func detected(in text: String) -> Bool {

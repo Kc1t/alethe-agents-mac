@@ -1,7 +1,7 @@
+@testable import AletheTerminal
 import Darwin
 import Foundation
 import Testing
-@testable import AletheTerminal
 
 @Suite(.timeLimit(.minutes(1))) struct ProcessInspectorTests {
     private func listen() throws -> (fd: Int32, port: UInt16) {

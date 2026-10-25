@@ -22,7 +22,8 @@ struct ActivityGraph: View {
                 if !days.isEmpty {
                     Text(String(format: String(localized: "home.activity.total"), days.reduce(0) { $0 + $1.count }))
                     Label { Text(String(format: String(localized: "home.activity.streak"),
-                        ActivityDays.streak(days))) } icon: { Image(systemName: "flame").webProfileSized(14) }
+                        ActivityDays.streak(days)))
+                    } icon: { Image(systemName: "flame").webProfileSized(14) }
                         .accessibilityIdentifier("home.activity.streak")
                 }
                 if let delta {
@@ -226,7 +227,8 @@ struct ActivityGraph: View {
         RoundedRectangle(cornerRadius: metrics.size(2))
             .fill(level.map { $0 == 0 ? theme[metrics.isWebInterface ? .bgElevated : .panelHover] :
                 theme[metrics.isWebInterface ? .statusWorking : .accent].opacity((metrics.isWebInterface ? [0, 0.25,
-                0.5, 0.75, 1] : [0, 0.3, 0.5, 0.75, 1])[$0]) } ?? .clear)
+                0.5, 0.75, 1] : [0, 0.3, 0.5, 0.75, 1])[$0])
+            } ?? .clear)
             .frame(width: metrics.isWebInterface ? nil : metrics.size(11), height: metrics.size(11))
             .frame(maxWidth: metrics.isWebInterface ? .infinity : nil)
     }
@@ -247,4 +249,3 @@ struct ActivityGraph: View {
         loading = false
     }
 }
-

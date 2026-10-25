@@ -97,8 +97,7 @@ public actor PromptQueue {
         for index in items.indices where selected.contains(items[index].id) {
             if case .running(let job) = items[index].state { jobs.append(job) }
             let cancellable: Bool
-            if case .running = items[index].state { cancellable = true }
-            else { cancellable = items[index].state.pending }
+            if case .running = items[index].state { cancellable = true } else { cancellable = items[index].state.pending }
             guard cancellable else { continue }
             items[index].state = .cancelled
             forced.remove(items[index].id)
@@ -215,8 +214,7 @@ public actor PromptQueue {
         timer?.cancel()
         guard let date = nextWake(now: now), !stopped else { timer = nil; return }
         timer = Task { [weak self] in
-            do { try await Task.sleep(for: .seconds(max(0, date.timeIntervalSinceNow))) }
-            catch { return }
+            do { try await Task.sleep(for: .seconds(max(0, date.timeIntervalSinceNow))) } catch { return }
             await self?.tick()
         }
     }

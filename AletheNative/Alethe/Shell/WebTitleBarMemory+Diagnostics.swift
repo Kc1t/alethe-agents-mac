@@ -39,7 +39,8 @@ extension WebTitleBarMemory {
             panelHeader("memModal.latest", subtitle: String(localized: "memModal.latestSubtitle")) { EmptyView() }
             VStack(spacing: 0) {
                 tableRow(["memModal.colTime", "memModal.colTotal", "memModal.bucketApp", "memModal.bucketPtys", "memModal.colProc"].map {
-                    Text(LocalizedStringKey($0)) }, head: true)
+                    Text(LocalizedStringKey($0))
+                }, head: true)
                 if rows.isEmpty {
                     Text("memModal.waitingFirst").font(metrics.font(size: 12)).foregroundStyle(theme[.fgMuted])
                         .frame(maxWidth: .infinity, minHeight: metrics.size(90))
@@ -68,7 +69,7 @@ extension WebTitleBarMemory {
         .overlay(alignment: .top) { if !head { theme[.border].frame(height: metrics.size(1)) } }
     }
 
-    private struct Bucket { let label: String; let value: Double; let share: Double }
+    struct Bucket { let label: String; let value: Double; let share: Double }
 
     func dominant(_ sample: ResourceMonitor.Sample?) -> Bucket? {
         guard let sample, sample.totalMB > 0 else { return nil }
@@ -87,8 +88,11 @@ extension WebTitleBarMemory {
             items.append(String(localized: "memModal.diag.systemWarning"))
         } else if case .healthy = level {
         }
-        if growth >= 512 { items.append(format("memModal.diag.highGrowth", mb(growth))) }
-        else if growth >= 256 { items.append(format("memModal.diag.moderate", mb(growth))) }
+        if growth >= 512 {
+            items.append(format("memModal.diag.highGrowth", mb(growth)))
+        } else if growth >= 256 {
+            items.append(format("memModal.diag.moderate", mb(growth)))
+        }
         if let first = windowed.first, let last = windowed.last, windowed.count >= 2 {
             let buckets = [(String(localized: "memModal.bucketApp"), last.appMB - first.appMB),
                            (String(localized: "memModal.bucketPtys"), last.terminalsMB - first.terminalsMB)]

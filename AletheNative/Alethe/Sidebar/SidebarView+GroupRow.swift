@@ -39,7 +39,7 @@ struct GroupRow: View {
         SidebarDisclosure(isGroup: true, item: .group(group.id),
                           firstRootGroup: doc.childGroups(of: nil).first?.id == group.id, isExpanded: Binding {
             !group.isCollapsed
-        } set: { expanded in
+                          } set: { expanded in
             actions.setCollapsed(group.id, !expanded)
         }) {
             if projectIDs.isEmpty && doc.childGroups(of: group.id).isEmpty {
@@ -140,13 +140,15 @@ struct GroupRow: View {
                     if metrics.isWebInterface { environment.showingHome = false }
                 }
                     .disabled(!metrics.isWebInterface && !doc.groups.contains { doc.isGroup($0.id,
-                        inside: group.id) && !$0.projectIDs.isEmpty })
+                        inside: group.id) && !$0.projectIDs.isEmpty
+                    })
                 SidebarMenuButton("sidebar.addGroupToTab", symbol: "rectangle.badge.plus") {
                     actions.openGroup(group.id, adding: true, web: metrics.isWebInterface)
                     if metrics.isWebInterface { environment.showingHome = false }
                 }
                     .disabled(!metrics.isWebInterface && !doc.groups.contains { doc.isGroup($0.id,
-                        inside: group.id) && !$0.projectIDs.isEmpty })
+                        inside: group.id) && !$0.projectIDs.isEmpty
+                    })
                 WebMenuDivider()
                 if metrics.isWebInterface {
                     SidebarMenuButton("sidebar.designLayout", symbol: "rectangle.split.2x2") {
@@ -181,7 +183,8 @@ struct GroupRow: View {
                 SidebarMenuButton("sidebar.editGroup", symbol: "pencil") { environment.editorRequest = .editGroup(group.id) }
                 SidebarMenuButton("sidebar.newProjectHere", symbol: "plus") { environment.editorRequest = .newProject(.group(group.id)) }
                 SidebarMenuButton("sidebar.newSubgroup", symbol: "folder.badge.plus") {
-                    environment.editorRequest = .newGroup(parent: group.id) }
+                    environment.editorRequest = .newGroup(parent: group.id)
+                }
                 WebMenuDivider()
                 if group.suspended == true {
                     SidebarMenuButton("sidebar.resumeGroup", symbol: "play") { actions.resumeGroup(group.id) }
@@ -200,7 +203,8 @@ struct GroupRow: View {
                 }
                 SidebarMenuButton("sidebar.deleteGroup", symbol: "trash") { actions.deleteGroup(group.id) }
                 SidebarMenuButton("sidebar.deleteGroupAndProjects", symbol: "trash", role: .destructive) {
-                    actions.deleteGroupAndProjects(group) }
+                    actions.deleteGroupAndProjects(group)
+                }
             }
             .accessibilityIdentifier("sidebar.group.\(group.name)")
         }

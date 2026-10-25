@@ -72,7 +72,6 @@ enum SidebarDragSelfTest {
         } else {
             report.append("CHECK no NSTableView found to cross-check")
         }
-
     }
 
     private static func checkPlans(regions: [SidebarDropRegion], size: CGSize, doc: WorkspaceDocument,
@@ -139,7 +138,6 @@ enum SidebarDragSelfTest {
             if !ok { failures += 1 }
             report.append("\(ok ? "PASS" : "FAIL") first project onto the top half of the last project row -> \(upper.map { "\($0.action)" } ?? "none")")
         }
-
     }
 
     private struct DragContext {
@@ -184,7 +182,6 @@ enum SidebarDragSelfTest {
         failures += runner.failures
         report.append(contentsOf: runner.report)
         report.append("selftest failures=\(failures)")
-
     }
 
     @MainActor

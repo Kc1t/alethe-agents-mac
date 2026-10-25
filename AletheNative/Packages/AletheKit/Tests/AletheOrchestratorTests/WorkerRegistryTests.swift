@@ -1,7 +1,7 @@
+@testable import AletheOrchestrator
 import Darwin
 import Foundation
 import Testing
-@testable import AletheOrchestrator
 
 private let start = ProcessStartTime(seconds: 1_790_000_000, microseconds: 123_456)
 

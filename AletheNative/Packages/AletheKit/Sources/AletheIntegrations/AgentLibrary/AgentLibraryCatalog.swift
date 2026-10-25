@@ -289,7 +289,7 @@ public enum EconomyAgents {
       } catch {}
       if (!/^\\s*codex\\s+exec\\b/.test(cmd)) {
         console.error('Blocked: codex-executor may only run `codex exec ...`. Write the task as a self-contained instruction \
-        and delegate it to codex.')
+    and delegate it to codex.')
         process.exit(2)
       }
     })

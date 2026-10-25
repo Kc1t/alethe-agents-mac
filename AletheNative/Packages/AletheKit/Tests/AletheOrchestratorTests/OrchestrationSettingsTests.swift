@@ -1,7 +1,7 @@
 import AletheIntegrations
 import AletheModel
-import Testing
 @testable import AletheOrchestrator
+import Testing
 
 @Suite struct OrchestrationSettingsTests {
     @Test func ruleRoutingHonorsOrderAndReadOnlyRole() async throws {
@@ -23,8 +23,11 @@ import Testing
         let block = try await core.workerRulesBlock(named: "SESSAO")
         #expect(block.contains("Always") && block.contains("SQL"))
         #expect(block.contains("the repository wins"))
-        do { _ = try await core.workerRulesBlock(named: "Missing"); Issue.record("Unknown rules were accepted") }
-        catch { #expect(String(describing: error).contains("unknown rule set")) }
+        do {
+            _ = try await core.workerRulesBlock(named: "Missing"); Issue.record("Unknown rules were accepted")
+        } catch {
+            #expect(String(describing: error).contains("unknown rule set"))
+        }
         await core.applyWorkerRules([])
         #expect(try await core.workerRulesBlock(named: nil).isEmpty)
     }

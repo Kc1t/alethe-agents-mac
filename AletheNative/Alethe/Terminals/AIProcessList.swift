@@ -121,7 +121,7 @@ struct AIProcessList: View {
                 confirm: "memory.ai.killSession.confirm", confirmIdentifier: "memory.ai.killSession.confirm") {
                     environment.terminals.view(for: tab)?.forceKillTree()
                     refreshSoon()
-                }
+            }
         } else if case .child(let sessionPID, let node) = kill {
             WebConfirmationModal(
                 title: Text(verbatim: String(format: String(localized: "memory.ai.killChild.title"), node.name)),
@@ -129,7 +129,7 @@ struct AIProcessList: View {
                 confirm: "memory.ai.killChild.confirm", confirmIdentifier: "memory.ai.killChild.confirm") {
                     terminateChild(node.pid, under: sessionPID)
                     refreshSoon()
-                }
+            }
         }
     }
 

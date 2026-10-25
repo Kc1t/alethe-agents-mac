@@ -1,5 +1,5 @@
-import Foundation
 import AletheGit
+import Foundation
 
 struct JobWorkspace: Hashable, Sendable {
     var jobID: String

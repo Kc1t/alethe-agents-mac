@@ -1,8 +1,8 @@
+@testable import AletheTerminal
 import Darwin
 import Foundation
 import Synchronization
 import Testing
-@testable import AletheTerminal
 
 @Suite(.timeLimit(.minutes(1))) struct PaneWorkingDirectoryTests {
     @Test func missingFolderFallsBackWithoutAcceptingARegularFile() throws {

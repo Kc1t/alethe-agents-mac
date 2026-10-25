@@ -1,7 +1,7 @@
+@testable import AletheTerminal
 import AppKit
 import Foundation
 import Testing
-@testable import AletheTerminal
 
 @Suite struct SmartPasteTests {
     @Test func clipboardNewlinesBecomePTYCarriageReturns() {

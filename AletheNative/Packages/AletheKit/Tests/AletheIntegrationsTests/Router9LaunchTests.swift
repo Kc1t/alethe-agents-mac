@@ -1,8 +1,8 @@
 import AletheAgents
+@testable import AletheIntegrations
 import AletheModel
 import Foundation
 import Testing
-@testable import AletheIntegrations
 
 @Suite(.timeLimit(.minutes(1))) struct Router9LaunchTests {
     static let launcher = AgentLauncher(launchers: LauncherCache(stillExists: { _ in true }),

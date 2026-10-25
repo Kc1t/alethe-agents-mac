@@ -105,9 +105,13 @@ struct SidebarWebDrop: ViewModifier {
         let zone = min(size.height * 0.2, 80 * unit)
         let fromBottom = size.height - pointer.y
         let direction: CGFloat
-        if pointer.y < zone { direction = -(1 - max(pointer.y, 0) / zone) }
-        else if fromBottom < zone { direction = 1 - max(fromBottom, 0) / zone }
-        else { return }
+        if pointer.y < zone {
+            direction = -(1 - max(pointer.y, 0) / zone)
+        } else if fromBottom < zone {
+            direction = 1 - max(fromBottom, 0) / zone
+        } else {
+            return
+        }
         guard let document = scroll.documentView else { return }
         let clip = scroll.contentView
         let insets = scroll.contentInsets
@@ -190,8 +194,7 @@ struct SidebarWebGroupRegion: ViewModifier {
     @Environment(\.sidebarWebAncestors) private var ancestors
 
     @ViewBuilder func body(content: Content) -> some View {
-        if metrics.isWebInterface { content.environment(\.sidebarWebAncestors, ancestors + [group]) }
-        else { content }
+        if metrics.isWebInterface { content.environment(\.sidebarWebAncestors, ancestors + [group]) } else { content }
     }
 }
 
@@ -451,8 +454,7 @@ struct SidebarNativeFolderDrop: ViewModifier {
     @Environment(\.metrics) private var metrics
 
     @ViewBuilder func body(content: Content) -> some View {
-        if metrics.isWebInterface { content }
-        else {
+        if metrics.isWebInterface { content } else {
             content.dropDestination(for: URL.self) { urls, _ in
                 !actions.addProjects(folders: urls).isEmpty
             }

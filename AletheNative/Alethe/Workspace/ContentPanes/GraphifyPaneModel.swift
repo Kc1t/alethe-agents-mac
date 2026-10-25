@@ -40,8 +40,10 @@ final class GraphifyPaneModel {
     var isLayingOut: Bool { state == .loaded && layout == nil }
     var searchResults: [Int] { graph?.search(query) ?? [] }
 
-    var selectedNodeInfo: GraphNode? { selectedNode.flatMap {
-        index in graph?.nodes.indices.contains(index) == true ? graph?.nodes[index] : nil } }
+    var selectedNodeInfo: GraphNode? {
+        guard let index = selectedNode, let graph, graph.nodes.indices.contains(index) else { return nil }
+        return graph.nodes[index]
+    }
 
     var neighbors: [Int] {
         guard let selectedNode, let layout else { return [] }

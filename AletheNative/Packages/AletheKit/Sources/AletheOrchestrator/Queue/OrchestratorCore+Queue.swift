@@ -1,5 +1,5 @@
-import Foundation
 import AletheIntegrations
+import Foundation
 
 extension OrchestratorCore {
     public func promptQueue() -> PromptQueue {
@@ -70,8 +70,11 @@ extension OrchestratorCore {
                                  cwd: arguments["cwd"]?.stringValue ?? FileManager.default.currentDirectoryPath,
                                  isolate: arguments["isolate"]?.boolValue ?? false, label: arguments["label"]?.stringValue,
                                  priority: arguments["priority"]?.intValue ?? 0, release: release, planner: planner)
-            do { return ["items": .array(try await prompts.add([item]).map(\.json))] }
-            catch { throw OrchestratorToolError(String(describing: error)) }
+            do {
+                return ["items": .array(try await prompts.add([item]).map(\.json))]
+            } catch {
+                throw OrchestratorToolError(String(describing: error))
+            }
         } else if case "alethe_queue_cancel" = name {
             await prompts.cancel(ids)
         } else if case "alethe_queue_run_now" = name {

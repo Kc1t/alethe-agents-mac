@@ -1,8 +1,8 @@
 import AletheDesign
+@testable import AletheTerminal
 import AppKit
 import Foundation
 import Testing
-@testable import AletheTerminal
 
 private final class Reports: @unchecked Sendable {
     private let lock = NSLock()

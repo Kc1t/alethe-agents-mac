@@ -1,6 +1,6 @@
-import Foundation
 import AletheAgents
 import AletheIntegrations
+import Foundation
 
 public struct AgentFitness: Hashable, Sendable {
     public var windows: [String: Int] = [:]

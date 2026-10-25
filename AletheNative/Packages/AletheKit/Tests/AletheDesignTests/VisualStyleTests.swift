@@ -1,5 +1,5 @@
-import Testing
 @testable import AletheDesign
+import Testing
 
 @Suite struct VisualStyleTests {
     private var theme: Theme { ThemeCatalog.builtin.defaultTheme }

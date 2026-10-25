@@ -1,6 +1,6 @@
+@testable import AletheGit
 import Foundation
 import Testing
-@testable import AletheGit
 
 private final class FakeGh: GitHubCLIRunning, @unchecked Sendable {
     private let lock = NSLock()

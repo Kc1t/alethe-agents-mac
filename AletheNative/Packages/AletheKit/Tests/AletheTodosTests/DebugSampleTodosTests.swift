@@ -1,8 +1,8 @@
 #if DEBUG
-import Foundation
-import Testing
 @testable import AlethePluginKit
 @testable import AletheTodos
+import Foundation
+import Testing
 
 @MainActor
 @Suite struct DebugSampleTodosTests {

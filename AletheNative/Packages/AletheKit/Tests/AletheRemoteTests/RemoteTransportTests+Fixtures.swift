@@ -1,7 +1,7 @@
+@testable import AletheRemote
 import Foundation
 import Network
 import Testing
-@testable import AletheRemote
 
 let loopback = RemoteHostResolver(lanAddress: { "127.0.0.1" }, tailscaleAddress: { nil })
 

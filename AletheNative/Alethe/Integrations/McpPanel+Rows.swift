@@ -74,8 +74,11 @@ extension McpPanelContent {
                     HStack(spacing: metrics.isWebInterface ? metrics.size(3) : metrics.space(.xxs)) {
                         ForEach(group.agents, id: \.self) { agent in
                             Group {
-                                if metrics.isWebInterface { AgentLogo(agent: agent.rawValue, size: 13) }
-                                else { Circle().fill(theme[agent.colorToken]).frame(width: metrics.size(7), height: metrics.size(7)) }
+                                if metrics.isWebInterface {
+                                    AgentLogo(agent: agent.rawValue, size: 13)
+                                } else {
+                                    Circle().fill(theme[agent.colorToken]).frame(width: metrics.size(7), height: metrics.size(7))
+                                }
                             }
                         }
                     }

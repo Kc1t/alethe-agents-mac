@@ -1,6 +1,6 @@
+@testable import AletheModel
 import Foundation
 import Testing
-@testable import AletheModel
 
 @Suite struct WorkspaceOperationsTests {
     private func sample() -> (WorkspaceDocument, GroupID, [ProjectID]) {
@@ -170,7 +170,8 @@ import Testing
         var doc = WorkspaceDocument()
         let project = doc.addProject(name: "a", folder: "/a")
         let first = PaneTab(agent: "shell"), second = PaneTab(agent: "claude")
-        let pane = try #require(doc.addPane(to: project, tab: first))
+        let added = doc.addPane(to: project, tab: first)
+        let pane = try #require(added)
         doc.updateProject(project) { $0.panes[0].tabs.append(second); $0.panes[0].activeTabID = first.id }
         doc.closeTab(first.id)
         #expect(doc.pane(pane)?.pane.tabs.map(\.id) == [second.id])

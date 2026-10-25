@@ -1,7 +1,7 @@
+@testable import AletheAgents
 import Foundation
 import Synchronization
 import Testing
-@testable import AletheAgents
 
 @Suite struct AgentHooksTests {
     @Test func claudeEventsMapToActivityAndSession() {

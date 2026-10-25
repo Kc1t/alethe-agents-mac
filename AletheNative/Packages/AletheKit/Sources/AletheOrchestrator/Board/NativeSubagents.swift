@@ -1,6 +1,6 @@
-import Foundation
 import AletheAgents
 import AletheIntegrations
+import Foundation
 
 public struct NativeSubagent: Hashable, Sendable, Identifiable {
     public enum Kind: String, Hashable, Sendable {

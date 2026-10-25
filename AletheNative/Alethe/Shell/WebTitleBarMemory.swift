@@ -47,7 +47,7 @@ struct WebTitleBarMemory: View {
     @State var hoverIndex: Int?
     @State var tab: MemoryTab = .overview
 
-    private enum Level { case healthy, warning, critical }
+    enum Level { case healthy, warning, critical }
     var history: [ResourceMonitor.Sample] { environment.resources.history }
     var latest: ResourceMonitor.Sample? { history.last }
 
@@ -255,7 +255,4 @@ struct WebTitleBarMemory: View {
         .background(theme[.bgSunken], in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
         .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.border], lineWidth: metrics.size(1)))
     }
-
-
 }
-

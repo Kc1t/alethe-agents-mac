@@ -1,8 +1,8 @@
-import AppKit
-import UniformTypeIdentifiers
 import AletheDesign
 import AletheModel
+import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SidebarWebProfile: View {
     @Environment(AppEnvironment.self) private var environment
@@ -127,7 +127,6 @@ struct SidebarWebProfile: View {
                 environment.preferences?.update { $0.onboardingDone = false }
                 environment.editorRequest = .onboarding
             }
-
         }
         .buttonStyle(ProfileMenuWebStyle())
         .labelStyle(ProfileMenuWebLabelStyle())
@@ -218,8 +217,7 @@ struct SidebarWebProfile: View {
 
     private var avatar: some View {
         Group {
-            if let customAvatar { Image(nsImage: customAvatar).resizable() }
-            else { Image("DefaultProfile").resizable() }
+            if let customAvatar { Image(nsImage: customAvatar).resizable() } else { Image("DefaultProfile").resizable() }
         }
     }
 
@@ -243,5 +241,4 @@ struct SidebarWebProfile: View {
         guard let encoded = try? JSONEncoder().encode(avatars), let text = String(data: encoded, encoding: .utf8) else { return }
         avatarImages = text
     }
-
 }

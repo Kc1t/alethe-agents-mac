@@ -1,6 +1,6 @@
+@testable import AletheModel
 import Foundation
 import Testing
-@testable import AletheModel
 
 struct ProjectMarkerTests {
     static let agents: Set<String> = ["claude", "codex", "opencode", "shell"]

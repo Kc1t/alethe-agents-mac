@@ -1,6 +1,6 @@
+@testable import AletheFoundation
 import Foundation
 import Testing
-@testable import AletheFoundation
 
 @Suite struct KeychainStoreTests {
     private func roundTrip(_ store: any SecretStore) throws {

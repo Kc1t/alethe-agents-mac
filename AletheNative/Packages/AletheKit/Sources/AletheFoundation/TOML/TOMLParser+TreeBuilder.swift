@@ -105,7 +105,10 @@ struct TOMLTreeBuilder {
 
     private static func modify(_ table: inout TOMLTable, at steps: ArraySlice<TOMLStep>,
                                _ body: (inout TOMLTable) -> Void) {
-        guard let step = steps.first else { return body(&table) }
+        guard let step = steps.first else {
+            body(&table)
+            return
+        }
         guard case .key(let key) = step, let child = table[key] else { return }
         var rest = steps.dropFirst()
         if case .index(let position)? = rest.first {

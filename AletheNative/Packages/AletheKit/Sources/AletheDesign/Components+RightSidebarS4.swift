@@ -103,10 +103,15 @@ public struct AletheSidebarWebEntrance: ViewModifier {
     public init(_ part: Part) { self.part = part }
 
     private var duration: Double {
-        if case .sidebar = part { return 0.26 }
-        else if case .header = part { return 0.24 }
-        else if case .composer = part { return 0.28 }
-        else { return 0.3 }
+        if case .sidebar = part {
+            return 0.26
+        } else if case .header = part {
+            return 0.24
+        } else if case .composer = part {
+            return 0.28
+        } else {
+            return 0.3
+        }
     }
 
     public func body(content: Content) -> some View {

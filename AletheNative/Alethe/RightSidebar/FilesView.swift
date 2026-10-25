@@ -329,4 +329,3 @@ struct FileTreeList: View {
         Binding { errorMessage != nil } set: { if !$0 { errorMessage = nil } }
     }
 }
-

@@ -14,7 +14,7 @@ struct TerminalOverlay: View {
     @Environment(\.metrics) private var metrics
 
     static func isNeeded(for state: TerminalRegistry.State?) -> Bool {
-        if (state == .running || state == nil) {
+        if state == .running || state == nil {
             false
         } else {
             true
@@ -75,7 +75,7 @@ struct TerminalOverlay: View {
                     Text(verbatim: message).font(metrics.font(.footnote)).foregroundStyle(theme[.textSecondary])
                     restartButton
                 }
-            } else if (environment.terminals.states[tab.id] == .running || environment.terminals.states[tab.id] == nil) {
+            } else if environment.terminals.states[tab.id] == .running || environment.terminals.states[tab.id] == nil {
                 EmptyView()
             }
         }

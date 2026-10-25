@@ -1,7 +1,7 @@
 import AletheFoundation
+@testable import AletheModel
 import Foundation
 import Testing
-@testable import AletheModel
 
 @Suite struct TauriImportPeripheralsTests {
     private struct Imported {

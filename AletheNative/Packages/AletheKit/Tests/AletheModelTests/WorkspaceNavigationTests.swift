@@ -1,6 +1,6 @@
+@testable import AletheModel
 import Foundation
 import Testing
-@testable import AletheModel
 
 @Suite struct WorkspaceNavigationTests {
     private func sample() -> (WorkspaceDocument, [ProjectID]) {

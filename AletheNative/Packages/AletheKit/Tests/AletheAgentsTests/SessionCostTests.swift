@@ -1,7 +1,7 @@
+@testable import AletheAgents
 import Foundation
 import SQLite3
 import Testing
-@testable import AletheAgents
 
 @Suite struct SessionCostTests {
     private func file(_ lines: [String]) throws -> String {

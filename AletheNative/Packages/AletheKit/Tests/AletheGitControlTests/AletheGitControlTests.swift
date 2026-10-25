@@ -1,8 +1,8 @@
-import Foundation
-import Testing
 @testable import AletheGit
 @testable import AletheGitControl
 @testable import AlethePluginKit
+import Foundation
+import Testing
 
 private func temporaryDirectory() -> URL {
     let url = FileManager.default.temporaryDirectory.appending(path: "AletheGitControlTests-\(UUID().uuidString)")

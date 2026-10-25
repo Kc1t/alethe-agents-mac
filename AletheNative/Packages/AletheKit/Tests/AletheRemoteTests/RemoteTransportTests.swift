@@ -1,7 +1,7 @@
+@testable import AletheRemote
 import Foundation
 import Network
 import Testing
-@testable import AletheRemote
 
 struct RemoteHTTPGoldenTests {
     @Test func requestHeadersEndIsDetectedAcrossChunks() {

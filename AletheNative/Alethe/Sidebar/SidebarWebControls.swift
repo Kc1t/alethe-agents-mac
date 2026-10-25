@@ -135,8 +135,7 @@ struct SidebarSymbolAppearance: ViewModifier {
     @Environment(\.metrics) private var metrics
 
     @ViewBuilder func body(content: Content) -> some View {
-        if metrics.isWebInterface { content.font(metrics.font(size: size)) }
-        else { content }
+        if metrics.isWebInterface { content.font(metrics.font(size: size)) } else { content }
     }
 }
 
@@ -145,8 +144,7 @@ struct SidebarWebHelp: ViewModifier {
     @Environment(\.metrics) private var metrics
 
     @ViewBuilder func body(content: Content) -> some View {
-        if metrics.isWebInterface { content.help(Text(verbatim: text)) }
-        else { content }
+        if metrics.isWebInterface { content.help(Text(verbatim: text)) } else { content }
     }
 }
 

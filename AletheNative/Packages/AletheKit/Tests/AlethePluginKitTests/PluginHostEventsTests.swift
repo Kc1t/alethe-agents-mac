@@ -1,7 +1,7 @@
-import Foundation
-import Testing
 @testable import AletheFoundation
 @testable import AlethePluginKit
+import Foundation
+import Testing
 
 private struct EventsBoom: Error {}
 

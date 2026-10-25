@@ -1,6 +1,6 @@
+@testable import AletheAgents
 import Foundation
 import Testing
-@testable import AletheAgents
 
 private struct FixtureHome: ~Copyable {
     let path = FileManager.default.temporaryDirectory.appending(path: "alethe-sessions-\(UUID().uuidString)").path

@@ -1,5 +1,5 @@
-import Testing
 @testable import AletheFoundation
+import Testing
 
 struct DictationMachineTests {
     @Test func shortPressToggles() {

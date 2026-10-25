@@ -1,6 +1,6 @@
+@testable import AletheIntegrations
 import Foundation
 import Testing
-@testable import AletheIntegrations
 
 private struct Home {
     let url: URL

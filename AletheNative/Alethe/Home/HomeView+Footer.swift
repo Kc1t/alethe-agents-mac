@@ -13,11 +13,17 @@ struct HomeFooter: View {
     var body: some View {
         HStack(spacing: metrics.space(.xl)) {
             Link(destination: Self.repository) { Label { Text("home.repository") } icon: { Image(
-                systemName: "chevron.left.forwardslash.chevron.right").webProfileSized(14) } }
+                systemName: "chevron.left.forwardslash.chevron.right").webProfileSized(14)
+            }
+            }
             Link(destination: Self.repository.appending(path: "issues")) { Label { Text("home.issues") } icon: { Image(
-                systemName: "smallcircle.filled.circle").webProfileSized(14) } }
+                systemName: "smallcircle.filled.circle").webProfileSized(14)
+            }
+            }
             Link(destination: Self.repository.appending(path: "releases")) { Label { Text(
-                "home.releases") } icon: { Image(systemName: "shippingbox").webProfileSized(14) } }
+                "home.releases")
+            } icon: { Image(systemName: "shippingbox").webProfileSized(14) }
+            }
             Spacer(minLength: 0)
             if !metrics.isWebInterface {
                 Button { environment.editorRequest = .findJump } label: { Text("home.footer.search") }
@@ -80,4 +86,3 @@ struct HomeButton: View {
 extension AppEnvironment {
     func toggleHome() { showingHome.toggle() }
 }
-

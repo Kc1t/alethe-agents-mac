@@ -1,6 +1,6 @@
+@testable import AletheIntegrations
 import Foundation
 import Testing
-@testable import AletheIntegrations
 
 func makeCheckout(_ label: String) -> URL {
     let root = FileManager.default.temporaryDirectory

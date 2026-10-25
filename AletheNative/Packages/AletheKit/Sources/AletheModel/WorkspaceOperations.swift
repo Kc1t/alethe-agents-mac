@@ -172,7 +172,10 @@ extension WorkspaceDocument {
 
     public mutating func closeTab(_ tabID: TabID) {
         guard let (_, pane) = paneHolding(tabID) else { return }
-        if pane.tabs.count == 1 { return closePane(pane.id) }
+        if pane.tabs.count == 1 {
+            closePane(pane.id)
+            return
+        }
         updatePane(pane.id) { pane in
             guard let index = pane.tabs.firstIndex(where: { $0.id == tabID }) else { return }
             let wasActive = pane.activeTab?.id == tabID

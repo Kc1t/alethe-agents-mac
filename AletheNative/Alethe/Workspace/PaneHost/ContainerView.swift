@@ -143,8 +143,6 @@ final class ContainerView: NSView {
         layoutDividers(geometry)
         layoutSlots(geometry.freeSlots)
     }
-
-
 }
 
 struct ProjectEmptyState: View {
@@ -232,5 +230,4 @@ extension PaneGridGeometry.Divider {
         guard case .gridRow(let boundary, _) = self else { preconditionFailure("Invalid divider") }
         return .row(boundary)
     }
-
 }

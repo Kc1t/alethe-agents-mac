@@ -1,8 +1,8 @@
-import Foundation
-import Testing
 import AletheGit
 import AletheIntegrations
 @testable import AletheOrchestrator
+import Foundation
+import Testing
 
 private let gitEnvironment = ["GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1"]
 
@@ -48,8 +48,8 @@ private func askingCodexLauncher(in folder: URL) throws -> Launcher {
           printf '{"id":2,"result":{"thread":{"id":"thread-ask"}}}\\n' ;;
         *'"method":"turn/start"'*)
           printf '{"method":"turn/started","params":{"turn":{"id":"turn-1"}}}\\n'
-          printf '{"id":77,"method":"item/commandExecution/requestApproval","params":{"command":"touch x","cwd\
-          ":"/tmp","reason":"needs a file"}}\\n' ;;
+          printf '{"id":77,"method":"item/commandExecution/requestApproval","params":{"command":"touch x",\
+    "cwd":"/tmp","reason":"needs a file"}}\\n' ;;
         *'"id":77'*)
           decision=$(printf '%s' "$line" | sed -n 's/.*"decision":"\\([^"]*\\)".*/\\1/p')
           printf '{"method":"item/completed","params":{"item":{"type":"agentMessage","text":"%s %s"}}}\\n' "$decision" "$policy"

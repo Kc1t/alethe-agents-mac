@@ -1,8 +1,8 @@
+@testable import AletheIntegrations
 import Darwin
 import Foundation
 import Testing
 import XCTest
-@testable import AletheIntegrations
 
 struct PlaywrightMcpTests {
     @Test func sharedModeAttachesToTheRunningBrowser() {

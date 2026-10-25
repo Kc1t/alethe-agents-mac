@@ -44,8 +44,7 @@ struct WebTitleBarUsagePill: View {
             }
             .webTitleBarPopover(isPresented: $showsDetails, width: 240) {
                 Group {
-                    if let usage, headline != nil { details(usage) }
-                    else {
+                    if let usage, headline != nil { details(usage) } else {
                         Text("usage.reading.pending")
                             .font(metrics.font(size: 11))
                             .foregroundStyle(theme[.fgFaint])

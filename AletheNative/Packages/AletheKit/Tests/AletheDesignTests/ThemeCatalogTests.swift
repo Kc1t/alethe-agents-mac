@@ -1,6 +1,6 @@
+@testable import AletheDesign
 import Foundation
 import Testing
-@testable import AletheDesign
 
 @Suite struct ThemeCatalogTests {
     @Test func loadsEveryBuiltinThemeInPickerOrder() throws {

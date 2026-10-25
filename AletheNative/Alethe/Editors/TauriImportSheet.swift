@@ -36,7 +36,6 @@ struct TauriImportSheet: View {
             Text("import.title")
         } content: {
             VStack(alignment: .leading, spacing: metrics.size(14)) {
-
             if let done {
                 summary(done, title: "import.done")
                 if languageChanged {

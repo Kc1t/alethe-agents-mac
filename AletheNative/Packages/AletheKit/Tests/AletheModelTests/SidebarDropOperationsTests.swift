@@ -1,6 +1,6 @@
+@testable import AletheModel
 import Foundation
 import Testing
-@testable import AletheModel
 
 @Suite struct SidebarDropOperationsTests {
     @Test func projectEdgesAccountForSourceRemovalInBothDirections() {
@@ -15,7 +15,8 @@ import Testing
                 var doc = WorkspaceDocument()
                 let group = doc.addGroup(name: "Group")
                 let ids = (0..<3).map { doc.addProject(name: "P\($0)", folder: "/\($0)",
-                    in: grouped ? .group(group) : .ungrouped) }
+                    in: grouped ? .group(group) : .ungrouped)
+                }
                 doc.dropProject(ids[source], beside: ids[target], edge: edge)
                 let actual = grouped ? doc.group(group)?.projectIDs : doc.ungroupedProjectIDs
                 #expect(actual == expected.map { ids[$0] })

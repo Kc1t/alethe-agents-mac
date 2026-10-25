@@ -7,8 +7,7 @@ import SwiftUI
 struct QuickProjectStyle: ViewModifier {
     @Environment(\.metrics) private var metrics
     func body(content: Content) -> some View {
-        if metrics.isWebInterface { content.buttonStyle(HomeQuickFieldStyle()) }
-        else { content }
+        if metrics.isWebInterface { content.buttonStyle(HomeQuickFieldStyle()) } else { content }
     }
 }
 
@@ -79,8 +78,7 @@ struct HomeWebHelp: ViewModifier {
     let text: String
     @Environment(\.metrics) private var metrics
     func body(content: Content) -> some View {
-        if metrics.isWebInterface { content.help(Text(verbatim: text)) }
-        else { content }
+        if metrics.isWebInterface { content.help(Text(verbatim: text)) } else { content }
     }
 }
 

@@ -64,10 +64,13 @@ public enum SidebarWebDropRules {
         let containing = rows.filter { $0.hit.minY <= y && y < $0.hit.maxY }.min { $0.hit.height < $1.hit.height }
         guard let row = containing ?? rows.min(by: { layout.distance(from: y, to: $0) < layout.distance(from: y, to: $1) })
         else { return nil }
-        if case .files = source { return layout.files(row) }
-        else if case .item(.pane(let id)) = source { return layout.pane(id, row) }
-        else if case .item(.project(let id)) = source { return layout.project(id, row, y: y) }
-        else {
+        if case .files = source {
+            return layout.files(row)
+        } else if case .item(.pane(let id)) = source {
+            return layout.pane(id, row)
+        } else if case .item(.project(let id)) = source {
+            return layout.project(id, row, y: y)
+        } else {
             guard case .item(.group(let id)) = source else {
                 preconditionFailure("Unexpected enum case")
             }
@@ -87,12 +90,15 @@ public enum SidebarWebDropRules {
             self.rows = rows
             self.document = document
             for row in rows {
-                if case .project(let id) = row.target { projects[id] = row }
-                else if case .terminals(let id) = row.target { terminals[id, default: []].append(row) }
-                else if case .groupHeader(let id) = row.target { headers[id] = row }
-                else if case .groupBody(let id) = row.target { placeholders[id] = row }
-                else {
-
+                if case .project(let id) = row.target {
+                    projects[id] = row
+                } else if case .terminals(let id) = row.target {
+                    terminals[id, default: []].append(row)
+                } else if case .groupHeader(let id) = row.target {
+                    headers[id] = row
+                } else if case .groupBody(let id) = row.target {
+                    placeholders[id] = row
+                } else {
                 }
             }
         }
@@ -143,8 +149,9 @@ public enum SidebarWebDropRules {
         func topLevelEnd(_ item: SidebarChild) -> SidebarDropPlan {
             let ungrouped = projects.filter { container(of: $0.key) == nil }.values.min { $0.visual.minY < $1.visual.minY }
             let mark: SidebarDropPlan.Mark
-            if case .group = item, let ungrouped { mark = line(ungrouped.visual, .before) }
-            else if let last = rows.max(by: { $0.hit.maxY < $1.hit.maxY }) {
+            if case .group = item, let ungrouped {
+                mark = line(ungrouped.visual, .before)
+            } else if let last = rows.max(by: { $0.hit.maxY < $1.hit.maxY }) {
                 mark = line(last.visual, .after)
             } else {
                 mark = .box(.zero)
@@ -174,10 +181,13 @@ public enum SidebarWebDropRules {
         }
 
         func blank(_ source: Source) -> SidebarDropPlan? {
-            if case .item(.project(let id)) = source { return topLevelEnd(.project(id)) }
-            else if case .item(.group(let id)) = source { return topLevelEnd(.group(id)) }
-            else if case .item(.pane) = source { return nil }
-            else {
+            if case .item(.project(let id)) = source {
+                return topLevelEnd(.project(id))
+            } else if case .item(.group(let id)) = source {
+                return topLevelEnd(.group(id))
+            } else if case .item(.pane) = source {
+                return nil
+            } else {
                 guard let last = rows.max(by: { $0.hit.maxY < $1.hit.maxY }) else { return nil }
                 return SidebarDropPlan(action: .addFolders(container: nil), mark: line(last.visual, .after))
             }
@@ -195,13 +205,15 @@ public enum SidebarWebDropRules {
                 guard let parent = document.group(target)?.parentID else {
                     return y >= row.visual.minY ? into(group: target, item: item, row: row, fill: .groupHeader(target)) : nil
                 }
-                if fraction(y, in: row) < 0.3 { return SidebarDropPlan(action: place(item, in: parent,
-                    before: .group(target)), mark: line(row.visual, .before)) }
+                if fraction(y, in: row) < 0.3 {
+                    return SidebarDropPlan(action: place(item, in: parent, before: .group(target)), mark: line(row.visual, .before))
+                }
                 return into(group: target, item: item, row: row, fill: .groupHeader(target))
+            } else if case .groupBody(let target) = row.target {
+                return SidebarDropPlan(action: place(item, in: target, before: nil), mark: .box(row.hit), fill: .groupBody(target))
+            } else {
+                return SidebarDropPlan(action: place(item, in: nil, before: nil), mark: .box(row.hit), fill: .ungrouped)
             }
-            else if case .groupBody(let target) = row.target { return SidebarDropPlan(action: place(item, in: target,
-                before: nil), mark: .box(row.hit), fill: .groupBody(target)) }
-            else { return SidebarDropPlan(action: place(item, in: nil, before: nil), mark: .box(row.hit), fill: .ungrouped) }
         }
 
         func group(_ id: GroupID, _ row: SidebarDropRegion, y: CGFloat) -> SidebarDropPlan? {
@@ -262,14 +274,13 @@ public enum SidebarWebDropRules {
             } else if case .terminals(let other) = row.target {
                 return SidebarDropPlan(action: .addFolders(container: container(of: other)),
                 mark: .box(node(of: other) ?? row.visual), fill: .project(other))
+            } else if case .groupHeader(let target) = row.target {
+                return SidebarDropPlan(action: .addFolders(container: target), mark: .box(row.visual), fill: .groupHeader(target))
+            } else if case .groupBody(let target) = row.target {
+                return SidebarDropPlan(action: .addFolders(container: target), mark: .box(row.hit), fill: .groupBody(target))
+            } else {
+                return SidebarDropPlan(action: .addFolders(container: nil), mark: .box(row.hit), fill: .ungrouped)
             }
-            else
-                if case .groupHeader(let target) = row.target { return SidebarDropPlan(action: .addFolders(container: target),
-                mark: .box(row.visual), fill: .groupHeader(target)) }
-            else
-                if case .groupBody(let target) = row.target { return SidebarDropPlan(action: .addFolders(container: target),
-                mark: .box(row.hit), fill: .groupBody(target)) }
-            else { return SidebarDropPlan(action: .addFolders(container: nil), mark: .box(row.hit), fill: .ungrouped) }
         }
     }
 }

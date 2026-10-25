@@ -126,7 +126,7 @@ struct PluginsWebPanel: View {
                                 Self.sortTitles[value] ?? "settings.web.reference.market.sort")) }) { value in
                             Text(LocalizedStringKey(Self.sortTitles[value] ?? "settings.web.reference.market.sort"))
                         }.accessibilityLabel(Text("settings.web.reference.market.sort"))
-                    }
+                }
                 if model.stale { Text("settings.web.reference.market.stale").foregroundStyle(theme[.statusWaiting]) }
                 if model.failed { Text("settings.web.reference.market.error").foregroundStyle(theme[.fgMuted]) }
                 Button("settings.web.reference.prefs.pluginsMarketplaceOpen") { selectedID = nil; marketplace = true }

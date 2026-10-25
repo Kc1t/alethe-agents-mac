@@ -1,6 +1,6 @@
+@testable import AletheFoundation
 import Foundation
 import Testing
-@testable import AletheFoundation
 
 private func upstreamJSON(_ event: BusEvent) throws -> [String: Any] {
     let data = try JSONEncoder().encode(event)

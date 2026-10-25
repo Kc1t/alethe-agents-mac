@@ -7,10 +7,15 @@ public enum PaneLayoutMode: String, Codable, CaseIterable, Sendable {
     case grid
 
     var defaultColumns: [Double] {
-        if case .auto = self { return [] }
-        else if case .grid = self { return [] }
-        else if case .spotlight = self { return [0.65, 0.35] }
-        else { return [0.22, 0.78] }
+        if case .auto = self {
+            return []
+        } else if case .grid = self {
+            return []
+        } else if case .spotlight = self {
+            return [0.65, 0.35]
+        } else {
+            return [0.22, 0.78]
+        }
     }
 }
 
@@ -97,10 +102,11 @@ public struct PaneGridGeometry: Equatable, Sendable {
             self = Self.custom(grid: grid, ids: ids, in: rect, weights: weights, gap: gap, handle: handle)
             if handlesInsideLeadingCell {
                 for (divider, frame) in dividers {
-                    if case .gridColumn = divider { dividers[divider] = frame.offsetBy(dx: -(handle + gap) / 2, dy: 0) }
-                    else if case .gridRow = divider { dividers[divider] = frame.offsetBy(dx: 0, dy: -(handle + gap) / 2) }
-                    else {
-
+                    if case .gridColumn = divider {
+                        dividers[divider] = frame.offsetBy(dx: -(handle + gap) / 2, dy: 0)
+                    } else if case .gridRow = divider {
+                        dividers[divider] = frame.offsetBy(dx: 0, dy: -(handle + gap) / 2)
+                    } else {
                     }
                 }
             }
@@ -176,7 +182,8 @@ public struct PaneGridGeometry: Equatable, Sendable {
         }
         let occupancy = grid.occupancy(ids)
         result.freeSlots = grid.freeCells(ids).map { Slot(col: $0.col, row: $0.row, frame: frame(col: $0.col,
-            row: $0.row, colSpan: 1, rowSpan: 1)) }
+            row: $0.row, colSpan: 1, rowSpan: 1))
+        }
         func separates(_ a: String?, _ b: String?) -> Bool { a != b && (a != nil || b != nil) }
         for boundary in 0..<max(0, grid.cols - 1) {
             let center = columnX[boundary + 1] - gap / 2

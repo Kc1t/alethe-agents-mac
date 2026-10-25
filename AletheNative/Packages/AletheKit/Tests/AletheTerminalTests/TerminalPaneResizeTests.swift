@@ -1,7 +1,7 @@
 import AletheDesign
+@testable import AletheTerminal
 import AppKit
 import Testing
-@testable import AletheTerminal
 
 @MainActor
 @Suite struct TerminalPaneResizeTests {

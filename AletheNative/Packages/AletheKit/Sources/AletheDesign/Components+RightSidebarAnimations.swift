@@ -88,8 +88,7 @@ public struct AletheAnimatedRightSidebarTabStyle: ButtonStyle {
     @Environment(\.metrics) private var metrics
     @ViewBuilder public func makeBody(configuration: Configuration) -> some View {
         if metrics.isWebInterface { AnimatedRightSidebarTabBody(configuration: configuration, selected: selected,
-            width: width, height: height) }
-        else {
+            width: width, height: height) } else {
             AletheRightSidebarTabStyle(selected: selected, width: width, height: height)
                 .makeBody(configuration: configuration)
         }

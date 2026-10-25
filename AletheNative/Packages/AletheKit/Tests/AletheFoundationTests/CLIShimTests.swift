@@ -1,6 +1,6 @@
+@testable import AletheFoundation
 import Foundation
 import Testing
-@testable import AletheFoundation
 
 @Suite struct CLIShimTests {
     private let app = "/Applications/Alethe.app"

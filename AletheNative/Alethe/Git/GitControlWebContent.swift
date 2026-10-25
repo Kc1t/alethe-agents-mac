@@ -234,8 +234,11 @@ extension GitControlSheet {
             primary: { paths in if staged { model.unstage(paths) } else { model.stage(paths) } },
             discard: discardable ? { paths in pendingDiscardPaths = PendingDiscard(paths: paths, untracked: kind == .untracked) } : nil,
             open: { entry in
-                if kind == .untracked, addToGridAvailable(entry.path, model) { _ = addToGrid(entry.path, model) }
-                else { openDiff(entry, staged: staged) }
+                if kind == .untracked, addToGridAvailable(entry.path, model) {
+                    _ = addToGrid(entry.path, model)
+                } else {
+                    openDiff(entry, staged: staged)
+                }
             },
             reveal: { path in revealPath(path, model) },
             addToGrid: { addToGrid($0, model) },

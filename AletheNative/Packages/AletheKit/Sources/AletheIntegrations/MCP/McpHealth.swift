@@ -114,9 +114,8 @@ public struct McpHealthChecker: Sendable {
     public init(
         resolve: @escaping @Sendable (String) -> String? = { LauncherResolver().resolve($0) },
         timeout: Duration = McpHealthChecker.timeout,
-        run: @escaping Runner = {
-            (executable: String, arguments: [String], timeout: Duration)
-                async throws(ExternalCommandError) -> ExternalCommandResult in
+        run: @escaping Runner = { (executable: String, arguments: [String], timeout: Duration)
+            async throws(ExternalCommandError) -> ExternalCommandResult in
             try await ExternalCommand.run(executable, arguments, timeout: timeout)
         }
     ) {

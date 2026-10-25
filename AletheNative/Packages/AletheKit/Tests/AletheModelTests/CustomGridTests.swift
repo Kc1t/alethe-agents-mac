@@ -1,7 +1,7 @@
+@testable import AletheModel
 import CoreGraphics
 import Foundation
 import Testing
-@testable import AletheModel
 
 @Suite struct CustomGridTests {
     private let ids = ["a", "b", "c"]

@@ -20,7 +20,8 @@ struct SidebarProjectsHeader: View {
             Spacer(minLength: metrics.space(.s))
             Button { environment.editorRequest = .newGroup(parent: nil) } label: {
                 Label { Text("menu.file.newGroup") } icon: {
-                    Image(systemName: metrics.isWebInterface ? "folder.badge.plus" : "rectangle.stack.badge.plus").webProfileSized(14) }
+                    Image(systemName: metrics.isWebInterface ? "folder.badge.plus" : "rectangle.stack.badge.plus").webProfileSized(14)
+                }
                     .modifier(SidebarSymbolAppearance(size: 14))
             }
             .buttonStyle(AletheIconButtonStyle(side: 20))

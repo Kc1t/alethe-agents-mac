@@ -8,12 +8,17 @@ extension Motion {
             guard !reduceMotion else { return nil }
             let duration: Double = if case .tab = self {
                 0.14
+            } else if case .close = self {
+                0.12
+            } else if case .laneSelection = self {
+                0.16
+            } else if case .insertion = self {
+                0.18
+            } else if case .pane = self {
+                0.15
+            } else {
+                0.10
             }
-            else if case .close = self { 0.12 }
-            else if case .laneSelection = self { 0.16 }
-            else if case .insertion = self { 0.18 }
-            else if case .pane = self { 0.15 }
-            else { 0.10 }
             if self == .insertion { return .timingCurve(0.175, 0.885, 0.32, 1.275, duration: duration) }
             return .timingCurve(0.25, 0.1, 0.25, 1, duration: duration)
         }

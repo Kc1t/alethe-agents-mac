@@ -35,7 +35,8 @@ struct OrchestrationRoutingSection: View {
                     alignment: .leading, spacing: metrics.size(16)) {
                     OrchestrationField("routingCriticalThreshold") {
                         TextField(value: $settings.routing.criticalThreshold, format: .number.grouping(.never)) {
-                            label("routingCriticalThreshold") }
+                            label("routingCriticalThreshold")
+                        }
                             .modifier(ProjectGroupWebInput())
                     }
                     Toggle(isOn: $settings.routing.allowOpusOnDeep) { label("routingAllowOpusOnDeep") }
@@ -92,9 +93,11 @@ struct OrchestrationRoutingSection: View {
             ForEach(settings.routing.rules[index].gates.indices, id: \.self) { gateIndex in
                 HStack(spacing: metrics.size(8)) {
                     InterfaceSelect(selection: gate(index, gateIndex, \.agent), options: ["claude", "codex"]) {
-                        Text(verbatim: orchestrationAgentName($0)) }
+                        Text(verbatim: orchestrationAgentName($0))
+                    }
                     InterfaceSelect(selection: gate(index, gateIndex, \.window), options: ["short", "week", "opus"]) {
-                        label("routingWindow" + $0.capitalized) }
+                        label("routingWindow" + $0.capitalized)
+                    }
                     TextField(value: gate(index, gateIndex, \.below), format: .number.grouping(.never)) { label("routingRuleGateBelow") }
                         .modifier(ProjectGroupWebInput()).frame(width: metrics.size(80))
                     action("trash", key: "routingRuleGateRemove") {

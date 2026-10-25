@@ -229,7 +229,8 @@ struct PullRequestsView: View {
         .contextMenu {
             Button { reviewing = pr } label: { Label("pullRequests.reviewWithAgent", systemImage: "cpu") }
             Button { merging = pr } label: { Label("pullRequests.squashMergeMenu",
-                systemImage: "arrow.triangle.merge") }.disabled(reviews.reviewedHead(pr) == nil)
+                systemImage: "arrow.triangle.merge")
+            }.disabled(reviews.reviewedHead(pr) == nil)
         }
     }
 

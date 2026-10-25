@@ -61,8 +61,7 @@ struct QueueView: View {
                                         Task { await queue?.reorder(order) }
                                         return true
                                     } isTargeted: { targeted in
-                                        if targeted { dropTarget = item.id }
-                                        else if dropTarget == item.id { dropTarget = nil }
+                                        if targeted { dropTarget = item.id } else if dropTarget == item.id { dropTarget = nil }
                                     }
                             }
                         }.padding(metrics.size(8))

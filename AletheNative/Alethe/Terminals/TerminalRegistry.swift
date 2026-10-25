@@ -377,12 +377,11 @@ final class TerminalRegistry {
                               environment: AppEnvironment) throws -> TerminalPaneView {
         let scrollbackFile = scrollback(for: tab.id, environment: environment)
         if kind != .shell { scrollbackFile?.clear() }
-        let view = try TerminalPaneView(launch: command.ptyLaunch(size: PTYSize(columns: 80, rows: 24)),
+        return try TerminalPaneView(launch: command.ptyLaunch(size: PTYSize(columns: 80, rows: 24)),
                                         theme: environment.theme, fontSize: environment.terminalFontSize,
                                         forceKillNotice: String(localized: "terminal.forceKilled"),
                                         promptHistory: environment.promptHistory?.document.histories[tab.id.rawValue] ?? [],
                                         scrollback: scrollbackFile)
-        return view
     }
 }
 

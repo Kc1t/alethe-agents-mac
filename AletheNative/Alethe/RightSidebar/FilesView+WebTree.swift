@@ -141,8 +141,7 @@ extension FileTreeList {
         .onTapGesture(count: 2) { if !node.isDirectory { open(node) } }
         .onTapGesture {
             selection = node.url
-            if node.isDirectory { attempt { try tree.toggle(node.url) } }
-            else { preview(node.url) }
+            if node.isDirectory { attempt { try tree.toggle(node.url) } } else { preview(node.url) }
         }
         .modifier(WebFileDrag(url: node.url, enabled: !node.isDirectory))
         .onHover { hoveredFile = $0 ? node.url : hoveredFile == node.url ? nil : hoveredFile }
@@ -150,8 +149,7 @@ extension FileTreeList {
     }
 
     func preview(_ url: URL) {
-        if metrics.isWebInterface { previewURL = url }
-        else { QuickLook.shared.show(url) }
+        if metrics.isWebInterface { previewURL = url } else { QuickLook.shared.show(url) }
     }
 
     func openMarkdown(_ url: URL) {
@@ -193,5 +191,4 @@ extension FileTreeList {
         Button { draftName = node.name; renaming = node.url } label: { Label("files.rename", systemImage: "pencil") }
         Button(role: .destructive) { trash(node.url) } label: { Label("files.moveToTrash", systemImage: "trash") }
     }
-
 }

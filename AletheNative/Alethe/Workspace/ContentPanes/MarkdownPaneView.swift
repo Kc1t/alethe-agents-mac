@@ -105,5 +105,4 @@ struct MarkdownFileContent: View {
             .accessibilityIdentifier("markdown.rendered")
         }
     }
-
 }

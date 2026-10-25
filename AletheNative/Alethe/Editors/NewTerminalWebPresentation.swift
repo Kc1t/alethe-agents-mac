@@ -1,5 +1,5 @@
-import AppKit
 import AletheDesign
+import AppKit
 import SwiftUI
 
 struct NewTerminalRowSelect<Selection: Hashable, Icon: View>: View {

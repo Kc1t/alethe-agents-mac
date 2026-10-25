@@ -1,6 +1,6 @@
+@testable import AletheIntegrations
 import Foundation
 import Testing
-@testable import AletheIntegrations
 
 enum McpStoreFixtures {
     static let codexRealShape = #"""
@@ -88,5 +88,4 @@ enum McpStoreFixtures {
     static func localSource(_ url: URL, _ key: String) -> McpSource {
         McpSource(url: url, kind: .local, projectKey: key)
     }
-
 }

@@ -1,7 +1,7 @@
 import AletheAgents
+@testable import AletheIntegrations
 import Foundation
 import Testing
-@testable import AletheIntegrations
 
 func stdioServer(_ name: String) -> McpServer {
     McpServer(name: name, transport: .stdio(command: "node", arguments: ["server.js"], cwd: nil))

@@ -113,7 +113,6 @@ private struct AgentSidebarCard: View {
     @State private var acting = false
     @State private var failure: String?
 
-
     var body: some View {
         Group {
             if metrics.isWebInterface {
@@ -135,7 +134,8 @@ private struct AgentSidebarCard: View {
                         .first { !$0.isEmpty } ?? job.runLabel ?? job.id).lineLimit(2)
                     Spacer(minLength: 0)
                     if let elapsed = BoardFormat.elapsed(job.seconds.map { $0 + (job.status == .running ? max(0,
-                        now.timeIntervalSince(snapshotTime)) : 0) }) { Text(verbatim: elapsed) }
+                        now.timeIntervalSince(snapshotTime)) : 0)
+                    }) { Text(verbatim: elapsed) }
                 }
                 Text(verbatim: job.agent).lineLimit(1).font(metrics.font(.caption))
                 HStack {
@@ -251,8 +251,11 @@ private struct AgentSidebarCard: View {
         Task {
             defer { acting = false }
             do {
-                if let decision { _ = try await environment.orchestrator.answer(job: job.id, decision: decision) }
-                else { _ = try await environment.orchestrator.cancel(job: job.id) }
+                if let decision {
+                    _ = try await environment.orchestrator.answer(job: job.id, decision: decision)
+                } else {
+                    _ = try await environment.orchestrator.cancel(job: job.id)
+                }
             } catch { failure = error.localizedDescription }
         }
     }

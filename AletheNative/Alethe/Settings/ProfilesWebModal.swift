@@ -177,7 +177,8 @@ struct ProfilesWebModal: View {
             if !active {
                 Button { switching = entry } label: {
                     Label { Text("profiles.web.switchButton") } icon: {
-                        icon(busy == .switching ? "arrow.triangle.2.circlepath" : "arrow.left.arrow.right") }
+                        icon(busy == .switching ? "arrow.triangle.2.circlepath" : "arrow.left.arrow.right")
+                    }
                 }
                 .buttonStyle(AletheButtonStyle(.primary)).disabled(busy != nil)
                 .accessibilityIdentifier("settings.profiles.switch.\(name)")
@@ -259,7 +260,8 @@ struct ProfilesWebModal: View {
                 Button("editor.cancel") { pendingDelete = nil }.disabled(busy != nil)
                 Button { remove(entry) } label: {
                     Label { Text("profiles.web.confirmDeleteButton") } icon: {
-                        icon(busy == .delete ? "arrow.triangle.2.circlepath" : "trash") }
+                        icon(busy == .delete ? "arrow.triangle.2.circlepath" : "trash")
+                    }
                 }
                 .labelStyle(WebProfileActionLabelStyle())
                 .buttonStyle(AletheButtonStyle(.danger))
@@ -295,8 +297,11 @@ struct ProfilesWebModal: View {
             .flatMap { Data(base64Encoded: $0) }.flatMap { NSImage(data: $0) }
         let source = entry.id == environment.profileID ? (environment.preferences?.document.profileImageUrl ?? "") : ""
         return SidebarCoverImage(source: source, side: 38, cornerRadius: 19) {
-            if let stored { Image(nsImage: stored).resizable().aspectRatio(contentMode: .fill) }
-            else { Image("DefaultProfile").resizable().aspectRatio(contentMode: .fill) }
+            if let stored {
+                Image(nsImage: stored).resizable().aspectRatio(contentMode: .fill)
+            } else {
+                Image("DefaultProfile").resizable().aspectRatio(contentMode: .fill)
+            }
         }
         .overlay(Circle().strokeBorder(theme[.border], lineWidth: metrics.size(1)))
         .accessibilityLabel(Text(verbatim: name))
@@ -318,10 +323,13 @@ struct ProfilesWebModal: View {
         error = nil
         Task {
             defer { busy = nil }
-            do { try await action() }
-            catch let failure as ProfileError { error = failure.localizedMessage }
-            catch let failure as BackupError { error = failure.localizedMessage }
-            catch {
+            do {
+                try await action()
+            } catch let failure as ProfileError {
+                error = failure.localizedMessage
+            } catch let failure as BackupError {
+                error = failure.localizedMessage
+            } catch {
                 self.error = String(format: String(localized: "settings.profiles.error.operation"), error.localizedDescription)
             }
         }

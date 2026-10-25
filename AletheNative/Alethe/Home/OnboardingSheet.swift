@@ -326,7 +326,10 @@ struct OnboardingSheet: View {
             if isLast { finish() } else { move(1) }
             return
         }
-        guard let profileID = environment.profileID else { return move(1) }
+        guard let profileID = environment.profileID else {
+            move(1)
+            return
+        }
         saving = true
         let trimmedPhoto = photo.trimmingCharacters(in: .whitespacesAndNewlines)
         Task {
@@ -375,4 +378,3 @@ struct OnboardingSheet: View {
         close()
     }
 }
-

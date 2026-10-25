@@ -1,8 +1,8 @@
 import AletheAgents
+@testable import AletheIntegrations
 import Darwin
 import Foundation
 import Testing
-@testable import AletheIntegrations
 
 struct Router9RoutingTests {
     private let active = Router9RoutingConfig(enabled: true, apiKey: "9r_test")

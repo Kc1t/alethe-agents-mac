@@ -172,6 +172,4 @@ public final class RemoteTransport: @unchecked Sendable {
         guard let ip = RemoteHost.normalizedIP(host), ip != "0.0.0.0", ip != "::" else { return nil }
         return ip
     }
-
-
 }

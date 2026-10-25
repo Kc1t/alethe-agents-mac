@@ -1,6 +1,6 @@
+@testable import AletheGit
 import Foundation
 import Testing
-@testable import AletheGit
 
 struct TempRepo {
     static let runner = GitRunner(environment: [

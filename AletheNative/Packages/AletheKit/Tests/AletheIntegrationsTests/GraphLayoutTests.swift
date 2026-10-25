@@ -1,7 +1,7 @@
+@testable import AletheIntegrations
 import Foundation
 import Testing
 import XCTest
-@testable import AletheIntegrations
 
 private func syntheticGraph(count: Int, communities: Int = 12) -> GraphData {
     let nodes = (0..<count).map { GraphNode(id: "src/file\($0).ts", label: "file\($0).ts", group: String($0 % communities)) }

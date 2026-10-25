@@ -30,11 +30,13 @@ struct HomeView: View {
                         HStack(spacing: metrics.size(8)) {
                             Button { environment.editorRequest = .newTerminal(nil) } label: {
                                 Label { Text(metrics.isWebInterface ? "home.web.newTerminal" :
-                                    "home.action.newTerminal") } icon: { Image(systemName: "terminal").webProfileSized(14) }
+                                    "home.action.newTerminal")
+                                } icon: { Image(systemName: "terminal").webProfileSized(14) }
                             }
                             Button { environment.editorRequest = .newProject(.ungrouped) } label: {
                                 Label { Text(metrics.isWebInterface ? "home.web.newProject" :
-                                    "home.action.newProject") } icon: { Image(systemName: "folder.badge.plus").webProfileSized(14) }
+                                    "home.action.newProject")
+                                } icon: { Image(systemName: "folder.badge.plus").webProfileSized(14) }
                             }
                         }
                         .buttonStyle(HomeHeroActionStyle())
@@ -61,11 +63,13 @@ struct HomeView: View {
                         HStack(spacing: metrics.space(.xl)) {
                             Button { environment.editorRequest = .newTerminal(nil) } label: {
                                 Label { Text(metrics.isWebInterface ? "home.web.newTerminal" :
-                                    "home.action.newTerminal") } icon: { Image(systemName: "terminal").webProfileSized(14) }
+                                    "home.action.newTerminal")
+                                } icon: { Image(systemName: "terminal").webProfileSized(14) }
                             }
                             Button { environment.editorRequest = .newProject(.ungrouped) } label: {
                                 Label { Text(metrics.isWebInterface ? "home.web.newProject" :
-                                    "home.action.newProject") } icon: { Image(systemName: "folder.badge.plus").webProfileSized(14) }
+                                    "home.action.newProject")
+                                } icon: { Image(systemName: "folder.badge.plus").webProfileSized(14) }
                             }
                         }
                         .buttonStyle(.link)
@@ -93,14 +97,12 @@ struct HomeView: View {
                     if metrics.isWebInterface {
                         UsageStrip(homeActivityDays: $activityDays, webContainerWidth: geometry.size.width
                                    - 2 * min(metrics.size(28), max(metrics.size(16), geometry.size.width * 0.03)))
-                    }
-                    else {
+                    } else {
                         UsageStrip()
                         ActivityGraph(days: $activityDays)
                     }
                     TimeAnalytics()
-                    if metrics.isWebInterface { HomeWebNotifications() }
-                    else {
+                    if metrics.isWebInterface { HomeWebNotifications() } else {
                         NotificationList(isHome: true)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .aletheCard()
@@ -140,7 +142,6 @@ extension View {
             .offset(y: appeared || reduced ? 0 : rise)
             .animation(reduced ? nil : .easeOut(duration: 0.28).delay(Double(step) * 0.06), value: appeared)
     }
-
 }
 
 struct HomeSectionHeader: View {
@@ -178,4 +179,3 @@ enum HomeFormat {
         return Duration.seconds(minutes * 60).formatted(.units(allowed: units, width: .narrow))
     }
 }
-

@@ -5,23 +5,39 @@ public enum GitBadge: String, Hashable, Sendable, CaseIterable {
     case conflict, modified, stagedModified, added, untracked, renamed, deleted
 
     public var priority: Int {
-        if case .conflict = self { return 100 }
-        else if case .modified = self { return 80 }
-        else if case .stagedModified = self { return 70 }
-        else if case .added = self { return 60 }
-        else if case .untracked = self { return 50 }
-        else if case .renamed = self { return 40 }
-        else { return 30 }
+        if case .conflict = self {
+            return 100
+        } else if case .modified = self {
+            return 80
+        } else if case .stagedModified = self {
+            return 70
+        } else if case .added = self {
+            return 60
+        } else if case .untracked = self {
+            return 50
+        } else if case .renamed = self {
+            return 40
+        } else {
+            return 30
+        }
     }
 
     public var letter: String {
-        if case .conflict = self { return "!" }
-        else if case .modified = self { return "M" }
-        else if case .stagedModified = self { return "M" }
-        else if case .added = self { return "A" }
-        else if case .untracked = self { return "U" }
-        else if case .renamed = self { return "R" }
-        else { return "D" }
+        if case .conflict = self {
+            return "!"
+        } else if case .modified = self {
+            return "M"
+        } else if case .stagedModified = self {
+            return "M"
+        } else if case .added = self {
+            return "A"
+        } else if case .untracked = self {
+            return "U"
+        } else if case .renamed = self {
+            return "R"
+        } else {
+            return "D"
+        }
     }
 }
 

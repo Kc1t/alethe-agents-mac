@@ -7,8 +7,7 @@ struct WebVoiceHistoryPanel: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        if metrics.isWebInterface { history }
-        else { NativeVoiceHistoryPanel() }
+        if metrics.isWebInterface { history } else { NativeVoiceHistoryPanel() }
     }
 
     private var history: some View {

@@ -1,7 +1,7 @@
+@testable import AletheIntegrations
 import Foundation
 import Synchronization
 import Testing
-@testable import AletheIntegrations
 
 private final class FakeDiscordClient: DiscordPresenceClient {
     enum Call: Equatable {

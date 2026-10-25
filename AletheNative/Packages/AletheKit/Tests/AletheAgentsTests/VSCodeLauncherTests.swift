@@ -1,6 +1,6 @@
+@testable import AletheAgents
 import Foundation
 import Testing
-@testable import AletheAgents
 
 struct VSCodeLauncherTests {
     private func resolver(_ files: Set<String>, path: String = "/usr/bin:/bin") -> LauncherResolver {

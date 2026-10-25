@@ -1,6 +1,6 @@
+@testable import AlethePluginKit
 import Foundation
 import Testing
-@testable import AlethePluginKit
 
 private func tab(_ id: String, _ side: SidebarSide = .left) -> SidebarTabContribution {
     SidebarTabContribution(id: id, title: id, symbol: "circle", side: side, viewID: id)

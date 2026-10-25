@@ -1,6 +1,6 @@
+@testable import AletheModel
 import Foundation
 import Testing
-@testable import AletheModel
 
 struct ActivityStatsTests {
     private func agent(_ name: String, _ project: String?, _ terminal: String, working: Bool = true) -> ActivitySample.Agent {

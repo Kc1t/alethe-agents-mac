@@ -127,8 +127,7 @@ enum ProcessTable {
             guard index < bytes.count else { return nil }
             let start = index
             while index < bytes.count, bytes[index] != 0 { index += 1 }
-            let value = String(decoding: bytes[start..<index], as: UTF8.self)
-            return value
+            return String(decoding: bytes[start..<index], as: UTF8.self)
         }
         guard let executable = nextString(), !executable.isEmpty else { return nil }
         while index < bytes.count, bytes[index] == 0 { index += 1 }

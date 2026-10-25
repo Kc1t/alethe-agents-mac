@@ -1,5 +1,5 @@
-import AletheModel
 import AletheDesign
+import AletheModel
 import AppKit
 import SwiftUI
 
@@ -128,7 +128,6 @@ struct ContentPaneHeader<Actions: View>: View {
         let parts = url.pathComponents
         return parts.count <= 2 ? url.path : "…/" + parts.suffix(2).joined(separator: "/")
     }
-
 }
 
 struct ContentPaneButton: View {

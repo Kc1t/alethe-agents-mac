@@ -1,5 +1,5 @@
-import Foundation
 import AletheIntegrations
+import Foundation
 
 public struct Job: Hashable, Sendable, Identifiable {
     public var id: String

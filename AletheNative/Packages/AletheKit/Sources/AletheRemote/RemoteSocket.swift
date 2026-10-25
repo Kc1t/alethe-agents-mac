@@ -22,7 +22,7 @@ final class RemoteSocket: @unchecked Sendable {
 
     func start(timeout: Duration) async -> Bool {
         let resumed = OnceFlag()
-        let ready: Bool = await withTaskCancellationHandler {
+        return await withTaskCancellationHandler {
             await withCheckedContinuation { continuation in
                 connection.stateUpdateHandler = { state in
                     if case .ready = state {
@@ -43,8 +43,7 @@ final class RemoteSocket: @unchecked Sendable {
             }
         } onCancel: {
             connection.cancel()
-        }
-        return ready
+        } as Bool
     }
 
     func receive(maximumLength: Int, timeout: Duration) async throws -> (data: Data?, complete: Bool) {

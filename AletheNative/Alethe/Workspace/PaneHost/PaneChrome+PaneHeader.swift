@@ -96,7 +96,8 @@ struct PaneHeader: View {
                 .frame(height: metrics.size(26))
                 .background(theme[.bgElevated].opacity(topbarPinned ? 0 : 0.92), in: RoundedRectangle(cornerRadius: metrics.size(4)))
                 .overlay { if !topbarPinned {
-                    RoundedRectangle(cornerRadius: metrics.size(4)).strokeBorder(theme[.border], lineWidth: metrics.size(1)) } }
+                    RoundedRectangle(cornerRadius: metrics.size(4)).strokeBorder(theme[.border], lineWidth: metrics.size(1)) }
+                }
                 .onTapGesture(count: 2, perform: onToggleFocus)
                 if !topbarPinned { Spacer(minLength: 0) }
             } else { Spacer(minLength: 0) }

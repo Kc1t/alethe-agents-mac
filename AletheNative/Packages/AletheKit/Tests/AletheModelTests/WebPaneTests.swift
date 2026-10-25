@@ -1,6 +1,6 @@
+@testable import AletheModel
 import Foundation
 import Testing
-@testable import AletheModel
 
 @Suite struct WebPaneTests {
     @Test func defaultsPublicHostsToHTTPS() {
@@ -44,5 +44,4 @@ import Testing
         #expect(old.name == nil)
         #expect(old.zoom == 1.5 && !old.javascriptEnabled)
     }
-
 }

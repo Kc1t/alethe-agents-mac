@@ -68,5 +68,4 @@ public enum JSONC {
         }
         index += 2
     }
-
 }

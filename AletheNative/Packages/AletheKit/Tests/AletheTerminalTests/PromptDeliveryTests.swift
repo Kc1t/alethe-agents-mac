@@ -1,7 +1,7 @@
+@testable import AletheTerminal
 import Foundation
 import Synchronization
 import Testing
-@testable import AletheTerminal
 
 private final class FakeTerminal: Sendable {
     let clock = Mutex<Duration>(.zero)

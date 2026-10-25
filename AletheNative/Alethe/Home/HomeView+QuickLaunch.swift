@@ -254,7 +254,8 @@ struct QuickLaunch: View {
             .labelStyle(.iconOnly)
             .frame(width: metrics.size(38), height: metrics.size(30))
             .background(theme[.accent], in: RoundedRectangle(cornerRadius: metrics.radius(metrics.isWebInterface ? .md : .sm)))
-            .foregroundStyle(theme[.accentOn]) }
+            .foregroundStyle(theme[.accentOn])
+        }
             .buttonStyle(.plain)
             .keyboardShortcut(.return, modifiers: .command)
             .disabled(project == nil || agents.isEmpty || (!metrics.isWebInterface &&
@@ -291,4 +292,3 @@ struct QuickLaunch: View {
         environment.showingHome = false
     }
 }
-

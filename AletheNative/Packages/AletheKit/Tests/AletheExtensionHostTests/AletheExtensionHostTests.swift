@@ -1,7 +1,7 @@
+@testable import AletheExtensionHost
+import AlethePluginKit
 import Foundation
 import Testing
-import AlethePluginKit
-@testable import AletheExtensionHost
 
 private func descriptor(_ caps: [String], version: String = "1.0", api: PluginAPIVersion = .current) -> ExtensionDescriptor {
     ExtensionDescriptor(

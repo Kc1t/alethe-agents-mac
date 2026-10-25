@@ -1,8 +1,8 @@
+@testable import AletheIntegrations
 import Darwin
 import Foundation
 import Synchronization
 import Testing
-@testable import AletheIntegrations
 
 @Suite struct DiscordIPCGoldenTests {
     @Test func applicationIDIsNumeric() {

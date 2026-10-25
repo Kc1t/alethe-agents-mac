@@ -224,9 +224,13 @@ struct AppearanceSettings: View {
                     environment.preferences?.document.terminalTheme ?? ""
                 } set: { value in environment.preferences?.update { $0.terminalTheme = value.isEmpty ? nil : value } },
                     options: [""] + environment.themeCatalog.themes.map(\.id)) { id in
-                    if id.isEmpty { Text("settings.appearance.followUI") }
-                    else if let option = environment.themeCatalog.theme(id: id) { option.localizedName }
-                    else { Text(verbatim: id) }
+                    if id.isEmpty {
+                        Text("settings.appearance.followUI")
+                    } else if let option = environment.themeCatalog.theme(id: id) {
+                        option.localizedName
+                    } else {
+                        Text(verbatim: id)
+                    }
                 }
                 .accessibilityLabel(Text("settings.web.reference.prefs.terminalTheme"))
             }
@@ -280,7 +284,8 @@ struct AppearanceSettings: View {
                     .accessibilityIdentifier("settings.toolbar.open")
                 .settingsRowSurface(.standalone)
                 InterfaceSelect(selection: Binding { environment.interfaceStyle } set: {
-                    environment.interfaceStyle = $0 }, options: InterfaceStyle.allCases) { style in
+                    environment.interfaceStyle = $0
+                }, options: InterfaceStyle.allCases) { style in
                     Text(style.title)
                 }
                 .accessibilityLabel(Text("settings.appearance.interface"))
@@ -318,7 +323,6 @@ struct AppearanceSettings: View {
                 header: { Text("settings.web.reference.prefs.windowOpacity") }
                 footer: { Text("settings.web.reference.prefs.windowOpacityDesc") }
             PaneFocusBorderSection()
-
         }
         .disabled(environment.preferences == nil)
         .gitWebSheet(isPresented: $showingToolbar, width: 440) {

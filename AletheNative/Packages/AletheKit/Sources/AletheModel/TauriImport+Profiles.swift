@@ -43,5 +43,4 @@ public enum TauriDataLocation {
         }
         return found.filter(\.isActive) + found.filter { !$0.isActive }
     }
-
 }

@@ -1,6 +1,6 @@
+import Darwin
 import Foundation
 import Security
-import Darwin
 
 final class UsageCredentialCache: @unchecked Sendable {
     struct Credential {

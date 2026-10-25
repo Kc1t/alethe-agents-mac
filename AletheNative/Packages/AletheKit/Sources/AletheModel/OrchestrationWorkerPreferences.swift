@@ -82,7 +82,7 @@ public struct WorkerRuleSet: Codable, Hashable, Sendable, Identifiable {
                 - Do not commit, push or touch version control unless asked. Secrets never enter code or logs.
 
                 """),
-            
+
         .init(id: "backend", name: "Backend",
             text: """
                 # Backend
@@ -108,7 +108,7 @@ public struct WorkerRuleSet: Codable, Hashable, Sendable, Identifiable {
                 - User-facing and error messages live in one place, ready for translation.
 
                 """),
-            
+
         .init(id: "frontend", name: "Frontend",
             text: """
                 # Frontend

@@ -93,8 +93,7 @@ final class UsageMonitor {
         guard shownProviders.contains(fresh.agent) else { return }
         lastRefresh[fresh.agent] = Date()
         if fresh.status == .ready { authenticated.insert(fresh.agent) }
-        if case .unavailable = fresh.status { stale.insert(fresh.agent) }
-        else { stale.remove(fresh.agent) }
+        if case .unavailable = fresh.status { stale.insert(fresh.agent) } else { stale.remove(fresh.agent) }
         if let previous = usage[fresh.agent], fresh.status == .ready,
            environment?.preferences?.document.notifyLimitReset != false {
             for window in AIUsage.resets(from: previous, to: fresh) {

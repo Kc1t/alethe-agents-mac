@@ -1,7 +1,7 @@
-import Foundation
-import Testing
 @testable import AletheFoundation
 @testable import AlethePluginKit
+import Foundation
+import Testing
 
 private struct Settings: Codable, Equatable {
     var interval: Int

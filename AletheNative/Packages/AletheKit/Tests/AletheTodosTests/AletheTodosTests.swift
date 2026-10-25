@@ -1,7 +1,7 @@
-import Foundation
-import Testing
 @testable import AlethePluginKit
 @testable import AletheTodos
+import Foundation
+import Testing
 
 private func temporaryDirectory() -> URL {
     let url = FileManager.default.temporaryDirectory.appending(path: "AletheTodosTests-\(UUID().uuidString)")
@@ -128,7 +128,6 @@ private func temporaryDirectory() -> URL {
         let settings = try #require(try await reopenedStorage.decode([String: String].self, forKey: "settings"))
         #expect(settings == ["storagePath": "/tmp/current-todos"])
     }
-
 }
 
 @Suite struct TodoTemplateTests {

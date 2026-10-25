@@ -42,7 +42,8 @@ struct SettingsTerminalThemeBridge: View {
             .task(id: appearance) {
                 ShellLaunch.shellOverride = appearance.shell
                 let family = appearance.font?.split(separator: ",").first.map {
-                    $0.trimmingCharacters(in: CharacterSet(charactersIn: " \"'")) }
+                    $0.trimmingCharacters(in: CharacterSet(charactersIn: " \"'"))
+                }
                 if TerminalAppearance.fontFamilyOverride != family {
                     TerminalAppearance.fontFamilyOverride = family
                     environment.terminals.applyAppearance(theme: environment.theme, fontSize: environment.terminalFontSize)

@@ -1,6 +1,6 @@
+@testable import AletheIntegrations
 import Foundation
 import Testing
-@testable import AletheIntegrations
 
 @Suite struct McpStoreSyncTests {
     @Test func syncReportsWrittenBlockedSkippedAndFailed() throws {

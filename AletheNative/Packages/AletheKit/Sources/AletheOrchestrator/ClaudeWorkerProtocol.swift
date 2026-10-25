@@ -1,6 +1,6 @@
-import Foundation
 import AletheGit
 import AletheIntegrations
+import Foundation
 
 public enum ClaudeWorkerEvent: Hashable, Sendable {
     case ignored
@@ -94,7 +94,6 @@ public enum ClaudeWorkerProtocol {
             guard let info = object["rate_limit_info"] else { return .ignored }
             job.quota = info
             return .updated
-
         } else if case "system" = eventType {
             let subtype = object["subtype"]?.stringValue ?? ""
             if case "init" = subtype {
@@ -108,7 +107,6 @@ public enum ClaudeWorkerProtocol {
             } else {
                 return .ignored
             }
-
         } else if case "assistant" = eventType {
             let blocks = object["message"]?.objectValue?["content"]?.arrayValue ?? []
             let text = blocks
@@ -118,10 +116,8 @@ public enum ClaudeWorkerProtocol {
             guard !text.isEmpty else { return .ignored }
             appendReply(text, to: &job)
             return .updated
-
         } else if case "result" = eventType {
             return .turnEnded(result(object, job: &job))
-
         } else {
             return .ignored
         }

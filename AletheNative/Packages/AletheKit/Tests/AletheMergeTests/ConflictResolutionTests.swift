@@ -1,7 +1,7 @@
 import AletheGit
+@testable import AletheMerge
 import Foundation
 import Testing
-@testable import AletheMerge
 
 struct ConflictResolutionTests {
     static let runner = GitRunner(environment: ["GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1"])

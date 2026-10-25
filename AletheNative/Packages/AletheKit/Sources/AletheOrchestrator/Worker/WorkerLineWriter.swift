@@ -1,7 +1,7 @@
+import AletheIntegrations
 import Darwin
 import Foundation
 import Synchronization
-import AletheIntegrations
 
 public enum WorkerWriteError: Error, Hashable, Sendable {
     case closed

@@ -1,8 +1,8 @@
 import AletheDesign
+@testable import AletheTerminal
 import CoreGraphics
 import GhosttyTerminal
 import Testing
-@testable import AletheTerminal
 
 @Suite struct TerminalAppearanceTests {
     @Test func webUsesFourteenPointFontAndAsymmetricHostPadding() {

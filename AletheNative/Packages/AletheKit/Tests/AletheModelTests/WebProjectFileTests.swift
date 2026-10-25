@@ -1,7 +1,7 @@
 import AletheFoundation
+@testable import AletheModel
 import Foundation
 import Testing
-@testable import AletheModel
 
 struct WebProjectFileTests {
     private var fixture: Data {

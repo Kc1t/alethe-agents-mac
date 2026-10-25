@@ -69,9 +69,9 @@ struct SubTabsLane: View {
         .onMoveCommand { direction in
             guard let index = pane.tabs.firstIndex(where: { $0.id == pane.activeTab?.id }), !pane.tabs.isEmpty else { return }
             let delta: Int
-            if (direction == .up || direction == .left) {
+            if direction == .up || direction == .left {
                 delta = -1
-            } else if (direction == .down || direction == .right) {
+            } else if direction == .down || direction == .right {
                 delta = 1
             } else {
                 return

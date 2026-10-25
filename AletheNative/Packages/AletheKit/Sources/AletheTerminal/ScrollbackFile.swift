@@ -104,14 +104,11 @@ public final class ScrollbackFile: @unchecked Sendable {
         } else if state == 1 {
             advanceEscape(byte, state: &state, osc: &osc)
         } else if state == 2 {
-            if (0x40...0x7e).contains(byte) { state = 0 }
-            else if byte == 0x1b { state = 1 }
+            if (0x40...0x7e).contains(byte) { state = 0 } else if byte == 0x1b { state = 1 }
         } else if state == 3 {
-            if osc && byte == 0x07 { state = 0 }
-            else if byte == 0x1b { state = 4 }
+            if osc && byte == 0x07 { state = 0 } else if byte == 0x1b { state = 4 }
         } else {
-            if byte == 0x5c { state = 0 }
-            else if byte != 0x1b { state = 3 }
+            if byte == 0x5c { state = 0 } else if byte != 0x1b { state = 3 }
         }
         if byte == 0x18 || byte == 0x1a { state = 0 }
     }

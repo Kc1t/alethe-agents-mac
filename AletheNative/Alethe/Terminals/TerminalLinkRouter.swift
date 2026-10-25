@@ -1,8 +1,8 @@
 import AletheDesign
-import SwiftUI
 import AletheModel
 import AletheTerminal
 import AppKit
+import SwiftUI
 
 extension AppEnvironment {
     func openTerminalLink(_ raw: String, from terminal: TerminalPaneView, tab: PaneTab, project: Project) {

@@ -1,5 +1,5 @@
-import Foundation
 import AletheIntegrations
+import Foundation
 
 public struct OrchestratorBridgeFile: Codable, Equatable, Sendable, CustomStringConvertible {
     public var endpoint: String

@@ -1,5 +1,5 @@
-import AppKit
 import AletheDesign
+import AppKit
 import Observation
 import SwiftUI
 

@@ -11,8 +11,7 @@ struct Router9ToolbarItem: View {
     var body: some View {
         Group {
             if controller.preferences.enabled {
-                if controller.hasInstall { pill }
-                else { Color.clear.frame(width: 0, height: 0).accessibilityHidden(true) }
+                if controller.hasInstall { pill } else { Color.clear.frame(width: 0, height: 0).accessibilityHidden(true) }
             }
         }
         .task(id: controller.preferences.enabled) {

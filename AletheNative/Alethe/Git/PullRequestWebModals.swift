@@ -129,7 +129,6 @@ struct GitPullRequestReviewWebModal: View {
     }
 }
 
-
 struct GitPullRequestMergeWebModal: View {
     let pr: PullRequestSummary
     let headSHA: String

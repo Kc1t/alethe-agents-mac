@@ -37,23 +37,37 @@ extension TauriImport {
         let saturation = delta == 0 ? 0 : delta / (1 - abs(2 * lightness - 1))
         if saturation < 0.2 || delta < 0.08 { return lightness < 0.2 ? .black : .gray }
         var hue: Double
-        if case r = maxC { hue = 60 * ((g - b) / delta).truncatingRemainder(dividingBy: 6) }
-        else if case g = maxC { hue = 60 * ((b - r) / delta + 2) }
-        else { hue = 60 * ((r - g) / delta + 4) }
+        if case r = maxC {
+            hue = 60 * ((g - b) / delta).truncatingRemainder(dividingBy: 6)
+        } else if case g = maxC {
+            hue = 60 * ((b - r) / delta + 2)
+        } else {
+            hue = 60 * ((r - g) / delta + 4)
+        }
         if hue < 0 { hue += 360 }
         return color(forHue: hue)
     }
 
     private static func color(forHue hue: Double) -> ProjectColor {
-        if case ..<15 = hue { return .red }
-        else if case 345... = hue { return .red }
-        else if case ..<45 = hue { return .orange }
-        else if case ..<70 = hue { return .yellow }
-        else if case ..<165 = hue { return .green }
-        else if case ..<200 = hue { return .teal }
-        else if case ..<250 = hue { return .blue }
-        else if case ..<290 = hue { return .purple }
-        else { return .pink }
+        if case ..<15 = hue {
+            return .red
+        } else if case 345... = hue {
+            return .red
+        } else if case ..<45 = hue {
+            return .orange
+        } else if case ..<70 = hue {
+            return .yellow
+        } else if case ..<165 = hue {
+            return .green
+        } else if case ..<200 = hue {
+            return .teal
+        } else if case ..<250 = hue {
+            return .blue
+        } else if case ..<290 = hue {
+            return .purple
+        } else {
+            return .pink
+        }
     }
 
     static func decodeGrid(_ raw: Any) -> CustomGrid? {

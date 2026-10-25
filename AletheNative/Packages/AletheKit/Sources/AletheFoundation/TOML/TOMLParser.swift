@@ -236,6 +236,4 @@ struct TOMLParser {
             return try parseScalarToken()
         }
     }
-
-
 }

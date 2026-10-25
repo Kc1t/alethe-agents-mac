@@ -97,15 +97,16 @@ public enum DiffParser {
             added.removeAll()
         }
         for line in hunk.lines {
-            if case .removed = line.kind { return removed.append(line) }
-            else if case .added = line.kind { return added.append(line) }
-            else if case .context = line.kind {
-                return flush()
-                rows.append(DiffSplitRow(left: line, right: line))
-            } else {
-                return flush()
-                rows.append(DiffSplitRow(left: line, right: line))
+            if case .removed = line.kind {
+                removed.append(line)
+                continue
             }
+            if case .added = line.kind {
+                added.append(line)
+                continue
+            }
+            flush()
+            rows.append(DiffSplitRow(left: line, right: line))
         }
         flush()
         return rows
@@ -124,7 +125,6 @@ public enum DiffParser {
         guard let range = line.range(of: " b/", options: .backwards) else { return line }
         return String(line[range.upperBound...])
     }
-
 }
 
 public enum GitDiffError: Error, Equatable, Sendable {

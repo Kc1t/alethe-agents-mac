@@ -1,6 +1,6 @@
+@testable import AletheModel
 import Foundation
 import Testing
-@testable import AletheModel
 
 @Suite struct SidebarDropResolutionTests {
     @Test func specificRowsBeatOverlappingContainersRegardlessOfArea() {
@@ -61,5 +61,4 @@ import Testing
         doc.moveGroup(first, toParent: nil, at: Int.max)
         #expect(doc.childGroups(of: nil).map(\.id) == [last, first])
     }
-
 }

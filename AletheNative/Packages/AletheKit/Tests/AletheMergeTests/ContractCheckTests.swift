@@ -1,6 +1,6 @@
+@testable import AletheMerge
 import Foundation
 import Testing
-@testable import AletheMerge
 
 struct ContractCheckTests {
     func tempDir(_ name: String) throws -> URL {

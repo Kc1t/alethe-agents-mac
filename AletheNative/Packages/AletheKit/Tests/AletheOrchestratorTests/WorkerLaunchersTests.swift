@@ -1,6 +1,6 @@
+@testable import AletheOrchestrator
 import Foundation
 import Testing
-@testable import AletheOrchestrator
 
 struct WorkerLaunchersTests {
     @Test func codexRunsTheAppServerOverStdio() {

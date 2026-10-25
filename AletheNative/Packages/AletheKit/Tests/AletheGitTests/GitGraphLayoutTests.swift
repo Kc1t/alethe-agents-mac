@@ -1,6 +1,6 @@
+@testable import AletheGit
 import Foundation
 import Testing
-@testable import AletheGit
 
 private func commit(_ hash: String, _ parents: [String], refs: [GitRef] = []) -> GitCommit {
     GitCommit(hash: hash, parents: parents, refs: refs, authorName: "a", authorEmail: "a@x",

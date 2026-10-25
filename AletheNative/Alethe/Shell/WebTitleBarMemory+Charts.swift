@@ -145,5 +145,4 @@ extension WebTitleBarMemory {
             .overlay(RoundedRectangle(cornerRadius: metrics.size(4)).strokeBorder(theme[.border], lineWidth: metrics.size(1)))
         }
     }
-
 }

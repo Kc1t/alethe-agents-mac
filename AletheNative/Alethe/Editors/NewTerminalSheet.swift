@@ -397,6 +397,4 @@ struct NewTerminalSheet: View {
         }
         .accessibilityIdentifier("newTerminal.router9.always")
     }
-
-
 }

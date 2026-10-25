@@ -1,8 +1,8 @@
 import AletheAgents
 import AletheDesign
 import AletheFoundation
-import AletheModel
 import AletheGitControl
+import AletheModel
 import AletheTodos
 import SwiftUI
 

@@ -131,5 +131,4 @@ extension TauriImport {
             report.preferences.insert(.remote)
         }
     }
-
 }

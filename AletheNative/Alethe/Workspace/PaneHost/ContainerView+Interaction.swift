@@ -65,10 +65,15 @@ extension ContainerView {
             let total = column ? paneArea.width : paneArea.height
             let mode = lastProject?.layout ?? .auto
             let fractions: (CGFloat, CGFloat)
-            if column && mode == .spotlight { fractions = (0.25, 0.15) }
-            else if column && mode == .sidebar { fractions = (0.15, 0.40) }
-            else if column && order.count == 2 { fractions = (0.15, 0.15) }
-            else { fractions = (0.10, 0.10) }
+            if column && mode == .spotlight {
+                fractions = (0.25, 0.15)
+            } else if column && mode == .sidebar {
+                fractions = (0.15, 0.40)
+            } else if column && order.count == 2 {
+                fractions = (0.15, 0.15)
+            } else {
+                fractions = (0.10, 0.10)
+            }
             let pair = resizeBase[index] + resizeBase[index + 1]
             let leading = min(total * fractions.0, pair / 2)
             let trailing = min(total * fractions.1, pair / 2)
@@ -124,7 +129,10 @@ extension ContainerView {
 
     func reorderDrag(_ pane: PaneID, translation: CGSize?) {
         guard let view = panes[pane] else { return }
-        guard let translation else { return endReorder() }
+        guard let translation else {
+            endReorder()
+            return
+        }
         if reorder == nil {
             reorder = Reorder(pane: pane, base: animator.target(of: view))
             addSubview(view, positioned: .above, relativeTo: nil)

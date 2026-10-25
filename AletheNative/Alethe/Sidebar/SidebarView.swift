@@ -88,7 +88,8 @@ struct SidebarView: View {
                 }
                 ForEach(doc.childGroups(of: nil).filter {
                     !metrics.isWebInterface || !SidebarProjectVisibility.containsGroup(archivedGroups, group: $0.id,
-                        profile: environment.profileID) }) { group in
+                        profile: environment.profileID)
+                }) { group in
                     GroupRow(group: group, actions: actions)
                 }
                 .onInsert(of: metrics.isWebInterface ? [] : [.plainText]) { index, providers in
@@ -103,10 +104,12 @@ struct SidebarView: View {
                     }
                 }
                 .onMove(perform: metrics.isWebInterface ? nil : { source, destination in actions.reorder(in: .ungrouped,
-                    from: source, to: destination, visibleIDs: nil) })
+                    from: source, to: destination, visibleIDs: nil)
+                })
                 .onInsert(of: metrics.isWebInterface ? [] : [.plainText]) { index, providers in
                     SidebarDrag.load(providers) { actions.insert($0, into: .ungrouped,
-                        at: metrics.isWebInterface ? actions.insertionIndex(index, in: .ungrouped, visibleIDs: projectIDs) : index) }
+                        at: metrics.isWebInterface ? actions.insertionIndex(index, in: .ungrouped, visibleIDs: projectIDs) : index)
+                    }
                 }
             } header: {
                 if !metrics.isWebInterface { SidebarProjectsHeader(actions: actions) }
@@ -157,7 +160,9 @@ struct SidebarView: View {
                     Button {
                         workspace.update { $0.updateProject(project.id) { $0.archived = false } }
                     } label: { Label { Text(verbatim: project.name) } icon: { Image(systemName: "arrow.uturn.backward")
-                        .webProfileSized(14) } }
+                        .webProfileSized(14)
+                    }
+                    }
                 }
             }
         }

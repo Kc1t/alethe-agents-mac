@@ -213,8 +213,6 @@ public enum TauriImport {
     static func isRemoteShared(_ terminal: [String: Any]) -> Bool {
         (terminal["remoteShared"] as? Bool) ?? (terminal["remoteExcluded"] as? Bool != true)
     }
-
-
 }
 
 extension String {

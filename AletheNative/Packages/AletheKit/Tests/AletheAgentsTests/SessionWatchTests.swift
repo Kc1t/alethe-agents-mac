@@ -1,6 +1,6 @@
+@testable import AletheAgents
 import Foundation
 import Testing
-@testable import AletheAgents
 
 @Suite struct SessionWatchTests {
     private let start = Date(timeIntervalSince1970: 10)

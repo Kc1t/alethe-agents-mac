@@ -1,6 +1,6 @@
+@testable import AletheAgents
 import Foundation
 import Testing
-@testable import AletheAgents
 
 struct ActivityDaysTests {
     @Test func streakEndsAtTheLastActiveDay() {

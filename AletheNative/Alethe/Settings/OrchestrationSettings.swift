@@ -57,7 +57,8 @@ struct OrchestrationSettings: View {
                     }
                     OrchestrationField("orchestrationDefaultTimeout") {
                         TextField(value: binding(\.defaultTimeoutSeconds), format: .number.grouping(.never)) {
-                            label("orchestrationDefaultTimeout") }
+                            label("orchestrationDefaultTimeout")
+                        }
                             .modifier(ProjectGroupWebInput())
                         hint("orchestrationTimeoutHint")
                     }
@@ -204,7 +205,8 @@ private struct OrchestrationRoleRow: View {
                     .onChange(of: draft) { _, value in if !invalid { binding(\.name).wrappedValue = value } }
                 InterfaceSelect(selection: optional(\.orchestrator), options: ["", "claude", "codex"],
                     optionDisabled: { value in roles.contains {
-                        $0 != role && $0.name == role.name && ($0.orchestrator ?? "") == value } }) { value in
+                        $0 != role && $0.name == role.name && ($0.orchestrator ?? "") == value
+                    } }) { value in
                     if value.isEmpty { label("orchestrationOrchestratorAny") } else { Text(verbatim: orchestrationAgentName(value)) }
                 }.frame(width: metrics.size(88))
                 InterfaceSelect(selection: Binding { role.agent } set: { agent in
@@ -227,8 +229,9 @@ private struct OrchestrationRoleRow: View {
                 Toggle(isOn: binding(\.readOnly)) { label("orchestrationReadOnly") }.labelsHidden()
                     .toggleStyle(.switch).disabled(role.agent != "codex").frame(width: metrics.size(40))
                 TextField(text: Binding { role.timeoutSeconds.map(String.init) ?? "" } set: { value in
-                    if value.isEmpty { binding(\.timeoutSeconds).wrappedValue = nil }
-                    else if let seconds = Int(value), (0...OrchestrationPreferences.maximumTimeout).contains(seconds) {
+                    if value.isEmpty {
+                        binding(\.timeoutSeconds).wrappedValue = nil
+                    } else if let seconds = Int(value), (0...OrchestrationPreferences.maximumTimeout).contains(seconds) {
                         binding(\.timeoutSeconds).wrappedValue = seconds
                     }
                 }) { label("orchestrationBudget") }.modifier(ProjectGroupWebInput()).frame(width: metrics.size(88))

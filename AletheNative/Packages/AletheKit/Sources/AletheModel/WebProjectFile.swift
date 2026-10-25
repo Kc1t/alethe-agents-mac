@@ -86,8 +86,7 @@ public enum WebProjectFile {
         }
         func rewrite(_ value: JSONValue, key: String = "") -> JSONValue {
             if case .string(let id) = value, ["id", "activeTabId", "paneIds",
-                "plannerId"].contains(key) { return .string(replacements[id] ?? id) }
-            else if case .array(let items) = value {
+                "plannerId"].contains(key) { return .string(replacements[id] ?? id) } else if case .array(let items) = value {
                 return .array(items.map { rewrite($0, key: key) })
             } else if case .object(let object) = value {
                 return .object(Dictionary(uniqueKeysWithValues: object.map { field, value in
@@ -97,7 +96,6 @@ public enum WebProjectFile {
         }
         return try decode(JSONEncoder().encode(rewrite(.object(raw))))
     }
-
 
     private static func configureProject(_ project: inout Project, from raw: JSONObject) {
         project.archived = false

@@ -1,8 +1,8 @@
-import Foundation
-import Testing
 import AletheGit
 import AletheIntegrations
 @testable import AletheOrchestrator
+import Foundation
+import Testing
 
 private func transcript(_ name: String) throws -> [String] {
     let url = try #require(Bundle.module.url(forResource: name, withExtension: "jsonl", subdirectory: "Fixtures/claude"))

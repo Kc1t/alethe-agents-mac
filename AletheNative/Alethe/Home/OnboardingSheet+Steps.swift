@@ -8,7 +8,7 @@ import SwiftUI
 
 struct OnboardingStepTitle: View {
     let title: LocalizedStringKey
-    private let subtitle: LocalizedStringKey
+    let subtitle: LocalizedStringKey
     @Environment(\.theme) private var theme
     @Environment(\.metrics) private var metrics
 
@@ -200,7 +200,10 @@ struct OnboardingMcpStep: View {
     }
 
     private func rescan() async {
-        guard let store else { return snapshots = [] }
+        guard let store else {
+            snapshots = []
+            return
+        }
         snapshots = (try? await store.scan(scope: .global, repository: nil)) ?? []
     }
 
@@ -230,4 +233,3 @@ struct OnboardingMcpStep: View {
         await rescan()
     }
 }
-

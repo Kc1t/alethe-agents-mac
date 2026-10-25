@@ -44,7 +44,7 @@ struct WebFileHover: ViewModifier {
 }
 
 struct WebFileDrag: ViewModifier {
-    private let url: URL
+    let url: URL
     let enabled: Bool
     func body(content: Content) -> some View {
         if enabled { content.draggable(url) } else { content }
@@ -52,7 +52,7 @@ struct WebFileDrag: ViewModifier {
 }
 
 struct SidebarFilePreview: View {
-    private let url: URL
+    let url: URL
     let close: () -> Void
     let add: () -> Void
     let markdown: () -> Void
@@ -90,15 +90,16 @@ struct SidebarFilePreview: View {
     }
 
     @ViewBuilder private var previewContent: some View {
-        if let failure { Text(verbatim: failure).foregroundStyle(theme[.fgMuted]).frame(maxWidth: .infinity) }
-        else if isImage, let image {
+        if let failure { Text(verbatim: failure).foregroundStyle(theme[.fgMuted]).frame(maxWidth: .infinity) } else if isImage, let image {
             GeometryReader { proxy in
                 Image(nsImage: image).resizable().aspectRatio(contentMode: .fit)
                     .frame(width: proxy.size.width, height: proxy.size.height)
             }.background(theme[.bgSunken])
-        } else if isVideo, let player { VideoPlayer(player: player).background(theme[.bgSunken]) }
-        else if ext == "pdf" { SidebarPDFPreview(url: url) }
-        else if let text {
+        } else if isVideo, let player {
+            VideoPlayer(player: player).background(theme[.bgSunken])
+        } else if ext == "pdf" {
+            SidebarPDFPreview(url: url)
+        } else if let text {
             ScrollView([.horizontal, .vertical]) {
                 Text(verbatim: text).font(metrics.monoFont(size: 11)).textSelection(.enabled)
                     .padding(metrics.size(12)).frame(maxWidth: .infinity, alignment: .topLeading)
@@ -125,8 +126,11 @@ struct SidebarFilePreview: View {
             if media {
                 image = NSImage(data: data)
                 if image == nil { failure = String(localized: "linkPreview.unavailable") }
-            } else if let content = String(data: data, encoding: .utf8) { text = content }
-            else { failure = String(localized: "linkPreview.unavailable") }
+            } else if let content = String(data: data, encoding: .utf8) {
+                text = content
+            } else {
+                failure = String(localized: "linkPreview.unavailable")
+            }
         } else if case .failure(PreviewError.tooLarge) = result {
             failure = String(localized: "files.previewTooLarge")
         } else if case .failure(let error) = result {
@@ -138,7 +142,7 @@ struct SidebarFilePreview: View {
 }
 
 private struct SidebarPDFPreview: NSViewRepresentable {
-    private let url: URL
+    let url: URL
     func makeNSView(context: Context) -> PDFView {
         let view = PDFView()
         view.autoScales = true

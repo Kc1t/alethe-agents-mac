@@ -1,6 +1,6 @@
+@testable import AletheModel
 import Foundation
 import Testing
-@testable import AletheModel
 
 struct OnboardingTests {
     private let start = Date(timeIntervalSince1970: 1_700_000_000)

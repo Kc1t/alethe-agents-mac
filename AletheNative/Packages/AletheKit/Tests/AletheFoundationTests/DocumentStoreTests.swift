@@ -1,6 +1,6 @@
+@testable import AletheFoundation
 import Foundation
 import Testing
-@testable import AletheFoundation
 
 private struct Sample: VersionedDocument, Equatable {
     static let currentVersion = 3
@@ -127,5 +127,4 @@ private func temporaryURL() -> URL {
         let (document, _) = try await DocumentStore<Sample>(url: url).load()
         #expect(document.name == "retry")
     }
-
 }

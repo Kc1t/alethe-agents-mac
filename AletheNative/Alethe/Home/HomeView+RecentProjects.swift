@@ -113,4 +113,3 @@ struct RecentProjects: View {
         .accessibilityIdentifier("home.recent.\(project.name)")
     }
 }
-

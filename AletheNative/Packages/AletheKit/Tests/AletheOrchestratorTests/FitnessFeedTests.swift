@@ -1,7 +1,7 @@
-import Foundation
-import Testing
 import AletheAgents
 @testable import AletheOrchestrator
+import Foundation
+import Testing
 
 private func usage(_ agent: AgentKind, _ percent: Double, rateLimited: Bool = false, resetsAt: Date? = nil) -> ProviderUsage {
     ProviderUsage(agent: agent, status: .ready, windows: [UsageWindow(label: "5h", usedPercent: percent, resetsAt: resetsAt)],

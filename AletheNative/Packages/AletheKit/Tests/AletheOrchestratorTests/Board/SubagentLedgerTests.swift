@@ -1,7 +1,7 @@
-import Foundation
-import Testing
 import AletheAgents
 @testable import AletheOrchestrator
+import Foundation
+import Testing
 
 @Suite struct SubagentLedgerTests {
     private func hook(_ json: String) throws -> SubagentHook {

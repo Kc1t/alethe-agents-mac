@@ -178,4 +178,3 @@ struct OnboardingWebIntro: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
-

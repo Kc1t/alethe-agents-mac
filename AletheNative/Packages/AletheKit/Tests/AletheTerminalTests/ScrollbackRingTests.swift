@@ -1,6 +1,6 @@
+@testable import AletheTerminal
 import Foundation
 import Testing
-@testable import AletheTerminal
 
 @Suite struct ScrollbackRingTests {
     @Test func keepsEverythingUnderCapacity() {

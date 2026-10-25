@@ -1,6 +1,6 @@
+@testable import AletheIntegrations
 import Foundation
 import Testing
-@testable import AletheIntegrations
 
 @Suite(.timeLimit(.minutes(1))) struct OpenCodeExportTests {
     static let sample = #"""

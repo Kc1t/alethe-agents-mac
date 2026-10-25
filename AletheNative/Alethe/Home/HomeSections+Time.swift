@@ -199,4 +199,3 @@ struct TimeAnalytics: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
-

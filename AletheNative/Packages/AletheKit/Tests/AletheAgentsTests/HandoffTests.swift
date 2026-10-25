@@ -1,6 +1,6 @@
+@testable import AletheAgents
 import Foundation
 import Testing
-@testable import AletheAgents
 
 @Suite struct HandoffTests {
     @Test func redactsCommonSecrets() {
@@ -64,7 +64,8 @@ import Testing
         let file = try Handoff.materialize("# capsule", in: root)
         #expect(try String(contentsOf: file, encoding: .utf8) == "# capsule")
         #expect(throws: (any Error).self) { try Handoff.materialize(String(repeating: "x", count: Handoff.materializedByteLimit + 1),
-            in: root) }
+            in: root)
+        }
         Handoff.pruneOld(in: root, now: Date().addingTimeInterval(8 * 86_400))
         #expect(!FileManager.default.fileExists(atPath: file.path))
     }

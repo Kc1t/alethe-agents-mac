@@ -1,6 +1,6 @@
+@testable import AlethePluginKit
 import Foundation
 import Testing
-@testable import AlethePluginKit
 
 @MainActor
 private func makeContext(_ capabilities: Set<PluginCapability>, services: PluginServices = PluginServices()) -> PluginContext {

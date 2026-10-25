@@ -156,7 +156,7 @@ extension TestSeeds {
     private static func seedGraphifyFixture(_ name: String, into doc: inout WorkspaceDocument) {
         let root = UserDefaults.standard.string(forKey: "AletheDataRoot") ?? "/private/tmp"
         let repo = URL(filePath: root).appending(path: "graphrepo")
-        let graph = 
+        let graph =
             #"{"nodes":[{"id":"alpha","label":"alpha","source_file":"README.md","community":0},{"id":"beta","label"# +
             #"":"beta","community":0},{"id":"delta","label":"delta","community":1},{"id":"epsilon","label":"epsilo"# +
             #"n","community":1}],"edges":[{"source":"alpha","target":"beta"},{"source":"beta","target":"delta"},{""# +

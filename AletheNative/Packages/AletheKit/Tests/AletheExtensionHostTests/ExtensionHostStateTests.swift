@@ -1,8 +1,8 @@
-import Foundation
-import Testing
+@testable import AletheExtensionHost
 import AletheExtensionSDK
 import AlethePluginKit
-@testable import AletheExtensionHost
+import Foundation
+import Testing
 
 private let bundleID = "dev.example.Sample.sidebar"
 

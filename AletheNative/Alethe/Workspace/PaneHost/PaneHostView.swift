@@ -268,7 +268,10 @@ final class PaneHostView: NSView {
         guard let view = containers[project], context?.environment.workspace?.document.workspace.fullscreenProjectID == nil else {
             return
         }
-        guard let translation else { return endContainerDrag() }
+        guard let translation else {
+            endContainerDrag()
+            return
+        }
         if containerDrag == nil {
             let base = animator.target(of: view)
             containerDrag = ContainerDrag(project: project, base: base, target: order.firstIndex(of: project) ?? 0)

@@ -113,7 +113,8 @@ struct ContainerHeader: View {
             if metrics.isWebInterface {
                 ForEach(PaneLayoutMode.allCases, id: \.self) { mode in
                     Button { onLayout(mode) } label: { WebMenuCheckRow(title: Text(mode.title),
-                        symbol: mode.symbol, selected: mode == project.layout) }
+                        symbol: mode.symbol, selected: mode == project.layout)
+                    }
                 }
             } else {
                 Picker(selection: Binding(get: { project.layout }, set: onLayout)) {

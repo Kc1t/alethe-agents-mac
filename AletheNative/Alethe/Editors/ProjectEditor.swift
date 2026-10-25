@@ -315,10 +315,13 @@ struct ProjectEditor: View {
             if metrics.isWebInterface {
                 let watch = advanced.gsdWatcher
                 Task {
-                    if watch { try? await environment.multiagent.follow(projectID: editing.rawValue,
-                        folder: URL(filePath: path), by: .projectPreference) }
-                    else { await environment.multiagent.unfollow(projectID: editing.rawValue,
-                        folder: URL(filePath: path), by: .projectPreference) }
+                    if watch {
+                        try? await environment.multiagent.follow(projectID: editing.rawValue,
+                            folder: URL(filePath: path), by: .projectPreference)
+                    } else {
+                        await environment.multiagent.unfollow(projectID: editing.rawValue,
+                            folder: URL(filePath: path), by: .projectPreference)
+                    }
                 }
             }
             close()

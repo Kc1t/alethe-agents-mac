@@ -1,6 +1,6 @@
+@testable import AletheIntegrations
 import AletheModel
 import Testing
-@testable import AletheIntegrations
 
 @Suite(.timeLimit(.minutes(1))) struct Router9AutoStartTests {
     private func status(managed: Bool = true, external: Bool = false, running: Bool = false,

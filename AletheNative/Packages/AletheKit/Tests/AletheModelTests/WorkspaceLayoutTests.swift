@@ -1,6 +1,6 @@
+@testable import AletheModel
 import CoreGraphics
 import Testing
-@testable import AletheModel
 
 @Suite struct AutoLayoutTests {
     @Test func matchesUpstreamAutoRule() {

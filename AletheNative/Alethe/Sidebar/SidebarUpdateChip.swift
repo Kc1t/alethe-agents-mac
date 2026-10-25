@@ -14,8 +14,7 @@ struct SidebarUpdateChip: View {
         Group {
             if let release {
                 Button {
-                    if metrics.isWebInterface { environment.editorRequest = .updateAvailable(release) }
-                    else { openURL(release.page) }
+                    if metrics.isWebInterface { environment.editorRequest = .updateAvailable(release) } else { openURL(release.page) }
                 } label: {
                     HStack(spacing: metrics.size(7)) {
                         Image(systemName: "arrow.up.circle").webProfileSized(13)
@@ -61,8 +60,7 @@ struct SidebarNativeRelease: Hashable, Sendable {
 
     var displayVersion: String {
         var text = version
-        if text.hasPrefix("mac-native-v") { text.removeFirst("mac-native-v".count) }
-        else if text.hasPrefix("v") { text.removeFirst() }
+        if text.hasPrefix("mac-native-v") { text.removeFirst("mac-native-v".count) } else if text.hasPrefix("v") { text.removeFirst() }
         return text
     }
 
@@ -125,8 +123,7 @@ struct SidebarNativeRelease: Hashable, Sendable {
 
     private static func versionParts(_ tag: String) -> [Int]? {
         var text = tag
-        if text.hasPrefix("mac-native-v") { text.removeFirst("mac-native-v".count) }
-        else if text.hasPrefix("v") { text.removeFirst() }
+        if text.hasPrefix("mac-native-v") { text.removeFirst("mac-native-v".count) } else if text.hasPrefix("v") { text.removeFirst() }
         let fields = text.split(separator: ".", omittingEmptySubsequences: false)
         guard fields.count == 3, fields.allSatisfy({ !$0.isEmpty && $0.allSatisfy(\.isNumber) }) else { return nil }
         let parts = fields.compactMap { Int($0) }

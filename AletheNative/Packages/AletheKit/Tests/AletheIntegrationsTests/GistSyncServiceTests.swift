@@ -1,9 +1,9 @@
 import AletheFoundation
+@testable import AletheIntegrations
 import AletheModel
 import Foundation
 import Synchronization
 import Testing
-@testable import AletheIntegrations
 
 final class GistStubProtocol: URLProtocol, @unchecked Sendable {
     static let header = "X-Gist-Stub"

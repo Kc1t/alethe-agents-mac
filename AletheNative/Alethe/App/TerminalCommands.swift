@@ -1,7 +1,7 @@
 import AletheAgents
 import AletheModel
-import AppKit
 import AletheTerminal
+import AppKit
 import SwiftUI
 
 struct TerminalCommands: Commands {

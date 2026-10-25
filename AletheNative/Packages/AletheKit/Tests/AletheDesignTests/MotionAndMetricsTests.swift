@@ -1,6 +1,6 @@
+@testable import AletheDesign
 import CoreGraphics
 import Testing
-@testable import AletheDesign
 
 @Suite struct MotionTests {
     @Test func projectionMatchesApplesFormula() {

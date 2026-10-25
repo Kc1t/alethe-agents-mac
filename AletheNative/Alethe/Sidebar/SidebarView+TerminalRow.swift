@@ -72,7 +72,7 @@ struct SidebarTerminalRow: View {
                         TabContextMenu(tab: tab, project: project, actions: actions)
                     } label: {
                         Label { Text("sidebar.rowMenu") } icon: { Image(systemName: "ellipsis").webProfileSized(14) }
-                }
+                    }
                 .menuIndicator(.hidden)
                 .menuStyle(.borderlessButton)
                 .modifier(SidebarMenuAppearance(size: 13))

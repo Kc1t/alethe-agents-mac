@@ -1,6 +1,6 @@
+@testable import AletheRemote
 import Foundation
 import Testing
-@testable import AletheRemote
 
 @Suite(.serialized)
 struct RemoteControlServiceTests {

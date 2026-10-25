@@ -38,7 +38,8 @@ struct WebTitleBarSearch: View {
             project.panes.flatMap { pane in pane.tabs.map { tab in
                 Hit(id: tab.id.rawValue, title: tab.title ?? AgentLabels.name(for: tab.agent), group: project.name,
                     symbol: "terminal", agent: tab.agent, directory: tab.workingDirectory ?? project.folder, tab: tab.id)
-            } }
+            }
+            }
         }
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
         return Array((commands + plugins + terminals).filter {

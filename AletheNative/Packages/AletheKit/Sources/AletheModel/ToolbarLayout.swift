@@ -28,17 +28,29 @@ public enum ToolbarItemKind: String, CaseIterable, Codable, Hashable, Sendable {
     public var shownByDefault: Bool { self != .router9 }
 
     public var overflowRank: ToolbarOverflowRank {
-        if case .usageClaude = self { return .first }
-        else if case .usageCodex = self { return .first }
-        else if case .usageAntigravity = self { return .first }
-        else if case .memory = self { return .early }
-        else if case .aiUsage = self { return .early }
-        else if case .router9 = self { return .early }
-        else if case .sync = self { return .early }
-        else if case .notifications = self { return .standard }
-        else if case .remote = self { return .standard }
-        else if case .home = self { return .last }
-        else { return .last }
+        if case .usageClaude = self {
+            return .first
+        } else if case .usageCodex = self {
+            return .first
+        } else if case .usageAntigravity = self {
+            return .first
+        } else if case .memory = self {
+            return .early
+        } else if case .aiUsage = self {
+            return .early
+        } else if case .router9 = self {
+            return .early
+        } else if case .sync = self {
+            return .early
+        } else if case .notifications = self {
+            return .standard
+        } else if case .remote = self {
+            return .standard
+        } else if case .home = self {
+            return .last
+        } else {
+            return .last
+        }
     }
 }
 

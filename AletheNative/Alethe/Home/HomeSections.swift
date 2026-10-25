@@ -128,4 +128,3 @@ struct HomeWebCard: ViewModifier {
             .animation(metrics.reducesMotion ? nil : Motion.animation(Motion.quick, reduceMotion: false), value: hovered)
     }
 }
-

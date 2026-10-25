@@ -154,7 +154,7 @@ struct WorkspaceTabBar: View {
     }
 
     private func tabContents(_ tab: WorkspaceTab, name: String, more: Int?, isActive: Bool, isHovered: Bool) -> some View {
-        return HStack(spacing: metrics.isWebInterface ? metrics.size(2) : metrics.space(.s)) {
+        HStack(spacing: metrics.isWebInterface ? metrics.size(2) : metrics.space(.s)) {
             if tab.pinned {
                 Image(systemName: "pin.fill")
                     .font(metrics.font(size: metrics.isWebInterface ? 11 : 9))

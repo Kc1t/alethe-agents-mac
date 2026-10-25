@@ -1,7 +1,7 @@
 import AletheDesign
-import AlethePluginKit
 import AletheGitControl
 import AletheModel
+import AlethePluginKit
 import AletheTodos
 import SwiftUI
 

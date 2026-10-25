@@ -1,6 +1,6 @@
+@testable import AlethePluginKit
 import Foundation
 import Testing
-@testable import AlethePluginKit
 
 @Suite struct PluginWebRegistryTests {
     private let raw = Data(#"""

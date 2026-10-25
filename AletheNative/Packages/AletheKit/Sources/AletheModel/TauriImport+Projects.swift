@@ -9,8 +9,9 @@ extension TauriImport {
 
         for projectID in order {
             guard let project = byID[projectID] else { continue }
-            importProject(project, location: location[projectID] ?? nil, groupIDs: groupIDs,
-                          existingFolders: existingFolders, workspace: &workspace, context: context, report: &report)
+            let place = (location[projectID] ?? nil).flatMap { groupIDs[$0] }.map { ProjectLocation.group($0) } ?? .ungrouped
+            let source = ProjectSource(raw: project, place: place, existingFolders: existingFolders)
+            importProject(source, into: &workspace, context: context, report: &report)
         }
     }
 
@@ -40,9 +41,15 @@ extension TauriImport {
         return (location, order, byID)
     }
 
-    private static func importProject(_ project: [String: Any], location: String?, groupIDs: [String: GroupID],
-                                      existingFolders: Set<String>, workspace: inout WorkspaceDocument,
+    private struct ProjectSource {
+        let raw: [String: Any]
+        let place: ProjectLocation
+        let existingFolders: Set<String>
+    }
+
+    private static func importProject(_ source: ProjectSource, into workspace: inout WorkspaceDocument,
                                       context: Context, report: inout Report) {
+            let project = source.raw
             let name = (project["name"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "Project"
             if project["archived"] as? Bool == true {
                 report.skipped.append(.projectArchived(project: name))
@@ -53,13 +60,12 @@ extension TauriImport {
                 report.skipped.append(.projectWithoutFolder(project: name))
                 return
             }
-            if existingFolders.contains(normalizedFolder(folder)) {
+            if source.existingFolders.contains(normalizedFolder(folder)) {
                 report.skipped.append(.projectAlreadyAdded(project: name))
                 return
             }
-            let place = location.flatMap { groupIDs[$0] }.map { ProjectLocation.group($0) } ?? .ungrouped
             let created = workspace.addProject(name: name, folder: folder,
-                                               color: projectColor(project["color"]) ?? .blue, in: place)
+                                               color: projectColor(project["color"]) ?? .blue, in: source.place)
             workspace.updateProject(created) { $0.iconUrl = project["iconUrl"] as? String }
             report.projects += 1
             let panes = importedPanes(terminals, folder: folder, project: name, context: context, report: &report)
@@ -76,17 +82,22 @@ extension TauriImport {
             var panes: [Pane] = []
             for terminal in terminals {
                 if let kind = terminal["kind"] as? String, kind != "terminal" {
-                    if kind == PaneContent.Kind.orchestrator.rawValue { panes.append(orchestratorPane(from: terminal)) }
-                    else if kind == "graphify" || kind == "diff" {
+                    if kind == PaneContent.Kind.orchestrator.rawValue {
+                        panes.append(orchestratorPane(from: terminal))
+                    } else if kind == "graphify" || kind == "diff" {
                         var imported = orchestratorPane(from: terminal)
                         imported.content = kind == "graphify" ? .graphify
                             : .diff(path: terminal["filePath"] as? String, staged: terminal["staged"] as? Bool ?? false)
                         panes.append(imported)
                     } else if ["image", "video", "markdown"].contains(kind), let path = terminal["filePath"] as? String {
                         var imported = orchestratorPane(from: terminal)
-                        if case "image" = kind { imported.content = .image(path: path) }
-                        else if case "video" = kind { imported.content = .video(path: path) }
-                        else { imported.content = .markdown(path: path) }
+                        if case "image" = kind {
+                            imported.content = .image(path: path)
+                        } else if case "video" = kind {
+                            imported.content = .video(path: path)
+                        } else {
+                            imported.content = .markdown(path: path)
+                        }
                         panes.append(imported)
                     } else {
                         report.skipped.append(.paneKind(project: name, kind: kind))
@@ -134,7 +145,8 @@ extension TauriImport {
                 guard let id = raw["id"] as? String, id != "default", let gridName = raw["name"] as? String else { return nil }
                 return ProjectGrid(id: ProjectGridID(rawValue: id), name: gridName,
                                    layoutMode: (raw["layoutMode"] as? String).flatMap(PaneLayoutMode.init(rawValue:)).flatMap { $0 ==
-                                       .auto ? nil : $0 },
+                                       .auto ? nil : $0
+                                   },
                                    gridLayout: raw["gridLayout"].flatMap(decodeGrid))
             }
             let activeNamed = (project["activeGridId"] as? String).flatMap { id in named.first { $0.id.rawValue == id } }
@@ -152,6 +164,4 @@ extension TauriImport {
                 workspace.updateProject(created) { $0.gridLayout = grid.reconciled($0.panes(in: nil).map(\.id.rawValue)) }
             }
     }
-
-
 }

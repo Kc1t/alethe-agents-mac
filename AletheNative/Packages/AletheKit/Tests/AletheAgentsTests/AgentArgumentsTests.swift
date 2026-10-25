@@ -1,5 +1,5 @@
-import Testing
 @testable import AletheAgents
+import Testing
 
 @Suite struct AgentArgumentsTests {
     @Test func newClaudePanesGetDistinctSessionIDs() {

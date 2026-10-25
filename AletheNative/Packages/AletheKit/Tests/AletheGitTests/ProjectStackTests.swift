@@ -1,6 +1,6 @@
+@testable import AletheGit
 import Foundation
 import Testing
-@testable import AletheGit
 
 struct ProjectStackTests {
     private func folder(_ files: [String: String]) throws -> URL {

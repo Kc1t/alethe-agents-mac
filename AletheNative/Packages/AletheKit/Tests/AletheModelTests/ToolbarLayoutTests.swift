@@ -1,7 +1,7 @@
 import AletheFoundation
+@testable import AletheModel
 import Foundation
 import Testing
-@testable import AletheModel
 
 @Suite struct ToolbarLayoutTests {
     private func migrated(_ json: String) async throws -> (PreferencesDocument, DocumentLoadOutcome, JSONObject) {

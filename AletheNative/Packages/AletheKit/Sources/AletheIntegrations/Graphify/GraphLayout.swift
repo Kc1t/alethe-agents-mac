@@ -90,7 +90,6 @@ public enum ForceLayout {
         var simulation = ForceSimulation(count: count, options: options)
         return try GraphLayout(positions: simulation.positions(links: links), edges: links, degrees: degrees)
     }
-
 }
 
 struct SplitMix64 {

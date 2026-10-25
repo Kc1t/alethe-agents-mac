@@ -294,7 +294,8 @@ public enum Handoff {
         newest: Bool)? {
         if let sessionID, !sessionID.isEmpty {
             return SessionCosts.transcript(kind, sessionID: sessionID, cwd: cwd, homeDirectory: homeDirectory).map { (sessionID, $0,
-                false) }
+                false)
+            }
         }
         guard let newest = ConversationHistory.list(kind, cwd: cwd).first,
               let path = SessionCosts.transcript(kind, sessionID: newest.id, cwd: cwd, homeDirectory: homeDirectory) else { return nil }

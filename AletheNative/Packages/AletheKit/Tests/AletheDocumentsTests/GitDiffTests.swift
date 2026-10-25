@@ -1,6 +1,6 @@
+@testable import AletheDocuments
 import Foundation
 import Testing
-@testable import AletheDocuments
 
 @Suite struct DiffParserTests {
     static let sample = """

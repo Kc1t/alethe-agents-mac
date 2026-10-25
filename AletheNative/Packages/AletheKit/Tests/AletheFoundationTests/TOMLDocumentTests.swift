@@ -1,6 +1,6 @@
+@testable import AletheFoundation
 import Foundation
 import Testing
-@testable import AletheFoundation
 
 @Suite struct TOMLDocumentTests {
     private func fixture(_ name: String) throws -> String {

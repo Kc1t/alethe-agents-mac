@@ -4,25 +4,43 @@ public enum Feature: String, CaseIterable, Codable, Hashable, Sendable {
     case browser, graphify, mcp, playwright, orchestrator, gsdSync, aiMemory, prs
 
     public var isOnByDefault: Bool {
-        if case .browser = self { return true }
-        else if case .graphify = self { return true }
-        else if case .mcp = self { return true }
-        else if case .prs = self { return true }
-        else if case .playwright = self { return false }
-        else if case .orchestrator = self { return false }
-        else if case .gsdSync = self { return false }
-        else { return false }
+        if case .browser = self {
+            return true
+        } else if case .graphify = self {
+            return true
+        } else if case .mcp = self {
+            return true
+        } else if case .prs = self {
+            return true
+        } else if case .playwright = self {
+            return false
+        } else if case .orchestrator = self {
+            return false
+        } else if case .gsdSync = self {
+            return false
+        } else {
+            return false
+        }
     }
 
     public var isSecondary: Bool {
-        if case .graphify = self { return true }
-        else if case .gsdSync = self { return true }
-        else if case .aiMemory = self { return true }
-        else if case .browser = self { return false }
-        else if case .mcp = self { return false }
-        else if case .playwright = self { return false }
-        else if case .orchestrator = self { return false }
-        else { return false }
+        if case .graphify = self {
+            return true
+        } else if case .gsdSync = self {
+            return true
+        } else if case .aiMemory = self {
+            return true
+        } else if case .browser = self {
+            return false
+        } else if case .mcp = self {
+            return false
+        } else if case .playwright = self {
+            return false
+        } else if case .orchestrator = self {
+            return false
+        } else {
+            return false
+        }
     }
 }
 

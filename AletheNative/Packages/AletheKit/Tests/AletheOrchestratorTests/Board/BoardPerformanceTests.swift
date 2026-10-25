@@ -1,5 +1,5 @@
-import XCTest
 @testable import AletheOrchestrator
+import XCTest
 
 final class BoardPerformanceTests: XCTestCase {
     private func hundredWorkers() -> [JobSnapshot] {

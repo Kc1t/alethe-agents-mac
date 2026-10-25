@@ -42,8 +42,7 @@ struct PluginMarketplaceWebView: View {
             HStack(spacing: 0) {
                 rail
                 Rectangle().fill(theme[.border]).frame(width: metrics.size(1))
-                if let detail = rows.first(where: { $0.id == selected }) { detailView(detail) }
-                else { list }
+                if let detail = rows.first(where: { $0.id == selected }) { detailView(detail) } else { list }
             }
         }
         .font(metrics.font(size: 12)).foregroundStyle(theme[.fg])
@@ -103,14 +102,18 @@ struct PluginMarketplaceWebView: View {
                 if installedOnly {
                     railLabel("settings.web.reference.market.filterSource")
                     facet(Text("settings.web.reference.market.sourceBundled"), active: sources.contains("bundled")) {
-                        toggle("bundled", in: &sources) }
+                        toggle("bundled", in: &sources)
+                    }
                     facet(Text("settings.web.reference.market.sourceLocal"), active: sources.contains("local")) {
-                        toggle("local", in: &sources) }
+                        toggle("local", in: &sources)
+                    }
                     railLabel("settings.web.reference.market.filterState")
                     facet(Text("settings.web.reference.market.stateEnabled"), active: enabled == true) {
-                        enabled = enabled == true ? nil : true }
+                        enabled = enabled == true ? nil : true
+                    }
                     facet(Text("settings.web.reference.market.stateDisabled"), active: enabled == false) {
-                        enabled = enabled == false ? nil : false }
+                        enabled = enabled == false ? nil : false
+                    }
                 }
                 Button("settings.web.reference.market.clear") { query = ""; capabilities = []; sources = []; enabled = nil }
                     .padding(.top, metrics.size(14))
@@ -160,10 +163,13 @@ struct PluginMarketplaceWebView: View {
                 .overlay(alignment: .bottom) { theme[.border].frame(height: metrics.size(1)) }
             ScrollView {
                 LazyVStack(spacing: 0) {
-                    if model.loading && visible.isEmpty { note("settings.web.reference.market.loading") }
-                    else if model.failed && !installedOnly { note("settings.web.reference.market.error") }
-                    else if visible.isEmpty { note("settings.web.reference.market.emptySearch") }
-                    else {
+                    if model.loading && visible.isEmpty {
+                        note("settings.web.reference.market.loading")
+                    } else if model.failed && !installedOnly {
+                        note("settings.web.reference.market.error")
+                    } else if visible.isEmpty {
+                        note("settings.web.reference.market.emptySearch")
+                    } else {
                         ForEach(visible) { row in
                             HStack(spacing: metrics.size(14)) {
                                 Button { selected = row.id } label: {
@@ -176,9 +182,12 @@ struct PluginMarketplaceWebView: View {
                                             .foregroundStyle(theme[.fgMuted]).lineLimit(1)
                                     }.frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
                                 }.buttonStyle(.plain)
-                                if row.installed { Text("settings.web.reference.market.installedMark")
-                                    .font(metrics.font(size: 11)).foregroundStyle(theme[.statusActive]) }
-                                else { Text("plugins.web.unavailable").font(metrics.font(size: 11)).foregroundStyle(theme[.fgFaint]) }
+                                if row.installed {
+                                    Text("settings.web.reference.market.installedMark")
+                                        .font(metrics.font(size: 11)).foregroundStyle(theme[.statusActive])
+                                } else {
+                                    Text("plugins.web.unavailable").font(metrics.font(size: 11)).foregroundStyle(theme[.fgFaint])
+                                }
                             }.padding(.horizontal, metrics.size(10)).frame(height: metrics.size(68))
                                 .modifier(PluginMarketWebRowHover())
                                 .overlay(alignment: .bottom) { theme[.border].frame(height: metrics.size(1)) }
@@ -205,7 +214,8 @@ struct PluginMarketplaceWebView: View {
                 Text(verbatim: row.description).font(metrics.font(size: 12)).foregroundStyle(theme[.fgMuted])
                 Text("settings.web.reference.market.detailCapabilities").font(metrics.font(size: 9, weight: 700)).textCase(.uppercase)
                 ForEach(row.capabilities, id: \.self) { Text(verbatim: $0).font(metrics.monoFont(size: 11))
-                    .foregroundStyle(theme[.fgMuted]) }
+                    .foregroundStyle(theme[.fgMuted])
+                }
                 if !row.native {
                     Text("plugins.web.unavailable").font(metrics.font(size: 12))
                     Text("plugins.web.registrationHelp").font(metrics.font(size: 11)).foregroundStyle(theme[.fgFaint])
@@ -214,12 +224,12 @@ struct PluginMarketplaceWebView: View {
                     if row.native {
                         Button(row.enabled ? "settings.web.reference.market.disable" : "settings.web.reference.market.enable") {
                             Task { do { try await environment.plugins?.setEnabled(!row.enabled, for: row.id) } catch {
-                                model.error = true } }
+                                model.error = true }
+                            }
                         }
                     } else if let entry = row.catalog, entry.package != nil {
                         Button(row.update ? "settings.web.reference.prefs.pluginsCatalogUpdate" : row.installed
                             ? "settings.web.reference.prefs.pluginsCatalogReinstall" : "plugins.web.register") {
-
                             Task { await model.install(entry) }
                         }.disabled(model.busy)
                     }

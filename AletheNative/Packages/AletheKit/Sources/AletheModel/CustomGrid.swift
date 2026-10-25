@@ -133,10 +133,13 @@ public struct CustomGrid: Codable, Hashable, Sendable {
         for step in 1... {
             let free = if case .right = edge {
                 columnFree(cell.col + cell.colSpan - 1 + step)
+            } else if case .left = edge {
+                columnFree(cell.col - step)
+            } else if case .bottom = edge {
+                rowFree(cell.row + cell.rowSpan - 1 + step)
+            } else {
+                rowFree(cell.row - step)
             }
-            else if case .left = edge { columnFree(cell.col - step) }
-            else if case .bottom = edge { rowFree(cell.row + cell.rowSpan - 1 + step) }
-            else { rowFree(cell.row - step) }
             guard free else { break }
             span = step
         }
@@ -238,8 +241,7 @@ public struct CustomGridHistoryEntry: Codable, Hashable, Sendable, Identifiable 
         id = try values.decode(String.self, forKey: .id)
         layout = try values.decode(CustomGrid.self, forKey: .layout)
         if let timestamp = try? values.decode(Double.self, forKey: .savedAt),
-            timestamp > 100_000_000_000 { savedAt = Date(timeIntervalSince1970: timestamp / 1000) }
-        else {
+            timestamp > 100_000_000_000 { savedAt = Date(timeIntervalSince1970: timestamp / 1000) } else {
             savedAt = try values.decode(Date.self, forKey: .savedAt)
         }
     }
@@ -250,7 +252,6 @@ public struct CustomGridHistoryEntry: Codable, Hashable, Sendable, Identifiable 
         try values.encode(layout, forKey: .layout)
         try values.encode(savedAt.timeIntervalSince1970 * 1000, forKey: .savedAt)
     }
-
 }
 
 public enum CustomGridPreset: String, CaseIterable, Sendable {
@@ -259,10 +260,13 @@ public enum CustomGridPreset: String, CaseIterable, Sendable {
     public func layout(_ ids: [String]) -> CustomGrid {
         let count = max(1, ids.count)
         let focusRows = max(1, ids.count - 1)
-        if case .balanced = self { return .auto(ids, cols: max(1, min(4, Int(Double(count).squareRoot().rounded(.up))))) }
-        else if case .columns = self { return .auto(ids, cols: count) }
-        else if case .rows = self { return .auto(ids, cols: 1) }
-        else if case .focusLeft = self {
+        if case .balanced = self {
+            return .auto(ids, cols: max(1, min(4, Int(Double(count).squareRoot().rounded(.up)))))
+        } else if case .columns = self {
+            return .auto(ids, cols: count)
+        } else if case .rows = self {
+            return .auto(ids, cols: 1)
+        } else if case .focusLeft = self {
             var cells: [String: GridCell] = [:]
             let left = self == .focusLeft
             for (index, id) in ids.enumerated() {

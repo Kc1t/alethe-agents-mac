@@ -1,6 +1,6 @@
+@testable import AletheIntegrations
 import Foundation
 import Testing
-@testable import AletheIntegrations
 
 @Suite struct McpStoreScanTests {
     @Test func scanReadsEveryAgentsFileAndMarksImports() throws {

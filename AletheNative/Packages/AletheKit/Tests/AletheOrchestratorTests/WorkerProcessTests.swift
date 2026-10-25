@@ -1,8 +1,8 @@
+import AletheIntegrations
+@testable import AletheOrchestrator
 import Darwin
 import Foundation
 import Testing
-import AletheIntegrations
-@testable import AletheOrchestrator
 
 private let environment = ["PATH": "/usr/bin:/bin", "HOME": NSHomeDirectory()]
 

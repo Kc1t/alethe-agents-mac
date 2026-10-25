@@ -67,9 +67,9 @@ struct OnboardingWebAgentsStep: View {
 
 private struct OnboardingWebAgentCard: View {
     let agent: AgentDescriptor
-    private let path: String?
-    private let enabled: Bool
-    private let toggle: (Bool) -> Void
+    let path: String?
+    let enabled: Bool
+    let toggle: (Bool) -> Void
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.metrics) private var metrics
     @Environment(\.theme) private var theme
@@ -159,4 +159,3 @@ private struct OnboardingWebAgentCard: View {
         latest = await AgentVersions.latest(for: agent.kind)
     }
 }
-

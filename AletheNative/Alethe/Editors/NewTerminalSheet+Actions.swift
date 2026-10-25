@@ -66,7 +66,10 @@ extension NewTerminalSheet {
     func create() {
         guard let project else { return }
         worktreeError = nil
-        guard descriptor?.isShell == false, ownWorktree else { return add(in: project, worktree: nil) }
+        guard descriptor?.isShell == false, ownWorktree else {
+            add(in: project, worktree: nil)
+            return
+        }
         let repo = URL(filePath: expanded(folder)).standardizedFileURL
         let tabID = TabID.make()
         let mode = worktreeMode

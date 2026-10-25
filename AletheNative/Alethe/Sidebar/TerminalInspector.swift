@@ -34,8 +34,7 @@ struct TerminalInspector: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: metrics.size(8)) {
                 Group {
-                    if let tab { AgentLogo(agent: tab.agent, size: 16) }
-                    else { Image(systemName: "terminal").webProfileSized(15) }
+                    if let tab { AgentLogo(agent: tab.agent, size: 16) } else { Image(systemName: "terminal").webProfileSized(15) }
                 }
                 .frame(width: metrics.size(24), height: metrics.size(24))
                 .background(theme[.bg])
@@ -83,7 +82,8 @@ struct TerminalInspector: View {
                     }
                     if let tab, ["claude", "codex", "opencode"].contains(tab.agent) {
                         action("menu.history.conversations", symbol: "clock.arrow.circlepath") {
-                            environment.editorRequest = .conversations(project.id) }
+                            environment.editorRequest = .conversations(project.id)
+                        }
                     }
                     action("pane.web.killTerminal", symbol: "power", danger: true) {
                         for tab in pane.tabs { environment.terminals.view(for: tab.id)?.terminate() }
@@ -96,7 +96,8 @@ struct TerminalInspector: View {
                         }
                     } else if let file = pane.content.filePath {
                         action("pane.web.openInExplorer", symbol: "folder") {
-                            OpenInActions.revealInFinder((file as NSString).deletingLastPathComponent) }
+                            OpenInActions.revealInFinder((file as NSString).deletingLastPathComponent)
+                        }
                     }
                     action("pane.web.deleteTerminal", symbol: "trash", danger: true) { closePane() }
                 }
@@ -203,7 +204,8 @@ private struct InspectorButtonBody: View {
             .background(theme[hovering || selected ? .panelHover : .bg].opacity(border || hovering || selected ? 1 : 0))
             .clipShape(RoundedRectangle(cornerRadius: metrics.radius(.sm)))
             .overlay { if border { RoundedRectangle(cornerRadius: metrics.radius(.sm))
-                .stroke(theme[hovering ? .borderStrong : .border], lineWidth: metrics.size(1)) } }
+                .stroke(theme[hovering ? .borderStrong : .border], lineWidth: metrics.size(1)) }
+            }
             .opacity(enabled ? 1 : 0.38)
             .onHover { hovering = $0 }
     }

@@ -1,6 +1,6 @@
-import Foundation
 import AletheAgents
 import AletheIntegrations
+import Foundation
 
 extension OrchestratorCore {
     public func setAgentFitness(_ agent: String, _ fitness: AgentFitness) {

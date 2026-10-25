@@ -1,5 +1,5 @@
-import Foundation
 import AletheAgents
+import Foundation
 
 public struct SubagentLedger: Sendable {
     public struct Outcome: Equatable, Sendable {

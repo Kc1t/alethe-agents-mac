@@ -1,6 +1,6 @@
+import AletheIntegrations
 import Foundation
 import Synchronization
-import AletheIntegrations
 
 public struct OrchestratorJobsFile: Hashable, Sendable {
     public static let version = 2

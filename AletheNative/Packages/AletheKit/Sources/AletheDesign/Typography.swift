@@ -6,34 +6,59 @@ public enum TextStyle: CaseIterable, Sendable {
     case caption, footnote, body, headline, title3, title2, title1, largeTitle
 
     var size: CGFloat {
-        if case .caption = self { return 10 }
-        else if case .footnote = self { return 11 }
-        else if case .body = self { return 13 }
-        else if case .headline = self { return 13 }
-        else if case .title3 = self { return 15 }
-        else if case .title2 = self { return 17 }
-        else if case .title1 = self { return 22 }
-        else { return 26 }
+        if case .caption = self {
+            return 10
+        } else if case .footnote = self {
+            return 11
+        } else if case .body = self {
+            return 13
+        } else if case .headline = self {
+            return 13
+        } else if case .title3 = self {
+            return 15
+        } else if case .title2 = self {
+            return 17
+        } else if case .title1 = self {
+            return 22
+        } else {
+            return 26
+        }
     }
 
     var weight: Font.Weight {
-        if case .headline = self { return .semibold }
-        else if case .title1 = self { return .bold }
-        else if case .title2 = self { return .bold }
-        else if case .title3 = self { return .bold }
-        else if case .largeTitle = self { return .bold }
-        else { return .regular }
+        if case .headline = self {
+            return .semibold
+        } else if case .title1 = self {
+            return .bold
+        } else if case .title2 = self {
+            return .bold
+        } else if case .title3 = self {
+            return .bold
+        } else if case .largeTitle = self {
+            return .bold
+        } else {
+            return .regular
+        }
     }
 
     var leading: CGFloat {
-        if case .caption = self { return 0.25 }
-        else if case .footnote = self { return 0.25 }
-        else if case .body = self { return 0.25 }
-        else if case .headline = self { return 0.2 }
-        else if case .title3 = self { return 0.2 }
-        else if case .title2 = self { return 0.12 }
-        else if case .title1 = self { return 0.12 }
-        else { return 0.06 }
+        if case .caption = self {
+            return 0.25
+        } else if case .footnote = self {
+            return 0.25
+        } else if case .body = self {
+            return 0.25
+        } else if case .headline = self {
+            return 0.2
+        } else if case .title3 = self {
+            return 0.2
+        } else if case .title2 = self {
+            return 0.12
+        } else if case .title1 = self {
+            return 0.12
+        } else {
+            return 0.06
+        }
     }
 }
 

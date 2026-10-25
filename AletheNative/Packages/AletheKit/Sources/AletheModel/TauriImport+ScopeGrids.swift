@@ -41,5 +41,4 @@ extension TauriImport {
             preferences.workspaceGridLayoutHistory = history(file.preferences["workspaceGridLayoutHistory"])
         }
     }
-
 }

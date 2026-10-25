@@ -75,8 +75,7 @@ struct CustomAgentsSection: View {
                 if agents.isEmpty, draft == nil { customLabel("customAgentsEmpty").font(metrics.font(size: 11))
                     .foregroundStyle(theme[.fgFaint]) }
                 ForEach(agents) { agent in row(agent) }
-                if draft != nil { editor }
-                else {
+                if draft != nil { editor } else {
                     Button {
                         editing = nil; picked = nil; error = nil; mode = "preset"; draft = .init()
                     } label: { customLabel("customAgentAdd") }.buttonStyle(AletheCustomAgentButtonStyle())
@@ -163,16 +162,21 @@ struct CustomAgentsSection: View {
             }.padding(.horizontal, metrics.size(12)).padding(.vertical, metrics.size(10)).modifier(CustomAgentPanel())
             if mode == "preset" {
                 InterfaceSelect(selection: Binding { draft?.iconSpec?.key ?? "bot" } set: {
-                    draft?.iconSpec = .init(kind: "preset", key: $0) },
+                    draft?.iconSpec = .init(kind: "preset", key: $0)
+                },
                              options: CustomAgentDefinition.icons, appearance: .customAgent) { Text(verbatim: $0) }
             } else if mode == "url" {
                 field("customAgentIcon", text: Binding { draft?.iconSpec?.href ?? "" } set: {
-                    draft?.iconSpec = .init(kind: "url", href: $0) })
+                    draft?.iconSpec = .init(kind: "url", href: $0)
+                })
                 hint("customAgentIconUrlHint")
             } else {
                 Button { chooseIcon() } label: { customLabel("customAgentIconPick") }
-                if let picked { Text(verbatim: picked.lastPathComponent).font(metrics.font(size: 10)) }
-                else if editing != nil { hint("customAgentIconFileKept") }
+                if let picked {
+                    Text(verbatim: picked.lastPathComponent).font(metrics.font(size: 10))
+                } else if editing != nil {
+                    hint("customAgentIconFileKept")
+                }
                 hint("customAgentIconFileHint")
             }
             if let error { customLabel("customAgentError" + error.prefix(1).uppercased() + error.dropFirst())
@@ -200,7 +204,8 @@ struct CustomAgentsSection: View {
     private func enabled(_ id: String) -> Binding<Bool> {
         Binding { isEnabled(id) } set: { on in
             environment.preferences?.update { $0.enabledAgents = environment.agentRegistry.enabled($0.enabledAgents,
-                setting: .init(rawValue: id), on: on) }
+                setting: .init(rawValue: id), on: on)
+            }
         }
     }
     private func chooseIcon() {

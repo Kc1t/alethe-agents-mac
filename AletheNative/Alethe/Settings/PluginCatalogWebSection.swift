@@ -39,16 +39,21 @@ struct PluginCatalogWebSection: View {
                 Button("plugins.web.filters") { selectedID = nil; marketplace = true }
                     .accessibilityIdentifier("plugins.catalog.filters")
             }
-            if model.failed { Text("settings.web.reference.market.error").foregroundStyle(theme[.fgMuted]) }
-            else if model.loading && entries.isEmpty { Text("settings.web.reference.market.loading").foregroundStyle(theme[.fgMuted]) }
-            else if entries.isEmpty { Text("settings.web.reference.market.emptySearch").foregroundStyle(theme[.fgMuted]) }
+            if model.failed {
+                Text("settings.web.reference.market.error").foregroundStyle(theme[.fgMuted])
+            } else if model.loading && entries.isEmpty {
+                Text("settings.web.reference.market.loading").foregroundStyle(theme[.fgMuted])
+            } else if entries.isEmpty {
+                Text("settings.web.reference.market.emptySearch").foregroundStyle(theme[.fgMuted])
+            }
             ForEach(entries) { row in
                 VStack(alignment: .leading, spacing: metrics.size(6)) {
                     HStack(alignment: .top, spacing: metrics.size(16)) {
                         VStack(alignment: .leading, spacing: metrics.size(6)) {
                             HStack(spacing: metrics.size(8)) {
                                 Button { selectedID = row.id; marketplace = true } label: { Text(verbatim: row.name)
-                                    .font(metrics.font(size: 12, weight: 600)) }
+                                    .font(metrics.font(size: 12, weight: 600))
+                                }
                                     .buttonStyle(.plain).accessibilityIdentifier("plugins.catalog.details.\(row.id)")
                                 Text(verbatim: row.version).font(metrics.monoFont(size: 10)).foregroundStyle(theme[.fgFaint])
                                 if row.installed { Text("settings.web.reference.market.installedMark")
@@ -64,7 +69,6 @@ struct PluginCatalogWebSection: View {
                                 if entry.package != nil && !row.native {
                                     Button(row.update ? "settings.web.reference.prefs.pluginsCatalogUpdate"
                                         : row.installed ? "settings.web.reference.prefs.pluginsCatalogReinstall" : "plugins.web.register") {
-
                                         Task { await model.install(entry) }
                                     }.disabled(model.busy).accessibilityIdentifier("plugins.catalog.install.\(row.id)")
                                 }
@@ -76,7 +80,8 @@ struct PluginCatalogWebSection: View {
                         }
                     }
                     ForEach(row.capabilities, id: \.self) { Text(verbatim: $0).font(metrics.monoFont(size: 10))
-                        .foregroundStyle(theme[.fgMuted]) }
+                        .foregroundStyle(theme[.fgMuted])
+                    }
                 }.padding(metrics.size(12)).frame(maxWidth: .infinity, alignment: .leading)
                     .background(theme[.bgSunken], in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
                     .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.border], lineWidth: metrics.size(1)))

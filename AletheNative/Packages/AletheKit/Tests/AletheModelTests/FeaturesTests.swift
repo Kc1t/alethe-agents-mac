@@ -1,6 +1,6 @@
+@testable import AletheModel
 import Foundation
 import Testing
-@testable import AletheModel
 
 @Suite struct FeaturesTests {
     @Test func defaultsMatchUpstream() {

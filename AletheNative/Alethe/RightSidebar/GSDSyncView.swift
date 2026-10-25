@@ -118,7 +118,6 @@ struct GSDSyncRow: View {
                     .textCase(.uppercase).tracking(metrics.size(0.3))
                 }
                 Spacer(minLength: 0)
-
             }
             .padding(.horizontal, metrics.size(6))
             .padding(.vertical, metrics.size(5))

@@ -11,8 +11,11 @@ enum WebProjectTransfer {
         panel.nameFieldStringValue = "\(name).alethe-project.json"
         panel.allowedContentTypes = [.json]
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        do { try WebProjectFile.data(project, group: group).write(to: url, options: .atomic) }
-        catch { inform("projectSettings.export.failed", message: error.localizedDescription) }
+        do {
+            try WebProjectFile.data(project, group: group).write(to: url, options: .atomic)
+        } catch {
+            inform("projectSettings.export.failed", message: error.localizedDescription)
+        }
     }
 
     static func importProject(nextTo project: ProjectID, workspace: WorkspaceModel, undoManager: UndoManager?) {

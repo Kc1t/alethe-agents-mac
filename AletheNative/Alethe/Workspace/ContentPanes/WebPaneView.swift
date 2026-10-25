@@ -105,9 +105,13 @@ struct WebPaneView: View {
             }
             Divider()
             Button("web.zoomIn") { update { options, _ in options.zoom = min(options.zoom + 0.1,
-                WebPaneOptions.zoomRange.upperBound) }(()) }
+                WebPaneOptions.zoomRange.upperBound)
+            }(())
+            }
             Button("web.zoomOut") { update { options, _ in options.zoom = max(options.zoom - 0.1,
-                WebPaneOptions.zoomRange.lowerBound) }(()) }
+                WebPaneOptions.zoomRange.lowerBound)
+            }(())
+            }
             Button("web.actualSize") { update { options, _ in options.zoom = 1 }(()) }
             Divider()
             if metrics.isWebInterface {

@@ -104,7 +104,8 @@ struct AIUsageSheet: View {
             if let credit = confirmCredit { Task { creditFailed = !(await environment.usage.consumeResetCredit(credit)) } }
         }
         .confirmationDialog(Text("usage.credit.confirm"), isPresented: Binding { !metrics.isWebInterface
-            && confirmCredit != nil } set: { if !$0 { confirmCredit = nil } },
+            && confirmCredit != nil
+        } set: { if !$0 { confirmCredit = nil } },
                             presenting: confirmCredit) { credit in
             Button("usage.credit.use") {
                 Task { creditFailed = !(await environment.usage.consumeResetCredit(credit)) }

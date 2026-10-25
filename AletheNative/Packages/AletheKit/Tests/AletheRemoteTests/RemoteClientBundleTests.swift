@@ -1,6 +1,6 @@
+@testable import AletheRemote
 import Foundation
 import Testing
-@testable import AletheRemote
 
 struct RemoteClientBundleGoldenTests {
     @Test func selectedBrandIconUsesEmbeddedPNGAssets() async throws {

@@ -1,8 +1,8 @@
 import AletheDesign
 import AletheDocuments
-import AppKit
 import AletheModel
 import AlethePluginKit
+import AppKit
 import SwiftUI
 
 struct DocsView: View {

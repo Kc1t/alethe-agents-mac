@@ -1,5 +1,5 @@
-import Testing
 @testable import AletheModel
+import Testing
 
 struct SetupProgressTests {
     @Test func stepsCompleteFromWhatExists() {

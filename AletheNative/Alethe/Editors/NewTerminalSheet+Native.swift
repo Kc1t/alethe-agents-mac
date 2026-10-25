@@ -169,7 +169,6 @@ extension NewTerminalSheet {
         }
     }
 
-
     func close() {
         if let closeOverlay { closeOverlay() } else { dismiss() }
     }

@@ -81,7 +81,10 @@ extension RemoteTransport {
             run.sockets[key] = socket
             return true
         }
-        guard registered else { return connection.cancel() }
+        guard registered else {
+            connection.cancel()
+            return
+        }
         Task { [weak self] in
             guard let self else { return socket.cancel() }
             if case .http = kind {

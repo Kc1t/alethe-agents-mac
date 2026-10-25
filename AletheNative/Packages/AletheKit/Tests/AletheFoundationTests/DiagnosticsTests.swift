@@ -1,6 +1,6 @@
+@testable import AletheFoundation
 import Foundation
 import Testing
-@testable import AletheFoundation
 
 private func temporaryDirectory() -> URL {
     FileManager.default.temporaryDirectory

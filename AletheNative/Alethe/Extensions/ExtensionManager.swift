@@ -144,8 +144,11 @@ final class ExtensionManager {
         guard processes[id] != nil else { return }
         teardown(id)
         update(id) { entry in
-            if entry.status != .loading || entry.payload != nil { entry.status = .stopped }
-            else { entry.status = .failed(String(localized: "extensions.error.manifest")) }
+            if entry.status != .loading || entry.payload != nil {
+                entry.status = .stopped
+            } else {
+                entry.status = .failed(String(localized: "extensions.error.manifest"))
+            }
         }
     }
 

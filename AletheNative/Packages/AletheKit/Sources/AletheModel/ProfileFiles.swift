@@ -68,8 +68,9 @@ public enum ProfileFiles {
                 continue
             }
             let target = destination.appending(path: relative)
-            if values.isDirectory == true { try manager.createDirectory(at: target, withIntermediateDirectories: true) }
-            else if values.isRegularFile == true {
+            if values.isDirectory == true {
+                try manager.createDirectory(at: target, withIntermediateDirectories: true)
+            } else if values.isRegularFile == true {
                 try manager.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
                 try manager.copyItem(at: url, to: target)
             }

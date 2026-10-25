@@ -140,7 +140,6 @@ struct WebSettingsView: View {
         .webScrollStyle()
         .onAppear(perform: selectRequestedTab)
         .onChange(of: environment.settingsTab) { _, _ in selectRequestedTab() }
-
     }
 
     private var avatar: some View {
@@ -152,8 +151,7 @@ struct WebSettingsView: View {
                 SidebarCoverImage(source: source, side: 40, cornerRadius: 20) {
                     Image("DefaultProfile").resizable()
                 }
-            } else if let image { Image(nsImage: image).resizable() }
-            else { Image("DefaultProfile").resizable() }
+            } else if let image { Image(nsImage: image).resizable() } else { Image("DefaultProfile").resizable() }
         }
     }
 
@@ -183,8 +181,6 @@ struct WebSettingsView: View {
                     .padding(.horizontal, metrics.size(9))
                     .padding(.bottom, metrics.size(6))
                 destinationButtons
-
-
             }
             .buttonStyle(.plain)
             .font(metrics.font(size: 12))

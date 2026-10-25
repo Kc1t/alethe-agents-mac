@@ -50,8 +50,8 @@ public struct CustomAgentDefinition: Codable, Hashable, Sendable, Identifiable {
         if cliCommand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "cliEmpty" }
         if tokens == nil { return "cliUnsafe" }
         if let flag = unrestrictedFlag, !flag.isEmpty,
-           (!flag.hasPrefix("-") || flag.utf16.count > 64 ||
-               flag.rangeOfCharacter(from: .whitespacesAndNewlines) != nil || Self.tokenize("agent " + flag) == nil) { return "cliUnsafe" }
+           !flag.hasPrefix("-") || flag.utf16.count > 64 ||
+               flag.rangeOfCharacter(from: .whitespacesAndNewlines) != nil || Self.tokenize("agent " + flag) == nil { return "cliUnsafe" }
         if let accentToken, !Self.accents.contains(accentToken) { return "cliUnsafe" }
         if let icon, !Self.icons.contains(icon) { return "cliUnsafe" }
         return iconValidationError()

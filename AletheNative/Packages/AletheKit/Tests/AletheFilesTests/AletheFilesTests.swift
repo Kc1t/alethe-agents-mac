@@ -1,7 +1,7 @@
+@testable import AletheFiles
 import AletheGit
 import Foundation
 import Testing
-@testable import AletheFiles
 
 private func makeTempDir() throws -> URL {
     let url = FileManager.default.temporaryDirectory

@@ -106,8 +106,7 @@ struct TodosView: View {
                             store.reorder(dragged, onto: todo.id)
                             return true
                         } isTargeted: { targeted in
-                            if targeted { dropTarget = todo.id }
-                            else if dropTarget == todo.id { dropTarget = nil }
+                            if targeted { dropTarget = todo.id } else if dropTarget == todo.id { dropTarget = nil }
                         }
                 }
             }

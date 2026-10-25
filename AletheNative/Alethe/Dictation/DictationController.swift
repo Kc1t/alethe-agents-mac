@@ -83,8 +83,7 @@ final class DictationController {
     private func handleWebCommand(_ event: NSEvent, flags: NSEvent.ModifierFlags) -> Bool? {
         if event.type == .keyDown, !event.isARepeat,
            event.keyCode == 49, flags == [.command, .shift] || flags == [.control, .shift] {
-            if jev.open { cancelSession() }
-            else {
+            if jev.open { cancelSession() } else {
                 if machine.isActive { apply(machine.escape()) }
                 voiceCommand = false
                 jev.open = true
@@ -198,7 +197,10 @@ final class DictationController {
                                        guard let self, self.generation == session else { return }
                                        self.receive(text, isFinal: isFinal)
                                    })
-            guard self.engine === engine else { return await engine.cancel() }
+            guard self.engine === engine else {
+                await engine.cancel()
+                return
+            }
             downloadingModel = false
             ready = true
             if case .starting = machine.phase {

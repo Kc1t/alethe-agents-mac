@@ -1,8 +1,8 @@
 import AletheFoundation
+@testable import AletheIntegrations
 import Foundation
 import Synchronization
 import Testing
-@testable import AletheIntegrations
 
 struct SpotifyGoldenTests {
     @Test func parsesRecentTrackAsPausedNowPlaying() throws {
@@ -222,7 +222,8 @@ struct SpotifyServiceTests {
         let secrets = try configured()
         SpotifyStubProtocol.responder.withLock { $0 = { _ in
             (200, #"{"access_token":"ACCESS-1","expires_in":3600,"refresh_token":"REFRESH-1"}"#)
-        } }
+        }
+        }
         let (service, logs) = service(secrets: secrets)
         try await service.login(clientID: "the-client-id")
 
@@ -262,7 +263,8 @@ struct SpotifyServiceTests {
         let secrets = try configured()
         SpotifyStubProtocol.responder.withLock { $0 = { _ in
             (400, #"{"error":"invalid_client","error_description":"Invalid client secret"}"#)
-        } }
+        }
+        }
         let (service, _) = service(secrets: secrets)
         await #expect(throws: SpotifyError.tokenRequestFailed(status: 400, reason: "invalid_client")) {
             try await service.login(clientID: "id")
@@ -317,7 +319,8 @@ struct SpotifyServiceTests {
             i/large"},{"url":"https://i/small"}]},"duration_ms":1000,"external_urls":{"spotify":"https://open.spotify.com/\#
             track/x"}}}]}
             """#)
-        } }
+        }
+        }
         let (service, _) = service(secrets: secrets)
         let track = try #require(try await service.current(clientID: "id"))
         #expect(track == SpotifyNowPlaying(playing: false, track: "Last", artist: "Band", album: "Rec",

@@ -1,9 +1,9 @@
 import AletheFoundation
 @testable import AletheIntegrations
 import AletheModel
+@testable import AletheRemote
 import Foundation
 import Testing
-@testable import AletheRemote
 
 @Suite(.serialized)
 struct RemoteSecurityChecklistTests {
@@ -46,7 +46,8 @@ struct RemoteSecurityChecklistTests {
             }
             for line in text.split(separator: "\n") where line.contains("requiredLocalEndpoint =") {
                 let loopback = line.contains(#"host: "127.0.0.1""#)
-                let remote = file.name == "RemoteTransport.swift" && line.contains("NWEndpoint.Host(host)")
+                let remote = ["RemoteTransport.swift", "RemoteTransport+Listeners.swift"].contains(file.name)
+                    && line.contains("NWEndpoint.Host(host)")
                 #expect(loopback || remote, "\(file.name): \(line.trimmingCharacters(in: .whitespaces))")
             }
             #expect(!text.contains("INADDR_ANY") && !text.contains("in6addr_any"), "\(file.name) uses a wildcard address")

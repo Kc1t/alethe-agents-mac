@@ -45,8 +45,11 @@ struct HomeHero: View {
                     .lineLimit(1)
                     .foregroundStyle(theme[.textPrimary])
                 Group {
-                    if metrics.isWebInterface { Text(verbatim: webDate(context.date)) }
-                    else { Text(context.date, format: .dateTime.weekday(.abbreviated).day().month(.abbreviated).hour().minute()) }
+                    if metrics.isWebInterface {
+                        Text(verbatim: webDate(context.date))
+                    } else {
+                        Text(context.date, format: .dateTime.weekday(.abbreviated).day().month(.abbreviated).hour().minute())
+                    }
                 }
                     .font(metrics.font(size: metrics.isWebInterface ? 13 : 11, weight: .medium))
                     .foregroundStyle(theme[.fg])
@@ -138,4 +141,3 @@ struct HomeHero: View {
         }
     }
 }
-

@@ -1,9 +1,9 @@
 import AletheFoundation
 import AletheGit
 import AletheIntegrations
+@testable import AletheOrchestrator
 import Foundation
 import Testing
-@testable import AletheOrchestrator
 
 private func uniqueProjectID(_ label: String) -> String {
     "test-\(label)-\(UUID().uuidString)"

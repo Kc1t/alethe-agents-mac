@@ -251,4 +251,3 @@ private struct WorkspaceActionBody: View {
             .onHover { hovering = $0 }
     }
 }
-

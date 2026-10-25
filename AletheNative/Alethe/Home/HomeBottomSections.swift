@@ -91,7 +91,6 @@ struct WebHomeOverview: View {
         WebHomeActionCard(title: title, symbol: symbol, shortcut: shortcut, action: perform)
             .accessibilityIdentifier(id)
     }
-
 }
 
 private struct WebHomeProjectCard: View {
@@ -107,7 +106,8 @@ private struct WebHomeProjectCard: View {
             HStack(spacing: metrics.size(9)) {
                 SidebarCoverImage(source: project.iconUrl ?? "", side: 34) {
                     Text(verbatim: project.name.trimmingCharacters(in: .whitespacesAndNewlines).first.map { String($0)
-                        .uppercased() } ?? "·")
+                        .uppercased()
+                    } ?? "·")
                         .font(metrics.font(size: 15, weight: .semibold)).foregroundStyle(theme[.accentOn])
                         .frame(width: metrics.size(34), height: metrics.size(34))
                         .background(theme[project.color.token], in: RoundedRectangle(cornerRadius: metrics.radius(.sm)))

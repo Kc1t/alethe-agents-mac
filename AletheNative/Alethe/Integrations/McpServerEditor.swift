@@ -69,8 +69,7 @@ struct McpServerEditor: View {
             Spacer()
             Button("editor.cancel", action: close).disabled(saving)
             Button { Task { await submit() } } label: {
-                if editing != nil { Text("mcp.edit.save") }
-                else { Text(verbatim: format("mcp.add.action", selectedTargets.count)) }
+                if editing != nil { Text("mcp.edit.save") } else { Text(verbatim: format("mcp.add.action", selectedTargets.count)) }
             }
             .buttonStyle(AletheButtonStyle(.primary))
             .disabled(saving || (editing == nil && source == .registry) || (editing == nil && selectedTargets.isEmpty))

@@ -5,7 +5,8 @@ extension RemoteTransport {
     func serveHTTP(_ socket: RemoteSocket, _ run: Run) async {
         guard await hub.isActive(generation: run.generation),
               await hub.tryAcquireConnection(max: configuration.maxConnections) else {
-            return socket.cancel()
+            socket.cancel()
+            return
         }
         await serveHTTPRequest(socket)
         await hub.releaseConnection()
@@ -22,12 +23,14 @@ extension RemoteTransport {
         let outcome = await readRequest(socket)
         if case .complete(let head, let body) = outcome {
             guard let parsed = RemoteHTTPReader.request(head: head, body: body, peerAddress: address) else {
-                return await respond(socket, .error(400, "Bad request"))
+                await respond(socket, .error(400, "Bad request"))
+                return
             }
             request = parsed
         } else if case .failed(let error) = outcome {
             RemoteLog.logger.info("remote HTTP request refused: \(String(describing: error), privacy: .public)")
-            return await respond(socket, .error(400, "Bad request"))
+            await respond(socket, .error(400, "Bad request"))
+            return
         } else {
             return
         }

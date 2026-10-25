@@ -16,8 +16,7 @@ struct WebHomeNowPlaying: View {
     var body: some View {
         if let model = environment.nowPlaying.model {
             Group {
-                if let track = model.current { dock(track) }
-                else { Color.clear.frame(width: 0, height: 0) }
+                if let track = model.current { dock(track) } else { Color.clear.frame(width: 0, height: 0) }
             }
             .onAppear { model.viewAppeared() }
             .onDisappear { model.viewDisappeared() }
@@ -36,8 +35,7 @@ struct WebHomeNowPlaying: View {
                         Text(verbatim: track.artist).font(metrics.font(size: 10)).foregroundStyle(theme[.textTertiary])
                             .frame(maxWidth: metrics.size(98), alignment: .leading)
                             .accessibilityIdentifier("home.nowPlaying.artist")
-                        if track.playing { HomeMusicEqualizer(height: 10) }
-                        else {
+                        if track.playing { HomeMusicEqualizer(height: 10) } else {
                             Text("home.nowPlaying.last").textCase(.uppercase).font(metrics.font(size: 9))
                                 .tracking(metrics.size(0.4)).foregroundStyle(theme[.textQuaternary])
                         }

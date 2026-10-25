@@ -93,8 +93,6 @@ struct WebAccountSettings: View {
             if loaded { environment.preferences?.update { $0.profileImageUrl = value } }
         }
     }
-
-
 }
 
 extension WebAccountSettings {

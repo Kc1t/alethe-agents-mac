@@ -1,6 +1,6 @@
 import AletheDesign
-import AletheModel
 import AletheIntegrations
+import AletheModel
 import AletheTodos
 import AppKit
 import SwiftUI
@@ -201,8 +201,7 @@ struct TodosWebPanel: View {
                         store.reorder(id, onto: todo.id)
                         return true
                     } isTargeted: { targeted in
-                        if targeted { dropTarget = todo.id }
-                        else if dropTarget == todo.id { dropTarget = nil }
+                        if targeted { dropTarget = todo.id } else if dropTarget == todo.id { dropTarget = nil }
                     }
             }
         }
@@ -359,8 +358,7 @@ private struct TodoWebRow: View {
     private func beginEdit() { draft = todo.title; editing = true; focused = true }
     private func save() {
         if editingTags { store.setTags(todo.id, draft.split(whereSeparator: { $0 == "#" || $0 == "," ||
-            $0.isWhitespace }).map(String.init)) }
-        else { store.rename(todo.id, to: draft) }
+            $0.isWhitespace }).map(String.init)) } else { store.rename(todo.id, to: draft) }
         editing = false; editingTags = false
     }
 }
@@ -381,8 +379,11 @@ private struct TodoWebProjectPicker: View {
                         .frame(width: metrics.size(compact ? 11 : 13), height: metrics.size(compact ? 11 : 13))
                         .foregroundStyle(theme[.fgFaint])
                     Group {
-                        if let project = projects.first(where: { $0.id.rawValue == value }) { Text(verbatim: project.name) }
-                        else { Text("rightSidebar.todo.noProject") }
+                        if let project = projects.first(where: { $0.id.rawValue == value }) {
+                            Text(verbatim: project.name)
+                        } else {
+                            Text("rightSidebar.todo.noProject")
+                        }
                     }.lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.leading, metrics.size(compact ? 4 : 8))
                         .foregroundStyle(theme[.fgMuted])
@@ -392,9 +393,12 @@ private struct TodoWebProjectPicker: View {
                 .padding(.horizontal, metrics.size(compact ? 6 : 7)).frame(height: metrics.size(compact ? 21 : 26))
                 .modifier(WebTodoChoiceSurface(compact: compact, state: state)))
             }) { value in
-                if let project = projects.first(where: { $0.id.rawValue == value }) { Text(verbatim: project.name) }
-                else { Text("rightSidebar.todo.noProject") }
-            }
+                if let project = projects.first(where: { $0.id.rawValue == value }) {
+                    Text(verbatim: project.name)
+                } else {
+                    Text("rightSidebar.todo.noProject")
+                }
+        }
         .fixedSize(horizontal: false, vertical: true)
         .accessibilityLabel(Text("todos.new.toProject"))
     }

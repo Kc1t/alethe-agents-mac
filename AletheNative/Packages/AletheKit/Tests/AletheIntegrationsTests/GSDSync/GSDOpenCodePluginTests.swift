@@ -1,7 +1,7 @@
 import AletheFoundation
+@testable import AletheIntegrations
 import Foundation
 import Testing
-@testable import AletheIntegrations
 
 private func writer(_ root: URL) -> ConfigFileWriter {
     ConfigFileWriter(backupRoot: root.appending(path: ".test-profile/config-backups"))

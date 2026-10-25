@@ -4,22 +4,38 @@ public enum AletheSettingsRowSurface: Equatable, Sendable {
     case standalone, option, remote, plugin, version, metric, task, agent, empty, toolbar
 
     var horizontal: CGFloat {
-        if case .empty = self { return 18 }
-        else if case .toolbar = self { return 10 }
-        else if case .version = self { return 14 }
-        else if case .metric = self { return 10 }
-        else if case .task = self { return 10 }
-        else { return 12 }
+        if case .empty = self {
+            return 18
+        } else if case .toolbar = self {
+            return 10
+        } else if case .version = self {
+            return 14
+        } else if case .metric = self {
+            return 10
+        } else if case .task = self {
+            return 10
+        } else {
+            return 12
+        }
     }
     var vertical: CGFloat {
-        if case .empty = self { return 18 }
-        else if case .toolbar = self { return 8 }
-        else if case .remote = self { return 12 }
-        else if case .plugin = self { return 12 }
-        else if case .version = self { return 12 }
-        else if case .metric = self { return 8 }
-        else if case .task = self { return 8 }
-        else { return 10 }
+        if case .empty = self {
+            return 18
+        } else if case .toolbar = self {
+            return 8
+        } else if case .remote = self {
+            return 12
+        } else if case .plugin = self {
+            return 12
+        } else if case .version = self {
+            return 12
+        } else if case .metric = self {
+            return 8
+        } else if case .task = self {
+            return 8
+        } else {
+            return 10
+        }
     }
 }
 

@@ -65,8 +65,11 @@ struct ConfirmWorktreeCommitWebModal: View {
         }
         .task {
             defer { loading = false }
-            do { pending = try await GitRepository(root: folder).status().entries.filter { $0.kind != .ignored } }
-            catch { self.error = error.localizedDescription }
+            do {
+                pending = try await GitRepository(root: folder).status().entries.filter { $0.kind != .ignored }
+            } catch {
+                self.error = error.localizedDescription
+            }
         }
         .onAppear { focused = true }
     }

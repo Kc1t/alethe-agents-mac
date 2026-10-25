@@ -28,7 +28,7 @@ struct WebModelDropdown: View {
             placeholder: cleanModels.first ?? String(localized: "dropdown.model.select")
                 .replacingOccurrences(of: "{provider}", with: provider)) {
                 if $0.isEmpty { Text("newTerminal.model.defaultItem") } else { Text(verbatim: $0) }
-            }
+        }
     }
 }
 

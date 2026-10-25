@@ -33,9 +33,13 @@ private struct HomeHeroControl: View {
 
     private var active: Bool { enabled && (hovering || configuration.isPressed) }
     private var background: ThemeToken {
-        if case .send = kind { return active ? .accentStrong : .accent }
-        else if case .action = kind { return active ? .bgElevated : .bg }
-        else { return active ? .panelHover : .bgSunken }
+        if case .send = kind {
+            return active ? .accentStrong : .accent
+        } else if case .action = kind {
+            return active ? .bgElevated : .bg
+        } else {
+            return active ? .panelHover : .bgSunken
+        }
     }
     private var opacity: Double {
         if active || kind == .send { return 1 }

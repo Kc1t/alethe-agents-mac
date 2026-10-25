@@ -72,9 +72,13 @@ struct WebDropdown<Value: Hashable, Label: View>: View {
             if let trigger { trigger(selection, WebDropdownTriggerState(open: open, hovering: hovering, focused: focused)) } else {
                 HStack(spacing: metrics.size(8)) {
                     Group {
-                        if let displayValue { Text(verbatim: displayValue) }
-                        else if !options.contains(selection), let placeholder { Text(verbatim: placeholder) }
-                        else { label(selection) }
+                        if let displayValue {
+                            Text(verbatim: displayValue)
+                        } else if !options.contains(selection), let placeholder {
+                            Text(verbatim: placeholder)
+                        } else {
+                            label(selection)
+                        }
                     }.lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     if appearance.showsChevron {
@@ -113,7 +117,8 @@ struct WebDropdown<Value: Hashable, Label: View>: View {
         }
         .onKeyPress(.home) { guard open else { return .ignored }; active = enabledIndex(from: 0, direction: 1); return .handled }
         .onKeyPress(.end) { guard open else { return .ignored }; active = enabledIndex(from: choices.count - 1,
-            direction: -1); return .handled }
+            direction: -1); return .handled
+        }
         .onKeyPress(.return) {
             if open { if !searchable { chooseActive() } } else { show() }
             return .handled

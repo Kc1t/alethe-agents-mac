@@ -123,7 +123,6 @@ public struct Project: Codable, Hashable, Sendable, Identifiable {
     public var conflictAgentModel: String?
     public var gsdWatcherEnabled: Bool?
 
-
     public init(id: ProjectID = .make(), name: String, color: ProjectColor = .blue, folder: String,
                 panes: [Pane] = [], createdAt: Date = Date(), layoutMode: PaneLayoutMode? = nil) {
         self.id = id

@@ -76,7 +76,6 @@ extension MainWindow {
         return 440
     }
 
-
     func isPrimaryWebRequest(_ request: EditorRequest) -> Bool {
         if case .newTerminal = request { return true }
         if case .newSubTab = request { return true }

@@ -1,6 +1,6 @@
+@testable import AletheAgents
 import Foundation
 import Testing
-@testable import AletheAgents
 
 @Suite struct McpLaunchTests {
     static let launcher = AgentLauncher(launchers: LauncherCache(stillExists: { _ in true }),

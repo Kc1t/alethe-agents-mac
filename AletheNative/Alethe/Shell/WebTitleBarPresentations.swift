@@ -1,6 +1,6 @@
+import AletheDesign
 import AletheFoundation
 import AppKit
-import AletheDesign
 import SwiftUI
 
 extension Notification.Name {
@@ -43,8 +43,11 @@ struct WebWindowMenu: View {
             row("menu.openSpawnLog", "doc.text") {
                 guard let directory = environment.diagnostics.logsDirectory else { return }
                 let file = directory.appending(path: Diagnostics.spawnLogName)
-                if FileManager.default.fileExists(atPath: file.path) { NSWorkspace.shared.open(file) }
-                else { NSWorkspace.shared.open(directory) }
+                if FileManager.default.fileExists(atPath: file.path) {
+                    NSWorkspace.shared.open(file)
+                } else {
+                    NSWorkspace.shared.open(directory)
+                }
             }
             row("menu.help.openLogsFolder", "doc.text") { environment.diagnostics.openLogsFolder() }
             row("menu.help.exportLogs", "square.and.arrow.up") { environment.diagnostics.exportLogs() }

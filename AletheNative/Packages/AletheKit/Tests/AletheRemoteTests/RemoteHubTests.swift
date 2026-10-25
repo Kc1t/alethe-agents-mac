@@ -1,6 +1,6 @@
+@testable import AletheRemote
 import Foundation
 import Testing
-@testable import AletheRemote
 
 final class TestClock: @unchecked Sendable {
     private let lock = NSLock()

@@ -142,8 +142,11 @@ private struct TerminalLinkActions: View {
     }
 
     private func preview() {
-        if isURL, let url { environment.editorRequest = .previewLink(.web(url)) }
-        else { environment.editorRequest = .previewLink(.file(target)) }
+        if isURL, let url {
+            environment.editorRequest = .previewLink(.web(url))
+        } else {
+            environment.editorRequest = .previewLink(.file(target))
+        }
     }
 
     private func row(_ key: LocalizedStringKey, _ symbol: String, action: @escaping () -> Void) -> some View {
@@ -186,8 +189,7 @@ private struct TerminalLinkActionRow: View {
             .contentShape(Rectangle())
             .opacity(enabled ? 1 : 0.5)
             .onHover { inside in
-                if inside && enabled { session?.highlighted = id }
-                else if session?.highlighted == id { session?.highlighted = nil }
+                if inside && enabled { session?.highlighted = id } else if session?.highlighted == id { session?.highlighted = nil }
             }
             .onTapGesture { if enabled { configuration.trigger() } }
             .onAppear {

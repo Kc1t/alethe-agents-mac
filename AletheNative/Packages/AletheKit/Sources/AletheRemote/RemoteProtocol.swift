@@ -101,7 +101,6 @@ public struct RemoteResponse: Sendable, Equatable {
         403: "Forbidden", 404: "Not Found", 409: "Conflict", 429: "Too Many Requests",
     ]
 
-
     public func head() -> String {
         "HTTP/1.1 \(status) \(reasonPhrase)\r\n"
             + "Content-Type: \(contentType)\r\n"

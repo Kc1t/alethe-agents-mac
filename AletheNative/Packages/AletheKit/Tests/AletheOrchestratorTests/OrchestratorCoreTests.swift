@@ -1,9 +1,9 @@
+import AletheIntegrations
+@testable import AletheOrchestrator
 import Darwin
 import Foundation
 import Synchronization
 import Testing
-import AletheIntegrations
-@testable import AletheOrchestrator
 
 private func temporaryDirectory(_ tag: String) throws -> URL {
     let url = FileManager.default.temporaryDirectory.appending(path: "alethe-orch-\(tag)-\(UUID().uuidString)")

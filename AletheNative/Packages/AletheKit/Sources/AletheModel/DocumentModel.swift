@@ -24,12 +24,8 @@ public final class DocumentModel<Document: VersionedDocument> {
         let name = url.lastPathComponent
         do {
             let (document, outcome) = try await store.load()
-            if case .migrated(let version, _) = outcome { AppLog.info(.persistence, "\(name) migrated from version \(version)") }
-            else if case .recoveredFromCorruption(let movedTo) = outcome { AppLog.record(.warning, .persistence, "\(name) was unreadable; moved to \(movedTo.lastPathComponent)") }
-            else if case .fresh = outcome {
-
+            if case .migrated(let version, _) = outcome { AppLog.info(.persistence, "\(name) migrated from version \(version)") } else if case .recoveredFromCorruption(let movedTo) = outcome { AppLog.record(.warning, .persistence, "\(name) was unreadable; moved to \(movedTo.lastPathComponent)") } else if case .fresh = outcome {
             } else {
-
             }
             return DocumentModel(store: store, document: document, outcome: outcome, error: nil)
         } catch let error as DocumentStoreError {

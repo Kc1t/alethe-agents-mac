@@ -49,7 +49,10 @@ final class Router9Controller {
     }
 
     func refresh() async {
-        if let refreshing { return await refreshing.value }
+        if let refreshing {
+            await refreshing.value
+            return
+        }
         guard let service, let environment else { return }
         let port = preferences.port, launchers = environment.launchers
         let task = Task {

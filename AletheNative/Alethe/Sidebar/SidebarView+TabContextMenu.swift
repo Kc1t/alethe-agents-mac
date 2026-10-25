@@ -123,12 +123,14 @@ struct TabContextMenu: View {
         SidebarMenuButton("sidebar.killTerminal", symbol: "stop") { environment.terminals.view(for: tab.id)?.terminate() }
             .disabled(environment.terminals.view(for: tab.id) == nil)
         SidebarMenuButton("terminal.restart", symbol: "arrow.clockwise") { environment.terminals.restart(tab,
-            in: project, environment: environment) }
+            in: project, environment: environment)
+        }
         SidebarMenuButton("openIn.vscode", symbol: "chevron.left.forwardslash.chevron.right") {
             OpenInActions.vsCode(tab.workingDirectory ?? project.folder, launchers: environment.launchers)
         }
         SidebarMenuButton("sidebar.revealInFinder", symbol: "folder") {
-            OpenInActions.revealInFinder(tab.workingDirectory ?? project.folder) }
+            OpenInActions.revealInFinder(tab.workingDirectory ?? project.folder)
+        }
         if let pane = actions.workspace.document.paneHolding(tab.id)?.pane {
             SidebarMenuButton(environment.focusModePaneID == pane.id ? LocalizedStringKey("focusMode.exit") : "focusMode.enter",
                 symbol: "arrow.up.left.and.arrow.down.right") {

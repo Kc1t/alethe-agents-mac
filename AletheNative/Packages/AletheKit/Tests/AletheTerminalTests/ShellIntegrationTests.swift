@@ -1,7 +1,7 @@
+@testable import AletheTerminal
 import Darwin
 import Foundation
 import Testing
-@testable import AletheTerminal
 
 @Suite(.timeLimit(.minutes(1))) struct ShellIntegrationTests {
     private let resources = URL(filePath: "/res")

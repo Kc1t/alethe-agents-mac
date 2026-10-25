@@ -102,5 +102,4 @@ extension MainWindow {
             UpdateAvailableWebModal(release: release)
         }
     }
-
 }

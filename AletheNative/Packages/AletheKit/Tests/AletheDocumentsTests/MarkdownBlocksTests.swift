@@ -1,6 +1,6 @@
+@testable import AletheDocuments
 import Foundation
 import Testing
-@testable import AletheDocuments
 
 @Suite struct MarkdownBlocksTests {
     private let base = URL(filePath: "/repo/docs", directoryHint: .isDirectory)

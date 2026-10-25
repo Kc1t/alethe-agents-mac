@@ -1,8 +1,8 @@
 import AletheGit
+@testable import AletheMerge
 import Darwin
 import Foundation
 import Testing
-@testable import AletheMerge
 
 @Suite(.timeLimit(.minutes(1))) struct BranchTestingTests {
     static let runner = GitRunner(environment: ["GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1"])

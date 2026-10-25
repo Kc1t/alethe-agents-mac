@@ -134,5 +134,4 @@ struct WebHomeSetup: View {
             "paintpalette"
         }
     }
-
 }

@@ -1,6 +1,6 @@
+@testable import AletheModel
 import Foundation
 import Testing
-@testable import AletheModel
 
 @Suite struct ContainerOperationsTests {
     private func sample() -> (WorkspaceDocument, [ProjectID], PaneID) {

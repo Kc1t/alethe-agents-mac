@@ -1,5 +1,5 @@
-import Foundation
 import AletheIntegrations
+import Foundation
 
 public enum BoardFormat {
     public static func elapsed(_ seconds: Double?) -> String? {

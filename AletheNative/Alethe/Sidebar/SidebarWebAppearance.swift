@@ -1,6 +1,6 @@
-import AppKit
 import AletheDesign
 import AletheModel
+import AppKit
 import SwiftUI
 
 extension EnvironmentValues {
@@ -112,8 +112,7 @@ struct SidebarLabelAppearance: ViewModifier {
     @Environment(\.metrics) private var metrics
 
     @ViewBuilder func body(content: Content) -> some View {
-        if metrics.isWebInterface { content.labelStyle(SidebarLabelStyle(isGroup: isGroup, iconSize: iconSize)) }
-        else { content }
+        if metrics.isWebInterface { content.labelStyle(SidebarLabelStyle(isGroup: isGroup, iconSize: iconSize)) } else { content }
     }
 }
 
@@ -196,8 +195,7 @@ struct SidebarNativeDragSource: ViewModifier {
     @Environment(\.metrics) private var metrics
 
     @ViewBuilder func body(content: Content) -> some View {
-        if metrics.isWebInterface { content }
-        else { content.itemProvider { NSItemProvider(object: payload as NSString) } }
+        if metrics.isWebInterface { content } else { content.itemProvider { NSItemProvider(object: payload as NSString) } }
     }
 }
 

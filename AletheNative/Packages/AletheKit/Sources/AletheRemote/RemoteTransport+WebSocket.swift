@@ -5,7 +5,8 @@ extension RemoteTransport {
     func serveWebSocket(_ socket: RemoteSocket, _ run: Run) async {
         guard await hub.isActive(generation: run.generation),
               await hub.tryAcquireConnection(max: configuration.maxConnections) else {
-            return socket.cancel()
+            socket.cancel()
+            return
         }
         let address = socket.peerAddress
         if await hub.authBlocked(address) {

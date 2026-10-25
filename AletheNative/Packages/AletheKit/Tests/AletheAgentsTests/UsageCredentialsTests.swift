@@ -1,6 +1,6 @@
+@testable import AletheAgents
 import Foundation
 import Testing
-@testable import AletheAgents
 
 struct UsageCredentialsTests {
     @Test func oneReadAcrossPollsAndPromptFreeCacheHits() {

@@ -41,7 +41,6 @@ struct WebTitleBar: View {
                         .webTitleBarNewsBadge()
                 }
                 if threeAreas { Spacer(minLength: 0) }
-
             }
             .padding(.leading, trafficLightTrailingEdge + metrics.size(6))
             .padding(.trailing, metrics.size(8))

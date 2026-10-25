@@ -28,7 +28,8 @@ struct ProjectRow: View {
                 SidebarDisclosure(isGroup: false, item: .project(project.id), isExpanded: metrics.isWebInterface ? Binding(
                     get: { !SidebarProjectVisibility.contains(collapsedProjects, project: project.id, profile: environment.profileID) },
                     set: { collapsedProjects = SidebarProjectVisibility.setting(collapsedProjects, project: project.id,
-                        profile: environment.profileID, enabled: !$0) }
+                        profile: environment.profileID, enabled: !$0)
+                    }
                 ) : nil) {
                     if metrics.isWebInterface {
                         ForEach(project.panes) { pane in
@@ -88,7 +89,8 @@ struct ProjectRow: View {
                 if !metrics.isWebInterface { Spacer(minLength: metrics.space(.xxs)) }
                 Button { environment.editorRequest = .newTerminal(project.id) } label: {
                     Label { Text("terminal.new") } icon: { Image(systemName: "plus")
-                        .webProfileSized(metrics.isWebInterface ? (metrics.style == .clean ? 12 : 15) : 14) }
+                        .webProfileSized(metrics.isWebInterface ? (metrics.style == .clean ? 12 : 15) : 14)
+                    }
                         .modifier(SidebarSymbolAppearance(size: metrics.style == .clean ? 12 : 15))
                 }
                 .buttonStyle(AletheIconButtonStyle(side: 20))
@@ -103,7 +105,8 @@ struct ProjectRow: View {
                     } action: {
                         WebMenu { ProjectContextMenu(project: project, actions: actions) } label: {
                             Label { Text("sidebar.rowMenu") } icon: { Image(systemName: "ellipsis")
-                                .webProfileSized(metrics.style == .clean ? 13 : 14) }
+                                .webProfileSized(metrics.style == .clean ? 13 : 14)
+                            }
                         }
                         .menuIndicator(.hidden)
                         .menuStyle(.borderlessButton)

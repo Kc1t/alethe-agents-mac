@@ -1,6 +1,6 @@
+@testable import AletheModel
 import Foundation
 import Testing
-@testable import AletheModel
 
 @Suite struct ProjectImageTests {
     @Test func projectAndGroupRoundTripWithWebFieldName() throws {
@@ -119,5 +119,4 @@ import Testing
             try ProjectImageInput.fileDataURL(url, mimeType: "text/plain")
         }
     }
-
 }

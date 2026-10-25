@@ -248,6 +248,4 @@ struct MainWindow: View {
             sidebarVisible = visibility != .detailOnly
         }
     }
-
-
 }

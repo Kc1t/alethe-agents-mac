@@ -1,7 +1,7 @@
+@testable import AletheAgents
 import Foundation
 import Synchronization
 import Testing
-@testable import AletheAgents
 
 @Suite struct LauncherResolverTests {
     static func resolver(env: [String: String] = ["PATH": "/usr/bin:/bin"], files: Set<String>,

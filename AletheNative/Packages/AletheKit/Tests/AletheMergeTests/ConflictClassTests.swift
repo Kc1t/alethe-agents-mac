@@ -1,5 +1,5 @@
-import Testing
 @testable import AletheMerge
+import Testing
 
 struct ConflictClassTests {
     @Test(arguments: [

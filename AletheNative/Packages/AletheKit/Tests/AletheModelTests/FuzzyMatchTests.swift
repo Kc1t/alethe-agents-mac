@@ -1,5 +1,5 @@
-import Testing
 @testable import AletheModel
+import Testing
 
 @Suite struct FuzzyMatchTests {
     @Test func charactersMustAppearInOrder() {
