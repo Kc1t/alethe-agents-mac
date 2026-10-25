@@ -59,15 +59,22 @@ public enum ContractCheck {
         let framework: String
 
         init(_ pattern: String, method: Int?, path: Int, framework: String = "") {
-            regex = try! NSRegularExpression(pattern: pattern)
+            regex = Self.compile(pattern)
             methodGroup = method
             pathGroup = path
             self.framework = framework
         }
+
+        static func compile(_ pattern: String) -> NSRegularExpression {
+            guard let regex = try? NSRegularExpression(pattern: pattern) else {
+                preconditionFailure("Invalid contract check pattern: \(pattern)")
+            }
+            return regex
+        }
     }
 
-    private static let parameter = try! NSRegularExpression(
-        pattern: #"(:[A-Za-z0-9_]+|\{[A-Za-z0-9_:]+\}|<[A-Za-z0-9_:]+>)"#)
+    private static let parameter = Pattern.compile(
+        #"(:[A-Za-z0-9_]+|\{[A-Za-z0-9_:]+\}|<[A-Za-z0-9_:]+>)"#)
 
     private static let callPatterns = [
         Pattern(#"fetch\(\s*['"`]([^'"`]+)"#, method: nil, path: 1),
@@ -124,8 +131,15 @@ public enum ContractCheck {
         "No backend route found for \"\(path)\" (check that the endpoint exists)"
     }
 
-    private static func scan(_ text: String, patterns: [Pattern]) -> [(line: Int, method: String?, path: String, framework: String)] {
-        var found: [(Int, String?, String, String)] = []
+    private struct Match {
+        let line: Int
+        let method: String?
+        let path: String
+        let framework: String
+    }
+
+    private static func scan(_ text: String, patterns: [Pattern]) -> [Match] {
+        var found: [Match] = []
         for (index, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
             let line = String(line.hasSuffix("\r") ? line.dropLast() : line)
             let range = NSRange(line.startIndex..., in: line)
@@ -137,7 +151,8 @@ public enum ContractCheck {
                 let method = pattern.methodGroup
                     .flatMap { Range(match.range(at: $0), in: line) }
                     .map { line[$0].uppercased() }
-                found.append((index + 1, method, normalizePathPattern(raw), pattern.framework))
+                found.append(Match(line: index + 1, method: method,
+                                   path: normalizePathPattern(raw), framework: pattern.framework))
             }
         }
         return found

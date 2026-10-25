@@ -51,26 +51,30 @@ public enum ProjectStackDetector {
             .unknown
         }
 
-        var commands: [String] = []
-        switch stack {
-        case .desktop:
-            commands = ["npm run build", "cargo check --manifest-path src-tauri/Cargo.toml"]
-        case .web:
-            commands = ["npm run build"]
-        case .fullstack:
-            commands = ["npm run build"]
-            if hasPython { commands.append("python -m py_compile .") }
-            if has("Cargo.toml") { commands.append("cargo check") }
-            if has("go.mod") { commands.append("go build ./...") }
-        case .cli:
-            if has("Cargo.toml") { commands.append("cargo check") }
-            if has("go.mod") { commands.append("go build ./...") }
-            if hasPython { commands.append("python -m py_compile .") }
-        case .unknown:
-            break
-        }
+        let commands = suggestedCommands(
+            for: stack, pythonCommands: hasPython ? ["python -m py_compile ."] : [], has: has)
         return StackDetection(stack: stack, hasFrontend: hasFrontend, hasBackend: hasBackend, hasTauri: hasTauri,
                               suggestedCommands: commands)
+    }
+
+    private static func suggestedCommands(for stack: ProjectStack, pythonCommands: [String],
+                                          has: (String) -> Bool) -> [String] {
+        var commands: [String] = []
+        if stack == .desktop {
+            commands = ["npm run build", "cargo check --manifest-path src-tauri/Cargo.toml"]
+        } else if stack == .web {
+            commands = ["npm run build"]
+        } else if stack == .fullstack {
+            commands = ["npm run build"]
+            commands.append(contentsOf: pythonCommands)
+            if has("Cargo.toml") { commands.append("cargo check") }
+            if has("go.mod") { commands.append("go build ./...") }
+        } else if stack == .cli {
+            if has("Cargo.toml") { commands.append("cargo check") }
+            if has("go.mod") { commands.append("go build ./...") }
+            commands.append(contentsOf: pythonCommands)
+        }
+        return commands
     }
 
     private static func isFile(_ url: URL) -> Bool {

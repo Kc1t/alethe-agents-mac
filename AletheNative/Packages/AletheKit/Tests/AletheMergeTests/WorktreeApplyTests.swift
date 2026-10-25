@@ -128,12 +128,17 @@ struct WorktreeApplyTests {
         let result = try await WorktreeApply(operations: stub.operations).run(preview) { current in
             if current == step { withUnsafeCurrentTask { $0?.cancel() } }
         }
-        let expected: [String] = switch step {
-        case .committing: ["commit"]
-        case .fetching: ["commit", "fetch"]
-        case .analyzing: ["commit", "fetch", "analyze"]
-        case .preparing: ["commit", "fetch", "analyze", "prepare", "abort"]
-        case .finalizing: ["commit", "fetch", "analyze", "prepare", "finalize"]
+        let expected: [String]
+        if step == .committing {
+            expected = ["commit"]
+        } else if step == .fetching {
+            expected = ["commit", "fetch"]
+        } else if step == .analyzing {
+            expected = ["commit", "fetch", "analyze"]
+        } else if step == .preparing {
+            expected = ["commit", "fetch", "analyze", "prepare", "abort"]
+        } else {
+            expected = ["commit", "fetch", "analyze", "prepare", "finalize"]
         }
         #expect(stub.calls.map { String($0.prefix { $0 != ":" }) } == expected)
         #expect(result.outcome == (step == .finalizing ? .applied : .cancelled))

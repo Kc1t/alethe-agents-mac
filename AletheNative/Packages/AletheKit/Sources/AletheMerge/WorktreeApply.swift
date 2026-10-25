@@ -63,7 +63,9 @@ public struct WorktreeApplyOperations: Sendable {
     public var commitPending: @Sendable (_ root: URL, _ agentID: String, _ message: String) async throws -> Bool
     public var fetchBranch: @Sendable (_ root: URL, _ agentID: String) async throws -> Void
     public var analyze: @Sendable (_ root: URL, _ source: String, _ target: String) async throws -> MergeAnalysis
-    public var prepare: @Sendable (_ root: URL, _ source: String, _ target: String, _ projectID: String?) async throws -> ConflictEnvironment
+    public var prepare: @Sendable (
+        _ root: URL, _ source: String, _ target: String, _ projectID: String?
+    ) async throws -> ConflictEnvironment
     public var finalize: @Sendable (_ root: URL, _ handle: MergeEnvHandle) async throws -> MergeFinishOutcome
     public var abort: @Sendable (_ root: URL, _ handle: MergeEnvHandle) async throws -> Void
 

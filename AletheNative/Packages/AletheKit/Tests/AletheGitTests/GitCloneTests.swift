@@ -75,7 +75,8 @@ struct GitCloneTests {
 
     @Test func parsesProgressLines() {
         #expect(GitCloneProgress.parse("Receiving objects:  45% (450/1000)") == GitCloneProgress(phase: "Receiving objects", percent: 45))
-        #expect(GitCloneProgress.parse("remote: Counting objects: 100% (3/3), done.") == GitCloneProgress(phase: "Counting objects", percent: 100))
+        #expect(GitCloneProgress.parse("remote: Counting objects: 100% (3/3), done.")
+                == GitCloneProgress(phase: "Counting objects", percent: 100))
         #expect(GitCloneProgress.parse("Cloning into '/tmp/x'...") == nil)
     }
 

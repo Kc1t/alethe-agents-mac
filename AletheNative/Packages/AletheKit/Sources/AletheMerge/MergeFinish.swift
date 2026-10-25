@@ -114,18 +114,16 @@ public struct MergeFinisher: Sendable {
                                       output: "Unresolved files: \(still.joined(separator: ", "))")
         }
         let report = await validator.run(settings.effectiveCommands, in: dir)
-        switch report.status {
-        case .failed, .cancelled:
+        if report.status == .failed || report.status == .cancelled {
             let step = report.steps.last
             return MergeFinishOutcome(merged: false, stage: .validation,
                                       output: step.map { "\($0.command)\n\($0.output)" } ?? "Validation cancelled",
                                       validation: report)
-        case .passed, .unverified:
-            let text = report.status == .passed
-                ? "Validation passed — ready to integrate."
-                : "No validation command configured — nothing was checked (not a blocker)."
-            return MergeFinishOutcome(merged: false, stage: .validated, output: text, validation: report)
         }
+        let text = report.status == .passed
+            ? "Validation passed — ready to integrate."
+            : "No validation command configured — nothing was checked (not a blocker)."
+        return MergeFinishOutcome(merged: false, stage: .validated, output: text, validation: report)
     }
 
     public func finalize(_ env: MergeEnvHandle, settings: ValidationSettings = ValidationSettings(),

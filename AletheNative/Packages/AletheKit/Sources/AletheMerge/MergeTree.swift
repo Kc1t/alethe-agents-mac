@@ -31,19 +31,17 @@ public enum MergeTree {
     public static func groups(_ conflicts: [ConflictFile], by grouping: MergeTreeGrouping) -> [MergeTreeGroup] {
         var seen: Set<String> = []
         let unique = conflicts.filter { seen.insert($0.path).inserted }
-        switch grouping {
-        case .folder:
+        if grouping == .folder {
             let byFolder = Dictionary(grouping: unique) { folder(of: $0.path) }
             return byFolder.keys.sorted().map { key in
                 MergeTreeGroup(id: key, title: key.isEmpty ? "." : key,
-                               files: byFolder[key]!.sorted { $0.path < $1.path })
+                               files: byFolder[key, default: []].sorted { $0.path < $1.path })
             }
-        case .class:
-            let byClass = Dictionary(grouping: unique, by: \.class)
-            return byClass.keys.sorted { $0.variantName < $1.variantName }.map { key in
-                MergeTreeGroup(id: key.rawValue, title: key.variantName,
-                               files: byClass[key]!.sorted { $0.path < $1.path })
-            }
+        }
+        let byClass = Dictionary(grouping: unique, by: \.class)
+        return byClass.keys.sorted { $0.variantName < $1.variantName }.map { key in
+            MergeTreeGroup(id: key.rawValue, title: key.variantName,
+                           files: byClass[key, default: []].sorted { $0.path < $1.path })
         }
     }
 }

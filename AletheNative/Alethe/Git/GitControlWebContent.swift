@@ -50,10 +50,12 @@ extension GitControlSheet {
         VStack(spacing: 0) {
             if let model {
                 if let error = model.error { errorBanner(error, model) }
-                switch model.phase {
-                case .loading: ProgressView().padding(metrics.size(24))
-                case .notARepository: notARepository(model).frame(minHeight: metrics.size(180))
-                case .ready: webRepository(model)
+                if model.phase == .loading {
+                    ProgressView().padding(metrics.size(24))
+                } else if model.phase == .notARepository {
+                    notARepository(model).frame(minHeight: metrics.size(180))
+                } else {
+                    webRepository(model)
                 }
             } else { Text("git.noProject").foregroundStyle(theme[.fgMuted]) }
         }
@@ -63,114 +65,13 @@ extension GitControlSheet {
 
     func webRepository(_ model: GitControlModel) -> some View {
         VStack(spacing: 0) {
-            HStack(spacing: metrics.size(8)) {
-                VStack(alignment: .leading, spacing: metrics.size(2)) {
-                    Text(verbatim: project?.name ?? model.folder.lastPathComponent)
-                        .font(metrics.font(size: 11, weight: 650))
-                    Text(verbatim: model.root?.path ?? model.folder.path)
-                        .font(metrics.font(size: 9)).foregroundStyle(theme[.fgFaint])
-                }.lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
-                Button { NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: model.root?.path ?? model.folder.path) } label: {
-                    Image(systemName: "folder.badge.magnifyingglass").font(metrics.font(size: 13))
-                }
-                .buttonStyle(AletheIconButtonStyle(side: 24)).accessibilityLabel(Text("gitModals.revealFolder"))
-                Button { Task { await model.refresh() } } label: {
-                    Image(systemName: "arrow.clockwise").font(metrics.font(size: 13))
-                }
-                .buttonStyle(AletheIconButtonStyle(side: 24)).disabled(model.busy)
-                .accessibilityLabel(Text("git.refresh")).accessibilityIdentifier("git.refresh")
-            }
-            .padding(.leading, metrics.size(12)).padding(.trailing, metrics.size(10))
-            .padding(.vertical, metrics.size(7)).frame(minHeight: metrics.size(48))
+            webRepositoryHeader(model)
             webDivider
-            HStack(spacing: metrics.size(6)) {
-                Image(systemName: "arrow.triangle.branch").font(metrics.font(size: 13))
-                WebMenu {
-                    ForEach(model.branches) { item in
-                        Button { model.switchBranch(item.name) } label: { Text(verbatim: item.name) }.disabled(item.isCurrent)
-                    }
-                    Button("git.newBranch.menu") { creatingBranch = true }.accessibilityIdentifier("git.newBranch")
-                    Divider()
-                    Button("git.fetch") { model.remote(.fetch) }.accessibilityIdentifier("git.fetch")
-                    Button("git.pull") { model.remote(.pull) }.accessibilityIdentifier("git.pull")
-                    Button("git.push") { model.remote(.push) }.accessibilityIdentifier("git.push")
-                } label: {
-                    Text(verbatim: model.status?.branch.head ?? String(localized: "git.detached"))
-                }
-                .menuStyle(.borderlessButton).fixedSize().accessibilityIdentifier("git.branch")
-                .disabled(model.busy || model.status?.branch.oid == nil)
-                Spacer(minLength: 0)
-                if model.status?.branch.upstream != nil || model.status?.branch.head != nil {
-                    webSyncButton(model)
-                }
-            }
-            .font(metrics.monoFont(size: 10, weight: .regular)).foregroundStyle(theme[.fgMuted])
-            .padding(.leading, metrics.size(12)).padding(.trailing, metrics.size(8)).frame(minHeight: metrics.size(30))
+            webBranchSelector(model)
             webDivider
-            VStack(spacing: metrics.size(6)) {
-                TextEditor(text: Bindable(model).message)
-                    .font(metrics.font(size: 11)).scrollContentBackground(.hidden)
-                    .frame(height: metrics.size(48)).modifier(GitWebEditor())
-                    .overlay(alignment: .topLeading) {
-                        if model.message.isEmpty {
-                            Text("git.web.commit.placeholder").font(metrics.font(size: 11))
-                                .foregroundStyle(theme[.fgFaint]).allowsHitTesting(false)
-                                .padding(.horizontal, metrics.size(14)).padding(.vertical, metrics.size(7))
-                        }
-                    }
-                    .accessibilityLabel(Text("git.commitMessage")).accessibilityIdentifier("git.message")
-                HStack(spacing: metrics.size(6)) {
-                    Button { requestCommit(model) } label: {
-                        HStack(spacing: metrics.size(6)) {
-                            Image(systemName: "checkmark").font(metrics.font(size: 14))
-                            Text(model.busy ? "git.web.commit.busy" : "git.commit")
-                                .font(metrics.font(size: 11, weight: .semibold))
-                        }
-                        .foregroundStyle(theme[.accentOn])
-                        .frame(maxWidth: .infinity, minHeight: metrics.size(30))
-                        .background(theme[.accent], in: RoundedRectangle(cornerRadius: metrics.size(4)))
-                        .opacity(model.canCommitWeb ? 1 : 0.42)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .keyboardShortcut(.return, modifiers: .command).disabled(!model.canCommitWeb)
-                    .accessibilityIdentifier("git.commit")
-                    webSyncWide(model)
-                }
-                Toggle("git.amend", isOn: Bindable(model).amend)
-                    .toggleStyle(.checkbox).font(metrics.font(size: 11)).foregroundStyle(theme[.fgMuted])
-                    .frame(maxWidth: .infinity, alignment: .leading).accessibilityIdentifier("git.amend")
-            }.padding(.horizontal, metrics.size(10)).padding(.vertical, metrics.size(9))
+            webCommitEditor(model)
             webDivider
-            HStack(spacing: metrics.size(6)) {
-                Button("git.tab.changes") { tab = .changes }
-                Button("git.tab.history") { tab = .history; if history == nil { history = makeHistory(model) } }
-            }
-            .buttonStyle(AletheButtonStyle(size: .small)).padding(.vertical, metrics.size(8))
-            .accessibilityIdentifier("git.tab")
-            if tab == .history, let history {
-                GitGraphView(history: history).frame(height: metrics.size(380))
-            } else {
-                let groups = GitChangeGroups(model.status)
-                let changes = groups.unstaged.filter { !$0.isUntracked }
-                let untracked = groups.unstaged.filter(\.isUntracked)
-                VStack(spacing: 0) {
-                    webGroup(.staged, "git.web.group.staged", groups.staged, model)
-                    webGroup(.conflicts, "git.web.group.conflicts", groups.conflicts, model)
-                    webGroup(.changes, "git.web.group.changes", changes, model)
-                    webGroup(.untracked, "git.web.group.untracked", untracked, model)
-                    if model.status?.isClean == true {
-                        VStack(spacing: metrics.size(6)) {
-                            Image(systemName: "checkmark").font(metrics.font(size: 18)).foregroundStyle(theme[.statusWorking])
-                            Text("git.web.clean.title").font(metrics.font(size: 12, weight: .semibold)).foregroundStyle(theme[.fg])
-                            Text("git.web.clean.description").font(metrics.font(size: 10)).foregroundStyle(theme[.fgMuted])
-                                .lineSpacing(metrics.size(3)).multilineTextAlignment(.center).frame(maxWidth: metrics.size(240))
-                        }
-                        .padding(.horizontal, metrics.size(16)).padding(.vertical, metrics.size(24))
-                        .frame(maxWidth: .infinity, minHeight: metrics.size(150)).accessibilityIdentifier("git.clean")
-                    }
-                }.padding(.bottom, metrics.size(8)).accessibilityIdentifier("git.changesList")
-            }
+            webRepositoryChanges(model)
             if let io = model.incomingOutgoing {
                 webCommits("git.incoming", commits: io.incoming, identifier: "git.incoming")
                 webCommits("git.outgoing", commits: io.outgoing, identifier: "git.outgoing")
@@ -179,6 +80,127 @@ extension GitControlSheet {
                 Text(verbatim: progress).font(metrics.font(size: 10)).foregroundStyle(theme[.fgMuted])
                     .lineLimit(1).accessibilityIdentifier("git.progress")
             }
+        }
+    }
+
+    @ViewBuilder
+    private func webRepositoryHeader(_ model: GitControlModel) -> some View {
+        HStack(spacing: metrics.size(8)) {
+            VStack(alignment: .leading, spacing: metrics.size(2)) {
+                Text(verbatim: project?.name ?? model.folder.lastPathComponent)
+                    .font(metrics.font(size: 11, weight: 650))
+                Text(verbatim: model.root?.path ?? model.folder.path)
+                    .font(metrics.font(size: 9)).foregroundStyle(theme[.fgFaint])
+            }.lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+            Button { NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: model.root?.path ?? model.folder.path) } label: {
+                Image(systemName: "folder.badge.magnifyingglass").font(metrics.font(size: 13))
+            }
+            .buttonStyle(AletheIconButtonStyle(side: 24)).accessibilityLabel(Text("gitModals.revealFolder"))
+            Button { Task { await model.refresh() } } label: {
+                Image(systemName: "arrow.clockwise").font(metrics.font(size: 13))
+            }
+            .buttonStyle(AletheIconButtonStyle(side: 24)).disabled(model.busy)
+            .accessibilityLabel(Text("git.refresh")).accessibilityIdentifier("git.refresh")
+        }
+        .padding(.leading, metrics.size(12)).padding(.trailing, metrics.size(10))
+        .padding(.vertical, metrics.size(7)).frame(minHeight: metrics.size(48))
+    }
+
+    @ViewBuilder
+    private func webBranchSelector(_ model: GitControlModel) -> some View {
+        HStack(spacing: metrics.size(6)) {
+            Image(systemName: "arrow.triangle.branch").font(metrics.font(size: 13))
+            WebMenu {
+                ForEach(model.branches) { item in
+                    Button { model.switchBranch(item.name) } label: { Text(verbatim: item.name) }.disabled(item.isCurrent)
+                }
+                Button("git.newBranch.menu") { creatingBranch = true }.accessibilityIdentifier("git.newBranch")
+                Divider()
+                Button("git.fetch") { model.remote(.fetch) }.accessibilityIdentifier("git.fetch")
+                Button("git.pull") { model.remote(.pull) }.accessibilityIdentifier("git.pull")
+                Button("git.push") { model.remote(.push) }.accessibilityIdentifier("git.push")
+            } label: {
+                Text(verbatim: model.status?.branch.head ?? String(localized: "git.detached"))
+            }
+            .menuStyle(.borderlessButton).fixedSize().accessibilityIdentifier("git.branch")
+            .disabled(model.busy || model.status?.branch.oid == nil)
+            Spacer(minLength: 0)
+            if model.status?.branch.upstream != nil || model.status?.branch.head != nil {
+                webSyncButton(model)
+            }
+        }
+        .font(metrics.monoFont(size: 10, weight: .regular)).foregroundStyle(theme[.fgMuted])
+        .padding(.leading, metrics.size(12)).padding(.trailing, metrics.size(8)).frame(minHeight: metrics.size(30))
+    }
+
+    @ViewBuilder
+    private func webCommitEditor(_ model: GitControlModel) -> some View {
+        VStack(spacing: metrics.size(6)) {
+            TextEditor(text: Bindable(model).message)
+                .font(metrics.font(size: 11)).scrollContentBackground(.hidden)
+                .frame(height: metrics.size(48)).modifier(GitWebEditor())
+                .overlay(alignment: .topLeading) {
+                    if model.message.isEmpty {
+                        Text("git.web.commit.placeholder").font(metrics.font(size: 11))
+                            .foregroundStyle(theme[.fgFaint]).allowsHitTesting(false)
+                            .padding(.horizontal, metrics.size(14)).padding(.vertical, metrics.size(7))
+                    }
+                }
+                .accessibilityLabel(Text("git.commitMessage")).accessibilityIdentifier("git.message")
+            HStack(spacing: metrics.size(6)) {
+                Button { requestCommit(model) } label: {
+                    HStack(spacing: metrics.size(6)) {
+                        Image(systemName: "checkmark").font(metrics.font(size: 14))
+                        Text(model.busy ? "git.web.commit.busy" : "git.commit")
+                            .font(metrics.font(size: 11, weight: .semibold))
+                    }
+                    .foregroundStyle(theme[.accentOn])
+                    .frame(maxWidth: .infinity, minHeight: metrics.size(30))
+                    .background(theme[.accent], in: RoundedRectangle(cornerRadius: metrics.size(4)))
+                    .opacity(model.canCommitWeb ? 1 : 0.42)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .keyboardShortcut(.return, modifiers: .command).disabled(!model.canCommitWeb)
+                .accessibilityIdentifier("git.commit")
+                webSyncWide(model)
+            }
+            Toggle("git.amend", isOn: Bindable(model).amend)
+                .toggleStyle(.checkbox).font(metrics.font(size: 11)).foregroundStyle(theme[.fgMuted])
+                .frame(maxWidth: .infinity, alignment: .leading).accessibilityIdentifier("git.amend")
+        }.padding(.horizontal, metrics.size(10)).padding(.vertical, metrics.size(9))
+    }
+
+    @ViewBuilder
+    private func webRepositoryChanges(_ model: GitControlModel) -> some View {
+        HStack(spacing: metrics.size(6)) {
+            Button("git.tab.changes") { tab = .changes }
+            Button("git.tab.history") { tab = .history; if history == nil { history = makeHistory(model) } }
+        }
+        .buttonStyle(AletheButtonStyle(size: .small)).padding(.vertical, metrics.size(8))
+        .accessibilityIdentifier("git.tab")
+        if tab == .history, let history {
+            GitGraphView(history: history).frame(height: metrics.size(380))
+        } else {
+            let groups = GitChangeGroups(model.status)
+            let changes = groups.unstaged.filter { !$0.isUntracked }
+            let untracked = groups.unstaged.filter(\.isUntracked)
+            VStack(spacing: 0) {
+                webGroup(.staged, "git.web.group.staged", groups.staged, model)
+                webGroup(.conflicts, "git.web.group.conflicts", groups.conflicts, model)
+                webGroup(.changes, "git.web.group.changes", changes, model)
+                webGroup(.untracked, "git.web.group.untracked", untracked, model)
+                if model.status?.isClean == true {
+                    VStack(spacing: metrics.size(6)) {
+                        Image(systemName: "checkmark").font(metrics.font(size: 18)).foregroundStyle(theme[.statusWorking])
+                        Text("git.web.clean.title").font(metrics.font(size: 12, weight: .semibold)).foregroundStyle(theme[.fg])
+                        Text("git.web.clean.description").font(metrics.font(size: 10)).foregroundStyle(theme[.fgMuted])
+                            .lineSpacing(metrics.size(3)).multilineTextAlignment(.center).frame(maxWidth: metrics.size(240))
+                    }
+                    .padding(.horizontal, metrics.size(16)).padding(.vertical, metrics.size(24))
+                    .frame(maxWidth: .infinity, minHeight: metrics.size(150)).accessibilityIdentifier("git.clean")
+                }
+            }.padding(.bottom, metrics.size(8)).accessibilityIdentifier("git.changesList")
         }
     }
 

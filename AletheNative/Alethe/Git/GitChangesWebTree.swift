@@ -8,17 +8,16 @@ indirect enum GitWebTreeNode: Identifiable {
     case file(name: String, entry: GitStatusEntry)
 
     var id: String {
-        switch self {
-        case .dir(_, let path, _): "d:\(path)"
-        case .file(_, let entry): "f:\(entry.path)"
-        }
+        if case .dir(_, let path, _) = self { return "d:\(path)" }
+        if case .file(_, let entry) = self { return "f:\(entry.path)" }
+        preconditionFailure("Unknown tree node")
     }
 
     private var isDir: Bool { if case .dir = self { true } else { false } }
     private var name: String {
-        switch self {
-        case .dir(let name, _, _), .file(let name, _): name
-        }
+        if case .dir(let name, _, _) = self { return name }
+        if case .file(let name, _) = self { return name }
+        preconditionFailure("Unknown tree node")
     }
 
     static func build(_ entries: [GitStatusEntry]) -> [GitWebTreeNode] {
@@ -69,10 +68,9 @@ indirect enum GitWebTreeNode: Identifiable {
     }
 
     var paths: [String] {
-        switch self {
-        case .file(_, let entry): [entry.path]
-        case .dir(_, _, let children): children.flatMap(\.paths)
-        }
+        if case .file(_, let entry) = self { return [entry.path] }
+        if case .dir(_, _, let children) = self { return children.flatMap(\.paths) }
+        preconditionFailure("Unknown tree node")
     }
 }
 
@@ -159,9 +157,10 @@ private struct GitWebTreeRow: View {
     @Environment(\.theme) private var theme
 
     var body: some View {
-        switch node {
-        case .file(let name, let entry): file(name, entry)
-        case .dir(let name, _, let children): dir(name, children)
+        if case .file(let name, let entry) = node {
+            file(name, entry)
+        } else if case .dir(let name, _, let children) = node {
+            dir(name, children)
         }
     }
 
@@ -250,15 +249,25 @@ private struct GitWebTreeRow: View {
         if kind == .untracked { return ("U", .statusWorking) }
         if kind == .conflicts { return ("!", .statusOffline) }
         let code = (staged ? entry.index : entry.worktree) ?? entry.worktree ?? entry.index
-        switch code {
-        case .added: return ("A", .statusWorking)
-        case .deleted: return ("D", .statusOffline)
-        case .renamed: return ("R", .agentCodex)
-        case .copied: return ("C", .agentCodex)
-        case .modified: return ("M", .statusWaiting)
-        case .some(let other): return (other.rawValue, .fgMuted)
-        case nil: return ("•", .fgMuted)
+        if code == .added {
+            return ("A", .statusWorking)
         }
+        if code == .deleted {
+            return ("D", .statusOffline)
+        }
+        if code == .renamed {
+            return ("R", .agentCodex)
+        }
+        if code == .copied {
+            return ("C", .agentCodex)
+        }
+        if code == .modified {
+            return ("M", .statusWaiting)
+        }
+        if let other = code {
+            return (other.rawValue, .fgMuted)
+        }
+        return ("•", .fgMuted)
     }
 }
 

@@ -40,20 +40,26 @@ public enum RebaseOutcome: Sendable, Hashable {
     case failed(String)
 
     public var stage: String {
-        switch self {
-        case .reconciled: "rebase_ok"
-        case .conflicted: "rebase_conflict"
-        case .failed: "rebase_failed"
+        if case .reconciled = self {
+            return "rebase_ok"
         }
+        if case .conflicted = self {
+            return "rebase_conflict"
+        }
+        return "rebase_failed"
     }
 
     public var output: String {
-        switch self {
-        case .reconciled: "Reconciled with the updated target — ready to reintegrate."
-        case .conflicted(let conflicts):
-            "Conflicts while reconciling with the updated target: \(conflicts.map(\.path).joined(separator: ", "))"
-        case .failed(let message): message.isEmpty ? "rebase_failed" : message
+        if case .reconciled = self {
+            return "Reconciled with the updated target — ready to reintegrate."
         }
+        if case .conflicted(let conflicts) = self {
+            return "Conflicts while reconciling with the updated target: \(conflicts.map(\.path).joined(separator: ", "))"
+        }
+        if case .failed(let message) = self {
+            return message.isEmpty ? "rebase_failed" : message
+        }
+        preconditionFailure("Unknown rebase outcome")
     }
 }
 

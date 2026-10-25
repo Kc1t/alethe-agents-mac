@@ -24,7 +24,9 @@ struct ValidationStepsView: View {
                         HStack(spacing: metrics.space(.s)) {
                             Image(systemName: step.succeeded ? "checkmark.circle.fill" : "xmark.octagon.fill")
                                 .foregroundStyle(theme[step.succeeded ? .statusActive : .statusStopped])
-                            Text(verbatim: step.command).font(metrics.isWebInterface ? metrics.monoFont(size: 12, weight: .regular) : .body.monospaced()).lineLimit(1)
+                            Text(verbatim: step.command)
+                                .font(metrics.isWebInterface ? metrics.monoFont(size: 12, weight: .regular) : .body.monospaced())
+                                .lineLimit(1)
                             Spacer()
                             Text(verbatim: String(format: String(localized: "mergeResult.step.exit"),
                                                   Int(step.exitCode), step.durationMs))

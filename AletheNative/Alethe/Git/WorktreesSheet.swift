@@ -76,72 +76,7 @@ struct WorktreesSheet: View {
 
     private func content(_ model: WorktreesModel) -> some View {
         let selected = model.rows.first { $0.id == selection }
-        return VStack(alignment: .leading, spacing: 0) {
-            if let error = model.error {
-                Label { Text(verbatim: error).textSelection(.enabled) } icon: {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                }
-                .font(metrics.font(.footnote))
-                .foregroundStyle(theme[.statusStopped])
-                .padding(metrics.space(.m))
-                .accessibilityIdentifier("worktrees.error")
-            }
-            if let note = model.note {
-                Text(verbatim: note)
-                    .font(metrics.font(.footnote))
-                    .foregroundStyle(theme[.textSecondary])
-                    .padding(.horizontal, metrics.space(.m))
-                    .padding(.vertical, metrics.space(.xs))
-                    .accessibilityIdentifier("worktrees.note")
-            }
-            if model.loading && model.rows.isEmpty {
-                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if model.rows.isEmpty {
-                Text("worktrees.empty")
-                    .foregroundStyle(theme[.textSecondary])
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .accessibilityIdentifier("worktrees.empty")
-            } else {
-                if metrics.isWebInterface {
-                    ScrollView {
-                        VStack(spacing: metrics.size(8)) {
-                            ForEach(model.rows) { row in
-                                Button { selection = row.id } label: {
-                                    GitWorktreeWebRow(row: row, selected: selection == row.id)
-                                }
-                                .buttonStyle(.plain)
-                                .contextMenu { rowActions(row, model) }
-                            }
-                        }
-                    }
-                    .accessibilityIdentifier("worktrees.list")
-                } else {
-                List(model.rows, selection: $selection) { row in
-                    rowView(row)
-                        .tag(row.id)
-                        .contextMenu { rowActions(row, model) }
-                }
-                .accessibilityIdentifier("worktrees.list")
-                }
-            }
-            Divider()
-            HStack {
-                if model.running {
-                    ProgressView().controlSize(.small)
-                }
-                Button("worktrees.cleanup") { confirmCleanup = true }
-                    .disabled(model.running || model.root == nil)
-                    .accessibilityIdentifier("worktrees.cleanup")
-                Button("worktrees.refresh") { Task { await model.refresh() } }
-                    .disabled(model.running)
-                    .accessibilityIdentifier("worktrees.refresh")
-                Spacer()
-                if let selected {
-                    rowButtons(selected, model)
-                }
-            }
-            .padding(metrics.space(.l))
-        }
+        return contentBody(model, selected: selected)
         .webPrompt(isPresented: $askLock, message: String(localized: "worktrees.lock.title"),
                    confirmTitle: String(localized: "worktrees.lock")) { reason in
             if let selected { model.lock(selected, reason: reason) }
@@ -168,22 +103,100 @@ struct WorktreesSheet: View {
                 }
             }
         }
-        .webConfirm(isPresented: $confirmRemove, message: String(localized: "worktree.remove.title") + "\n\n" + String(localized: "worktree.remove.detail"),
+        .webConfirm(isPresented: $confirmRemove,
+                    message: String(localized: "worktree.remove.title") + "\n\n" + String(localized: "worktree.remove.detail"),
                     confirmTitle: String(localized: "worktree.remove"), destructive: true) {
             if let selected { model.remove(selected) { detachTabs(from: $0) } }
         }
-        .webConfirm(isPresented: $confirmCleanup, message: String(localized: "worktrees.cleanup.confirm") + "\n\n" + String(localized: "worktrees.cleanup.detail"),
+        .webConfirm(isPresented: $confirmCleanup,
+                    message: String(localized: "worktrees.cleanup.confirm") + "\n\n" + String(localized: "worktrees.cleanup.detail"),
                     confirmTitle: String(localized: "worktrees.cleanup"), destructive: true) {
             model.cleanup()
         }
-        .confirmationDialog("worktree.remove.title", isPresented: Binding(get: { !metrics.isWebInterface && confirmRemove }, set: { confirmRemove = $0 })) {
+        .confirmationDialog("worktree.remove.title", isPresented: Binding(
+            get: { !metrics.isWebInterface && confirmRemove }, set: { confirmRemove = $0 })) {
             Button("worktree.remove", role: .destructive) {
                 if let selected { model.remove(selected) { detachTabs(from: $0) } }
             }
         } message: { Text("worktree.remove.detail") }
-        .confirmationDialog("worktrees.cleanup.confirm", isPresented: Binding(get: { !metrics.isWebInterface && confirmCleanup }, set: { confirmCleanup = $0 })) {
+        .confirmationDialog("worktrees.cleanup.confirm", isPresented: Binding(
+            get: { !metrics.isWebInterface && confirmCleanup }, set: { confirmCleanup = $0 })) {
             Button("worktrees.cleanup", role: .destructive) { model.cleanup() }
         } message: { Text("worktrees.cleanup.detail") }
+    }
+
+    private func contentBody(_ model: WorktreesModel, selected: WorktreesModel.Row?) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let error = model.error {
+                Label { Text(verbatim: error).textSelection(.enabled) } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                }
+                .font(metrics.font(.footnote))
+                .foregroundStyle(theme[.statusStopped])
+                .padding(metrics.space(.m))
+                .accessibilityIdentifier("worktrees.error")
+            }
+            if let note = model.note {
+                Text(verbatim: note)
+                    .font(metrics.font(.footnote))
+                    .foregroundStyle(theme[.textSecondary])
+                    .padding(.horizontal, metrics.space(.m))
+                    .padding(.vertical, metrics.space(.xs))
+                    .accessibilityIdentifier("worktrees.note")
+            }
+            worktreeList(model)
+            Divider()
+            HStack {
+                if model.running {
+                    ProgressView().controlSize(.small)
+                }
+                Button("worktrees.cleanup") { confirmCleanup = true }
+                    .disabled(model.running || model.root == nil)
+                    .accessibilityIdentifier("worktrees.cleanup")
+                Button("worktrees.refresh") { Task { await model.refresh() } }
+                    .disabled(model.running)
+                    .accessibilityIdentifier("worktrees.refresh")
+                Spacer()
+                if let selected {
+                    rowButtons(selected, model)
+                }
+            }
+            .padding(metrics.space(.l))
+        }
+    }
+
+    @ViewBuilder
+    private func worktreeList(_ model: WorktreesModel) -> some View {
+        if model.loading && model.rows.isEmpty {
+            ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if model.rows.isEmpty {
+            Text("worktrees.empty")
+                .foregroundStyle(theme[.textSecondary])
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityIdentifier("worktrees.empty")
+        } else {
+            if metrics.isWebInterface {
+                ScrollView {
+                    VStack(spacing: metrics.size(8)) {
+                        ForEach(model.rows) { row in
+                            Button { selection = row.id } label: {
+                                GitWorktreeWebRow(row: row, selected: selection == row.id)
+                            }
+                            .buttonStyle(.plain)
+                            .contextMenu { rowActions(row, model) }
+                        }
+                    }
+                }
+                .accessibilityIdentifier("worktrees.list")
+            } else {
+            List(model.rows, selection: $selection) { row in
+                rowView(row)
+                    .tag(row.id)
+                    .contextMenu { rowActions(row, model) }
+            }
+            .accessibilityIdentifier("worktrees.list")
+            }
+        }
     }
 
     private func rowView(_ row: WorktreesModel.Row) -> some View {
@@ -383,15 +396,15 @@ final class WorktreesModel {
     }
 
     static func describe(_ error: Error) -> String {
-        switch error {
-        case GitWorktreeError.adminLocked(let reason):
-            String(format: String(localized: "worktrees.error.locked"), reason)
-        case GitWorktreeError.notFound:
-            String(localized: "worktrees.error.notFound")
-        case GitError.notARepository:
-            String(localized: "worktrees.error.notRepository")
-        default:
-            NewTerminalSheet.describe(error)
+        if case GitWorktreeError.adminLocked(let reason) = error {
+            return String(format: String(localized: "worktrees.error.locked"), reason)
         }
+        if case GitWorktreeError.notFound = error {
+            return String(localized: "worktrees.error.notFound")
+        }
+        if case GitError.notARepository = error {
+            return String(localized: "worktrees.error.notRepository")
+        }
+        return NewTerminalSheet.describe(error)
     }
 }

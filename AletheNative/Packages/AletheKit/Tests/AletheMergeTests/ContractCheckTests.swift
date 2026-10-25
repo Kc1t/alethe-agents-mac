@@ -89,7 +89,8 @@ struct ContractCheckTests {
             ApiCallSite(file: "a.ts", line: 1, method: "POST", pathPattern: "/api/login"),
             ApiCallSite(file: "a.ts", line: 3, method: nil, pathPattern: "/api/me"),
         ])
-        let routes = ContractCheck.routes(in: "@app.get('/api/health')\nlet r = Router::new().route(\"/api/items\", get(list));", file: "m.py")
+        let routes = ContractCheck.routes(
+            in: "@app.get('/api/health')\nlet r = Router::new().route(\"/api/items\", get(list));", file: "m.py")
         #expect(routes.map(\.framework) == ["express", "fastapi", "axum"])
         #expect(routes.map(\.pathPattern) == ["/api/health", "/api/health", "/api/items"])
         #expect(routes.map(\.line) == [1, 1, 2])

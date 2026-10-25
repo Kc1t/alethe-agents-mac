@@ -15,11 +15,13 @@ public enum GitCloneURL {
         if url.hasPrefix("/") { return true }
         if url.hasPrefix("git@") { return url.contains(":") && url.count > 5 }
         guard let components = URLComponents(string: url), let scheme = components.scheme?.lowercased() else { return false }
-        switch scheme {
-        case "http", "https", "ssh", "git": return !(components.host ?? "").isEmpty
-        case "file": return !components.path.isEmpty
-        default: return false
+        if ["http", "https", "ssh", "git"].contains(scheme) {
+            return !(components.host ?? "").isEmpty
         }
+        if scheme == "file" {
+            return !components.path.isEmpty
+        }
+        return false
     }
 
     public static func folderName(for url: String) -> String {

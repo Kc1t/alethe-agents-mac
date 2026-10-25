@@ -125,48 +125,54 @@ public enum GitParsers {
             let record = fields[i]
             i += 1
             guard let tag = record.first else { continue }
-            switch tag {
-            case "#":
-                let parts = record.split(separator: " ", maxSplits: 2)
-                guard parts.count == 3 else { continue }
-                let value = String(parts[2])
-                switch parts[1] {
-                case "branch.oid": branch.oid = value == "(initial)" ? nil : value
-                case "branch.head": branch.head = value == "(detached)" ? nil : value
-                case "branch.upstream": branch.upstream = value
-                case "branch.ab":
-                    for token in value.split(separator: " ") {
-                        if token.hasPrefix("+") { branch.ahead = Int(token.dropFirst()) ?? 0 }
-                        if token.hasPrefix("-") { branch.behind = Int(token.dropFirst()) ?? 0 }
-                    }
-                default: break
-                }
-            case "1", "2", "u":
-                let leading = tag == "1" ? 8 : tag == "2" ? 9 : 10
-                let parts = record.split(separator: " ", maxSplits: leading, omittingEmptySubsequences: false)
-                guard parts.count == leading + 1 else { continue }
-                let xy = Array(parts[1])
-                guard xy.count == 2 else { continue }
-                var entry = GitStatusEntry(
-                    kind: tag == "1" ? .ordinary : tag == "2" ? .renamed : .unmerged,
-                    path: String(parts[leading]),
-                    index: GitChange(code: xy[0]),
-                    worktree: GitChange(code: xy[1]),
-                    submodule: parseSubmodule(parts[2])
-                )
+            if tag == "#" {
+                parseBranchRecord(record, branch: &branch)
+            } else if tag == "1" || tag == "2" || tag == "u" {
+                guard var entry = parseTrackedEntry(record, tag: tag) else { continue }
                 if tag == "2", i < fields.count {
                     entry.originalPath = String(fields[i])
                     i += 1
                 }
                 entries.append(entry)
-            case "?", "!":
+            } else if tag == "?" || tag == "!" {
                 let path = String(record.dropFirst(2))
                 entries.append(GitStatusEntry(kind: tag == "?" ? .untracked : .ignored, path: path))
-            default:
-                continue
             }
         }
         return GitStatus(branch: branch, entries: entries)
+    }
+
+    private static func parseBranchRecord(_ record: Substring, branch: inout GitBranchStatus) {
+        let parts = record.split(separator: " ", maxSplits: 2)
+        guard parts.count == 3 else { return }
+        let value = String(parts[2])
+        if parts[1] == "branch.oid" {
+            branch.oid = value == "(initial)" ? nil : value
+        } else if parts[1] == "branch.head" {
+            branch.head = value == "(detached)" ? nil : value
+        } else if parts[1] == "branch.upstream" {
+            branch.upstream = value
+        } else if parts[1] == "branch.ab" {
+            for token in value.split(separator: " ") {
+                if token.hasPrefix("+") { branch.ahead = Int(token.dropFirst()) ?? 0 }
+                if token.hasPrefix("-") { branch.behind = Int(token.dropFirst()) ?? 0 }
+            }
+        }
+    }
+
+    private static func parseTrackedEntry(_ record: Substring, tag: Character) -> GitStatusEntry? {
+        let leading = tag == "1" ? 8 : tag == "2" ? 9 : 10
+        let parts = record.split(separator: " ", maxSplits: leading, omittingEmptySubsequences: false)
+        guard parts.count == leading + 1 else { return nil }
+        let xy = Array(parts[1])
+        guard xy.count == 2 else { return nil }
+        return GitStatusEntry(
+            kind: tag == "1" ? .ordinary : tag == "2" ? .renamed : .unmerged,
+            path: String(parts[leading]),
+            index: GitChange(code: xy[0]),
+            worktree: GitChange(code: xy[1]),
+            submodule: parseSubmodule(parts[2])
+        )
     }
 
     static func parseSubmodule(_ field: Substring) -> GitSubmoduleState? {
@@ -263,7 +269,8 @@ public enum GitParsers {
             let ref = String(fields[0])
             let upstream = fields[2].isEmpty ? nil : String(fields[2])
             if ref.hasPrefix("refs/heads/") {
-                return GitBranch(name: String(ref.dropFirst(11)), isRemote: false, isCurrent: fields[3] == "*", oid: String(fields[1]), upstream: upstream)
+                return GitBranch(name: String(ref.dropFirst(11)), isRemote: false, isCurrent: fields[3] == "*",
+                                 oid: String(fields[1]), upstream: upstream)
             }
             if ref.hasPrefix("refs/remotes/"), !ref.hasSuffix("/HEAD") {
                 return GitBranch(name: String(ref.dropFirst(13)), isRemote: true, isCurrent: false, oid: String(fields[1]), upstream: nil)
@@ -280,7 +287,9 @@ public enum GitParsers {
 
     public static func validateBranchName(_ name: String) throws {
         guard !name.isEmpty, !name.hasPrefix("-"),
-              !name.unicodeScalars.contains(where: { CharacterSet.whitespacesAndNewlines.contains($0) || CharacterSet.controlCharacters.contains($0) })
+              !name.unicodeScalars.contains(where: {
+                  CharacterSet.whitespacesAndNewlines.contains($0) || CharacterSet.controlCharacters.contains($0)
+              })
         else { throw GitError.invalidArgument("branch name") }
     }
 

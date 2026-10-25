@@ -81,7 +81,8 @@ struct MergeValidateFinishTests {
 
     @Test func validationLogKeepsResultsPerMergeAndRoundTrips() throws {
         var log = MergeValidationLog()
-        let report = ValidationReport(status: .passed, steps: [ValidationStepResult(command: "true", exitCode: 0, output: "", durationMs: 1)],
+        let report = ValidationReport(status: .passed,
+                                      steps: [ValidationStepResult(command: "true", exitCode: 0, output: "", durationMs: 1)],
                                       healthProbe: nil, finishedAt: Date(timeIntervalSince1970: 0))
         log.record(report, forMerge: "m1")
         let decoded = try JSONDecoder().decode(MergeValidationLog.self, from: JSONEncoder().encode(log))
@@ -91,7 +92,8 @@ struct MergeValidateFinishTests {
 
     @Test func suggestedCommandsFromManifests() throws {
         let dir = try Self.tempDir("alethe-suggest")
-        try #"{"scripts":{"build":"vite build","test":"vitest"}}"#.write(to: dir.appendingPathComponent("package.json"), atomically: true, encoding: .utf8)
+        try #"{"scripts":{"build":"vite build","test":"vitest"}}"#
+            .write(to: dir.appendingPathComponent("package.json"), atomically: true, encoding: .utf8)
         try "".write(to: dir.appendingPathComponent("Cargo.toml"), atomically: true, encoding: .utf8)
         #expect(ValidationSettings.suggested(for: dir).commands == ["npm run build", "npm test", "cargo build", "cargo test"])
     }
@@ -207,7 +209,8 @@ struct MergeValidateFinishTests {
     }
 
     @Test func healthProbeReportsNoResponseWhenCommandExits() async throws {
-        let result = try await HealthProbe().run(in: try Self.tempDir("alethe-probe"), startCommand: "echo booting; exit 0", path: "/", timeoutMs: 2000)
+        let result = try await HealthProbe().run(in: try Self.tempDir("alethe-probe"),
+                                                 startCommand: "echo booting; exit 0", path: "/", timeoutMs: 2000)
         #expect(result.started)
         #expect(!result.responded)
         #expect(result.outputTail.contains("booting"))

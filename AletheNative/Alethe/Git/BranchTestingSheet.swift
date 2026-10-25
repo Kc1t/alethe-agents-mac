@@ -158,27 +158,28 @@ struct BranchTestingSheet: View {
 
     @ViewBuilder
     func statusLabel(_ status: BranchTestResult.Status) -> some View {
-        switch status {
-        case .passed:
+        if status == .passed {
             Label("branchTest.status.passed", systemImage: "checkmark.circle.fill").foregroundStyle(theme[.statusActive])
-        case .failed:
+        } else if status == .failed {
             Label("branchTest.status.failed", systemImage: "xmark.octagon.fill").foregroundStyle(theme[.statusStopped])
-        case .cancelled:
+        } else if status == .cancelled {
             Label("branchTest.status.cancelled", systemImage: "stop.circle").foregroundStyle(theme[.textSecondary])
-        case .unverified:
+        } else {
             Label("branchTest.status.unverified", systemImage: "questionmark.circle").foregroundStyle(theme[.statusWaiting])
         }
     }
 
     func stepTitle(_ step: BranchTestStep?) -> LocalizedStringKey {
-        switch step {
-        case .checkingOut, nil: "branchTest.step.checkingOut"
-        case .validating: "branchTest.step.validating"
-        case .probing: "branchTest.step.probing"
-        case .checkingContract: "branchTest.step.checkingContract"
-        case .cleaningUp: "branchTest.step.cleaningUp"
-        }
+        step.flatMap { Self.stepTitles[$0] } ?? "branchTest.step.checkingOut"
     }
+
+    private static let stepTitles: [BranchTestStep: LocalizedStringKey] = [
+        .checkingOut: "branchTest.step.checkingOut",
+        .validating: "branchTest.step.validating",
+        .probing: "branchTest.step.probing",
+        .checkingContract: "branchTest.step.checkingContract",
+        .cleaningUp: "branchTest.step.cleaningUp",
+    ]
 }
 
 @MainActor @Observable
@@ -242,12 +243,12 @@ final class BranchTestingModel {
             }
             let outcome = await withTaskCancellationHandler { await work.value } onCancel: { work.cancel() }
             guard !Task.isCancelled else { return }
-            switch outcome {
-            case .success(let result):
+            if case .success(let result) = outcome {
                 log.record(result)
                 let log = log
                 try? await Task.detached { try log.save(root: root) }.value
-            case .failure(let failure):
+            }
+            if case .failure(let failure) = outcome {
                 error = NewTerminalSheet.describe(failure)
             }
             running = false

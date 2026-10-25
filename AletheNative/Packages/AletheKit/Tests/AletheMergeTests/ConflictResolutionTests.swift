@@ -159,7 +159,8 @@ struct ConflictResolutionTests {
 
             ## Conflicted files
             - `src/lib.rs` — Rust: Rust code: preserve both intentions; after resolving, the code must compile (cargo check).
-            - `package-lock.json` — Package: package.json/lockfile: merge the dependencies; on a lockfile conflict, prefer regenerating (npm install) over hand-editing.
+            - `package-lock.json` — Package: package.json/lockfile: merge the dependencies; on a lockfile conflict, \
+            prefer regenerating (npm install) over hand-editing.
 
             Use `git diff` in this directory to see the markers (`<<<<<<<`/`>>>>>>>`).
             """

@@ -25,7 +25,8 @@ import Testing
         #expect(status.entries[0].worktree == .modified && status.entries[0].index == nil)
         #expect(status.entries[1].path == "new file.txt" && status.entries[1].index == .added)
         #expect(status.entries[2].isStaged && status.entries[2].isUnstaged)
-        #expect(status.entries[3].kind == .renamed && status.entries[3].path == "renamed.txt" && status.entries[3].originalPath == "old.txt")
+        #expect(status.entries[3].kind == .renamed && status.entries[3].path == "renamed.txt"
+                && status.entries[3].originalPath == "old.txt")
         #expect(status.conflicts.map(\.path) == ["conflict.txt"])
         #expect(!status.entries[4].isStaged)
         #expect(status.entries[5].submodule == GitSubmoduleState(commitChanged: true, hasTrackedChanges: false, hasUntracked: true))
@@ -64,7 +65,8 @@ import Testing
     @Test func parsesLogRecordsWithRefs() {
         let us = "\u{1F}", rs = "\u{1E}"
         let fixture = [
-            ["c2", "c1 m1", "HEAD -> refs/heads/main, refs/remotes/origin/main, tag: refs/tags/v1.0", "Ada", "ada@x.io", "1700000000", "Merge a|b"].joined(separator: us),
+            ["c2", "c1 m1", "HEAD -> refs/heads/main, refs/remotes/origin/main, tag: refs/tags/v1.0",
+             "Ada", "ada@x.io", "1700000000", "Merge a|b"].joined(separator: us),
             "\n" + ["c1", "", "", "Bob", "bob@x.io", "1600000000", "First"].joined(separator: us),
         ].joined(separator: rs) + rs + "\n"
         let commits = GitParsers.parseLog(fixture)

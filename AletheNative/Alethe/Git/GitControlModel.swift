@@ -182,11 +182,13 @@ final class GitControlModel {
         }
         Task {
             do {
-                switch action {
-                case .fetch: _ = try await repository.fetch(onProgress: report)
-                case .pull: _ = try await repository.pull(onProgress: report)
-                case .push: _ = try await repository.push(onProgress: report)
-                case .sync:
+                if action == .fetch {
+                    _ = try await repository.fetch(onProgress: report)
+                } else if action == .pull {
+                    _ = try await repository.pull(onProgress: report)
+                } else if action == .push {
+                    _ = try await repository.push(onProgress: report)
+                } else {
                     if (self.status?.branch.behind ?? 0) > 0 { _ = try await repository.pull(onProgress: report) }
                     _ = try await repository.push(onProgress: report)
                 }
@@ -216,14 +218,22 @@ final class GitControlModel {
     }
 
     static func describe(_ error: Error) -> String {
-        switch error as? GitError {
-        case .notARepository: String(localized: "git.error.notARepository")
-        case .gitMissing: String(localized: "git.error.gitMissing")
-        case .commandFailed(_, let stderr): stderr.trimmingCharacters(in: .whitespacesAndNewlines)
-        case .cancelled: String(localized: "git.error.cancelled")
-        case .invalidArgument(let detail): format("git.error.invalid", detail)
-        case nil: error.localizedDescription
+        if case .notARepository = error as? GitError {
+            return String(localized: "git.error.notARepository")
         }
+        if case .gitMissing = error as? GitError {
+            return String(localized: "git.error.gitMissing")
+        }
+        if case .commandFailed(_, let stderr) = error as? GitError {
+            return stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if case .cancelled = error as? GitError {
+            return String(localized: "git.error.cancelled")
+        }
+        if case .invalidArgument(let detail) = error as? GitError {
+            return format("git.error.invalid", detail)
+        }
+        return error.localizedDescription
     }
 
     func folderRelativePath(_ repositoryPath: String) -> String {

@@ -37,7 +37,7 @@ public enum MergeCenterStage: String, Sendable, Hashable, Codable, CaseIterable 
 
     public var next: MergeCenterStage? {
         let all = Self.allCases
-        let index = all.firstIndex(of: self)!
+        guard let index = all.firstIndex(of: self) else { return nil }
         return index + 1 < all.count ? all[index + 1] : nil
     }
 

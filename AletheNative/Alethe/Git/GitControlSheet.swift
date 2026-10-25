@@ -76,12 +76,11 @@ struct GitControlSheet: View {
             if let error = model.error {
                 errorBanner(error, model)
             }
-            switch model.phase {
-            case .loading:
+            if model.phase == .loading {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .notARepository:
+            } else if model.phase == .notARepository {
                 notARepository(model)
-            case .ready:
+            } else {
                 repositoryView(model)
             }
         }
@@ -129,12 +128,11 @@ struct GitControlSheet: View {
             .padding(.bottom, metrics.space(.m))
             .accessibilityIdentifier("git.tab")
             Divider()
-            switch tab {
-            case .changes:
+            if tab == .changes {
                 changes(model)
                 Divider()
                 commitBox(model)
-            case .history:
+            } else {
                 if let history {
                     GitGraphView(history: history)
                 } else {
@@ -370,12 +368,16 @@ struct GitControlSheet: View {
         if entry.isConflict { return "!" }
         if entry.isUntracked { return "U" }
         let change = staged ? entry.index : entry.worktree
-        return switch change {
-        case .added?: "A"
-        case .deleted?: "D"
-        case .renamed?: "R"
-        default: "M"
+        if change == .added {
+            return "A"
         }
+        if change == .deleted {
+            return "D"
+        }
+        if change == .renamed {
+            return "R"
+        }
+        return "M"
     }
 
     func badgeColor(_ entry: GitStatusEntry, staged: Bool) -> Color {
@@ -496,11 +498,13 @@ struct NewBranchSheet: View {
     }
 
     var issueMessage: LocalizedStringKey? {
-        switch issue {
-        case .invalid: "git.newBranch.invalid"
-        case .exists: "git.newBranch.exists"
-        case .empty, nil: nil
+        if issue == .invalid {
+            return "git.newBranch.invalid"
         }
+        if issue == .exists {
+            return "git.newBranch.exists"
+        }
+        return nil
     }
 
     func create() {

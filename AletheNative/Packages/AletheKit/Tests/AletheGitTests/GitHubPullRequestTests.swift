@@ -85,7 +85,9 @@ private let searchFixture = """
     @Test func rollsUpChecks() {
         #expect(GitHubPullRequestParser.checksState(nil) == .none)
         #expect(GitHubPullRequestParser.checksState([[String: Any]]()) == .none)
-        #expect(GitHubPullRequestParser.checksState([["conclusion": "SUCCESS"], ["state": "SUCCESS"], ["conclusion": "SKIPPED"]]) == .success)
+        #expect(GitHubPullRequestParser.checksState([
+            ["conclusion": "SUCCESS"], ["state": "SUCCESS"], ["conclusion": "SKIPPED"],
+        ]) == .success)
         #expect(GitHubPullRequestParser.checksState([["conclusion": "SUCCESS"], ["status": "QUEUED", "conclusion": ""]]) == .pending)
         #expect(GitHubPullRequestParser.checksState([["state": "PENDING"], ["conclusion": "TIMED_OUT"]]) == .failure)
     }

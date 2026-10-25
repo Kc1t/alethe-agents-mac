@@ -81,7 +81,9 @@ struct TempRepo {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("alethe-nogit-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
-        let runner = GitRunner(environment: ["GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CEILING_DIRECTORIES": dir.deletingLastPathComponent().path])
+        let runner = GitRunner(environment: [
+            "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CEILING_DIRECTORIES": dir.deletingLastPathComponent().path,
+        ])
         await #expect(throws: GitError.notARepository) {
             _ = try await GitRepository.discover(dir, runner: runner)
         }

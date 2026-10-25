@@ -118,19 +118,20 @@ public struct GitWorktrees: Sendable {
                 continue
             }
             guard current != nil else { continue }
-            switch key {
-            case "HEAD": current?.head = value
-            case "branch":
+            if key == "HEAD" {
+                current?.head = value
+            } else if key == "branch" {
                 current?.branch = value.map { $0.hasPrefix("refs/heads/") ? String($0.dropFirst("refs/heads/".count)) : $0 }
-            case "bare": current?.isBare = true
-            case "detached": current?.isDetached = true
-            case "locked":
+            } else if key == "bare" {
+                current?.isBare = true
+            } else if key == "detached" {
+                current?.isDetached = true
+            } else if key == "locked" {
                 current?.isLocked = true
                 current?.lockReason = value
-            case "prunable":
+            } else if key == "prunable" {
                 current?.isPrunable = true
                 current?.prunableReason = value
-            default: break
             }
         }
         if let entry = current { entries.append(entry) }
@@ -171,10 +172,9 @@ public struct GitWorktrees: Sendable {
         try FileManager.default.createDirectory(at: Self.worktreesBase(root), withIntermediateDirectories: true)
         guard !FileManager.default.fileExists(atPath: dest.path) else { throw GitWorktreeError.exists }
         let branch = Self.branchName(for: id)
-        switch mode {
-        case .gitWorktree:
+        if mode == .gitWorktree {
             _ = try await runner.run(["worktree", "add", "-b", branch, dest.path, "HEAD"], in: root)
-        case .localCopy:
+        } else {
             _ = try await runner.run(["clone", "--local", "--", root.path, dest.path], in: root)
             _ = try await runner.run(["checkout", "-b", branch], in: dest)
         }
@@ -235,13 +235,13 @@ public struct GitWorktrees: Sendable {
 
     public func fetchBranch(repo: URL, agentId: String) async throws {
         let (root, id, dir) = try await environment(repo, agentId)
-        switch Self.detectMode(dir) {
-        case .localCopy:
+        let mode = Self.detectMode(dir)
+        if mode == .localCopy {
             let branch = Self.branchName(for: id)
             _ = try await runner.run(["fetch", dir.path, "+refs/heads/\(branch):refs/heads/\(branch)"], in: root)
-        case .gitWorktree:
+        } else if mode == .gitWorktree {
             return
-        case nil:
+        } else {
             throw GitWorktreeError.notFound
         }
     }

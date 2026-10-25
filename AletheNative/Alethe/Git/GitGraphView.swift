@@ -20,7 +20,8 @@ struct GitGraphView: View {
             }
         }
         .task { await history.reload() }
-        .alert(Text("git.history.branch.title"), isPresented: Binding(get: { !metrics.isWebInterface && branchTarget != nil }, set: { if !$0 { branchTarget = nil } })) {
+        .alert(Text("git.history.branch.title"), isPresented: Binding(
+            get: { !metrics.isWebInterface && branchTarget != nil }, set: { if !$0 { branchTarget = nil } })) {
             TextField("git.history.branch.name", text: $branchName)
                 .accessibilityIdentifier("git.history.branch.name")
             Button("git.history.branch.create") {
@@ -28,7 +29,8 @@ struct GitGraphView: View {
             }
             Button("editor.cancel", role: .cancel) {}
         }
-        .confirmationDialog(Text("git.history.resetHard.title"), isPresented: Binding(get: { !metrics.isWebInterface && hardResetTarget != nil }, set: { if !$0 { hardResetTarget = nil } }),
+        .confirmationDialog(Text("git.history.resetHard.title"), isPresented: Binding(
+            get: { !metrics.isWebInterface && hardResetTarget != nil }, set: { if !$0 { hardResetTarget = nil } }),
                             presenting: hardResetTarget) { hash in
             Button("git.history.resetHard.confirm", role: .destructive) { history.reset(hash, mode: .hard) }
             Button("editor.cancel", role: .cancel) {}

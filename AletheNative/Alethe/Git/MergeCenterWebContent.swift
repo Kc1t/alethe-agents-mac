@@ -41,10 +41,12 @@ extension MergeCenterSheet {
                     confirmTitle: String(localized: "merge.abort"), destructive: true) { model?.abort() }
         .webConfirm(isPresented: $confirmCleanup, message: String(localized: "merge.cleanup.confirm"),
                     confirmTitle: String(localized: "merge.cleanup"), destructive: true) { model?.forceCleanup() }
-        .confirmationDialog("merge.abort.confirm", isPresented: Binding(get: { !metrics.isWebInterface && confirmAbort }, set: { confirmAbort = $0 })) {
+        .confirmationDialog("merge.abort.confirm", isPresented: Binding(
+            get: { !metrics.isWebInterface && confirmAbort }, set: { confirmAbort = $0 })) {
             Button("merge.abort", role: .destructive) { model?.abort() }
         }
-        .confirmationDialog("merge.cleanup.confirm", isPresented: Binding(get: { !metrics.isWebInterface && confirmCleanup }, set: { confirmCleanup = $0 })) {
+        .confirmationDialog("merge.cleanup.confirm", isPresented: Binding(
+            get: { !metrics.isWebInterface && confirmCleanup }, set: { confirmCleanup = $0 })) {
             Button("merge.cleanup", role: .destructive) { model?.forceCleanup() }
         }
         .gitWebSheet(isPresented: $testingBranch, width: 560) {
@@ -58,80 +60,13 @@ extension MergeCenterSheet {
         VStack(alignment: .leading, spacing: metrics.size(6)) {
             Group {
             if model.stage == .analyze {
-                ProjectGroupWebField(title: "merge.source") {
-                    WebDropdown(selection: Bindable(model).source, options: model.branches, appearance: .input) { Text(verbatim: $0) }
-                        .accessibilityIdentifier("merge.source")
-                }
-                ProjectGroupWebField(title: "merge.target") {
-                    WebDropdown(selection: Bindable(model).target, options: model.branches, appearance: .input) { Text(verbatim: $0) }
-                        .accessibilityIdentifier("merge.target")
-                }
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: metrics.size(6)), count: 3), spacing: metrics.size(6)) {
-                    Button("merge.prepare") { model.prepare() }.disabled(model.analysis == nil || model.running)
-                        .accessibilityIdentifier("merge.prepare")
-                        .buttonStyle(AletheGitMergeActionStyle(foreground: .statusWorking, background: .statusWorkingSoft, border: .statusWorking))
-                    Button("merge.abort", role: .destructive) { confirmAbort = true }.disabled(model.environment == nil)
-                        .accessibilityIdentifier("merge.abort")
-                        .buttonStyle(AletheGitMergeActionStyle(foreground: .statusOffline, background: .statusOfflineSoft, border: .statusOffline))
-                    Button("merge.analyze") { model.analyze() }.disabled(!model.canAnalyze || model.running)
-                        .keyboardShortcut(.defaultAction).accessibilityIdentifier("merge.analyze")
-                }
-                HStack(spacing: metrics.size(6)) {
-                    Button { testingBranch = true } label: {
-                        Label("menu.merge.branchTesting", systemImage: "play")
-                    }
-                    .disabled(model.source.isEmpty || model.running).accessibilityIdentifier("merge.testBranch")
-                    .buttonStyle(AletheGitMergeActionStyle(foreground: .statusWaiting, background: .statusWaitingSoft, border: .statusWaiting))
-                }
-                if let analysis = model.analysis {
-                    if analysis.clean {
-                        Label("merge.clean", systemImage: "checkmark.circle")
-                            .foregroundStyle(theme[.statusWorking]).accessibilityIdentifier("merge.clean")
-                    } else {
-                        webConflicts(analysis.conflicts)
-                    }
-                }
+                webAnalyzeStage(model)
             } else if model.stage == .prepare {
-                WebDropdown(selection: $agent, options: agents, accessibilityID: "newTerminal.rowSelect", appearance: .input) { kind in
-                    Text(verbatim: AgentLabels.name(for: kind.rawValue))
-                }
-                .accessibilityIdentifier("merge.agent")
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: metrics.size(6)), count: 2), spacing: metrics.size(6)) {
-                    Button("merge.resolveWithAgent") { resolveWithAgent(model) }
-                        .disabled(model.environment == nil || !agents.contains(agent)).accessibilityIdentifier("merge.resolveWithAgent")
-                    Button("merge.refresh") { model.refreshConflicts() }
-                    Button("merge.rebase") { model.rebase() }.accessibilityIdentifier("merge.rebase")
-                    Button("merge.continue") { model.stage = .validate }.disabled(!model.conflicts.isEmpty)
-                        .accessibilityIdentifier("merge.continue")
-                    abortButton(model)
-                }
-                webConflicts(model.conflicts)
+                webPrepareStage(model)
             } else if model.stage == .validate {
-                ProjectGroupWebField(title: "merge.validate.commands") {
-                    TextEditor(text: Bindable(model).commandsText)
-                        .font(metrics.monoFont(size: 12, weight: .regular))
-                        .scrollContentBackground(.hidden).frame(height: metrics.size(90))
-                        .modifier(GitWebEditor()).accessibilityIdentifier("merge.validate.commands")
-                }
-                HStack(spacing: metrics.size(6)) {
-                    Button("merge.validate.run") { model.validate() }.keyboardShortcut(.defaultAction)
-                        .accessibilityIdentifier("merge.validate.run")
-                    Button("merge.continue") { model.stage = .finish }.accessibilityIdentifier("merge.continue")
-                    abortButton(model)
-                }
-                webOutcome(model)
+                webValidateStage(model)
             } else {
-                HStack(spacing: metrics.size(6)) {
-                    Button("merge.finalize") { model.finalize() }.keyboardShortcut(.defaultAction)
-                        .disabled(model.environment == nil).accessibilityIdentifier("merge.finalize")
-                    abortButton(model)
-                    Button("merge.cleanup", role: .destructive) { confirmCleanup = true }
-                        .disabled(model.environment == nil).accessibilityIdentifier("merge.cleanup")
-                }
-                if model.merged {
-                    Label("merge.merged", systemImage: "checkmark.circle").foregroundStyle(theme[.statusWorking])
-                }
-                webOutcome(model)
+                webFinishStage(model)
             }
             }
             .disabled(model.running)
@@ -145,6 +80,93 @@ extension MergeCenterSheet {
         }
         .font(metrics.font(size: 12))
         .buttonStyle(AletheGitMergeActionStyle())
+    }
+
+    @ViewBuilder
+    private func webAnalyzeStage(_ model: MergeCenterModel) -> some View {
+        ProjectGroupWebField(title: "merge.source") {
+            WebDropdown(selection: Bindable(model).source, options: model.branches, appearance: .input) { Text(verbatim: $0) }
+                .accessibilityIdentifier("merge.source")
+        }
+        ProjectGroupWebField(title: "merge.target") {
+            WebDropdown(selection: Bindable(model).target, options: model.branches, appearance: .input) { Text(verbatim: $0) }
+                .accessibilityIdentifier("merge.target")
+        }
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: metrics.size(6)), count: 3), spacing: metrics.size(6)) {
+            Button("merge.prepare") { model.prepare() }.disabled(model.analysis == nil || model.running)
+                .accessibilityIdentifier("merge.prepare")
+                .buttonStyle(AletheGitMergeActionStyle(foreground: .statusWorking, background: .statusWorkingSoft, border: .statusWorking))
+            Button("merge.abort", role: .destructive) { confirmAbort = true }.disabled(model.environment == nil)
+                .accessibilityIdentifier("merge.abort")
+                .buttonStyle(AletheGitMergeActionStyle(foreground: .statusOffline, background: .statusOfflineSoft, border: .statusOffline))
+            Button("merge.analyze") { model.analyze() }.disabled(!model.canAnalyze || model.running)
+                .keyboardShortcut(.defaultAction).accessibilityIdentifier("merge.analyze")
+        }
+        HStack(spacing: metrics.size(6)) {
+            Button { testingBranch = true } label: {
+                Label("menu.merge.branchTesting", systemImage: "play")
+            }
+            .disabled(model.source.isEmpty || model.running).accessibilityIdentifier("merge.testBranch")
+            .buttonStyle(AletheGitMergeActionStyle(foreground: .statusWaiting, background: .statusWaitingSoft, border: .statusWaiting))
+        }
+        if let analysis = model.analysis {
+            if analysis.clean {
+                Label("merge.clean", systemImage: "checkmark.circle")
+                    .foregroundStyle(theme[.statusWorking]).accessibilityIdentifier("merge.clean")
+            } else {
+                webConflicts(analysis.conflicts)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func webPrepareStage(_ model: MergeCenterModel) -> some View {
+        WebDropdown(selection: $agent, options: agents, accessibilityID: "newTerminal.rowSelect", appearance: .input) { kind in
+            Text(verbatim: AgentLabels.name(for: kind.rawValue))
+        }
+        .accessibilityIdentifier("merge.agent")
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: metrics.size(6)), count: 2), spacing: metrics.size(6)) {
+            Button("merge.resolveWithAgent") { resolveWithAgent(model) }
+                .disabled(model.environment == nil || !agents.contains(agent)).accessibilityIdentifier("merge.resolveWithAgent")
+            Button("merge.refresh") { model.refreshConflicts() }
+            Button("merge.rebase") { model.rebase() }.accessibilityIdentifier("merge.rebase")
+            Button("merge.continue") { model.stage = .validate }.disabled(!model.conflicts.isEmpty)
+                .accessibilityIdentifier("merge.continue")
+            abortButton(model)
+        }
+        webConflicts(model.conflicts)
+    }
+
+    @ViewBuilder
+    private func webValidateStage(_ model: MergeCenterModel) -> some View {
+        ProjectGroupWebField(title: "merge.validate.commands") {
+            TextEditor(text: Bindable(model).commandsText)
+                .font(metrics.monoFont(size: 12, weight: .regular))
+                .scrollContentBackground(.hidden).frame(height: metrics.size(90))
+                .modifier(GitWebEditor()).accessibilityIdentifier("merge.validate.commands")
+        }
+        HStack(spacing: metrics.size(6)) {
+            Button("merge.validate.run") { model.validate() }.keyboardShortcut(.defaultAction)
+                .accessibilityIdentifier("merge.validate.run")
+            Button("merge.continue") { model.stage = .finish }.accessibilityIdentifier("merge.continue")
+            abortButton(model)
+        }
+        webOutcome(model)
+    }
+
+    @ViewBuilder
+    private func webFinishStage(_ model: MergeCenterModel) -> some View {
+        HStack(spacing: metrics.size(6)) {
+            Button("merge.finalize") { model.finalize() }.keyboardShortcut(.defaultAction)
+                .disabled(model.environment == nil).accessibilityIdentifier("merge.finalize")
+            abortButton(model)
+            Button("merge.cleanup", role: .destructive) { confirmCleanup = true }
+                .disabled(model.environment == nil).accessibilityIdentifier("merge.cleanup")
+        }
+        if model.merged {
+            Label("merge.merged", systemImage: "checkmark.circle").foregroundStyle(theme[.statusWorking])
+        }
+        webOutcome(model)
     }
 
     func webConflicts(_ conflicts: [ConflictFile]) -> some View {

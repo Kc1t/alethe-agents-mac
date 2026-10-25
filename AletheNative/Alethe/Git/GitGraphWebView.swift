@@ -108,11 +108,13 @@ struct GitGraphWebView<RowMenu: View>: View {
 
 enum GitGraphWebRefs {
     static func label(_ ref: GitRef) -> String {
-        switch ref.kind {
-        case .head: "HEAD"
-        case .tag: "tag: \(ref.name)"
-        default: ref.isCurrent ? "HEAD -> \(ref.name)" : ref.name
+        if ref.kind == .head {
+            return "HEAD"
         }
+        if ref.kind == .tag {
+            return "tag: \(ref.name)"
+        }
+        return ref.isCurrent ? "HEAD -> \(ref.name)" : ref.name
     }
 
     static func labels(_ refs: [GitRef]) -> [GitRef] {

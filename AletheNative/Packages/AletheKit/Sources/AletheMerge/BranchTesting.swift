@@ -23,14 +23,11 @@ public struct BranchTestResult: Codable, Hashable, Sendable {
         self.finishedAt = finishedAt
     }
 
-    public var status: Status {
-        switch validation.status {
-        case .passed: .passed
-        case .failed: .failed
-        case .cancelled: .cancelled
-        case .unverified: .unverified
-        }
-    }
+    public var status: Status { Self.statuses[validation.status] ?? .unverified }
+
+    private static let statuses: [ValidationReport.Status: Status] = [
+        .passed: .passed, .failed: .failed, .cancelled: .cancelled, .unverified: .unverified,
+    ]
 
     public var hasWarnings: Bool {
         !contractWarnings.isEmpty || (healthProbe.map { !$0.healthy } ?? false)

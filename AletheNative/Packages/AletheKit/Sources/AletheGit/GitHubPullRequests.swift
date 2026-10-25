@@ -125,12 +125,11 @@ public enum GitHubPullRequestParser {
             let state = ((entry["conclusion"] as? String).flatMap(nonEmpty)
                 ?? (entry["state"] as? String)
                 ?? (entry["status"] as? String) ?? "").uppercased()
-            switch state {
-            case "FAILURE", "ERROR", "TIMED_OUT", "CANCELLED", "ACTION_REQUIRED", "STARTUP_FAILURE":
+            if ["FAILURE", "ERROR", "TIMED_OUT", "CANCELLED", "ACTION_REQUIRED", "STARTUP_FAILURE"].contains(state) {
                 return .failure
-            case "SUCCESS", "NEUTRAL", "SKIPPED":
+            } else if ["SUCCESS", "NEUTRAL", "SKIPPED"].contains(state) {
                 continue
-            default:
+            } else {
                 pending = true
             }
         }
