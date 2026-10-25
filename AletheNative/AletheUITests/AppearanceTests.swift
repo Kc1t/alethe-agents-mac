@@ -51,7 +51,8 @@ final class AppearanceTests: XCTestCase {
             XCTAssertTrue(eventually { shown == label }, "zoom shows \(shown)")
 
             app.buttons["settings.zoom.in"].firstMatch.click()
-            let raised = "\(Int(label.dropLast())! + 10)%"
+            guard let zoom = Int(label.dropLast()) else { preconditionFailure("Invalid zoom label") }
+            let raised = "\(zoom + 10)%"
             XCTAssertTrue(eventually { shown == raised }, "zoom in missed at \(label): \(shown)")
             app.buttons["settings.zoom.out"].firstMatch.click()
             XCTAssertTrue(eventually { shown == label }, "zoom out missed at \(label): \(shown)")

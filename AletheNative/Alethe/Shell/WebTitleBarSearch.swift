@@ -54,7 +54,8 @@ struct WebTitleBarSearch: View {
                     .textFieldStyle(.plain).font(metrics.font(size: 14))
                     .padding(.horizontal, metrics.size(10)).frame(height: metrics.size(32))
                     .background(theme[.bgSunken], in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
-                    .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[focused ? .accent : .border], lineWidth: metrics.size(1)))
+                    .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[focused ? .accent :
+                        .border], lineWidth: metrics.size(1)))
                     .focused($focused)
                     .onChange(of: query) { _, _ in cursor = 0 }
                     .onKeyPress(.downArrow) { cursor = min(cursor + 1, max(0, results.count - 1)); return .handled }
@@ -81,11 +82,13 @@ struct WebTitleBarSearch: View {
                                         Text(verbatim: "· \(hit.group)").font(metrics.font(size: 11)).foregroundStyle(theme[.fgMuted]).lineLimit(1)
                                         Spacer(minLength: 0)
                                         if let detail = hit.directory ?? hit.shortcut {
-                                            Text(verbatim: detail).font(metrics.monoFont(size: 10)).foregroundStyle(theme[.fgFaint]).lineLimit(1).truncationMode(.head)
+                                            Text(verbatim: detail).font(metrics.monoFont(size: 10))
+                                                .foregroundStyle(theme[.fgFaint]).lineLimit(1).truncationMode(.head)
                                         }
                                     }
                                     .padding(.horizontal, metrics.size(10)).padding(.vertical, metrics.size(8))
-                                    .background(theme[.accentFaint].opacity(index == cursor ? 1 : 0), in: RoundedRectangle(cornerRadius: metrics.radius(.sm)))
+                                    .background(theme[.accentFaint].opacity(index == cursor ? 1 : 0),
+                                        in: RoundedRectangle(cornerRadius: metrics.radius(.sm)))
                                     .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain).onHover { if $0 { cursor = index } }

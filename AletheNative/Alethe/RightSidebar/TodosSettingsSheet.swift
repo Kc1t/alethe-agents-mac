@@ -179,20 +179,19 @@ struct TodosSettingsSheet: View {
     }
 
     private func perform(_ action: Confirmation) async {
-        switch action {
-        case .importTemplate:
+        if case .importTemplate = action {
             await savePath()
             await run { plugin in
                 try await plugin.importTemplate()
                 return String(localized: "todos.settings.imported")
             }
-        case .exportTemplate:
+        } else if case .exportTemplate = action {
             await savePath()
             await run { plugin in
                 _ = try await plugin.exportTemplate()
                 return String(localized: "todos.settings.exported")
             }
-        case .reset:
+        } else if case .reset = action {
             store.resetToDefaults()
             message = String(localized: "todos.settings.resetDone")
             if metrics.isWebInterface { dismiss() }
@@ -231,26 +230,32 @@ struct TodosSettingsSheet: View {
     }
 
     private var confirmationTitle: LocalizedStringKey {
-        switch confirming {
-        case .importTemplate: "todos.settings.import.confirm"
-        case .exportTemplate: "todos.settings.export.confirm"
-        case .reset, nil: "todos.settings.reset.confirm"
+        if case .importTemplate = confirming {
+            "todos.settings.import.confirm"
+        } else if case .exportTemplate = confirming {
+            "todos.settings.export.confirm"
+        } else {
+            "todos.settings.reset.confirm"
         }
     }
 
     private func confirmationButton(_ action: Confirmation) -> LocalizedStringKey {
-        switch action {
-        case .importTemplate: "todos.settings.import"
-        case .exportTemplate: "todos.settings.export"
-        case .reset: "todos.settings.reset"
+        if case .importTemplate = action {
+            "todos.settings.import"
+        } else if case .exportTemplate = action {
+            "todos.settings.export"
+        } else {
+            "todos.settings.reset"
         }
     }
 
     private func confirmationMessage(_ action: Confirmation) -> LocalizedStringKey {
-        switch action {
-        case .importTemplate: "todos.settings.import.message"
-        case .exportTemplate: "todos.settings.export.message"
-        case .reset: "todos.settings.reset.message"
+        if case .importTemplate = action {
+            "todos.settings.import.message"
+        } else if case .exportTemplate = action {
+            "todos.settings.export.message"
+        } else {
+            "todos.settings.reset.message"
         }
     }
 }

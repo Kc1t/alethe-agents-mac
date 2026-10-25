@@ -25,7 +25,8 @@ struct WebTitleBarCustomizationContent: View {
             Text("titlebar.customize.description").font(metrics.font(size: 12)).foregroundStyle(theme[.fgMuted])
             VStack(spacing: metrics.size(6)) {
                 ForEach(items, id: \.self) { item in
-                    WebTitleBarCustomizationRow(item: item, enabled: environment.preferences?.document.showsToolbarItem(item) ?? item.shownByDefault) {
+                    WebTitleBarCustomizationRow(item: item,
+                        enabled: environment.preferences?.document.showsToolbarItem(item) ?? item.shownByDefault) {
                         environment.preferences?.update {
                             $0.setToolbarItem(item, shown: !$0.showsToolbarItem(item))
                         }
@@ -48,20 +49,23 @@ private struct WebTitleBarCustomizationRow: View {
         Button(action: action) {
             HStack(spacing: metrics.size(10)) {
                 Group {
-                    switch item {
-                    case .usageClaude: AgentLogo(agent: "claude", size: 18)
-                    case .usageCodex: AgentLogo(agent: "codex", size: 18)
-                    case .usageAntigravity: AgentLogo(agent: "antigravity", size: 18)
-                    default:
+                    if case .usageClaude = item {
+                        AgentLogo(agent: "claude", size: 18)
+                    } else if case .usageCodex = item {
+                        AgentLogo(agent: "codex", size: 18)
+                    } else if case .usageAntigravity = item {
+                        AgentLogo(agent: "antigravity", size: 18)
+                    } else {
                         Image(systemName: symbol).resizable().scaledToFit()
-                            .frame(width: metrics.size(18), height: metrics.size(18)).foregroundStyle(theme[.fgMuted])
+                        .frame(width: metrics.size(18), height: metrics.size(18)).foregroundStyle(theme[.fgMuted])
                     }
                 }.frame(width: metrics.size(22))
                 Text(item.title).font(metrics.font(size: 13))
                 Spacer(minLength: 0)
                 RoundedRectangle(cornerRadius: metrics.radius(.sm))
                     .fill(theme[.accent].opacity(enabled ? 1 : 0))
-                    .overlay(RoundedRectangle(cornerRadius: metrics.radius(.sm)).strokeBorder(theme[enabled ? .accent : .borderStrong], lineWidth: metrics.size(1)))
+                    .overlay(RoundedRectangle(cornerRadius: metrics.radius(.sm)).strokeBorder(theme[enabled ? .accent :
+                        .borderStrong], lineWidth: metrics.size(1)))
                     .overlay {
                         Image(systemName: "checkmark").resizable().scaledToFit()
                             .frame(width: metrics.size(14), height: metrics.size(14))
@@ -72,7 +76,8 @@ private struct WebTitleBarCustomizationRow: View {
             .padding(.horizontal, metrics.size(10)).padding(.vertical, metrics.size(8))
             .frame(minHeight: metrics.size(42))
             .background(theme[hovering ? .panelHover : .panel], in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
-            .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[hovering ? .borderStrong : .border], lineWidth: metrics.size(1)))
+            .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[hovering ? .borderStrong :
+                .border], lineWidth: metrics.size(1)))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain).onHover { hovering = $0 }
@@ -81,11 +86,14 @@ private struct WebTitleBarCustomizationRow: View {
     }
 
     private var symbol: String {
-        switch item {
-        case .sync: "icloud"
-        case .profile: "person"
-        case .memory: "memorychip"
-        default: "point.3.connected.trianglepath.dotted"
+        if case .sync = item {
+            "icloud"
+        } else if case .profile = item {
+            "person"
+        } else if case .memory = item {
+            "memorychip"
+        } else {
+            "point.3.connected.trianglepath.dotted"
         }
     }
 }

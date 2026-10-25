@@ -27,7 +27,8 @@ final class VisualStyleTests: XCTestCase {
         XCTAssertTrue(relaunched.descendants(matching: .any)["sidebar.project.scratch"].waitForExistence(timeout: 5))
         relaunched.typeKey(",", modifierFlags: .command)
         relaunched.toolbars.buttons["Appearance"].firstMatch.click()
-        XCTAssertEqual(relaunched.radioGroups["settings.style"].radioButtons.element(boundBy: 1).value as? Int, 1, "Clean survives a relaunch")
+        XCTAssertEqual(relaunched.radioGroups["settings.style"].radioButtons.element(boundBy: 1).value as? Int,
+            1, "Clean survives a relaunch")
         XCTAssertEqual(relaunched.descendants(matching: .any)["settings.reduceMotion"].firstMatch.value as? Int, 1)
         relaunched.terminate()
     }

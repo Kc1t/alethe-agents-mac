@@ -57,11 +57,14 @@ final class WebDialogCenter {
     }
 
     func choose(_ message: String, title: String? = nil, confirmTitle: String, alternateTitle: String?) async -> Bool? {
-        switch await ask(message: message, title: title, confirmTitle: confirmTitle, cancelTitle: nil,
-                         destructive: false, alternateTitle: alternateTitle, promptDefault: nil) {
-        case .confirmed: false
-        case .alternate: true
-        case .cancelled: nil
+        let matchedValue = await ask(message: message, title: title, confirmTitle: confirmTitle, cancelTitle: nil,
+                         destructive: false, alternateTitle: alternateTitle, promptDefault: nil)
+        return if case .confirmed = matchedValue {
+            false
+        } else if case .alternate = matchedValue {
+            true
+        } else {
+            nil
         }
     }
 

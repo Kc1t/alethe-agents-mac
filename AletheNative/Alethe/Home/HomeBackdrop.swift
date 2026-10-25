@@ -37,9 +37,10 @@ struct HomeBackdrop: View {
                 sample = sampleImage(size: geometry.size)
             }
             .onContinuousHover { phase in
-                switch phase {
-                case .active(let location): pointer = location
-                case .ended: pointer = nil
+                if case .active(let location) = phase {
+                    pointer = location
+                } else if case .ended = phase {
+                    pointer = nil
                 }
             }
         }

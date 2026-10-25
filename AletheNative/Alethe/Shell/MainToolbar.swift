@@ -34,30 +34,42 @@ struct MainToolbar: ViewModifier {
 
     @MainActor @ViewBuilder
     private static func view(for kind: ToolbarItemKind) -> some View {
-        switch kind {
-        case .home: HomeButton()
-        case .usageClaude: UsagePill(provider: .claude)
-        case .usageCodex: UsagePill(provider: .codex)
-        case .usageAntigravity: UsagePill(provider: .antigravity)
-        case .aiUsage: AIUsageButton()
-        case .notifications: NotificationsButton()
-        case .memory: MemoryIndicator()
-        case .profile: ProfileToolbarMenu()
-        case .remote: RemoteToolbarItem()
-        case .router9: Router9ToolbarItem()
-        case .sync: SyncToolbarItem()
+        if case .home = kind {
+            HomeButton()
+        } else if case .usageClaude = kind {
+            UsagePill(provider: .claude)
+        } else if case .usageCodex = kind {
+            UsagePill(provider: .codex)
+        } else if case .usageAntigravity = kind {
+            UsagePill(provider: .antigravity)
+        } else if case .aiUsage = kind {
+            AIUsageButton()
+        } else if case .notifications = kind {
+            NotificationsButton()
+        } else if case .memory = kind {
+            MemoryIndicator()
+        } else if case .profile = kind {
+            ProfileToolbarMenu()
+        } else if case .remote = kind {
+            RemoteToolbarItem()
+        } else if case .router9 = kind {
+            Router9ToolbarItem()
+        } else {
+            SyncToolbarItem()
         }
     }
 
     @available(macOS 26.1, *)
     static func priority(_ rank: ToolbarOverflowRank) -> ToolbarItemVisibilityPriority {
-        switch rank {
-        case .first:
+        if case .first = rank {
             if #available(macOS 27, *) { return ToolbarItemVisibilityPriority(lowerThan: .low) }
             return .low
-        case .early: return .low
-        case .standard: return .automatic
-        case .last: return .high
+        } else if case .early = rank {
+            return .low
+        } else if case .standard = rank {
+            return .automatic
+        } else {
+            return .high
         }
     }
 }

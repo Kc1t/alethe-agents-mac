@@ -28,7 +28,8 @@ final class DictationTests: XCTestCase {
 
     func testWebJevDeniedMicrophoneRecordsFailureAndCancels() {
         let (app, _) = launchAlethe(arguments: ["-AletheUITestSeed", "sidebar", "-interfaceStyle", "web",
-                                               "-dictation.enabled", "YES", "-AletheDictationDenied", "YES", "-main.rightSidebarVisible", "YES"])
+                                               "-dictation.enabled", "YES", "-AletheDictationDenied", "YES"
+                                                   , "-main.rightSidebarVisible", "YES"])
         XCTAssertTrue(app.descendants(matching: .any)["sidebar.project.alpha"].waitForExistence(timeout: 5))
         app.typeKey(" ", modifierFlags: [.command, .shift])
         let bar = app.descendants(matching: .any)["jev.voiceBar"]

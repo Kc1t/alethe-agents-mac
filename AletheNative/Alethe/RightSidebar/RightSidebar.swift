@@ -7,43 +7,60 @@ import SwiftUI
 
 enum PluginViewRegistry {
     static func title(for tab: SidebarTabContribution) -> LocalizedStringKey {
-        switch tab.viewID {
-        case TodosPlugin.viewID: "rightSidebar.todos"
-        case DocsView.tabID: "rightSidebar.docs"
-        case PullRequestsView.tabID: "rightSidebar.pullRequests"
-        case AgentsView.tabID: "rightSidebar.agents"
-        case QueueView.tabID: "queue.title"
-        case GSDSyncView.tabID: "rightSidebar.gsdSync"
-        case McpPanel.tabID: "rightSidebar.mcp"
-        case "jev": "rightSidebar.jev"
-        case "plugins": "rightSidebar.plugins"
-        default: LocalizedStringKey(tab.title)
+        if case TodosPlugin.viewID = tab.viewID {
+            "rightSidebar.todos"
+        } else if case DocsView.tabID = tab.viewID {
+            "rightSidebar.docs"
+        } else if case PullRequestsView.tabID = tab.viewID {
+            "rightSidebar.pullRequests"
+        } else if case AgentsView.tabID = tab.viewID {
+            "rightSidebar.agents"
+        } else if case QueueView.tabID = tab.viewID {
+            "queue.title"
+        } else if case GSDSyncView.tabID = tab.viewID {
+            "rightSidebar.gsdSync"
+        } else if case McpPanel.tabID = tab.viewID {
+            "rightSidebar.mcp"
+        } else if case "jev" = tab.viewID {
+            "rightSidebar.jev"
+        } else if case "plugins" = tab.viewID {
+            "rightSidebar.plugins"
+        } else {
+            LocalizedStringKey(tab.title)
         }
     }
 
     @MainActor @ViewBuilder
     static func view(for viewID: String) -> some View {
-        switch viewID {
-        case TodosPlugin.viewID: TodosView()
-        case DocsView.tabID: DocsView()
-        case PullRequestsView.tabID: PullRequestsView()
-        case AgentsView.tabID: AgentsView()
-        case QueueView.tabID: QueueView()
-        case GSDSyncView.tabID: GSDSyncView()
-        case McpPanel.tabID: McpPanel()
-        case "jev": WebVoiceHistoryPanel()
-        case "plugins": PluginsWebPanel()
-        default: ExtensionOrUnavailable(viewID: viewID)
+        if case TodosPlugin.viewID = viewID {
+            TodosView()
+        } else if case DocsView.tabID = viewID {
+            DocsView()
+        } else if case PullRequestsView.tabID = viewID {
+            PullRequestsView()
+        } else if case AgentsView.tabID = viewID {
+            AgentsView()
+        } else if case QueueView.tabID = viewID {
+            QueueView()
+        } else if case GSDSyncView.tabID = viewID {
+            GSDSyncView()
+        } else if case McpPanel.tabID = viewID {
+            McpPanel()
+        } else if case "jev" = viewID {
+            WebVoiceHistoryPanel()
+        } else if case "plugins" = viewID {
+            PluginsWebPanel()
+        } else {
+            ExtensionOrUnavailable(viewID: viewID)
         }
     }
 
     @MainActor @ViewBuilder
     static func sheet(for viewID: String, workspace: WorkspaceModel, undoManager: UndoManager?,
                       projectID: ProjectID?) -> some View {
-        switch viewID {
-        case GitControlPlugin.viewID:
+        if case GitControlPlugin.viewID = viewID {
             GitControlSheet(workspace: workspace, undoManager: undoManager, projectID: projectID)
-        default:
+        } else {
             ContentUnavailableView("rightSidebar.unavailable", systemImage: "puzzlepiece.extension")
         }
     }
@@ -64,10 +81,9 @@ private struct ExtensionOrUnavailable: View {
     @MainActor @ViewBuilder
     static func sheet(for viewID: String, workspace: WorkspaceModel, undoManager: UndoManager?,
                       projectID: ProjectID?) -> some View {
-        switch viewID {
-        case GitControlPlugin.viewID:
+        if case GitControlPlugin.viewID = viewID {
             GitControlSheet(workspace: workspace, undoManager: undoManager, projectID: projectID)
-        default:
+        } else {
             ContentUnavailableView("rightSidebar.unavailable", systemImage: "puzzlepiece.extension")
         }
     }
@@ -261,20 +277,26 @@ struct RightSidebar: View {
     }
 
     private func webTitle(_ tab: SidebarTabContribution) -> LocalizedStringKey {
-        switch tab.viewID {
-        case PullRequestsView.tabID: "rightSidebar.web.prs"
-        case "jev": "rightSidebar.web.jevHistory"
-        default: PluginViewRegistry.title(for: tab)
+        if case PullRequestsView.tabID = tab.viewID {
+            "rightSidebar.web.prs"
+        } else if case "jev" = tab.viewID {
+            "rightSidebar.web.jevHistory"
+        } else {
+            PluginViewRegistry.title(for: tab)
         }
     }
 
     private func webSymbol(_ tab: SidebarTabContribution) -> String {
-        switch tab.viewID {
-        case AgentsView.tabID: "cpu"
-        case McpPanel.tabID: "powerplug"
-        case "plugins": "square.grid.2x2"
-        case GSDSyncView.tabID: "sparkles"
-        default: tab.symbol
+        if case AgentsView.tabID = tab.viewID {
+            "cpu"
+        } else if case McpPanel.tabID = tab.viewID {
+            "powerplug"
+        } else if case "plugins" = tab.viewID {
+            "square.grid.2x2"
+        } else if case GSDSyncView.tabID = tab.viewID {
+            "sparkles"
+        } else {
+            tab.symbol
         }
     }
 
@@ -319,7 +341,8 @@ struct WebSidebarEmpty: View {
                 .frame(width: boxed ? metrics.size(38) : nil, height: boxed ? metrics.size(38) : nil)
                 .background(theme[.bgElevated].opacity(boxed ? 1 : 0), in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
                 .overlay {
-                    if boxed { RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.border], lineWidth: metrics.size(1)) }
+                    if boxed { RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.border],
+                        lineWidth: metrics.size(1)) }
                 }
                 .padding(.bottom, boxed ? metrics.size(3) : 0)
             Text(title).font(metrics.font(size: 12, weight: .bold)).foregroundStyle(theme[.fg])
@@ -332,7 +355,8 @@ struct WebSidebarEmpty: View {
         }
         .foregroundStyle(theme[.fgMuted])
         .padding(metrics.size(24))
-        .frame(maxWidth: .infinity, minHeight: metrics.size(minimumHeight ?? (boxed ? 220 : 180)), maxHeight: centeredInPanel ? .infinity : nil)
+        .frame(maxWidth: .infinity, minHeight: metrics.size(minimumHeight ?? (boxed ? 220 : 180)),
+            maxHeight: centeredInPanel ? .infinity : nil)
     }
 }
 

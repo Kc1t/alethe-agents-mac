@@ -105,15 +105,14 @@ struct WebHomeSetup: View {
     }
 
     private func start(_ step: SetupStep) {
-        switch step {
-        case .agents:
+        if case .agents = step {
             environment.settingsTab = .agents
             openSettings()
-        case .project:
+        } else if case .project = step {
             environment.editorRequest = .newProject(.ungrouped)
-        case .terminal:
+        } else if case .terminal = step {
             environment.editorRequest = workspace.document.projects.isEmpty ? .newProject(.ungrouped) : .newTerminal(nil)
-        case .appearance:
+        } else if case .appearance = step {
             environment.preferences?.update { preferences in
                 var done = preferences.setupDone ?? []
                 if !done.contains(step.rawValue) { done.append(step.rawValue) }
@@ -125,11 +124,14 @@ struct WebHomeSetup: View {
     }
 
     private func icon(_ step: SetupStep) -> String {
-        switch step {
-        case .agents: "sparkles"
-        case .project: "folder.badge.plus"
-        case .terminal: "terminal"
-        case .appearance: "paintpalette"
+        if case .agents = step {
+            "sparkles"
+        } else if case .project = step {
+            "folder.badge.plus"
+        } else if case .terminal = step {
+            "terminal"
+        } else {
+            "paintpalette"
         }
     }
 

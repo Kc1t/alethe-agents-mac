@@ -156,7 +156,8 @@ struct DocsView: View {
                                             .frame(width: metrics.size(10), height: metrics.size(10))
                                             .padding(.leading, metrics.size(3)).padding(.trailing, metrics.size(6))
                                             .padding(.vertical, metrics.size(5))
-                                    }.help(Text("docs.closeTab")).accessibilityLabel(Text("docs.closeTab")).accessibilityIdentifier("docs.tab.close")
+                                    }.help(Text("docs.closeTab")).accessibilityLabel(Text("docs.closeTab"))
+                                        .accessibilityIdentifier("docs.tab.close")
                                 }
                                 .buttonStyle(.plain).font(metrics.font(size: 10))
                                 .foregroundStyle(theme[selectedPath == tab.path ? .fg : .fgMuted])

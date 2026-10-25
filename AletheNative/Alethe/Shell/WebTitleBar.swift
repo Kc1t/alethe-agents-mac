@@ -45,7 +45,8 @@ struct WebTitleBar: View {
             }
             .padding(.leading, trafficLightTrailingEdge + metrics.size(6))
             .padding(.trailing, metrics.size(8))
-            .frame(width: threeAreas ? max(trafficLightTrailingEdge + metrics.size(96), metrics.size(sidebarVisible ? leftWidth : 38)) : nil)
+            .frame(width: threeAreas ? max(trafficLightTrailingEdge + metrics.size(96), metrics.size(sidebarVisible ?
+                leftWidth : 38)) : nil)
             .fixedSize(horizontal: !threeAreas, vertical: false)
             .overlay(alignment: .trailing) { theme[.border].frame(width: metrics.size(1)) }
             if AppIdentity.isDebugBuild { DebugBuildBadge().padding(.leading, metrics.size(8)) }
@@ -106,7 +107,8 @@ struct WebTitleBar: View {
             .defaultScrollAnchor(.trailing)
             .frame(maxWidth: accessoryWidth > 0 ? accessoryWidth : nil)
             .layoutPriority(1)
-            icon("sidebar.right", label: "menu.view.showRightSidebar", id: "chrome.toggleRightSidebar", isOn: environment.rightSidebarVisible) {
+            icon("sidebar.right", label: "menu.view.showRightSidebar", id: "chrome.toggleRightSidebar",
+                isOn: environment.rightSidebarVisible) {
                 environment.rightSidebarVisible.toggle()
             }
             .help(Text(environment.rightSidebarVisible ? "titlebar.right.close" : "titlebar.right.open"))

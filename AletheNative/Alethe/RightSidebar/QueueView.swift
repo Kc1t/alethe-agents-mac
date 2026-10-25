@@ -132,13 +132,18 @@ struct QueueView: View {
     }
 
     private func stateTitle(_ state: QueueItem.State) -> LocalizedStringKey {
-        switch state {
-        case .queued: "queue.state.queued"
-        case .waitingLimit: "queue.state.waitingLimit"
-        case .running: "queue.state.running"
-        case .done: "queue.state.done"
-        case .failed: "queue.state.failed"
-        case .cancelled: "queue.state.cancelled"
+        if case .queued = state {
+            "queue.state.queued"
+        } else if case .waitingLimit = state {
+            "queue.state.waitingLimit"
+        } else if case .running = state {
+            "queue.state.running"
+        } else if case .done = state {
+            "queue.state.done"
+        } else if case .failed = state {
+            "queue.state.failed"
+        } else {
+            "queue.state.cancelled"
         }
     }
 }

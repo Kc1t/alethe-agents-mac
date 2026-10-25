@@ -29,6 +29,42 @@ final class RemoteEndToEndTests: XCTestCase {
         XCTAssertTrue(element(app, "remote.pairing.device.1").waitForExistence(timeout: 5), "the Mac lists the device")
         element(app, "remote.pairing.done").click()
 
+        try await exerciseTerminal(app, phone: phone)
+
+        let secondURL = try openPairingURL(app)
+        XCTAssertNotEqual(secondURL, firstURL, "a new pairing token")
+        let second = RemotePage()
+        second.load(secondURL)
+        let limited = await second.waitFor(
+            "(document.querySelector('.state-page code')?.textContent || '').includes('Maximum remote devices reached')")
+        XCTAssertTrue(limited, "the second device is refused at the limit")
+        XCTAssertFalse(element(app, "remote.pairing.device.2").exists)
+
+        let replay = RemotePage()
+        replay.load(firstURL)
+        let replayRefused = await replay.waitFor(
+            "(document.querySelector('.state-page code')?.textContent || '').includes('Invalid pairing token')")
+        XCTAssertTrue(replayRefused, "a used pairing token is refused")
+
+        element(app, "remote.pairing.revoke.1").click()
+        let ended = await phone.waitFor("document.querySelector('.state-page h1')?.textContent === 'Remote session ended'", timeout: 15)
+        XCTAssertTrue(ended, "the revoked page shows the session ended")
+        let dropped = await phone.bool("sessionStorage.getItem('alethe.remote.session') === null")
+        XCTAssertTrue(dropped, "the page dropped its session")
+        XCTAssertTrue(element(app, "remote.pairing.noDevices").waitForExistence(timeout: 5))
+        let status = try await infoStatus(of: firstURL, sessionToken: sessionToken)
+        XCTAssertEqual(status, 401, "a revoked session token is refused")
+        element(app, "remote.pairing.done").click()
+        app.terminate()
+
+        let tokens = [pairingToken(firstURL), pairingToken(secondURL), sessionToken].compactMap { $0 }.filter { !$0.isEmpty }
+        XCTAssertEqual(tokens.count, 3)
+        let scanned = scanForTokens(tokens, under: dataRoot)
+        XCTAssertTrue(scanned.files.contains("workspace.json"), "workspace.json was scanned")
+        XCTAssertTrue(scanned.hits.isEmpty, "a remote token was written to \(scanned.hits.joined(separator: ", "))")
+    }
+
+    private func exerciseTerminal(_ app: XCUIApplication, phone: RemotePage) async throws {
         let live = await phone.waitFor("document.querySelector('[data-connection]')?.dataset.state === 'live'")
         XCTAssertTrue(live, "the WebSocket authenticated")
         await phone.run("document.querySelector('[data-chat]').click()")
@@ -57,36 +93,6 @@ final class RemoteEndToEndTests: XCTestCase {
         try await Task.sleep(for: .seconds(2))
         let blockedOutput = await phone.bool("window.__e2e.output().includes('fake-claude got: e2e-blocked')")
         XCTAssertFalse(blockedOutput, "nothing was typed while read-only")
-
-        let secondURL = try openPairingURL(app)
-        XCTAssertNotEqual(secondURL, firstURL, "a new pairing token")
-        let second = RemotePage()
-        second.load(secondURL)
-        let limited = await second.waitFor("(document.querySelector('.state-page code')?.textContent || '').includes('Maximum remote devices reached')")
-        XCTAssertTrue(limited, "the second device is refused at the limit")
-        XCTAssertFalse(element(app, "remote.pairing.device.2").exists)
-
-        let replay = RemotePage()
-        replay.load(firstURL)
-        let replayRefused = await replay.waitFor("(document.querySelector('.state-page code')?.textContent || '').includes('Invalid pairing token')")
-        XCTAssertTrue(replayRefused, "a used pairing token is refused")
-
-        element(app, "remote.pairing.revoke.1").click()
-        let ended = await phone.waitFor("document.querySelector('.state-page h1')?.textContent === 'Remote session ended'", timeout: 15)
-        XCTAssertTrue(ended, "the revoked page shows the session ended")
-        let dropped = await phone.bool("sessionStorage.getItem('alethe.remote.session') === null")
-        XCTAssertTrue(dropped, "the page dropped its session")
-        XCTAssertTrue(element(app, "remote.pairing.noDevices").waitForExistence(timeout: 5))
-        let status = try await infoStatus(of: firstURL, sessionToken: sessionToken)
-        XCTAssertEqual(status, 401, "a revoked session token is refused")
-        element(app, "remote.pairing.done").click()
-        app.terminate()
-
-        let tokens = [pairingToken(firstURL), pairingToken(secondURL), sessionToken].compactMap { $0 }.filter { !$0.isEmpty }
-        XCTAssertEqual(tokens.count, 3)
-        let scanned = scanForTokens(tokens, under: dataRoot)
-        XCTAssertTrue(scanned.files.contains("workspace.json"), "workspace.json was scanned")
-        XCTAssertTrue(scanned.hits.isEmpty, "a remote token was written to \(scanned.hits.joined(separator: ", "))")
     }
 
     private func openPairingURL(_ app: XCUIApplication) throws -> URL {
@@ -139,7 +145,8 @@ final class RemoteEndToEndTests: XCTestCase {
         var files = Set<String>()
         var hits: [String] = []
         let needles = tokens.map { Data($0.utf8) }
-        guard let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey]) else {
+        guard let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: [.isRegularFileKey,
+            .fileSizeKey]) else {
             return (files, hits)
         }
         for case let url as URL in enumerator {

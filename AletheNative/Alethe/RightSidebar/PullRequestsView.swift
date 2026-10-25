@@ -86,8 +86,7 @@ struct PullRequestsView: View {
 
     @ViewBuilder
     private var content: some View {
-        switch phase {
-        case .missing:
+        if case .missing = phase {
             if metrics.isWebInterface {
                 webError { hint("pullRequests.missing.hint", command: "brew install gh") }
             } else {
@@ -97,7 +96,7 @@ struct PullRequestsView: View {
                 hint("pullRequests.missing.hint", command: "brew install gh")
             }
             }
-        case .signedOut:
+        } else if case .signedOut = phase {
             if metrics.isWebInterface {
                 webError { hint("pullRequests.signedOut.hint", command: "gh auth login") }
             } else {
@@ -107,7 +106,7 @@ struct PullRequestsView: View {
                 hint("pullRequests.signedOut.hint", command: "gh auth login")
             }
             }
-        case .failed(let message):
+        } else if case .failed(let message) = phase {
             if metrics.isWebInterface {
                 webError { Text(verbatim: message).textSelection(.enabled) }
             } else {
@@ -117,7 +116,7 @@ struct PullRequestsView: View {
                 Text(verbatim: message).foregroundStyle(theme[.statusStopped])
             }
             }
-        case .loading where prs.isEmpty || metrics.isWebInterface:
+        } else if case .loading = phase, prs.isEmpty || metrics.isWebInterface {
             if metrics.isWebInterface {
                 HStack(spacing: metrics.size(8)) {
                     Image(systemName: "progress.indicator")
@@ -131,11 +130,13 @@ struct PullRequestsView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .padding(metrics.size(10))
             } else { Color.clear }
-        case .loading, .ready:
+        } else if ({ if case .loading = phase { return true }; return false }()) ||
+            ({ if case .ready = phase { return true }; return false }()) {
             if prs.isEmpty {
                 if metrics.isWebInterface {
                     ScrollView {
-                        WebSidebarEmpty(title: "rightSidebar.pr.empty", detail: "rightSidebar.prEmptyDetail", symbol: "arrow.triangle.pull", boxed: true, iconSize: 20, centeredInPanel: false)
+                        WebSidebarEmpty(title: "rightSidebar.pr.empty", detail: "rightSidebar.prEmptyDetail",
+                            symbol: "arrow.triangle.pull", boxed: true, iconSize: 20, centeredInPanel: false)
                     }.padding(metrics.size(10))
                 } else {
                     ContentUnavailableView("pullRequests.empty", systemImage: "arrow.triangle.pull")
@@ -167,7 +168,8 @@ struct PullRequestsView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(metrics.size(12))
                 .background(theme[.statusOfflineSoft], in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
-                .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.statusOffline], lineWidth: metrics.size(1)))
+                .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.statusOffline],
+                    lineWidth: metrics.size(1)))
                 .padding(metrics.size(10))
         }
     }
@@ -226,7 +228,8 @@ struct PullRequestsView: View {
         .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.border], lineWidth: metrics.size(1)))
         .contextMenu {
             Button { reviewing = pr } label: { Label("pullRequests.reviewWithAgent", systemImage: "cpu") }
-            Button { merging = pr } label: { Label("pullRequests.squashMergeMenu", systemImage: "arrow.triangle.merge") }.disabled(reviews.reviewedHead(pr) == nil)
+            Button { merging = pr } label: { Label("pullRequests.squashMergeMenu",
+                systemImage: "arrow.triangle.merge") }.disabled(reviews.reviewedHead(pr) == nil)
         }
     }
 
@@ -299,24 +302,22 @@ struct PullRequestsView: View {
                 .font(metrics.font(.caption))
                 .foregroundStyle(theme[.statusDisabled])
         }
-        switch pr.reviewDecision {
-        case .approved:
+        if case .approved = pr.reviewDecision {
             Image(systemName: "checkmark.seal").foregroundStyle(theme[.statusActive]).help("pullRequests.review.approved")
-        case .changesRequested:
+        } else if case .changesRequested = pr.reviewDecision {
             Image(systemName: "exclamationmark.bubble").foregroundStyle(theme[.statusStopped]).help("pullRequests.review.changes")
-        case .reviewRequired:
+        } else if case .reviewRequired = pr.reviewDecision {
             Image(systemName: "eye").foregroundStyle(theme[.statusWaiting]).help("pullRequests.review.required")
-        default:
+        } else {
             EmptyView()
         }
-        switch pr.checks {
-        case .success:
+        if case .success = pr.checks {
             Image(systemName: "checkmark.circle.fill").foregroundStyle(theme[.statusActive]).help("pullRequests.checks.success")
-        case .failure:
+        } else if case .failure = pr.checks {
             Image(systemName: "xmark.circle.fill").foregroundStyle(theme[.statusStopped]).help("pullRequests.checks.failure")
-        case .pending:
+        } else if case .pending = pr.checks {
             Image(systemName: "clock").foregroundStyle(theme[.statusWaiting]).help("pullRequests.checks.pending")
-        case .none:
+        } else {
             EmptyView()
         }
     }
@@ -326,10 +327,12 @@ struct PullRequestsView: View {
         detailed = []
         let client = GitHubPullRequests()
         do {
-            switch try await client.status() {
-            case .missing: phase = .missing; prs = []; return
-            case .signedOut: phase = .signedOut; prs = []; return
-            case .ready: break
+            let matchedValue = try await client.status()
+            if case .missing = matchedValue {
+                phase = .missing; prs = []; return
+            } else if case .signedOut = matchedValue {
+                phase = .signedOut; prs = []; return
+            } else if case .ready = matchedValue {
             }
             prs = try await client.listMine()
             phase = .ready
@@ -354,10 +357,12 @@ struct PullRequestsView: View {
     }
 
     private static func message(for error: Error) -> String {
-        switch error {
-        case GitHubPullRequestError.commandFailed(_, let stderr) where !stderr.isEmpty: stderr
-        case GitHubPullRequestError.parseFailed(let detail): detail
-        default: error.localizedDescription
+        if case GitHubPullRequestError.commandFailed(_, let stderr) = error, !stderr.isEmpty {
+            stderr
+        } else if case GitHubPullRequestError.parseFailed(let detail) = error {
+            detail
+        } else {
+            error.localizedDescription
         }
     }
 }

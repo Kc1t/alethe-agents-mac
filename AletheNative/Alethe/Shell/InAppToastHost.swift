@@ -170,26 +170,32 @@ private struct InAppToastAction: View {
     }
 
     private var foreground: Color {
-        switch kind {
-        case .primary: theme[.accentOn]
-        case .secondary: theme[hovering ? .fg : .fgMuted]
-        case .quiet: theme[hovering ? .fg : .fgFaint]
+        if case .primary = kind {
+            theme[.accentOn]
+        } else if case .secondary = kind {
+            theme[hovering ? .fg : .fgMuted]
+        } else {
+            theme[hovering ? .fg : .fgFaint]
         }
     }
 
     private var background: Color {
-        switch kind {
-        case .primary: theme[hovering ? .accentStrong : accent]
-        case .secondary: .clear
-        case .quiet: hovering ? theme[.panelHover] : .clear
+        if case .primary = kind {
+            theme[hovering ? .accentStrong : accent]
+        } else if case .secondary = kind {
+            .clear
+        } else {
+            hovering ? theme[.panelHover] : .clear
         }
     }
 
     private var border: Color {
-        switch kind {
-        case .primary: theme[hovering ? .accentStrong : accent]
-        case .secondary: theme[hovering ? .borderStrong : .border]
-        case .quiet: .clear
+        if case .primary = kind {
+            theme[hovering ? .accentStrong : accent]
+        } else if case .secondary = kind {
+            theme[hovering ? .borderStrong : .border]
+        } else {
+            .clear
         }
     }
 }

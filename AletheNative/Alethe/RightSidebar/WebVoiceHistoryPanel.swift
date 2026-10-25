@@ -35,7 +35,8 @@ struct WebVoiceHistoryPanel: View {
                             .foregroundStyle(theme[.fgFaint])
                             .frame(width: metrics.size(38), height: metrics.size(38))
                             .background(theme[.bgElevated], in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
-                            .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.border], lineWidth: metrics.size(1)))
+                            .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.border],
+                                lineWidth: metrics.size(1)))
                             .padding(.bottom, metrics.size(3))
                         Text("rightSidebar.jev.empty").font(metrics.font(size: 12, weight: .bold)).foregroundStyle(theme[.fg])
                         Text("jev.history.emptyBody").font(metrics.font(size: 11))
@@ -55,12 +56,16 @@ struct WebVoiceHistoryPanel: View {
     }
 
     private func status(_ status: JevController.Status) -> LocalizedStringKey {
-        switch status {
-        case .deciding: "jev.history.deciding"
-        case .ran: "jev.history.ran"
-        case .waiting: "jev.history.waiting"
-        case .blocked: "jev.history.blocked"
-        case .failed: "jev.history.failed"
+        if case .deciding = status {
+            "jev.history.deciding"
+        } else if case .ran = status {
+            "jev.history.ran"
+        } else if case .waiting = status {
+            "jev.history.waiting"
+        } else if case .blocked = status {
+            "jev.history.blocked"
+        } else {
+            "jev.history.failed"
         }
     }
 

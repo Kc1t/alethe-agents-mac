@@ -24,7 +24,8 @@ struct GSDSyncView: View {
         Group {
             if metrics.isWebInterface {
                 if sessions.isEmpty {
-                    WebSidebarEmpty(title: "gsdSync.empty", detail: "rightSidebar.gsd.emptyDetail", symbol: "sparkles", iconSize: 20, minimumHeight: 220, gap: 7, centeredInPanel: false)
+                    WebSidebarEmpty(title: "gsdSync.empty", detail: "rightSidebar.gsd.emptyDetail", symbol: "sparkles",
+                        iconSize: 20, minimumHeight: 220, gap: 7, centeredInPanel: false)
                         .frame(maxHeight: .infinity, alignment: .top)
                         .accessibilityIdentifier("gsdSync.empty")
                 } else {

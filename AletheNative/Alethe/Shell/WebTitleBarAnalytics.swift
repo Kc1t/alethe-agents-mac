@@ -99,7 +99,8 @@ struct WebTitleBarUsage: View {
                 AgentLogo(agent: provider.rawValue, size: 16)
                     .frame(width: metrics.size(26), height: metrics.size(26))
                     .background(theme[accent].opacity(0.14), in: RoundedRectangle(cornerRadius: metrics.size(7)))
-                    .overlay(RoundedRectangle(cornerRadius: metrics.size(7)).strokeBorder(theme[accent].opacity(0.26), lineWidth: metrics.size(1)))
+                    .overlay(RoundedRectangle(cornerRadius: metrics.size(7)).strokeBorder(theme[accent].opacity(0.26),
+                        lineWidth: metrics.size(1)))
                 Text(verbatim: AgentLabels.name(for: provider.rawValue)).font(metrics.font(size: 13.5, weight: .medium)).lineLimit(1)
                 Spacer(minLength: 0)
                 Button { Task { await environment.usage.refresh([provider]) } } label: {
@@ -111,37 +112,21 @@ struct WebTitleBarUsage: View {
                 Text(verbatim: plan.lowercased()).font(metrics.monoFont(size: 9.5))
                     .foregroundStyle(theme[.textTertiary])
             }
-            switch usage?.status {
-            case .ready?:
+            if case .ready? = usage?.status {
                 ForEach(usage?.windows ?? []) { window in
-                    VStack(spacing: metrics.size(7)) {
-                        HStack(alignment: .firstTextBaseline, spacing: metrics.size(8)) {
-                            Text(verbatim: window.label).font(metrics.font(size: 11.5)).foregroundStyle(theme[.textSecondary])
-                            Spacer(minLength: 0)
-                            Text(verbatim: "\(Int(window.usedPercent.rounded()))%")
-                                .font(metrics.monoFont(size: 11)).foregroundStyle(theme[.fgMuted])
-                        }
-                        GeometryReader { geometry in
-                            RoundedRectangle(cornerRadius: metrics.size(3)).fill(theme[.bgElevated])
-                            RoundedRectangle(cornerRadius: metrics.size(3))
-                                .fill(theme[window.usedPercent >= 80 ? .statusOffline : window.usedPercent >= 50 ? .statusWaiting : accent])
-                                .frame(width: geometry.size.width * min(1, max(0, window.usedPercent / 100)))
-                        }.frame(height: metrics.size(6))
-                        if let reset = window.resetsAt {
-                            HStack(spacing: metrics.size(4)) {
-                                Text("usage.resets"); Text(reset, style: .relative)
-                                Spacer(minLength: 0)
-                            }.font(metrics.monoFont(size: 10)).foregroundStyle(theme[.fgFaint])
-                        }
-                    }
+                    usageWindowRow(window, accent: accent)
                 }
                 if let credits = usage?.resetCredits, !credits.isEmpty {
                     resetCreditBox(count: credits.count)
                 }
-            case .noCLI?: Text("usage.noCLI").font(metrics.font(size: 12))
-            case .noAuth?: Text("usage.noAuth").font(metrics.font(size: 12))
-            case .unavailable(let reason)?: Text(verbatim: String(format: String(localized: "usage.unavailable"), reason)).font(metrics.font(size: 12))
-            case nil: ProgressView().controlSize(.small)
+            } else if case .noCLI? = usage?.status {
+                Text("usage.noCLI").font(metrics.font(size: 12))
+            } else if case .noAuth? = usage?.status {
+                Text("usage.noAuth").font(metrics.font(size: 12))
+            } else if case .unavailable(let reason)? = usage?.status {
+                Text(verbatim: String(format: String(localized: "usage.unavailable"), reason)).font(metrics.font(size: 12))
+            } else if case nil = usage?.status {
+                ProgressView().controlSize(.small)
             }
             Spacer(minLength: 0)
         }
@@ -149,6 +134,29 @@ struct WebTitleBarUsage: View {
         .frame(maxWidth: .infinity, minHeight: metrics.size(244), alignment: .topLeading)
         .background(theme[.bg].opacity(0.82), in: RoundedRectangle(cornerRadius: metrics.radius(.md)))
         .overlay(RoundedRectangle(cornerRadius: metrics.radius(.md)).strokeBorder(theme[.borderSubtle], lineWidth: metrics.size(1)))
+    }
+
+    private func usageWindowRow(_ window: UsageWindow, accent: ThemeToken) -> some View {
+        VStack(spacing: metrics.size(7)) {
+            HStack(alignment: .firstTextBaseline, spacing: metrics.size(8)) {
+                Text(verbatim: window.label).font(metrics.font(size: 11.5)).foregroundStyle(theme[.textSecondary])
+                Spacer(minLength: 0)
+                Text(verbatim: "\(Int(window.usedPercent.rounded()))%")
+                    .font(metrics.monoFont(size: 11)).foregroundStyle(theme[.fgMuted])
+            }
+            GeometryReader { geometry in
+                RoundedRectangle(cornerRadius: metrics.size(3)).fill(theme[.bgElevated])
+                RoundedRectangle(cornerRadius: metrics.size(3))
+                    .fill(theme[window.usedPercent >= 80 ? .statusOffline : window.usedPercent >= 50 ? .statusWaiting : accent])
+                    .frame(width: geometry.size.width * min(1, max(0, window.usedPercent / 100)))
+            }.frame(height: metrics.size(6))
+            if let reset = window.resetsAt {
+                HStack(spacing: metrics.size(4)) {
+                    Text("usage.resets"); Text(reset, style: .relative)
+                    Spacer(minLength: 0)
+                }.font(metrics.monoFont(size: 10)).foregroundStyle(theme[.fgFaint])
+            }
+        }
     }
 
     private func resetCreditBox(count: Int) -> some View {

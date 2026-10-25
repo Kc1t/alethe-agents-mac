@@ -65,10 +65,10 @@ struct WebHomeUsageCard: View {
     private var emptyTitle: LocalizedStringKey {
         if !enabled { return "home.bottom.usageOff" }
         if let usage {
-            switch usage.status {
-            case .noCLI: return "usage.noCLI"
-            case .unavailable: return "home.bottom.usageUnavailable"
-            default: break
+            if case .noCLI = usage.status {
+                return "usage.noCLI"
+            } else if case .unavailable = usage.status {
+                return "home.bottom.usageUnavailable"
             }
         }
         return provider == .claude ? "home.web.noToken" : "home.web.notSignedIn"
@@ -124,30 +124,10 @@ struct WebHomeUsageCard: View {
                     }
                 } else { Text(verbatim: windowLabel(headline)) }
             }
-            .font(metrics.monoFont(size: 11)).foregroundStyle(theme[usage.rateLimited || headline.usedPercent >= 80 ? .statusOffline : .textTertiary])
+            .font(metrics.monoFont(size: 11)).foregroundStyle(theme[usage.rateLimited || headline.usedPercent >= 80 ?
+                .statusOffline : .textTertiary])
             .padding(.top, metrics.size(6)).lineLimit(2)
-            VStack(spacing: metrics.size(13)) {
-                ForEach(usage.windows) { window in
-                    VStack(spacing: metrics.size(7)) {
-                        HStack(alignment: .firstTextBaseline, spacing: metrics.size(8)) {
-                            Text(verbatim: windowLabel(window)).font(metrics.font(size: 11.5))
-                                .foregroundStyle(theme[.textSecondary]).lineLimit(1)
-                            Spacer(minLength: 0)
-                            Text(verbatim: "\(Int(window.usedPercent.rounded()))%")
-                                .font(metrics.monoFont(size: 11)).foregroundStyle(theme[.fgMuted])
-                        }
-                        GeometryReader { geometry in
-                            RoundedRectangle(cornerRadius: metrics.size(3)).fill(theme[.bgElevated])
-                                .overlay(alignment: .leading) {
-                                    RoundedRectangle(cornerRadius: metrics.size(3))
-                                        .fill(theme[window.usedPercent >= 80 ? .statusOffline : window.usedPercent >= 50 ? .statusWaiting : accent])
-                                        .frame(width: geometry.size.width * max(0, min(window.usedPercent, 100)) / 100)
-                                        .animation(metrics.reducesMotion ? nil : Motion.animation(Motion.standard, reduceMotion: false), value: window.usedPercent)
-                                }
-                        }.frame(height: metrics.size(6))
-                    }
-                }
-            }.padding(.top, metrics.size(16))
+            usageWindows(usage)
             LazyVGrid(columns: [GridItem(.flexible(), spacing: metrics.size(14)), GridItem(.flexible())],
                       alignment: .leading, spacing: metrics.size(9)) {
                 ForEach(usage.windows) { window in
@@ -166,7 +146,8 @@ struct WebHomeUsageCard: View {
                             .font(metrics.monoFont(size: 12)).foregroundStyle(theme[usage.rateLimited ? .statusOffline : .fgMuted])
                     } else {
                         Text(verbatim: "\(Int((usage.peak?.usedPercent ?? 0).rounded()))%")
-                            .font(metrics.monoFont(size: 12)).foregroundStyle(theme[(usage.peak?.usedPercent ?? 0) >= 80 ? .statusOffline : .fgMuted])
+                            .font(metrics.monoFont(size: 12))
+                                .foregroundStyle(theme[(usage.peak?.usedPercent ?? 0) >= 80 ? .statusOffline : .fgMuted])
                     }
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -183,6 +164,32 @@ struct WebHomeUsageCard: View {
             .padding(.top, metrics.size(12)).overlay(alignment: .top) { theme[.borderSubtle].frame(height: metrics.size(1)) }
             .padding(.top, metrics.size(14))
         }
+    }
+
+    private func usageWindows(_ usage: ProviderUsage) -> some View {
+    VStack(spacing: metrics.size(13)) {
+        ForEach(usage.windows) { window in
+            VStack(spacing: metrics.size(7)) {
+                HStack(alignment: .firstTextBaseline, spacing: metrics.size(8)) {
+                    Text(verbatim: windowLabel(window)).font(metrics.font(size: 11.5))
+                        .foregroundStyle(theme[.textSecondary]).lineLimit(1)
+                    Spacer(minLength: 0)
+                    Text(verbatim: "\(Int(window.usedPercent.rounded()))%")
+                        .font(metrics.monoFont(size: 11)).foregroundStyle(theme[.fgMuted])
+                }
+                GeometryReader { geometry in
+                    RoundedRectangle(cornerRadius: metrics.size(3)).fill(theme[.bgElevated])
+                        .overlay(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: metrics.size(3))
+                                .fill(theme[window.usedPercent >= 80 ? .statusOffline : window.usedPercent >= 50 ? .statusWaiting : accent])
+                                .frame(width: geometry.size.width * max(0, min(window.usedPercent, 100)) / 100)
+                                .animation(metrics.reducesMotion ? nil : Motion.animation(Motion.standard,
+                                    reduceMotion: false), value: window.usedPercent)
+                        }
+                }.frame(height: metrics.size(6))
+            }
+        }
+    }.padding(.top, metrics.size(16))
     }
 
     private func hero(_ window: UsageWindow) -> some View {
@@ -206,10 +213,12 @@ struct WebHomeUsageCard: View {
     }
 
     private func windowLabel(_ window: UsageWindow) -> String {
-        switch window.label {
-        case "7d": String(localized: "home.bottom.week")
-        case "7d Opus": "opus"
-        default: window.label.lowercased()
+        if case "7d" = window.label {
+            String(localized: "home.bottom.week")
+        } else if case "7d Opus" = window.label {
+            "opus"
+        } else {
+            window.label.lowercased()
         }
     }
 
@@ -240,7 +249,8 @@ struct HomeBottomRefreshButton: View {
         }
         .buttonStyle(AletheHomeRefreshStyle())
         .background(theme[.accentSoft].opacity(hovered ? 1 : 0), in: RoundedRectangle(cornerRadius: metrics.size(6)))
-        .overlay(RoundedRectangle(cornerRadius: metrics.size(6)).strokeBorder(theme[.borderStrong].opacity(hovered ? 1 : 0), lineWidth: metrics.size(1)))
+        .overlay(RoundedRectangle(cornerRadius: metrics.size(6)).strokeBorder(theme[.borderStrong].opacity(hovered ?
+            1 : 0), lineWidth: metrics.size(1)))
         .onHover { hovered = $0 }.disabled(refreshing).opacity(refreshing ? 0.5 : 1)
         .help(Text("home.refresh")).accessibilityLabel(Text("home.refresh"))
     }

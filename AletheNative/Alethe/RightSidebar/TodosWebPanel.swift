@@ -22,10 +22,12 @@ struct TodosWebPanel: View {
     private enum Filter: String, CaseIterable {
         case all, active, completed
         var title: LocalizedStringKey {
-            switch self {
-            case .all: "rightSidebar.todo.all"
-            case .active: "rightSidebar.todo.active"
-            case .completed: "rightSidebar.todo.completed"
+            if case .all = self {
+                "rightSidebar.todo.all"
+            } else if case .active = self {
+                "rightSidebar.todo.active"
+            } else {
+                "rightSidebar.todo.completed"
             }
         }
     }
@@ -116,7 +118,8 @@ struct TodosWebPanel: View {
                         .overlay(alignment: .leading) {
                             RoundedRectangle(cornerRadius: metrics.size(2)).fill(theme[.statusWorking])
                                 .frame(width: geometry.size.width * CGFloat(completed.count) / CGFloat(max(1, store.todos.count)))
-                                .animation(Motion.sidebarEntrance(duration: 0.22, reduceMotion: metrics.reducesMotion), value: completed.count)
+                                .animation(Motion.sidebarEntrance(duration: 0.22, reduceMotion: metrics.reducesMotion),
+                                    value: completed.count)
                         }
                 }
                 .frame(height: metrics.size(4))
@@ -173,7 +176,8 @@ struct TodosWebPanel: View {
                 }
             }
         }
-        .padding(.horizontal, metrics.size(metrics.style == .clean ? 8 : 10)).padding(.top, metrics.size(metrics.style == .clean ? 8 : 10)).padding(.bottom, metrics.size(2))
+        .padding(.horizontal, metrics.size(metrics.style == .clean ? 8 : 10)).padding(.top,
+            metrics.size(metrics.style == .clean ? 8 : 10)).padding(.bottom, metrics.size(2))
     }
 
     private func add() {
@@ -233,7 +237,8 @@ private struct TodoWebSection<Content: View>: View {
                         title.font(metrics.font(size: 11, weight: metrics.style == .clean ? .semibold : .medium)).lineLimit(1)
                         Text(verbatim: String(count)).font(metrics.font(size: 9))
                             .padding(.horizontal, metrics.size(metrics.style == .clean ? 0 : 5))
-                            .frame(minWidth: metrics.style == .clean ? nil : metrics.size(18), minHeight: metrics.style == .clean ? nil : metrics.size(16))
+                            .frame(minWidth: metrics.style == .clean ? nil : metrics.size(18),
+                                minHeight: metrics.style == .clean ? nil : metrics.size(16))
                             .background(theme[.bgElevated].opacity(metrics.style == .clean ? 0 : 1), in: Capsule())
                         Rectangle().fill(theme[.border]).frame(height: metrics.size(1))
                     }
@@ -250,7 +255,7 @@ private struct TodoWebSection<Content: View>: View {
             }
             .onHover { hovering = $0 }
             if !collapsed { content }
-            if completed && (collapsed || count == 0) {
+            if completed && (collapsed || count < 1) {
                 Text("rightSidebar.todo.emptyCompleted").font(metrics.font(size: 11)).foregroundStyle(theme[.fgFaint])
                     .padding(metrics.size(6)).frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -292,7 +297,8 @@ private struct TodoWebRow: View {
                 TextField((editingTags ? "todos.tags.placeholder" : "todos.rename") as LocalizedStringKey, text: $draft)
                     .textFieldStyle(.plain).font(metrics.font(size: 12)).focused($focused)
                     .padding(.horizontal, metrics.size(6)).frame(height: metrics.size(26))
-                    .overlay(RoundedRectangle(cornerRadius: metrics.radius(.sm)).strokeBorder(theme[.borderStrong], lineWidth: metrics.size(1)))
+                    .overlay(RoundedRectangle(cornerRadius: metrics.radius(.sm)).strokeBorder(theme[.borderStrong],
+                        lineWidth: metrics.size(1)))
                     .onSubmit(save).onExitCommand { editing = false; editingTags = false }
                     .accessibilityIdentifier(editingTags ? "todos.tagsField" : "todos.renameField")
             } else {
@@ -322,7 +328,8 @@ private struct TodoWebRow: View {
             if hovering || focused {
                 HStack(spacing: metrics.size(1)) {
                     Button { if editing { save() } else { beginEdit() } } label: {
-                        Label((editing ? "rightSidebar.todo.save" : "todos.rename") as LocalizedStringKey, systemImage: editing ? "checkmark" : "pencil")
+                        Label((editing ? "rightSidebar.todo.save" : "todos.rename") as LocalizedStringKey,
+                            systemImage: editing ? "checkmark" : "pencil")
                             .font(metrics.font(size: 12))
                     }.help(Text((editing ? "rightSidebar.todo.save" : "todos.rename") as LocalizedStringKey))
                     Button { store.delete(todo.id) } label: {
@@ -333,7 +340,8 @@ private struct TodoWebRow: View {
         }
         .padding(.leading, metrics.size(1)).padding(.trailing, metrics.size(5)).padding(.vertical, metrics.size(2))
         .frame(minHeight: metrics.size(metrics.style == .clean ? 30 : 36))
-        .background(theme[.panelHover].opacity(hovering || focused ? 1 : 0), in: RoundedRectangle(cornerRadius: metrics.style == .clean ? metrics.size(0) : metrics.radius(.md)))
+        .background(theme[.panelHover].opacity(hovering || focused ? 1 : 0),
+            in: RoundedRectangle(cornerRadius: metrics.style == .clean ? metrics.size(0) : metrics.radius(.md)))
         .animation(Motion.sidebarColor(reduceMotion: metrics.reducesMotion), value: hovering)
         .onHover { hovering = $0 }
         .accessibilityIdentifier("todos.row.\(todo.id)")
@@ -350,7 +358,8 @@ private struct TodoWebRow: View {
 
     private func beginEdit() { draft = todo.title; editing = true; focused = true }
     private func save() {
-        if editingTags { store.setTags(todo.id, draft.split(whereSeparator: { $0 == "#" || $0 == "," || $0.isWhitespace }).map(String.init)) }
+        if editingTags { store.setTags(todo.id, draft.split(whereSeparator: { $0 == "#" || $0 == "," ||
+            $0.isWhitespace }).map(String.init)) }
         else { store.rename(todo.id, to: draft) }
         editing = false; editingTags = false
     }

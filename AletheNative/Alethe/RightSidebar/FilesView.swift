@@ -11,13 +11,13 @@ import Quartz
 import SwiftUI
 
 struct FilesView: View {
-    @Environment(AppEnvironment.self) private var environment
-    @Environment(\.metrics) private var metrics
+    @Environment(AppEnvironment.self) var environment
+    @Environment(\.metrics) var metrics
 
     static let tabID = "files"
     static let tab = SidebarTabContribution(id: tabID, title: "Files", symbol: "folder", side: .right, viewID: tabID)
 
-    private var project: Project? {
+    var project: Project? {
         environment.workspace.flatMap { model in
             model.document.workspace.selectedProjectID.flatMap(model.document.project)
         }
@@ -34,21 +34,21 @@ struct FilesView: View {
     }
 }
 
-private struct FileTreeList: View {
+struct FileTreeList: View {
     let project: Project
-    @Environment(AppEnvironment.self) private var environment
-    @Environment(\.theme) private var theme
-    @Environment(\.metrics) private var metrics
-    @State private var rootExpanded = true
-    @State private var hoveredFile: URL?
-    @State private var tree: FileTree
-    @State private var renaming: URL?
-    @State private var draftName = ""
+    @Environment(AppEnvironment.self) var environment
+    @Environment(\.theme) var theme
+    @Environment(\.metrics) var metrics
+    @State var rootExpanded = true
+    @State var hoveredFile: URL?
+    @State var tree: FileTree
+    @State var renaming: URL?
+    @State var draftName = ""
     @State private var pendingDelete: URL?
     @State private var errorMessage: String? { didSet { if errorMessage != oldValue { AppLog.shown(errorMessage, .app) } } }
-    @State private var previewURL: URL?
-    @State private var selection: URL?
-    @FocusState private var renameFocused: Bool
+    @State var previewURL: URL?
+    @State var selection: URL?
+    @FocusState var renameFocused: Bool
 
     init(project: Project) {
         self.project = project
@@ -98,182 +98,6 @@ private struct FileTreeList: View {
         }
     }
 
-    private var webTree: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                HStack(spacing: metrics.size(5)) {
-                    Text(verbatim: project.name).font(metrics.font(size: 11, weight: 650)).lineLimit(1)
-                    Text(verbatim: project.folder).font(metrics.font(size: 10)).foregroundStyle(theme[.fgFaint])
-                        .lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
-                    Button { NSWorkspace.shared.activateFileViewerSelecting([tree.root]) } label: {
-                        Label("files.revealInFinder", systemImage: "folder.badge.magnifyingglass").font(metrics.font(size: 13))
-                    }.help(Text("files.revealInFinder"))
-                    Button { attempt { try tree.reload() } } label: {
-                        Label("rightSidebar.files.refresh", systemImage: "arrow.clockwise").font(metrics.font(size: 13))
-                    }.help(Text("rightSidebar.files.refresh"))
-                }
-                .buttonStyle(AletheAnimatedRightSidebarTabStyle(width: 24, height: 24))
-                .padding(.leading, metrics.size(12)).padding(.trailing, metrics.size(8)).frame(height: metrics.size(38))
-                .overlay(alignment: .bottom) { Rectangle().fill(theme[.border]).frame(height: metrics.size(1)) }
-                .help(project.folder)
-                Button { rootExpanded.toggle() } label: {
-                    HStack(spacing: metrics.size(6)) {
-                        Image(systemName: rootExpanded ? "chevron.down" : "chevron.right").resizable().scaledToFit()
-                            .frame(width: metrics.size(13), height: metrics.size(13)).foregroundStyle(theme[.fgFaint])
-                        Image(systemName: "folder").resizable().scaledToFit()
-                            .frame(width: metrics.size(14), height: metrics.size(14)).foregroundStyle(theme[.fgMuted])
-                        Text(verbatim: tree.root.lastPathComponent.uppercased()).font(metrics.font(size: 11, weight: .bold)).lineLimit(1)
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.leading, metrics.size(8)).padding(.trailing, metrics.size(8)).frame(height: metrics.size(28))
-                    .contentShape(Rectangle())
-                }.buttonStyle(.plain).modifier(WebFileHover())
-                if rootExpanded {
-                    ForEach(tree.visibleRows()) { row in
-                        webRow(row).contextMenu { webMenu(for: row.node) }
-                    }
-                    if tree.rootNodes.isEmpty {
-                        Text("files.empty").font(metrics.font(size: 11)).foregroundStyle(theme[.fgFaint])
-                            .padding(.leading, metrics.size(36)).padding(.trailing, metrics.size(12)).padding(.vertical, metrics.size(8))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-            }
-        }
-        .foregroundStyle(theme[.fg]).background(theme[.bg])
-        .focusable()
-        .onKeyPress(.upArrow) {
-            guard renaming == nil else { return .ignored }
-            moveSelection(-1); return .handled
-        }
-        .onKeyPress(.downArrow) {
-            guard renaming == nil else { return .ignored }
-            moveSelection(1); return .handled
-        }
-        .onKeyPress(.rightArrow) { setExpanded(true) }
-        .onKeyPress(.leftArrow) { setExpanded(false) }
-        .onKeyPress(.return) {
-            guard renaming == nil, let node = tree.visibleRows().first(where: { $0.node.url == selection })?.node else { return .ignored }
-            activate(node); return .handled
-        }
-        .onKeyPress(.space) {
-            guard renaming == nil, let selection else { return .ignored }
-            preview(selection); return .handled
-        }
-    }
-
-    private func setExpanded(_ expanded: Bool) -> KeyPress.Result {
-        guard renaming == nil, let row = tree.visibleRows().first(where: { $0.node.url == selection }),
-              row.node.isDirectory else { return .ignored }
-        if row.isExpanded != expanded { attempt { try tree.toggle(row.node.url) } }
-        return .handled
-    }
-
-    private func moveSelection(_ offset: Int) {
-        guard renaming == nil else { return }
-        let rows = tree.visibleRows()
-        guard !rows.isEmpty else { return }
-        let index = rows.firstIndex { $0.node.url == selection } ?? (offset > 0 ? -1 : rows.count)
-        selection = rows[min(max(0, index + offset), rows.count - 1)].node.url
-    }
-
-    private func webRow(_ row: FileTreeRow) -> some View {
-        let node = row.node
-        return HStack(spacing: metrics.size(6)) {
-            if node.isDirectory {
-                Image(systemName: row.isExpanded ? "chevron.down" : "chevron.right").resizable().scaledToFit()
-                    .frame(width: metrics.size(13), height: metrics.size(13)).foregroundStyle(theme[.fgFaint])
-            }
-            Image(systemName: node.iconName).resizable().scaledToFit()
-                .frame(width: metrics.size(node.isDirectory ? 14 : 13), height: metrics.size(node.isDirectory ? 14 : 13))
-                .foregroundStyle(theme[.fgMuted])
-            if renaming == node.url {
-                TextField("files.name", text: $draftName).textFieldStyle(.plain).focused($renameFocused)
-                    .onSubmit { commitRename(node.url) }.onExitCommand { renaming = nil }.onAppear { renameFocused = true }
-            } else {
-                Text(verbatim: node.name).lineLimit(1).truncationMode(.tail)
-                    .foregroundStyle(webBadgeColor(tree.badge(for: node)) ?? theme[.fgMuted])
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            if !node.isDirectory && hoveredFile == node.url {
-                HStack(spacing: metrics.size(2)) {
-                    Button { open(node) } label: {
-                        Label("rightSidebar.files.addToGrid", systemImage: "square.grid.2x2").font(metrics.font(size: 12))
-                    }.help(Text("rightSidebar.files.addToGrid"))
-                    Button { preview(node.url) } label: {
-                        Label("rightSidebar.files.preview", systemImage: "eye").font(metrics.font(size: 12))
-                    }.help(Text("rightSidebar.files.preview"))
-                    if ["md", "markdown"].contains(node.url.pathExtension.lowercased()) {
-                        Button { openMarkdown(node.url) } label: {
-                            Label("rightSidebar.files.openMarkdown", systemImage: "sidebar.right").font(metrics.font(size: 12))
-                        }.help(Text("rightSidebar.files.openMarkdown"))
-                    }
-                }.buttonStyle(AletheAnimatedRightSidebarTabStyle(width: 20, height: 20))
-            }
-            if let badge = tree.badge(for: node) {
-                if node.isDirectory {
-                    Circle().fill(webBadgeColor(badge) ?? theme[.fgMuted]).frame(width: metrics.size(6), height: metrics.size(6))
-                        .padding(.trailing, metrics.size(4))
-                } else {
-                    Text(verbatim: badge.letter).font(metrics.monoFont(size: 11, weight: .bold))
-                        .foregroundStyle(webBadgeColor(badge) ?? theme[.fgMuted]).frame(width: metrics.size(16))
-                }
-            }
-        }
-        .font(metrics.font(size: 12))
-        .padding(.leading, metrics.size(22 + CGFloat(row.depth) * 14))
-        .padding(.trailing, metrics.size(8)).frame(height: metrics.size(24))
-        .contentShape(Rectangle()).modifier(WebFileHover())
-        .overlay { Rectangle().strokeBorder(theme[.accent].opacity(selection == node.url ? 1 : 0), lineWidth: metrics.size(1)) }
-        .onTapGesture(count: 2) { if !node.isDirectory { open(node) } }
-        .onTapGesture {
-            selection = node.url
-            if node.isDirectory { attempt { try tree.toggle(node.url) } }
-            else { preview(node.url) }
-        }
-        .modifier(WebFileDrag(url: node.url, enabled: !node.isDirectory))
-        .onHover { hoveredFile = $0 ? node.url : hoveredFile == node.url ? nil : hoveredFile }
-        .help(node.url.path)
-    }
-
-    private func preview(_ url: URL) {
-        if metrics.isWebInterface { previewURL = url }
-        else { QuickLook.shared.show(url) }
-    }
-
-    private func openMarkdown(_ url: URL) {
-        NotificationCenter.default.post(name: .sidebarOpenMarkdown, object: url)
-        environment.rightSidebarTab = DocsView.tabID
-        environment.rightSidebarVisible = true
-    }
-
-    private func webBadgeColor(_ badge: GitBadge?) -> Color? {
-        switch badge {
-        case .conflict?, .deleted?: theme[.statusOffline]
-        case .modified?, .stagedModified?: theme[.statusWaiting]
-        case .renamed?: theme[.agentCodex]
-        case .added?, .untracked?: theme[.statusWorking]
-        case nil: nil
-        }
-    }
-
-    @ViewBuilder private func webMenu(for node: FileNode) -> some View {
-        if !node.isDirectory {
-            Button { open(node) } label: { Label("rightSidebar.files.addToGrid", systemImage: "square.grid.2x2") }
-            Button { preview(node.url) } label: { Label("rightSidebar.files.preview", systemImage: "eye") }
-            if ["md", "markdown"].contains(node.url.pathExtension.lowercased()) {
-                Button {
-                    openMarkdown(node.url)
-                } label: { Label("rightSidebar.files.openMarkdown", systemImage: "sidebar.right") }
-            }
-        }
-        Button { NSWorkspace.shared.activateFileViewerSelecting([node.url]) } label: {
-            Label("files.revealInFinder", systemImage: "folder.badge.magnifyingglass")
-        }
-        Button { draftName = node.name; renaming = node.url } label: { Label("files.rename", systemImage: "pencil") }
-        Button(role: .destructive) { trash(node.url) } label: { Label("files.moveToTrash", systemImage: "trash") }
-    }
-
     @ViewBuilder
     private func rowView(_ row: FileTreeRow) -> some View {
         let node = row.node
@@ -316,11 +140,18 @@ private struct FileTreeList: View {
     }
 
     private func badgeColor(_ badge: GitBadge?) -> Color? {
-        switch badge {
-        case .conflict?, .deleted?: theme[.statusStopped]
-        case .modified?, .stagedModified?, .renamed?: theme[.statusWaiting]
-        case .added?, .untracked?: theme[.statusActive]
-        case nil: nil
+        if ({ if case .conflict? = badge { return true }; return false }()) ||
+            ({ if case .deleted? = badge { return true }; return false }()) {
+            theme[.statusStopped]
+        } else if ({ if case .modified? = badge { return true }; return false }()) ||
+            ({ if case .stagedModified? = badge { return true }; return false }()) ||
+            ({ if case .renamed? = badge { return true }; return false }()) {
+            theme[.statusWaiting]
+        } else if ({ if case .added? = badge { return true }; return false }()) ||
+            ({ if case .untracked? = badge { return true }; return false }()) {
+            theme[.statusActive]
+        } else {
+            nil
         }
     }
 
@@ -348,7 +179,7 @@ private struct FileTreeList: View {
         Button("files.newFolder") { create(in: directory, folder: true) }
     }
 
-    private func activate(_ node: FileNode) {
+    func activate(_ node: FileNode) {
         if node.isDirectory {
             attempt { try tree.toggle(node.url) }
         } else {
@@ -356,14 +187,18 @@ private struct FileTreeList: View {
         }
     }
 
-    private func open(_ node: FileNode) {
+    func open(_ node: FileNode) {
         let path = node.url.path
-        let content: PaneContent? = switch node.paneKind {
-        case .markdown?: .markdown(path: path)
-        case .image?: .image(path: path)
-        case .video?: .video(path: path)
-        case .web?: environment.features.isOn(.browser) ? .web(url: node.url.absoluteString, options: WebPaneOptions()) : nil
-        case .text?, nil: nil
+        let content: PaneContent? = if case .markdown? = node.paneKind {
+            .markdown(path: path)
+        } else if case .image? = node.paneKind {
+            .image(path: path)
+        } else if case .video? = node.paneKind {
+            .video(path: path)
+        } else if case .web? = node.paneKind {
+            environment.features.isOn(.browser) ? .web(url: node.url.absoluteString, options: WebPaneOptions()) : nil
+        } else {
+            nil
         }
         if let content {
             environment.open(content, in: project.id)
@@ -372,7 +207,7 @@ private struct FileTreeList: View {
         }
     }
 
-    private func commitRename(_ url: URL) {
+    func commitRename(_ url: URL) {
         renaming = nil
         attempt {
             try FileOperations.rename(url, to: draftName)
@@ -399,7 +234,7 @@ private struct FileTreeList: View {
         }
     }
 
-    private func trash(_ url: URL) {
+    func trash(_ url: URL) {
         attempt {
             if try FileOperations.moveToTrash(url) == .trashUnavailable {
                 pendingDelete = url
@@ -416,16 +251,22 @@ private struct FileTreeList: View {
         }
     }
 
-    private func attempt(_ work: () throws -> Void) {
+    func attempt(_ work: () throws -> Void) {
         do {
             try work()
         } catch let error as FileOperationError {
-            errorMessage = switch error {
-            case .invalidName: String(localized: "files.error.invalidName")
-            case .alreadyExists: String(localized: "files.error.alreadyExists")
-            case .notFound: String(localized: "files.error.notFound")
-            case .rootNotModifiable: String(localized: "files.error.root")
-            case .failed(let message): message
+            errorMessage = if case .invalidName = error {
+                String(localized: "files.error.invalidName")
+            } else if case .alreadyExists = error {
+                String(localized: "files.error.alreadyExists")
+            } else if case .notFound = error {
+                String(localized: "files.error.notFound")
+            } else if case .rootNotModifiable = error {
+                String(localized: "files.error.root")
+            } else if case .failed(let message) = error {
+                message
+            } else {
+                preconditionFailure("Unexpected value")
             }
         } catch {
             errorMessage = error.localizedDescription
@@ -489,139 +330,3 @@ private struct FileTreeList: View {
     }
 }
 
-@MainActor
-private final class QuickLook: NSObject, QLPreviewPanelDataSource {
-    static let shared = QuickLook()
-    nonisolated(unsafe) private var url: URL?
-
-    func show(_ url: URL) {
-        self.url = url
-        guard let panel = QLPreviewPanel.shared() else { return }
-        panel.dataSource = self
-        panel.reloadData()
-        if panel.isVisible { panel.orderOut(nil) } else { panel.makeKeyAndOrderFront(nil) }
-    }
-
-    nonisolated func numberOfPreviewItems(in panel: QLPreviewPanel!) -> Int {
-        url == nil ? 0 : 1
-    }
-
-    nonisolated func previewPanel(_ panel: QLPreviewPanel!, previewItemAt index: Int) -> (any QLPreviewItem)! {
-        url.map { $0 as NSURL }
-    }
-}
-
-private struct WebFileHover: ViewModifier {
-    @Environment(\.metrics) private var metrics
-    @Environment(\.theme) private var theme
-    @State private var hovering = false
-    func body(content: Content) -> some View {
-        content.background(theme[.panelHover].opacity(hovering ? 1 : 0))
-            .animation(Motion.sidebarColor(reduceMotion: metrics.reducesMotion), value: hovering)
-            .onHover { hovering = $0 }
-    }
-}
-
-private struct WebFileDrag: ViewModifier {
-    let url: URL
-    let enabled: Bool
-    func body(content: Content) -> some View {
-        if enabled { content.draggable(url) } else { content }
-    }
-}
-
-private struct SidebarFilePreview: View {
-    let url: URL
-    let close: () -> Void
-    let add: () -> Void
-    let markdown: () -> Void
-    @Environment(\.metrics) private var metrics
-    @Environment(\.theme) private var theme
-    @Environment(\.newTerminalModalHeight) private var maximumHeight
-    @State private var image: NSImage?
-    @State private var player: AVPlayer?
-    @State private var text: String?
-    @State private var failure: String?
-    private var ext: String { url.pathExtension.lowercased() }
-    private var isImage: Bool { ["png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico", "avif"].contains(ext) }
-    private var isVideo: Bool { ["mp4", "webm", "mov", "m4v", "mkv", "avi"].contains(ext) }
-
-    var body: some View {
-        GitWebModal(close: close) {
-            Text(verbatim: url.lastPathComponent).lineLimit(1)
-        } content: {
-            VStack(spacing: metrics.size(10)) {
-                Text(verbatim: url.path).font(metrics.monoFont(size: 10)).foregroundStyle(theme[.fgFaint])
-                    .lineLimit(1).truncationMode(.tail).frame(maxWidth: .infinity, alignment: .leading)
-                previewContent.frame(height: max(metrics.size(120), min(metrics.size(440), maximumHeight - metrics.size(150))))
-            }
-        } footer: {
-            Button(action: add) { Label("rightSidebar.files.addToGrid", systemImage: "square.grid.2x2") }
-                .buttonStyle(AletheButtonStyle(.primary))
-            if ["md", "markdown"].contains(ext) {
-                Button(action: markdown) { Label("rightSidebar.files.openMarkdown", systemImage: "sidebar.right") }
-                    .buttonStyle(AletheButtonStyle(.primary))
-            }
-        }
-        .task(id: url) { await load() }
-        .onDisappear { player?.pause() }
-        .accessibilityIdentifier("files.preview")
-    }
-
-    @ViewBuilder private var previewContent: some View {
-        if let failure { Text(verbatim: failure).foregroundStyle(theme[.fgMuted]).frame(maxWidth: .infinity) }
-        else if isImage, let image {
-            GeometryReader { proxy in
-                Image(nsImage: image).resizable().aspectRatio(contentMode: .fit)
-                    .frame(width: proxy.size.width, height: proxy.size.height)
-            }.background(theme[.bgSunken])
-        } else if isVideo, let player { VideoPlayer(player: player).background(theme[.bgSunken]) }
-        else if ext == "pdf" { SidebarPDFPreview(url: url) }
-        else if let text {
-            ScrollView([.horizontal, .vertical]) {
-                Text(verbatim: text).font(metrics.monoFont(size: 11)).textSelection(.enabled)
-                    .padding(metrics.size(12)).frame(maxWidth: .infinity, alignment: .topLeading)
-            }
-            .background(theme[.bgSunken], in: RoundedRectangle(cornerRadius: metrics.radius(.sm)))
-            .overlay(RoundedRectangle(cornerRadius: metrics.radius(.sm)).strokeBorder(theme[.border], lineWidth: metrics.size(1)))
-        } else { Text("files.loadingPreview").foregroundStyle(theme[.fgMuted]) }
-    }
-
-    private func load() async {
-        if isVideo { player = AVPlayer(url: url); return }
-        if ext == "pdf" { return }
-        let source = url
-        let media = isImage
-        let result = await Task.detached(priority: .userInitiated) { () -> Result<Data, any Error> in
-            Result {
-                let size = try source.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-                if !media && size > 2 * 1024 * 1024 { throw PreviewError.tooLarge }
-                return try Data(contentsOf: source)
-            }
-        }.value
-        guard !Task.isCancelled else { return }
-        switch result {
-        case .success(let data):
-            if media {
-                image = NSImage(data: data)
-                if image == nil { failure = String(localized: "linkPreview.unavailable") }
-            } else if let content = String(data: data, encoding: .utf8) { text = content }
-            else { failure = String(localized: "linkPreview.unavailable") }
-        case .failure(PreviewError.tooLarge): failure = String(localized: "files.previewTooLarge")
-        case .failure(let error): failure = error.localizedDescription
-        }
-    }
-
-    private enum PreviewError: Error { case tooLarge }
-}
-
-private struct SidebarPDFPreview: NSViewRepresentable {
-    let url: URL
-    func makeNSView(context: Context) -> PDFView {
-        let view = PDFView()
-        view.autoScales = true
-        view.document = PDFDocument(url: url)
-        return view
-    }
-    func updateNSView(_ view: PDFView, context: Context) {}
-}

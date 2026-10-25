@@ -16,13 +16,38 @@ struct PluginsWebPanel: View {
     @State private var source = "all"
     @State private var sort = "relevance"
 
+    private static let statusTitles: [String: String] = [
+        "all": "plugins.web.all",
+        "installed": "settings.web.reference.market.installed",
+        "available": "plugins.web.available",
+        "enabled": "settings.web.reference.market.stateEnabled",
+        "disabled": "settings.web.reference.market.stateDisabled",
+        "updates": "plugins.web.updates",
+    ]
+
+    private static let sourceTitles: [String: String] = [
+        "all": "plugins.web.all",
+        "bundled": "settings.web.reference.market.sourceBundled",
+        "local": "settings.web.reference.market.sourceLocal",
+        "catalog": "plugins.web.catalog",
+    ]
+
+    private static let sortTitles: [String: String] = [
+        "relevance": "plugins.web.relevance",
+        "name": "settings.web.reference.market.sortName",
+        "installed": "settings.web.reference.market.installed",
+        "updates": "settings.web.reference.market.sortUpdated",
+    ]
+
     private var records: [PluginCatalogWebModel.Row] {
         model.rows(environment.plugins).filter { row in
             let text = [row.name, row.id, row.description, row.author, row.capabilities.joined(separator: " ")].joined(separator: " ")
-            return (query.isEmpty || query.split(whereSeparator: \.isWhitespace).allSatisfy { text.localizedStandardContains(String($0)) }) &&
+            return (query.isEmpty || query.split(whereSeparator: \.isWhitespace)
+                .allSatisfy { text.localizedStandardContains(String($0)) }) &&
                 (source == "all" || source == row.source) &&
                 (status == "all" || status == "installed" && row.installed || status == "available" && !row.installed ||
-                 status == "enabled" && row.enabled || status == "disabled" && row.installed && !row.enabled || status == "updates" && row.update)
+                 status == "enabled" && row.enabled || status == "disabled" && row.installed && !row.enabled ||
+                     status == "updates" && row.update)
         }.sorted {
             if sort == "relevance", !query.isEmpty {
                 let first = relevance($0), second = relevance($1)
@@ -40,7 +65,8 @@ struct PluginsWebPanel: View {
         return query.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
             .split(whereSeparator: \.isWhitespace).reduce(0) { score, token in
                 if name == token || id == token { return score + 4 }
-                if name.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).contains(where: { $0.hasPrefix(token) }) { return score + 3 }
+                if name.split(whereSeparator: { !$0.isLetter && !$0.isNumber })
+                    .contains(where: { $0.hasPrefix(token) }) { return score + 3 }
                 return score + (name.contains(token) || id.contains(token) ? 2 : 0)
             }
     }
@@ -77,24 +103,28 @@ struct PluginsWebPanel: View {
                 HStack(spacing: metrics.size(8)) {
                     VStack(alignment: .leading, spacing: metrics.size(5)) {
                         Text("plugins.web.status").font(metrics.font(size: 11)).foregroundStyle(theme[.fgMuted])
-                        WebDropdown(selection: $status, options: ["all", "installed", "available", "enabled", "disabled", "updates"], appearance: .pluginFilter,
-                            searchText: { value in String(localized: String.LocalizationValue(["all": "plugins.web.all", "installed": "settings.web.reference.market.installed", "available": "plugins.web.available", "enabled": "settings.web.reference.market.stateEnabled", "disabled": "settings.web.reference.market.stateDisabled", "updates": "plugins.web.updates"][value] ?? "plugins.web.status")) }) { value in
-                            Text(LocalizedStringKey(["all": "plugins.web.all", "installed": "settings.web.reference.market.installed", "available": "plugins.web.available", "enabled": "settings.web.reference.market.stateEnabled", "disabled": "settings.web.reference.market.stateDisabled", "updates": "plugins.web.updates"][value] ?? "plugins.web.status"))
+                        WebDropdown(selection: $status, options: ["all", "installed", "available", "enabled", "disabled"
+                            , "updates"], appearance: .pluginFilter,
+                            searchText: { value in String(localized: String.LocalizationValue(
+                                Self.statusTitles[value] ?? "plugins.web.status")) }) { value in
+                            Text(LocalizedStringKey(Self.statusTitles[value] ?? "plugins.web.status"))
                         }.accessibilityLabel(Text("plugins.web.status"))
                     }
                     VStack(alignment: .leading, spacing: metrics.size(5)) {
                         Text("settings.web.reference.market.filterSource").font(metrics.font(size: 11)).foregroundStyle(theme[.fgMuted])
                         WebDropdown(selection: $source, options: ["all", "bundled", "local", "catalog"], appearance: .pluginFilter,
-                            searchText: { value in String(localized: String.LocalizationValue(["all": "plugins.web.all", "bundled": "settings.web.reference.market.sourceBundled", "local": "settings.web.reference.market.sourceLocal", "catalog": "plugins.web.catalog"][value] ?? "settings.web.reference.market.filterSource")) }) { value in
-                            Text(LocalizedStringKey(["all": "plugins.web.all", "bundled": "settings.web.reference.market.sourceBundled", "local": "settings.web.reference.market.sourceLocal", "catalog": "plugins.web.catalog"][value] ?? "settings.web.reference.market.filterSource"))
+                            searchText: { value in String(localized: String.LocalizationValue(
+                                Self.sourceTitles[value] ?? "settings.web.reference.market.filterSource")) }) { value in
+                            Text(LocalizedStringKey(Self.sourceTitles[value] ?? "settings.web.reference.market.filterSource"))
                         }.accessibilityLabel(Text("settings.web.reference.market.filterSource"))
                     }
                 }
                 VStack(alignment: .leading, spacing: metrics.size(5)) {
                         Text("settings.web.reference.market.sort").font(metrics.font(size: 11)).foregroundStyle(theme[.fgMuted])
                         WebDropdown(selection: $sort, options: ["relevance", "name", "installed", "updates"], appearance: .pluginFilter,
-                            searchText: { value in String(localized: String.LocalizationValue(["relevance": "plugins.web.relevance", "name": "settings.web.reference.market.sortName", "installed": "settings.web.reference.market.installed", "updates": "settings.web.reference.market.sortUpdated"][value] ?? "settings.web.reference.market.sort")) }) { value in
-                            Text(LocalizedStringKey(["relevance": "plugins.web.relevance", "name": "settings.web.reference.market.sortName", "installed": "settings.web.reference.market.installed", "updates": "settings.web.reference.market.sortUpdated"][value] ?? "settings.web.reference.market.sort"))
+                            searchText: { value in String(localized: String.LocalizationValue(
+                                Self.sortTitles[value] ?? "settings.web.reference.market.sort")) }) { value in
+                            Text(LocalizedStringKey(Self.sortTitles[value] ?? "settings.web.reference.market.sort"))
                         }.accessibilityLabel(Text("settings.web.reference.market.sort"))
                     }
                 if model.stale { Text("settings.web.reference.market.stale").foregroundStyle(theme[.statusWaiting]) }
@@ -134,9 +164,11 @@ struct PluginsWebPanel: View {
                                         }
                                         Spacer(minLength: 0)
                                     }
-                                    Text(verbatim: record.description).font(metrics.font(size: 11)).foregroundStyle(theme[.fgMuted]).lineLimit(2)
+                                    Text(verbatim: record.description).font(metrics.font(size: 11))
+                                        .foregroundStyle(theme[.fgMuted]).lineLimit(2)
                                         .padding(.top, metrics.size(6))
-                                    Text(record.installed ? "rightSidebar.plugins.installed" : "plugins.web.unavailable").font(metrics.monoFont(size: 10))
+                                    Text(record.installed ? "rightSidebar.plugins.installed" :
+                                        "plugins.web.unavailable").font(metrics.monoFont(size: 10))
                                         .foregroundStyle(theme[.fgFaint]).padding(.top, metrics.size(6))
                                 }
                                 .padding(.vertical, metrics.size(10)).padding(.horizontal, metrics.size(12))

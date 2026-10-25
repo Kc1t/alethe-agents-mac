@@ -126,14 +126,16 @@ private struct AgentSidebarCard: View {
 
     private var nativeCard: some View {
         HStack(alignment: .top, spacing: metrics.space(.s)) {
-            AletheStatusDot(job.status == .running ? .statusWorking : job.status == .blocked ? .statusWaiting : job.status == .failed ? .statusStopped : .statusIdle, side: 7)
+            AletheStatusDot(job.status == .running ? .statusWorking : job.status == .blocked ? .statusWaiting :
+                job.status == .failed ? .statusStopped : .statusIdle, side: 7)
                 .padding(.top, metrics.space(.xs))
             VStack(alignment: .leading, spacing: metrics.space(.xs)) {
                 HStack {
                     Text(verbatim: job.spec.split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
                         .first { !$0.isEmpty } ?? job.runLabel ?? job.id).lineLimit(2)
                     Spacer(minLength: 0)
-                    if let elapsed = BoardFormat.elapsed(job.seconds.map { $0 + (job.status == .running ? max(0, now.timeIntervalSince(snapshotTime)) : 0) }) { Text(verbatim: elapsed) }
+                    if let elapsed = BoardFormat.elapsed(job.seconds.map { $0 + (job.status == .running ? max(0,
+                        now.timeIntervalSince(snapshotTime)) : 0) }) { Text(verbatim: elapsed) }
                 }
                 Text(verbatim: job.agent).lineLimit(1).font(metrics.font(.caption))
                 HStack {
@@ -230,11 +232,16 @@ private struct AgentSidebarCard: View {
     }
 
     private var statusToken: ThemeToken {
-        switch job.status {
-        case .running: .statusWorking
-        case .blocked, .queued, .interrupted: .statusWaiting
-        case .failed: .statusOffline
-        default: .statusStopped
+        if case .running = job.status {
+            .statusWorking
+        } else if ({ if case .blocked = job.status { return true }; return false }()) ||
+            ({ if case .queued = job.status { return true }; return false }()) ||
+            ({ if case .interrupted = job.status { return true }; return false }()) {
+            .statusWaiting
+        } else if case .failed = job.status {
+            .statusOffline
+        } else {
+            .statusStopped
         }
     }
 
