@@ -8,12 +8,10 @@ public enum LogDomain: String, CaseIterable, Codable, Sendable {
 public enum DiagnosticLevel: String, CaseIterable, Codable, Sendable {
     case warning, error, fault
 
+    private static let logTypes: [Self: OSLogType] = [.warning: .default, .error: .error, .fault: .fault]
+
     var osLogType: OSLogType {
-        switch self {
-        case .warning: .default
-        case .error: .error
-        case .fault: .fault
-        }
+        Self.logTypes[self] ?? .default
     }
 }
 

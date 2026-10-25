@@ -18,12 +18,13 @@ import Testing
         #expect(resolve("example.com") == .none)
     }
 
+    private static let fileKinds: [String: Bool] = [
+        "/repo": true, "/repo/src": true, "/Users/me": true,
+        "/repo/README.md": false, "/repo/src/main.swift": false, "/Users/me/notes.md": false, "/repo/my file.md": false,
+    ]
+
     private func kind(_ path: String) -> Bool? {
-        switch path {
-        case "/repo", "/repo/src", "/Users/me": true
-        case "/repo/README.md", "/repo/src/main.swift", "/Users/me/notes.md", "/repo/my file.md": false
-        default: nil
-        }
+        Self.fileKinds[path]
     }
 
     private func resolve(_ raw: String, cwd: String? = "/repo") -> TerminalLink {

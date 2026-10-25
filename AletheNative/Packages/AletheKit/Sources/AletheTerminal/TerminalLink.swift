@@ -12,7 +12,10 @@ public enum TerminalLink: Equatable, Sendable {
         var text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         while let first = text.first, "([{'\"`".contains(first) { text.removeFirst() }
         while let last = text.last, ".,;:)]}'\"`".contains(last) { text.removeLast() }
-        let bare = #"^(?:localhost(?::\d{1,5})?|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:app|ai|biz|br|ca|cloud|co|com|de|dev|edu|fr|gg|gov|info|io|jp|live|me|net|online|org|page|sh|site|tech|tools|tv|uk|xyz))(?::\d{1,5})?(?:/[^\s<>\"'`|]*)?$"#
+        let bare =
+            #"^(?:localhost(?::\d{1,5})?|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:app|ai|biz|br|ca|"#
+            + #"cloud|co|com|de|dev|edu|fr|gg|gov|info|io|jp|live|me|net|online|org|page|sh|site|tech|tools|tv|"#
+            + #"uk|xyz))(?::\d{1,5})?(?:/[^\s<>\"'`|]*)?$"#
         if text.range(of: bare, options: [.regularExpression, .caseInsensitive]) != nil {
             let local = text.range(of: #"^localhost(?::|/|$)"#, options: [.regularExpression, .caseInsensitive]) != nil
             let scheme = local ? "http" : "https"
@@ -36,10 +39,12 @@ public enum TerminalLink: Equatable, Sendable {
 
         if text.firstMatch(of: /^[A-Za-z][A-Za-z0-9+\-]*:(?!\d+(:\d+)?$)/) != nil,
            let url = URL(string: text), let scheme = url.scheme?.lowercased(), scheme.count > 1 {
-            switch scheme {
-            case "http", "https": return .web(url)
-            case "file": return resolvePath(url.path, line: nil, cwd: cwd, home: home, fileKind: fileKind)
-            default: return .other(url)
+            if scheme == "http" || scheme == "https" {
+                return .web(url)
+            } else if scheme == "file" {
+                return resolvePath(url.path, line: nil, cwd: cwd, home: home, fileKind: fileKind)
+            } else {
+                return .other(url)
             }
         }
         var path = text
@@ -67,11 +72,9 @@ public enum TerminalLink: Equatable, Sendable {
             return .none
         }
         path = URL(filePath: path).standardizedFileURL.path
-        switch fileKind(path) {
-        case true?: return .directory(path: path)
-        case false?: return .file(path: path, line: line)
-        case nil: return .none
-        }
+        let kind = fileKind(path)
+        guard let kind else { return .none }
+        return kind ? .directory(path: path) : .file(path: path, line: line)
     }
 
     public static func fileKind(_ path: String) -> Bool? {

@@ -7,7 +7,8 @@ import Testing
     @Test func normalizedClipboardLinesReachShellInOrder() async throws {
         let launch = PTYLaunch(
             executable: "/bin/sh",
-            arguments: ["sh", "-c", "IFS= read -r a; IFS= read -r b; IFS= read -r c; printf 'received:<%s>|<%s>|<%s>\\n' \"$a\" \"$b\" \"$c\""],
+            arguments: ["sh", "-c", "IFS= read -r a; IFS= read -r b; IFS= read -r c; "
+                + "printf 'received:<%s>|<%s>|<%s>\\n' \"$a\" \"$b\" \"$c\""],
             environment: ["PATH": "/usr/bin:/bin"],
             workingDirectory: "/tmp",
             size: PTYSize(columns: 100, rows: 30)

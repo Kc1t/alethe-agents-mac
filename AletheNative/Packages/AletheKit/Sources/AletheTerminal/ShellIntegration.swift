@@ -9,10 +9,13 @@ public enum ShellIntegration {
     public static let features = "cursor,title"
 
     public static func detect(executable: String) -> Shell? {
-        switch (executable as NSString).lastPathComponent {
-        case "zsh": .zsh
-        case "bash" where executable != "/bin/bash": .bash
-        default: nil
+        let name = (executable as NSString).lastPathComponent
+        if name == "zsh" {
+            return .zsh
+        } else if name == "bash" && executable != "/bin/bash" {
+            return .bash
+        } else {
+            return nil
         }
     }
 
@@ -24,13 +27,12 @@ public enum ShellIntegration {
               !launch.arguments.dropFirst().contains(where: isCommandFlag) else { return launch }
         let root = resources.appending(path: "shell-integration").path
         var result = launch
-        switch shell {
-        case .zsh:
+        if case .zsh = shell {
             let directory = root + "/zsh"
             guard fileExists(directory + "/.zshenv") else { return launch }
             if let old = launch.environment["ZDOTDIR"] { result.environment["GHOSTTY_ZSH_ZDOTDIR"] = old }
             result.environment["ZDOTDIR"] = directory
-        case .bash:
+        } else if case .bash = shell {
             let script = root + "/bash/ghostty.bash"
             guard fileExists(script), let bash = bashArguments(launch.arguments) else { return launch }
             result.arguments = bash.arguments
@@ -58,18 +60,17 @@ public enum ShellIntegration {
         var rcfile: String?
         var rest = arguments.dropFirst()[...]
         while let argument = rest.popFirst() {
-            switch argument {
-            case "--posix":
+            if argument == "--posix" {
                 return nil
-            case "--norc", "--noprofile":
+            } else if argument == "--norc" || argument == "--noprofile" {
                 inject += " " + argument
-            case "--rcfile", "--init-file":
+            } else if argument == "--rcfile" || argument == "--init-file" {
                 rcfile = rest.popFirst()
-            case "-", "--":
+            } else if argument == "-" || argument == "--" {
                 result.append(argument)
                 result.append(contentsOf: rest)
                 rest = []
-            default:
+            } else {
                 if isCommandFlag(argument) { return nil }
                 result.append(argument)
             }

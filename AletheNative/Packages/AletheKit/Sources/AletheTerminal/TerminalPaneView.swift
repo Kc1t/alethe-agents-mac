@@ -87,6 +87,15 @@ public final class TerminalPaneView: NSView {
         super.init(frame: .zero)
         TerminalResizeLog.enableIfRequested()
 
+        configureSession(theme: theme, spawner: spawner, fallbackSize: launch.size)
+    }
+
+    private func configureSession(theme: Theme, spawner: DeferredSpawn, fallbackSize: PTYSize) {
+        let forceKill = forceKill
+        let history = history
+        let process = process
+        let tap = tap
+        let scrollback = scrollback
         forceKill.session = session
         history.onChange = { [weak self] entries in self?.onPromptHistoryChange?(entries) }
         terminalView.configuration = TerminalSurfaceOptions(backend: .inMemory(session))
@@ -119,7 +128,7 @@ public final class TerminalPaneView: NSView {
             activity.finish()
             Task { @MainActor in self?.onExit?(code) }
         }
-        spawner.configure(process: process, fallback: launch.size) { [weak self] code in
+        spawner.configure(process: process, fallback: fallbackSize) { [weak self] code in
             session.receive(Data("\r\n\u{1b}[31m[\(String(cString: strerror(code)))]\u{1b}[0m\r\n".utf8))
             Task { @MainActor in self?.onExit?(127) }
         }
@@ -209,13 +218,16 @@ public final class TerminalPaneView: NSView {
     @discardableResult
     public func pasteClipboard(from pasteboard: NSPasteboard = .general) -> Bool {
         let text: String
-        switch SmartPaste.payload(from: pasteboard) {
-        case .paths(let paths): text = SmartPaste.format(paths: paths)
-        case .image(let data):
+        let payload = SmartPaste.payload(from: pasteboard)
+        if case .paths(let paths) = payload {
+            text = SmartPaste.format(paths: paths)
+        } else if case .image(let data) = payload {
             guard let path = try? SmartPaste.saveImage(data) else { return false }
             text = SmartPaste.format(paths: [path])
-        case .text(let value): text = SmartPaste.normalizeText(value)
-        case .empty: return false
+        } else if case .text(let value) = payload {
+            text = SmartPaste.normalizeText(value)
+        } else {
+            return false
         }
         return terminalView.paste(text: text)
     }
@@ -251,15 +263,15 @@ public final class TerminalPaneView: NSView {
     override public func performDragOperation(_ sender: any NSDraggingInfo) -> Bool {
         setDropHighlighted(false)
         let text: String
-        switch SmartPaste.payload(from: sender.draggingPasteboard) {
-        case .paths(let paths):
+        let payload = SmartPaste.payload(from: sender.draggingPasteboard)
+        if case .paths(let paths) = payload {
             text = SmartPaste.format(paths: paths)
-        case .image(let data):
+        } else if case .image(let data) = payload {
             guard let path = try? SmartPaste.saveImage(data) else { return false }
             text = SmartPaste.format(paths: [path])
-        case .text(let string):
+        } else if case .text(let string) = payload {
             text = string
-        case .empty:
+        } else {
             return false
         }
         focus()

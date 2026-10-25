@@ -25,13 +25,12 @@ final class RemoteSocket: @unchecked Sendable {
         let ready: Bool = await withTaskCancellationHandler {
             await withCheckedContinuation { continuation in
                 connection.stateUpdateHandler = { state in
-                    switch state {
-                    case .ready:
+                    if case .ready = state {
                         if resumed.claim() { continuation.resume(returning: true) }
-                    case .failed, .cancelled:
+                    } else if case .failed = state {
                         if resumed.claim() { continuation.resume(returning: false) }
-                    default:
-                        break
+                    } else if case .cancelled = state {
+                        if resumed.claim() { continuation.resume(returning: false) }
                     }
                 }
                 connection.start(queue: queue)
@@ -153,16 +152,14 @@ final class RemoteSocket: @unchecked Sendable {
 
     static func address(of endpoint: NWEndpoint) -> String {
         guard case .hostPort(let host, let port) = endpoint else { return "Unknown device" }
-        switch host {
-        case .ipv4(let address):
+        if case .ipv4(let address) = host {
             return "\(text(of: address.rawValue, family: AF_INET) ?? "\(address)"):\(port.rawValue)"
-        case .ipv6(let address):
-            return "[\(text(of: address.rawValue, family: AF_INET6) ?? "\(address)")]:\(port.rawValue)"
-        case .name(let name, _):
-            return "\(name):\(port.rawValue)"
-        @unknown default:
-            return "Unknown device"
         }
+        if case .ipv6(let address) = host {
+            return "[\(text(of: address.rawValue, family: AF_INET6) ?? "\(address)")]:\(port.rawValue)"
+        }
+        if case .name(let name, _) = host { return "\(name):\(port.rawValue)" }
+        return "Unknown device"
     }
 
     private static func text(of raw: Data, family: Int32) -> String? {

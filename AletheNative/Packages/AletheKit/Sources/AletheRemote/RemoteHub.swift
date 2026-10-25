@@ -35,11 +35,9 @@ public enum RemotePairingError: Error, Equatable, Sendable {
     case windowClosed, invalidToken, deviceLimitReached
 
     public var message: String {
-        switch self {
-        case .windowClosed: "Pairing window is closed"
-        case .invalidToken: "Invalid pairing token"
-        case .deviceLimitReached: "Maximum remote devices reached"
-        }
+        if self == .windowClosed { return "Pairing window is closed" }
+        if self == .invalidToken { return "Invalid pairing token" }
+        return "Maximum remote devices reached"
     }
 }
 

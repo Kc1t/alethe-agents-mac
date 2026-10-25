@@ -39,8 +39,7 @@ public struct PromptHistory: Equatable, Sendable {
         var changed = false
         for character in data {
             if skipEscape(character) { continue }
-            switch character {
-            case "\r", "\n", "\r\n":
+            if character == "\r" || character == "\n" || character == "\r\n" {
                 let line = overflow ? "" : currentLine.trimmingCharacters(in: .whitespaces)
                 currentLine = ""
                 overflow = false
@@ -49,13 +48,13 @@ public struct PromptHistory: Equatable, Sendable {
                 entries.append(line)
                 if entries.count > Self.maxEntries { entries.removeFirst() }
                 changed = true
-            case "\u{8}", "\u{7f}":
+            } else if character == "\u{8}" || character == "\u{7f}" {
                 if !overflow, !currentLine.isEmpty { currentLine.removeLast() }
-            case "\u{3}", "\u{15}":
+            } else if character == "\u{3}" || character == "\u{15}" {
                 currentLine = ""
                 overflow = false
                 cursor = nil
-            default:
+            } else {
                 guard !overflow, let scalar = character.unicodeScalars.first, scalar.value >= 0x20 else { continue }
                 if currentLine.utf16.count + String(character).utf16.count <= Self.maxTrackedPromptLength {
                     currentLine.append(character)
@@ -70,13 +69,12 @@ public struct PromptHistory: Equatable, Sendable {
 
     private mutating func skipEscape(_ character: Character) -> Bool {
         let value = character.unicodeScalars.first?.value ?? 0
-        switch escape {
-        case .none:
+        if case .none = escape {
             guard value == 0x1b else { return false }
             escape = .started
-        case .started:
+        } else if case .started = escape {
             escape = character == "[" || character == "O" ? .sequence : .none
-        case .sequence:
+        } else if case .sequence = escape {
             if (0x40...0x7e).contains(value) { escape = .none }
         }
         return true

@@ -17,10 +17,13 @@ import Testing
     }
 
     private func image(_ type: NSBitmapImageRep.FileType) -> Data {
-        let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 1, pixelsHigh: 1, bitsPerSample: 8,
-                                   samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-                                   colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
-        return rep.representation(using: type, properties: [:])!
+        guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 1, pixelsHigh: 1, bitsPerSample: 8,
+                                         samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                         colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0),
+              let data = rep.representation(using: type, properties: [:]) else {
+            preconditionFailure("Unable to create test image")
+        }
+        return data
     }
 
     @Test func pathsAreEscapedLikeGhosttyWithATrailingSpace() {

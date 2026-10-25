@@ -91,25 +91,24 @@ public struct RemoteAPI: RemoteRouter {
     }
 
     private func api(_ request: RemoteRequest, path: String, sessionID: Int) async -> RemoteResponse {
-        switch (path, request.method) {
-        case ("/api/info", _):
+        if path == "/api/info" {
             return .json(200, encoding: SessionPayload(info: await hub.info(), pairing: nil))
-        case ("/api/state", _):
+        } else if path == "/api/state" {
             return .json(200, encoding: await workspace.snapshot(), sizeLimit: .large)
-        case ("/api/scrollback", _):
+        } else if path == "/api/scrollback" {
             return await scrollback(request, sessionID: sessionID)
-        case ("/api/transcript", _):
+        } else if path == "/api/transcript" {
             return await transcript(request)
-        case ("/api/question-answer", "POST"):
+        } else if path == "/api/question-answer", request.method == "POST" {
             if let refused = await inputGate(sessionID) { return refused }
             return await questionAnswer(request, sessionID: sessionID)
-        case ("/api/agent-control", "POST"):
+        } else if path == "/api/agent-control", request.method == "POST" {
             if let refused = await inputGate(sessionID) { return refused }
             return await agentControl(request, sessionID: sessionID)
-        case ("/api/message", "POST"):
+        } else if path == "/api/message", request.method == "POST" {
             if let refused = await inputGate(sessionID) { return refused }
             return await message(request, sessionID: sessionID)
-        default:
+        } else {
             return .error(404, "Not found")
         }
     }
@@ -138,9 +137,14 @@ public struct RemoteAPI: RemoteRouter {
         let since = request.queryValue("since").flatMap { UInt64($0) }
         do {
             let snapshot = try await workspace.transcript(for: tab, since: since, limit: RemoteLimits.maxTranscriptEvents)
-            return .json(200, encoding: TranscriptPayload(snapshot: snapshot, agent: tab.agent, supported: true, error: nil), sizeLimit: .large)
+            return .json(
+                200, encoding: TranscriptPayload(snapshot: snapshot, agent: tab.agent, supported: true, error: nil),
+                sizeLimit: .large
+            )
         } catch {
-            return .json(200, encoding: TranscriptPayload(snapshot: nil, agent: tab.agent, supported: true, error: "Transcript is not available"))
+            return .json(200, encoding: TranscriptPayload(
+                snapshot: nil, agent: tab.agent, supported: true, error: "Transcript is not available"
+            ))
         }
     }
 
@@ -242,11 +246,12 @@ public struct RemoteAPI: RemoteRouter {
         do {
             try await terminals.write(terminalID: terminalID, text: input)
         } catch {
-            switch error {
-            case .notFound: return .error(404, "Terminal not found")
-            case .notRunning: return .error(409, "This terminal is not running")
-            case .failed: return .badRequest
+            if case .notFound = error {
+                return .error(404, "Terminal not found")
+            } else if case .notRunning = error {
+                return .error(409, "This terminal is not running")
             }
+            return .badRequest
         }
         let deviceName = await hub.deviceName(sessionID)
         RemoteLog.logger.info("device \(sessionID, privacy: .public) sent \(input.utf8.count, privacy: .public) bytes to a shared terminal")

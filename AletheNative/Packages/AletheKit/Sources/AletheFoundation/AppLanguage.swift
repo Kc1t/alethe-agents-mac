@@ -6,12 +6,13 @@ public enum AppLanguage: String, CaseIterable, Sendable {
     case portugueseBrazil = "pt-BR"
 
     public var nativeName: String? {
-        switch self {
-        case .system: nil
-        case .english: "English"
-        case .portugueseBrazil: "Português (Brasil)"
-        }
+        Self.nativeNames[self]
     }
+
+    private static let nativeNames: [Self: String] = [
+        .english: "English",
+        .portugueseBrazil: "Português (Brasil)",
+    ]
 }
 
 public struct LanguageSetting: Sendable {

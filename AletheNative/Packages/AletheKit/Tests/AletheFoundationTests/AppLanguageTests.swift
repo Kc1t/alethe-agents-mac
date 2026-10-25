@@ -5,7 +5,9 @@ import Testing
 @Suite struct AppLanguageTests {
     private func withDomain(_ body: (UserDefaults, LanguageSetting) -> Void) {
         let domain = "com.kc1t.alethe.tests.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: domain)!
+        guard let defaults = UserDefaults(suiteName: domain) else {
+            preconditionFailure("Unable to create test defaults domain")
+        }
         defer { defaults.removePersistentDomain(forName: domain) }
         body(defaults, LanguageSetting(domain: domain))
     }

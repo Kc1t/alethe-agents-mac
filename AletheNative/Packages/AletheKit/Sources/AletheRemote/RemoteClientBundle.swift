@@ -75,11 +75,9 @@ public struct RemoteClientBundle: RemoteAssetSource {
     }
 
     public func fileURL(_ file: File, appIconTheme: String = defaultBrandIconTheme) -> URL? {
-        switch file {
-        case .client(let path): root?.appending(path: path)
-        case .brandIcon: root?.appending(path: Self.brandIconFile(for: appIconTheme))
-        case .font(let name): AletheFonts.bundledFontURL(named: name)
-        }
+        if case .client(let path) = file { return root?.appending(path: path) }
+        if case .font(let name) = file { return AletheFonts.bundledFontURL(named: name) }
+        return root?.appending(path: Self.brandIconFile(for: appIconTheme))
     }
 
     public struct Manifest: Codable, Sendable, Equatable {

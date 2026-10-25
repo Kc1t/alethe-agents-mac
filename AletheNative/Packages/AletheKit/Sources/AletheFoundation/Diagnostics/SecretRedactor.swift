@@ -20,7 +20,10 @@ public enum SecretRedactor {
         (#"\bAIza[0-9A-Za-z_-]{35}"#, placeholder),
         (#"\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}"#, placeholder),
     ].map { pattern, template in
-        (try! NSRegularExpression(pattern: pattern), template)
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            preconditionFailure("Invalid secret redaction pattern")
+        }
+        return (regex, template)
     }
 
     public static func redact(_ text: String) -> String {

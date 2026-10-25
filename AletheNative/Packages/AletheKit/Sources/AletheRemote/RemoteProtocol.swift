@@ -45,10 +45,7 @@ public struct RemoteResponse: Sendable, Equatable {
         case noStore, immutable
 
         public var headerValue: String {
-            switch self {
-            case .noStore: "no-store"
-            case .immutable: "public, max-age=31536000, immutable"
-            }
+            self == .noStore ? "no-store" : "public, max-age=31536000, immutable"
         }
     }
 
@@ -57,10 +54,7 @@ public struct RemoteResponse: Sendable, Equatable {
         case large
 
         public var bytes: Int {
-            switch self {
-            case .standard: RemoteLimits.maxBody
-            case .large: RemoteLimits.maxStaticAsset
-            }
+            self == .standard ? RemoteLimits.maxBody : RemoteLimits.maxStaticAsset
         }
     }
 
@@ -99,18 +93,14 @@ public struct RemoteResponse: Sendable, Equatable {
     public var exceedsLimit: Bool { body.count > sizeLimit.bytes }
 
     public var reasonPhrase: String {
-        switch status {
-        case 200: "OK"
-        case 204: "No Content"
-        case 400: "Bad Request"
-        case 401: "Unauthorized"
-        case 403: "Forbidden"
-        case 404: "Not Found"
-        case 409: "Conflict"
-        case 429: "Too Many Requests"
-        default: "Error"
-        }
+        Self.reasonPhrases[status] ?? "Error"
     }
+
+    private static let reasonPhrases = [
+        200: "OK", 204: "No Content", 400: "Bad Request", 401: "Unauthorized",
+        403: "Forbidden", 404: "Not Found", 409: "Conflict", 429: "Too Many Requests",
+    ]
+
 
     public func head() -> String {
         "HTTP/1.1 \(status) \(reasonPhrase)\r\n"
@@ -154,16 +144,19 @@ public enum RemoteTerminalOutput: Equatable, Sendable {
     case exit(terminalID: String, reason: String)
 
     public var terminalID: String {
-        switch self {
-        case .data(let id, _), .exit(let id, _): id
-        }
+        if case .data(let id, _) = self { return id }
+        if case .exit(let id, _) = self { return id }
+        preconditionFailure("Unknown terminal output")
     }
 
     public var frame: String {
-        switch self {
-        case .data(let id, let text): RemoteFrame.encode(["type": "pty_output", "ptyId": id, "text": text])
-        case .exit(let id, let reason): RemoteFrame.encode(["type": "pty_exit", "ptyId": id, "reason": reason])
+        if case .data(let id, let text) = self {
+            return RemoteFrame.encode(["type": "pty_output", "ptyId": id, "text": text])
         }
+        if case .exit(let id, let reason) = self {
+            return RemoteFrame.encode(["type": "pty_exit", "ptyId": id, "reason": reason])
+        }
+        preconditionFailure("Unknown terminal output")
     }
 }
 
@@ -333,8 +326,8 @@ public protocol RemoteWorkspaceSource: Sendable {
     func activeQuestions(for tab: RemoteSharedTab) async -> RemoteQuestionSet?
 }
 
-public extension RemoteWorkspaceSource {
-    func sharedTab(_ terminalID: String) async -> RemoteSharedTab? {
+extension RemoteWorkspaceSource {
+    public func sharedTab(_ terminalID: String) async -> RemoteSharedTab? {
         await sharedTabs().first { $0.terminalID == terminalID }
     }
 }

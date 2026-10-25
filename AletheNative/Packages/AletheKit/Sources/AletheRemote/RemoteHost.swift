@@ -33,10 +33,8 @@ public struct RemoteHostResolver: Sendable {
     )
 
     public func host(for mode: RemoteReachMode) async -> String {
-        switch mode {
-        case .lan: await lanAddress()
-        case .tailscale: await tailscaleAddress() ?? ""
-        }
+        if mode == .lan { return await lanAddress() }
+        return await tailscaleAddress() ?? ""
     }
 }
 

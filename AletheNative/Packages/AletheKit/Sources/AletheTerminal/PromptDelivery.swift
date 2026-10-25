@@ -45,8 +45,7 @@ public enum PromptDelivery {
         guard !text.isEmpty else { return false }
         let start = io.now()
         guard await waitUntilReady(style: style, io: io, deadline: deadline) else { return false }
-        switch style {
-        case .paste:
+        if case .paste = style {
             await io.write("\u{1b}[200~" + text + "\u{1b}[201~")
             await io.sleep(.milliseconds(150))
             await io.write("\r")
@@ -55,9 +54,8 @@ public enum PromptDelivery {
                 if io.isRunning() { await io.write("\r") }
             }
             return true
-        case .typeAndConfirm:
-            return await typeAndConfirm(text, io: io, deadline: start + deadline)
         }
+        return await typeAndConfirm(text, io: io, deadline: start + deadline)
     }
 
     static let placeholder = normalizedForMatch("Ask anything")

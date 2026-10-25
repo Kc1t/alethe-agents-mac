@@ -1,22 +1,22 @@
 import Foundation
 
-public extension BusEventType {
-    static let mergeClean = "MergeClean"
-    static let mergeConflict = "MergeConflict"
-    static let mergeRequested = "MergeRequested"
-    static let mergeValidated = "MergeValidated"
-    static let mergeValidationFailed = "MergeValidationFailed"
-    static let mergeMerged = "MergeMerged"
-    static let mergeAborted = "MergeAborted"
-    static let graphUpdated = "GraphUpdated"
-    static let pluginEnabled = "PluginEnabled"
-    static let pluginDisabled = "PluginDisabled"
-    static let pluginFailed = "PluginFailed"
-    static let resourceMetricsUpdated = "ResourceMetricsUpdated"
+extension BusEventType {
+    public static let mergeClean = "MergeClean"
+    public static let mergeConflict = "MergeConflict"
+    public static let mergeRequested = "MergeRequested"
+    public static let mergeValidated = "MergeValidated"
+    public static let mergeValidationFailed = "MergeValidationFailed"
+    public static let mergeMerged = "MergeMerged"
+    public static let mergeAborted = "MergeAborted"
+    public static let graphUpdated = "GraphUpdated"
+    public static let pluginEnabled = "PluginEnabled"
+    public static let pluginDisabled = "PluginDisabled"
+    public static let pluginFailed = "PluginFailed"
+    public static let resourceMetricsUpdated = "ResourceMetricsUpdated"
 }
 
-public extension BusEvent {
-    static func mergeAnalyzed(projectID: String?, source: String, target: String, clean: Bool,
+extension BusEvent {
+    public static func mergeAnalyzed(projectID: String?, source: String, target: String, clean: Bool,
                               conflictCount: Int, classes: [String], date: Date = .now) -> BusEvent {
         BusEvent(type: clean ? BusEventType.mergeClean : BusEventType.mergeConflict,
                  correlationID: correlationID(prefix: "merge"), taskID: projectID,
@@ -26,7 +26,7 @@ public extension BusEvent {
                  date: date)
     }
 
-    static func mergePrepared(environmentID: String, projectID: String?, source: String, target: String,
+    public static func mergePrepared(environmentID: String, projectID: String?, source: String, target: String,
                               clean: Bool, conflictCount: Int, environmentPath: String,
                               date: Date = .now) -> [BusEvent] {
         var events = [merge(BusEventType.mergeRequested, environmentID, projectID,
@@ -39,7 +39,7 @@ public extension BusEvent {
         return events
     }
 
-    static func mergeValidation(environmentID: String, projectID: String?, failedStage: String?,
+    public static func mergeValidation(environmentID: String, projectID: String?, failedStage: String?,
                                 date: Date = .now) -> BusEvent {
         if let failedStage {
             return merge(BusEventType.mergeValidationFailed, environmentID, projectID,
@@ -48,13 +48,13 @@ public extension BusEvent {
         return merge(BusEventType.mergeValidated, environmentID, projectID, [:], date)
     }
 
-    static func mergeMerged(environmentID: String, projectID: String?, source: String, target: String,
+    public static func mergeMerged(environmentID: String, projectID: String?, source: String, target: String,
                             date: Date = .now) -> BusEvent {
         merge(BusEventType.mergeMerged, environmentID, projectID,
               ["source": .string(source), "target": .string(target)], date)
     }
 
-    static func mergeAborted(environmentID: String, projectID: String?, date: Date = .now) -> BusEvent {
+    public static func mergeAborted(environmentID: String, projectID: String?, date: Date = .now) -> BusEvent {
         merge(BusEventType.mergeAborted, environmentID, projectID, [:], date)
     }
 
@@ -63,29 +63,29 @@ public extension BusEvent {
         BusEvent(type: type, correlationID: "merge-\(environmentID)", taskID: projectID, data: .object(data), date: date)
     }
 
-    static func graphGenerated(repository: String, action: String = "bootstrap", projectID: String? = nil,
+    public static func graphGenerated(repository: String, action: String = "bootstrap", projectID: String? = nil,
                                date: Date = .now) -> BusEvent {
         BusEvent(type: BusEventType.graphUpdated, correlationID: correlationID(prefix: "graphify"), taskID: projectID,
                  data: .object(["action": .string(action), "repo": .string(repository)]), date: date)
     }
 
-    static func graphRolledBack(snapshotID: String, projectID: String? = nil, date: Date = .now) -> BusEvent {
+    public static func graphRolledBack(snapshotID: String, projectID: String? = nil, date: Date = .now) -> BusEvent {
         BusEvent(type: BusEventType.graphUpdated, correlationID: correlationID(prefix: "graphify"), taskID: projectID,
                  data: .object(["action": .string("rollback"), "snapshot_id": .string(snapshotID)]), date: date)
     }
 
-    static func pluginEnabledChanged(id: String, enabled: Bool, date: Date = .now) -> BusEvent {
+    public static func pluginEnabledChanged(id: String, enabled: Bool, date: Date = .now) -> BusEvent {
         BusEvent(type: enabled ? BusEventType.pluginEnabled : BusEventType.pluginDisabled,
                  correlationID: "plugin-\(id)",
                  data: .object(["id": .string(id), "enabled": .bool(enabled)]), date: date)
     }
 
-    static func pluginFailed(id: String, error: String, date: Date = .now) -> BusEvent {
+    public static func pluginFailed(id: String, error: String, date: Date = .now) -> BusEvent {
         BusEvent(type: BusEventType.pluginFailed, correlationID: "plugin-\(id)",
                  data: .object(["id": .string(id), "error": .string(error)]), date: date)
     }
 
-    static func resourceMetrics(memoryPressure: String, systemAvailableMB: Double, systemTotalMB: Double,
+    public static func resourceMetrics(memoryPressure: String, systemAvailableMB: Double, systemTotalMB: Double,
                                 appMB: Double, ptysMB: Double, processCount: Int, policyTriggerCount: Int,
                                 date: Date = .now) -> BusEvent {
         BusEvent(type: BusEventType.resourceMetricsUpdated, correlationID: "resource-manager",

@@ -287,5 +287,8 @@ public final class PTYProcess: @unchecked Sendable {
 private func withCStringArray<R>(_ strings: [String], _ body: (UnsafePointer<UnsafeMutablePointer<CChar>?>) -> R) -> R {
     let pointers = strings.map { strdup($0) } + [nil]
     defer { pointers.forEach { free($0) } }
-    return pointers.withUnsafeBufferPointer { body($0.baseAddress!) }
+    return pointers.withUnsafeBufferPointer { buffer in
+        guard let baseAddress = buffer.baseAddress else { preconditionFailure("Missing C string pointer array") }
+        return body(baseAddress)
+    }
 }

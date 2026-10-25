@@ -1,19 +1,19 @@
 import Foundation
 
-public extension RemoteAppearance {
-    static let defaultTheme = "elite-indigo"
+extension RemoteAppearance {
+    public static let defaultTheme = "elite-indigo"
 
-    static let knownThemes: Set<String> = [
+    public static let knownThemes: Set<String> = [
         "elite-original", "elite-pure-black", "elite-indigo", "elite-blush", "dark", "light",
         "dracula", "nord", "gruvbox", "solarized", "tokyo-night", "vscode", "min-dark", "min-light",
         "dark-lemon", "orca", "ember", "golden-premium",
     ]
 
-    static let lightThemes: Set<String> = ["elite-original", "elite-blush", "light", "min-light"]
+    public static let lightThemes: Set<String> = ["elite-original", "elite-blush", "light", "min-light"]
 
-    static let knownAppIcons: Set<String> = ["elite-original", "elite-pure-black", "elite-indigo", "elite-blush"]
+    public static let knownAppIcons: Set<String> = ["elite-original", "elite-pure-black", "elite-indigo", "elite-blush"]
 
-    static func resolved(
+    public static func resolved(
         uiTheme: String?,
         appIconTheme: String?,
         language: String?,
@@ -29,9 +29,9 @@ public extension RemoteAppearance {
         )
     }
 
-    static let fallback = resolved(uiTheme: nil, appIconTheme: nil, language: nil, motionPreference: nil)
+    public static let fallback = resolved(uiTheme: nil, appIconTheme: nil, language: nil, motionPreference: nil)
 
-    var normalized: RemoteAppearance {
+    public var normalized: RemoteAppearance {
         Self.resolved(uiTheme: uiTheme, appIconTheme: appIconTheme, language: language, motionPreference: motionPreference)
     }
 }

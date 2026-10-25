@@ -99,28 +99,35 @@ public final class ScrollbackFile: @unchecked Sendable {
     }
 
     private static func advance(_ byte: UInt8, state: inout Int, osc: inout Bool) {
-        switch state {
-        case 0:
+        if state == 0 {
             if byte == 0x1b { state = 1 }
-        case 1:
-            switch byte {
-            case 0x5b: state = 2
-            case 0x5d: state = 3; osc = true
-            case 0x50, 0x58, 0x5e, 0x5f: state = 3; osc = false
-            case 0x20...0x2f: break
-            default: state = 0
-            }
-        case 2:
+        } else if state == 1 {
+            advanceEscape(byte, state: &state, osc: &osc)
+        } else if state == 2 {
             if (0x40...0x7e).contains(byte) { state = 0 }
             else if byte == 0x1b { state = 1 }
-        case 3:
+        } else if state == 3 {
             if osc && byte == 0x07 { state = 0 }
             else if byte == 0x1b { state = 4 }
-        default:
+        } else {
             if byte == 0x5c { state = 0 }
             else if byte != 0x1b { state = 3 }
         }
         if byte == 0x18 || byte == 0x1a { state = 0 }
+    }
+
+    private static func advanceEscape(_ byte: UInt8, state: inout Int, osc: inout Bool) {
+        if byte == 0x5b {
+            state = 2
+        } else if byte == 0x5d {
+            state = 3
+            osc = true
+        } else if byte == 0x50 || byte == 0x58 || byte == 0x5e || byte == 0x5f {
+            state = 3
+            osc = false
+        } else if !(0x20...0x2f).contains(byte) {
+            state = 0
+        }
     }
 
     private static func completeReplay(_ data: Data) -> Data {

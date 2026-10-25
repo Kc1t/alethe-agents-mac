@@ -58,10 +58,12 @@ final class FakeWorkspace: RemoteWorkspaceSource, @unchecked Sendable {
 
 struct FakeAssets: RemoteAssetSource {
     func asset(at path: String, appIconTheme: String) async -> RemoteAsset? {
-        switch path {
-        case "/", "/index.html": RemoteAsset(data: Data("<html>".utf8), contentType: "text/html; charset=utf-8", caching: .noStore)
-        case "/brand-icon.png": RemoteAsset(data: Data(appIconTheme.utf8), contentType: "image/png", caching: .noStore)
-        default: nil
+        if path == "/" || path == "/index.html" {
+            return RemoteAsset(data: Data("<html>".utf8), contentType: "text/html; charset=utf-8", caching: .noStore)
+        } else if path == "/brand-icon.png" {
+            return RemoteAsset(data: Data(appIconTheme.utf8), contentType: "image/png", caching: .noStore)
+        } else {
+            return nil
         }
     }
 }
@@ -255,7 +257,9 @@ struct RemoteAPIRouteTests {
     @Test func messageIsSanitizedAndEmitsAnEvent() async throws {
         let harness = Harness()
         let token = try await harness.pairDevice()
-        let response = await harness.api.route(harness.post("/api/message", ["ptyId": "claude-1", "text": "  run\u{1B}[2J tests\n "], token: token))
+        let response = await harness.api.route(harness.post(
+            "/api/message", ["ptyId": "claude-1", "text": "  run\u{1B}[2J tests\n "], token: token
+        ))
         #expect(response.status == 204)
         #expect(harness.terminals.writes.first?.0 == "claude-1")
         #expect(harness.terminals.writes.first?.1 == "run [2J tests\r")
@@ -345,11 +349,19 @@ struct RemoteAPIRouteTests {
     @Test func interruptSendsCtrlCToAgentsOnly() async throws {
         let harness = Harness()
         let token = try await harness.pairDevice()
-        #expect(await harness.api.route(harness.post("/api/agent-control", ["ptyId": "claude-1", "action": "interrupt"], token: token)).status == 204)
+        #expect(await harness.api.route(harness.post(
+            "/api/agent-control", ["ptyId": "claude-1", "action": "interrupt"], token: token
+        )).status == 204)
         #expect(harness.terminals.writes.first?.1 == "\u{03}")
-        #expect(await harness.api.route(harness.post("/api/agent-control", ["ptyId": "open-1", "action": "interrupt"], token: token)).status == 409)
-        #expect(await harness.api.route(harness.post("/api/agent-control", ["ptyId": "claude-1", "action": "kill"], token: token)).status == 400)
-        #expect(await harness.api.route(harness.post("/api/agent-control", ["ptyId": "private", "action": "interrupt"], token: token)).status == 403)
+        #expect(await harness.api.route(harness.post(
+            "/api/agent-control", ["ptyId": "open-1", "action": "interrupt"], token: token
+        )).status == 409)
+        #expect(await harness.api.route(harness.post(
+            "/api/agent-control", ["ptyId": "claude-1", "action": "kill"], token: token
+        )).status == 400)
+        #expect(await harness.api.route(harness.post(
+            "/api/agent-control", ["ptyId": "private", "action": "interrupt"], token: token
+        )).status == 403)
     }
 
     @Test func notRunningTabIs409() async throws {
@@ -371,7 +383,9 @@ struct RemoteAPIRouteTests {
 
     @Test func staticPathsGoToTheAssetSource() async throws {
         let harness = Harness()
-        harness.workspace.appearanceValue = RemoteAppearance.resolved(uiTheme: nil, appIconTheme: "elite-blush", language: nil, motionPreference: nil)
+        harness.workspace.appearanceValue = RemoteAppearance.resolved(
+            uiTheme: nil, appIconTheme: "elite-blush", language: nil, motionPreference: nil
+        )
         let index = await harness.api.route(harness.get("/", token: nil))
         #expect(index.status == 200)
         #expect(index.sizeLimit == .large)

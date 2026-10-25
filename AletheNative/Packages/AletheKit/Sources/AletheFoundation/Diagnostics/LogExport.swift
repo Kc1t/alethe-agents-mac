@@ -108,13 +108,11 @@ public enum LogExport {
     }
 
     private static func label(_ level: OSLogEntryLog.Level) -> String {
-        switch level {
-        case .debug: "debug"
-        case .info: "info"
-        case .notice: "notice"
-        case .error: "error"
-        case .fault: "fault"
-        default: "log"
-        }
+        if level == .debug { return "debug" }
+        if level == .info { return "info" }
+        if level == .notice { return "notice" }
+        if level == .error { return "error" }
+        if level == .fault { return "fault" }
+        return "log"
     }
 }

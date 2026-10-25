@@ -23,7 +23,16 @@ private final class Reports: @unchecked Sendable {
 
 @MainActor
 @Suite(.serialized) struct TerminalPaneGridFollowTests {
-    private func makeHost(script: String = "trap 'stty size' WINCH; stty size; while :; do sleep 0.05; done") throws -> (NSWindow, NSView, TerminalPaneView, Reports) {
+    private struct Host {
+        let window: NSWindow
+        let view: NSView
+        let pane: TerminalPaneView
+        let reports: Reports
+    }
+
+    private func makeHost(
+        script: String = "trap 'stty size' WINCH; stty size; while :; do sleep 0.05; done"
+    ) throws -> Host {
         let pane = try TerminalPaneView(
             launch: PTYLaunch(
                 executable: "/bin/sh",
@@ -42,7 +51,7 @@ private final class Reports: @unchecked Sendable {
         host.addSubview(pane)
         pane.frame = CGRect(x: 0, y: 0, width: 800, height: 600)
         window.orderBack(nil)
-        return (window, host, pane, reports)
+        return Host(window: window, view: host, pane: pane, reports: reports)
     }
 
     private func pump(_ seconds: Double) {
@@ -59,7 +68,11 @@ private final class Reports: @unchecked Sendable {
     }
 
     @Test func childFollowsLargeSmallLarge() throws {
-        let (window, host, pane, reports) = try makeHost()
+        let fixture = try makeHost()
+        let window = fixture.window
+        let host = fixture.view
+        let pane = fixture.pane
+        let reports = fixture.reports
         defer { window.close() }
         pump(0.8)
         settle(pane, reports, label: "initial")
@@ -73,7 +86,10 @@ private final class Reports: @unchecked Sendable {
     }
 
     @Test func childFollowsRapidTinyThenLarge() throws {
-        let (window, _, pane, reports) = try makeHost()
+        let fixture = try makeHost()
+        let window = fixture.window
+        let pane = fixture.pane
+        let reports = fixture.reports
         defer { window.close() }
         pump(0.8)
         for w in stride(from: 800.0, through: 40.0, by: -40.0) {
@@ -92,7 +108,11 @@ private final class Reports: @unchecked Sendable {
     }
 
     @Test func childFollowsSuperviewResize() throws {
-        let (window, host, pane, reports) = try makeHost()
+        let fixture = try makeHost()
+        let window = fixture.window
+        let host = fixture.view
+        let pane = fixture.pane
+        let reports = fixture.reports
         defer { window.close() }
         pane.autoresizingMask = [.width, .height]
         pane.frame = host.bounds
@@ -105,7 +125,10 @@ private final class Reports: @unchecked Sendable {
 
     @Test func childFollowsWhileFlooding() throws {
         let flood = "trap 'echo; stty size' WINCH; stty size; while :; do printf '\\033[2J\\033[H'; seq 1 400; sleep 0.01; done"
-        let (window, _, pane, reports) = try makeHost(script: flood)
+        let fixture = try makeHost(script: flood)
+        let window = fixture.window
+        let pane = fixture.pane
+        let reports = fixture.reports
         defer { window.close() }
         pump(0.8)
         for size in [CGSize(width: 300, height: 200), CGSize(width: 90, height: 60), CGSize(width: 800, height: 600),

@@ -20,10 +20,12 @@ public enum TOMLValue: Hashable, Sendable {
     }
 
     public var doubleValue: Double? {
-        switch self {
-        case .float(let value): return value
-        case .integer(let value): return Double(value)
-        default: return nil
+        if case .float(let value) = self {
+            return value
+        } else if case .integer(let value) = self {
+            return Double(value)
+        } else {
+            return nil
         }
     }
 
@@ -118,12 +120,13 @@ public struct TOMLTable: Hashable, Sendable, ExpressibleByDictionaryLiteral {
             return true
         }
         var child: TOMLTable
-        switch self[first] {
-        case .table(let table)?: child = table
-        case nil:
+        if case .table(let table)? = self[first] {
+            child = table
+        } else if self[first] == nil {
             guard value != nil else { return false }
             child = TOMLTable(style: intermediateStyle)
-        default: return false
+        } else {
+            return false
         }
         guard child.setValue(value, at: rest, intermediateStyle: intermediateStyle) else { return false }
         self[first] = .table(child)
@@ -152,44 +155,43 @@ public enum TOMLRender {
         path.map(key).joined(separator: ".")
     }
 
+    private static let stringEscapes: [Unicode.Scalar: String] = [
+        "\"": "\\\"", "\\": "\\\\", "\u{08}": "\\b", "\t": "\\t", "\n": "\\n", "\u{0C}": "\\f", "\r": "\\r",
+    ]
+
     public static func string(_ value: String) -> String {
         var out = "\""
         for scalar in value.unicodeScalars {
-            switch scalar {
-            case "\"": out += "\\\""
-            case "\\": out += "\\\\"
-            case "\u{08}": out += "\\b"
-            case "\t": out += "\\t"
-            case "\n": out += "\\n"
-            case "\u{0C}": out += "\\f"
-            case "\r": out += "\\r"
-            default:
-                if scalar.value < 0x20 || scalar.value == 0x7F {
-                    out += String(format: "\\u%04X", scalar.value)
-                } else {
-                    out.unicodeScalars.append(scalar)
-                }
+            if let escape = stringEscapes[scalar] {
+                out += escape
+            } else if scalar.value < 0x20 || scalar.value == 0x7F {
+                out += String(format: "\\u%04X", scalar.value)
+            } else {
+                out.unicodeScalars.append(scalar)
             }
         }
         return out + "\""
     }
 
     public static func inline(_ value: TOMLValue) -> String {
-        switch value {
-        case .string(let text): return string(text)
-        case .integer(let number): return String(number)
-        case .float(let number):
+        if case .string(let text) = value {
+            return string(text)
+        } else if case .integer(let number) = value {
+            return String(number)
+        } else if case .float(let number) = value {
             if number.isNaN { return "nan" }
             if number.isInfinite { return number < 0 ? "-inf" : "inf" }
             let text = String(number)
             return text.contains(where: { $0 == "." || $0 == "e" || $0 == "E" }) ? text : text + ".0"
-        case .boolean(let flag): return flag ? "true" : "false"
-        case .datetime(let text): return text
-        case .array(let items):
+        } else if case .boolean(let flag) = value {
+            return flag ? "true" : "false"
+        } else if case .datetime(let text) = value {
+            return text
+        } else if case .array(let items) = value {
             return "[" + items.map(inline).joined(separator: ", ") + "]"
-        case .table(let table):
-            if table.isEmpty { return "{}" }
-            return "{ " + table.entries.map { key($0.key) + " = " + inline($0.value) }.joined(separator: ", ") + " }"
         }
+        guard case .table(let table) = value else { preconditionFailure("Expected TOML table") }
+        if table.isEmpty { return "{}" }
+        return "{ " + table.entries.map { key($0.key) + " = " + inline($0.value) }.joined(separator: ", ") + " }"
     }
 }

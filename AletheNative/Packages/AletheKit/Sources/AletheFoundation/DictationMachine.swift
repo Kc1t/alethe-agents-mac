@@ -27,18 +27,15 @@ public struct DictationMachine: Equatable, Sendable {
     public var isActive: Bool { phase == .starting || phase == .listening || phase == .finishing }
 
     public mutating func keyDown(at now: TimeInterval) -> Effect {
-        switch phase {
-        case .idle, .failed:
-            phase = .starting
-            pressedAt = now
-            return .start
-        case .starting, .listening:
+        if phase == .finishing { return .none }
+        if phase == .starting || phase == .listening {
             pressedAt = nil
             phase = .finishing
             return .stop
-        case .finishing:
-            return .none
         }
+        phase = .starting
+        pressedAt = now
+        return .start
     }
 
     public mutating func keyUp(at now: TimeInterval) -> Effect {
@@ -51,30 +48,23 @@ public struct DictationMachine: Equatable, Sendable {
 
     public mutating func toggle() -> Effect {
         pressedAt = nil
-        switch phase {
-        case .idle, .failed:
-            phase = .starting
-            return .start
-        case .starting, .listening:
+        if phase == .finishing { return .none }
+        if phase == .starting || phase == .listening {
             phase = .finishing
             return .stop
-        case .finishing:
-            return .none
         }
+        phase = .starting
+        return .start
     }
 
     public mutating func escape() -> Effect {
         pressedAt = nil
-        switch phase {
-        case .starting, .listening, .finishing:
+        if isActive {
             phase = .idle
             return .cancel
-        case .failed:
-            phase = .idle
-            return .none
-        case .idle:
-            return .none
         }
+        phase = .idle
+        return .none
     }
 
     public mutating func started() {

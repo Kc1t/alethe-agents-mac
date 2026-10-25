@@ -50,11 +50,13 @@ public struct RemoteTerminalBridge: RemoteTerminalSource {
     }
 
     public func write(terminalID: String, text: String) async throws(RemoteInputError) {
-        switch await backend.write(terminalID, Data(text.utf8)) {
-        case .written: return
-        case .notRunning: throw .notRunning
-        case .notFound: throw .notFound
+        let outcome = await backend.write(terminalID, Data(text.utf8))
+        if case .written = outcome {
+            return
+        } else if case .notRunning = outcome {
+            throw .notRunning
         }
+        throw .notFound
     }
 
     public func output() -> AsyncStream<RemoteTerminalOutput> {
@@ -82,8 +84,7 @@ final class RemoteOutputDecoder: @unchecked Sendable {
     private var pending: [String: [UInt8]] = [:]
 
     func decode(_ chunk: RemoteTerminalChunk) -> RemoteTerminalOutput? {
-        switch chunk {
-        case .data(let id, let bytes):
+        if case .data(let id, let bytes) = chunk {
             let text = lock.withLock { () -> String in
                 var buffer = pending.removeValue(forKey: id) ?? []
                 buffer.append(contentsOf: bytes)
@@ -92,10 +93,12 @@ final class RemoteOutputDecoder: @unchecked Sendable {
                 return String(decoding: buffer[..<cut], as: UTF8.self)
             }
             return text.isEmpty ? nil : .data(terminalID: id, text: text)
-        case .exit(let id, let reason):
-            lock.withLock { pending[id] = nil }
-            return .exit(terminalID: id, reason: reason)
         }
+        guard case .exit(let id, let reason) = chunk else {
+            preconditionFailure("Expected terminal exit chunk")
+        }
+        lock.withLock { pending[id] = nil }
+        return .exit(terminalID: id, reason: reason)
     }
 
     static func completePrefix(_ bytes: [UInt8]) -> Int {
@@ -109,11 +112,14 @@ final class RemoteOutputDecoder: @unchecked Sendable {
         guard index >= 0 else { return count }
         let lead = bytes[index]
         let needed: Int
-        switch lead {
-        case 0xC0...0xDF: needed = 2
-        case 0xE0...0xEF: needed = 3
-        case 0xF0...0xF7: needed = 4
-        default: return count
+        if (0xC0...0xDF).contains(lead) {
+            needed = 2
+        } else if (0xE0...0xEF).contains(lead) {
+            needed = 3
+        } else if (0xF0...0xF7).contains(lead) {
+            needed = 4
+        } else {
+            return count
         }
         return count - index < needed ? index : count
     }

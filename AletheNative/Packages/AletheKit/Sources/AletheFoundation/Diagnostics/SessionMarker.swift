@@ -47,10 +47,11 @@ public struct SessionMarkerStore: Sendable {
 
     @discardableResult
     public func begin(_ current: SessionMarker) -> PreviousSession {
-        let previous: PreviousSession = switch read() {
-        case .some(let marker) where marker.cleanExit: .clean(marker)
-        case .some(let marker): .unclean(marker)
-        case .none: .none
+        let previous: PreviousSession
+        if let marker = read() {
+            previous = marker.cleanExit ? .clean(marker) : .unclean(marker)
+        } else {
+            previous = .none
         }
         var fresh = current
         fresh.cleanExit = false

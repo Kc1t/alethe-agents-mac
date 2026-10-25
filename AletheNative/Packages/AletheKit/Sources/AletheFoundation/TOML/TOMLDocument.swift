@@ -8,13 +8,18 @@ public enum TOMLError: Error, Equatable, Sendable, CustomStringConvertible {
     case invalidEdit
 
     public var description: String {
-        switch self {
-        case .malformed(let line, let column, let reason): "unparsable TOML at line \(line), column \(column): \(reason)"
-        case .notFound: "not found"
-        case .conflict: "the key path runs through a value that is not a table"
-        case .unsupportedLayout: "the key path runs through an array of tables"
-        case .invalidEdit: "the edit did not produce a valid document"
+        if case .malformed(let line, let column, let reason) = self {
+            return "unparsable TOML at line \(line), column \(column): \(reason)"
+        } else if case .notFound = self {
+            return "not found"
+        } else if case .conflict = self {
+            return "the key path runs through a value that is not a table"
+        } else if case .unsupportedLayout = self {
+            return "the key path runs through an array of tables"
+        } else if case .invalidEdit = self {
+            return "the edit did not produce a valid document"
         }
+        preconditionFailure("Unexpected value")
     }
 }
 
@@ -112,14 +117,13 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
         for (position, key) in path.enumerated() {
             guard let next = current[key] else { return }
             let isLast = position == path.count - 1
-            switch next {
-            case .table(let table):
+            if case .table(let table) = next {
                 current = table
-            case .array(let items):
+            } else if case .array(let items) = next {
                 let holdsTables = items.contains { $0.tableValue?.style == .section }
                 if isLast && !holdsTables { return }
                 throw TOMLError.unsupportedLayout
-            default:
+            } else {
                 if isLast { return }
                 throw TOMLError.conflict
             }
@@ -220,10 +224,12 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
     }
 
     private static func isSectionLike(_ value: TOMLValue) -> Bool {
-        switch value {
-        case .table(let table): return table.style == .section
-        case .array(let items): return !items.isEmpty && items.allSatisfy { $0.tableValue?.style == .section }
-        default: return false
+        if case .table(let table) = value {
+            return table.style == .section
+        } else if case .array(let items) = value {
+            return !items.isEmpty && items.allSatisfy { $0.tableValue?.style == .section }
+        } else {
+            return false
         }
     }
 
@@ -247,13 +253,12 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
     }
 
     private func sectionTexts(_ path: [String], _ value: TOMLValue) -> String {
-        switch value {
-        case .table(let table):
+        if case .table(let table) = value {
             return sectionText(path, table)
-        case .array(let items):
+        } else if case .array(let items) = value {
             return items.compactMap(\.tableValue).map { sectionText(path, $0, isArray: true) }
                 .joined(separator: newline)
-        default:
+        } else {
             return ""
         }
     }
@@ -293,38 +298,21 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
     private func planMerge(_ table: TOMLTable, into current: TOMLTable, at path: [String],
                            _ edit: inout TOMLEdit) throws {
         let own = headerSection(at: path)
-        var lines: [String: [StatementRef]] = [:]
-        if let own {
-            for (number, line) in index.sections[own].statements.enumerated() {
-                lines[line.key[0], default: []].append(
-                    StatementRef(section: own, statement: number, fullPath: path + line.key))
-            }
-        }
-        for ref in dottedKeys(under: path) {
-            lines[ref.fullPath[path.count], default: []].append(ref)
-        }
-        let subtree = descendants(of: path)
-        var sections: [String: [Int]] = [:]
-        for position in subtree {
-            sections[index.sections[position].path[path.count], default: []].append(position)
-        }
-
-        var removed = Set<Int>()
-        var keyLines = ""
-        var newSections: [String] = []
+        let (lines, sections) = mergeReferences(at: path, own: own)
+        var additions = MergeAdditions()
 
         func drop(_ key: String, _ edit: inout TOMLEdit) {
             for ref in lines[key] ?? [] { edit.delete(statement(ref).line) }
             for position in sections[key] ?? [] {
                 edit.delete(sectionRange(position))
-                removed.insert(position)
+                additions.removed.insert(position)
             }
         }
         func add(_ key: String, _ value: TOMLValue) {
             if Self.isSectionLike(value) {
-                newSections.append(sectionTexts(path + [key], value))
+                additions.newSections.append(sectionTexts(path + [key], value))
             } else {
-                keyLines += keyLine(key, value)
+                additions.keyLines += keyLine(key, value)
             }
         }
 
@@ -352,28 +340,60 @@ public struct TOMLDocument: Sendable, Equatable, CustomStringConvertible {
             add(key, value)
         }
 
-        if !keyLines.isEmpty {
+        planMergeAdditions(additions, at: path, &edit)
+    }
+
+    private struct MergeAdditions {
+        var removed = Set<Int>()
+        var keyLines = ""
+        var newSections: [String] = []
+    }
+
+    private func mergeReferences(at path: [String], own: Int?)
+        -> (lines: [String: [StatementRef]], sections: [String: [Int]]) {
+        var lines: [String: [StatementRef]] = [:]
+        if let own {
+            for (number, line) in index.sections[own].statements.enumerated() {
+                lines[line.key[0], default: []].append(
+                    StatementRef(section: own, statement: number, fullPath: path + line.key))
+            }
+        }
+        for ref in dottedKeys(under: path) {
+            lines[ref.fullPath[path.count], default: []].append(ref)
+        }
+        var sections: [String: [Int]] = [:]
+        for position in descendants(of: path) {
+            sections[index.sections[position].path[path.count], default: []].append(position)
+        }
+
+        return (lines, sections)
+    }
+
+    private func planMergeAdditions(_ additions: MergeAdditions, at path: [String], _ edit: inout TOMLEdit) {
+        let own = headerSection(at: path)
+        let subtree = descendants(of: path)
+        if !additions.keyLines.isEmpty {
             if let own {
-                edit.insert(keyLines, at: statementsEnd(own))
+                edit.insert(additions.keyLines, at: statementsEnd(own))
             } else {
                 let header = "[" + TOMLRender.keyPath(path) + "]" + newline
-                let remaining = subtree.filter { !removed.contains($0) }
+                let remaining = subtree.filter { !additions.removed.contains($0) }
                     .compactMap { index.sections[$0].header?.lowerBound }.min()
                 if let remaining {
-                    edit.insert(header + keyLines + newline, at: attachedStart(remaining))
+                    edit.insert(header + additions.keyLines + newline, at: attachedStart(remaining))
                 } else {
                     let offset = placement(for: path)
-                    var text = leadingBlank(at: offset) + header + keyLines
-                    for section in newSections { text += newline + section }
+                    var text = leadingBlank(at: offset) + header + additions.keyLines
+                    for section in additions.newSections { text += newline + section }
                     edit.insert(text, at: offset)
                     return
                 }
             }
         }
-        if !newSections.isEmpty {
+        if !additions.newSections.isEmpty {
             let ends = (own.map { [$0] } ?? []) + subtree
             let end = ends.map { index.sections[$0].bodyEnd }.max() ?? placement(for: path)
-            for section in newSections { edit.insert(leadingBlank(at: end) + section, at: end) }
+            for section in additions.newSections { edit.insert(leadingBlank(at: end) + section, at: end) }
         }
     }
 

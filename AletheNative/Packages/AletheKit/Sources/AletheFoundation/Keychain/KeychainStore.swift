@@ -79,11 +79,9 @@ public struct KeychainStore: SecretStore {
         search[kSecMatchLimit as String] = kSecMatchLimitOne
         var result: CFTypeRef?
         let status = SecItemCopyMatching(search as CFDictionary, &result)
-        switch status {
-        case errSecSuccess: return result as? Data
-        case errSecItemNotFound: return nil
-        default: throw SecretStoreError.keychain(status)
-        }
+        if status == errSecSuccess { return result as? Data }
+        if status == errSecItemNotFound { return nil }
+        throw SecretStoreError.keychain(status)
     }
 
     public func set(_ data: Data, for item: KeychainItem, profile: String) throws {

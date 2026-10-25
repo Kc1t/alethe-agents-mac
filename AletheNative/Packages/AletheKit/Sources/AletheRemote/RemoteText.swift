@@ -72,11 +72,9 @@ public enum RemoteText {
     private static let tokenAlphabet = Array("useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict".unicodeScalars)
 
     private static func hexValue(_ byte: UInt8) -> UInt8? {
-        switch byte {
-        case UInt8(ascii: "0")...UInt8(ascii: "9"): byte - UInt8(ascii: "0")
-        case UInt8(ascii: "a")...UInt8(ascii: "f"): byte - UInt8(ascii: "a") + 10
-        case UInt8(ascii: "A")...UInt8(ascii: "F"): byte - UInt8(ascii: "A") + 10
-        default: nil
-        }
+        if (UInt8(ascii: "0")...UInt8(ascii: "9")).contains(byte) { return byte - UInt8(ascii: "0") }
+        if (UInt8(ascii: "a")...UInt8(ascii: "f")).contains(byte) { return byte - UInt8(ascii: "a") + 10 }
+        if (UInt8(ascii: "A")...UInt8(ascii: "F")).contains(byte) { return byte - UInt8(ascii: "A") + 10 }
+        return nil
     }
 }

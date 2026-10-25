@@ -27,14 +27,12 @@ public enum JSONValue: Hashable, Sendable, Codable {
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        switch self {
-        case .null: try container.encodeNil()
-        case .bool(let value): try container.encode(value)
-        case .number(let value): try container.encode(value)
-        case .string(let value): try container.encode(value)
-        case .array(let value): try container.encode(value)
-        case .object(let value): try container.encode(value)
-        }
+        if case .bool(let value) = self { return try container.encode(value) }
+        if case .number(let value) = self { return try container.encode(value) }
+        if case .string(let value) = self { return try container.encode(value) }
+        if case .array(let value) = self { return try container.encode(value) }
+        if case .object(let value) = self { return try container.encode(value) }
+        try container.encodeNil()
     }
 
     public var intValue: Int? {

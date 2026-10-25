@@ -22,7 +22,9 @@ public struct LocalServerDetector: Sendable {
         return found
     }
 
-    private static var pattern: Regex<Substring> { /https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1?\]):\d{2,5}(?:\/[^\s"'`<>)\]]*)?/ }
+    private static var pattern: Regex<Substring> {
+        /https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1?\]):\d{2,5}(?:\/[^\s"'`<>)\]]*)?/
+    }
 
     static func normalize(_ address: String) -> URL? {
         var value = address

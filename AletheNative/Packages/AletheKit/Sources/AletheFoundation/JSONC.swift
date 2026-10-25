@@ -30,34 +30,9 @@ public enum JSONC {
                 while index < chars.count, chars[index] != "\n" { index += 1 }
             } else if char == "/", next == "*" {
                 index += 2
-                while index < chars.count, !(chars[index] == "*" && index + 1 < chars.count && chars[index + 1] == "/") {
-                    index += 1
-                }
-                index += 2
+                skipBlockComment(in: chars, index: &index)
             } else if char == "," {
-                var lookahead = index + 1
-                var trailing = false
-                scan: while lookahead < chars.count {
-                    let c = chars[lookahead]
-                    let n: Unicode.Scalar? = lookahead + 1 < chars.count ? chars[lookahead + 1] : nil
-                    switch c {
-                    case " ", "\t", "\n", "\r":
-                        lookahead += 1
-                    case "/" where n == "/":
-                        while lookahead < chars.count, chars[lookahead] != "\n" { lookahead += 1 }
-                    case "/" where n == "*":
-                        lookahead += 2
-                        while lookahead < chars.count, !(chars[lookahead] == "*" && lookahead + 1 < chars.count && chars[lookahead + 1] == "/") {
-                            lookahead += 1
-                        }
-                        lookahead += 2
-                    case "}", "]":
-                        trailing = true
-                        break scan
-                    default:
-                        break scan
-                    }
-                }
+                let trailing = isTrailingComma(in: chars, after: index)
                 if !trailing { output.append(char) }
                 index += 1
             } else {
@@ -67,4 +42,31 @@ public enum JSONC {
         }
         return String(output)
     }
+
+    private static func isTrailingComma(in chars: [Unicode.Scalar], after index: Int) -> Bool {
+        var lookahead = index + 1
+        while lookahead < chars.count {
+            let char = chars[lookahead]
+            let next: Unicode.Scalar? = lookahead + 1 < chars.count ? chars[lookahead + 1] : nil
+            if char == " " || char == "\t" || char == "\n" || char == "\r" {
+                lookahead += 1
+            } else if char == "/", next == "/" {
+                while lookahead < chars.count, chars[lookahead] != "\n" { lookahead += 1 }
+            } else if char == "/", next == "*" {
+                lookahead += 2
+                skipBlockComment(in: chars, index: &lookahead)
+            } else {
+                return char == "}" || char == "]"
+            }
+        }
+        return false
+    }
+
+    private static func skipBlockComment(in chars: [Unicode.Scalar], index: inout Int) {
+        while index < chars.count, !(chars[index] == "*" && index + 1 < chars.count && chars[index + 1] == "/") {
+            index += 1
+        }
+        index += 2
+    }
+
 }

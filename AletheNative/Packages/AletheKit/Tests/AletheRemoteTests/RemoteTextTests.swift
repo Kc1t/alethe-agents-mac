@@ -95,7 +95,9 @@ struct RemotePairingQRTests {
         let image = try #require(RemotePairingQR().image(for: url))
         #expect(image.width >= RemotePairingQR.minimumSide)
 
-        let detector = try #require(CIDetector(ofType: CIDetectorTypeQRCode, context: nil, options: [CIDetectorAccuracy: CIDetectorAccuracyHigh]))
+        let detector = try #require(CIDetector(
+            ofType: CIDetectorTypeQRCode, context: nil, options: [CIDetectorAccuracy: CIDetectorAccuracyHigh]
+        ))
         let features = detector.features(in: CIImage(cgImage: image)).compactMap { $0 as? CIQRCodeFeature }
         #expect(features.first?.messageString == url)
     }
