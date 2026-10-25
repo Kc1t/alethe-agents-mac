@@ -13,16 +13,24 @@ public enum McpConfigError: Error, Hashable, Sendable, CustomStringConvertible {
     case unreadable
 
     public var description: String {
-        switch self {
-        case .unparsableJSON(let line, let column): "unparsable:json line \(line) column \(column)"
-        case .unparsableTOML(let line, let column): "unparsable:toml line \(line) column \(column)"
-        case .rootNotAnObject: "unparsable:json root is not an object"
-        case .layoutConflict(let path): "unparsable:\(path.joined(separator: "."))"
-        case .notFound: "not_found"
-        case .unsupportedDisable: "unsupported_disable"
-        case .jsoncUnsupported: "jsonc_unsupported"
-        case .invalidEdit: "invalid_edit"
-        case .unreadable: "unreadable"
+        if case .unparsableJSON(let line, let column) = self {
+            return "unparsable:json line \(line) column \(column)"
+        } else if case .unparsableTOML(let line, let column) = self {
+            return "unparsable:toml line \(line) column \(column)"
+        } else if case .rootNotAnObject = self {
+            return "unparsable:json root is not an object"
+        } else if case .layoutConflict(let path) = self {
+            return "unparsable:\(path.joined(separator: "."))"
+        } else if case .notFound = self {
+            return "not_found"
+        } else if case .unsupportedDisable = self {
+            return "unsupported_disable"
+        } else if case .jsoncUnsupported = self {
+            return "jsonc_unsupported"
+        } else if case .invalidEdit = self {
+            return "invalid_edit"
+        } else {
+            return "unreadable"
         }
     }
 }
@@ -80,13 +88,11 @@ public protocol McpAdapter: Sendable {
 
 public enum McpAdapters {
     public static func adapter(for agent: McpAgent) -> any McpAdapter {
-        switch agent {
-        case .claude: ClaudeMcpAdapter()
-        case .codex: CodexMcpAdapter()
-        case .cursor: CursorMcpAdapter()
-        case .opencode: OpenCodeMcpAdapter()
-        case .antigravity: AntigravityMcpAdapter()
-        }
+        if agent == .claude { return ClaudeMcpAdapter() }
+        if agent == .codex { return CodexMcpAdapter() }
+        if agent == .cursor { return CursorMcpAdapter() }
+        if agent == .opencode { return OpenCodeMcpAdapter() }
+        return AntigravityMcpAdapter()
     }
 }
 
@@ -99,10 +105,9 @@ public struct ClaudeMcpAdapter: McpAdapter {
 
     public func configSources(scope: McpScope, repository: URL?, home: McpHome) -> [McpSource] {
         let userConfig = home.path(".claude.json")
-        switch scope {
-        case .global:
+        if case .global = scope {
             return [McpSource(url: userConfig, kind: .user)]
-        case .project:
+        } else {
             guard let repository else { return [] }
             return [
                 McpSource(url: userConfig, kind: .local, projectKey: Self.projectKey(for: repository)),
@@ -143,10 +148,9 @@ public struct CursorMcpAdapter: McpAdapter {
     public var agent: McpAgent { .cursor }
 
     public func configSources(scope: McpScope, repository: URL?, home: McpHome) -> [McpSource] {
-        switch scope {
-        case .global:
+        if case .global = scope {
             return [McpSource(url: home.path(".cursor", "mcp.json"), kind: .user)]
-        case .project:
+        } else {
             guard let repository else { return [] }
             return [McpSource(url: repository.appending(path: ".cursor/mcp.json", directoryHint: .notDirectory), kind: .project)]
         }
@@ -174,10 +178,8 @@ public struct AntigravityMcpAdapter: McpAdapter {
     public var agent: McpAgent { .antigravity }
 
     public func configSources(scope: McpScope, repository: URL?, home: McpHome) -> [McpSource] {
-        switch scope {
-        case .global: [McpSource(url: home.path(".gemini", "config", "mcp_config.json"), kind: .user)]
-        case .project: []
-        }
+        if scope == .global { return [McpSource(url: home.path(".gemini", "config", "mcp_config.json"), kind: .user)] }
+        return []
     }
 
     public static func importManifestURL(home: McpHome) -> URL {
@@ -220,11 +222,10 @@ public struct OpenCodeMcpAdapter: McpAdapter {
     public func configSources(scope: McpScope, repository: URL?, home: McpHome) -> [McpSource] {
         let directory: URL
         let kind: McpSourceKind
-        switch scope {
-        case .global:
+        if case .global = scope {
             directory = home.opencodeConfigDirectory
             kind = .user
-        case .project:
+        } else {
             guard let repository else { return [] }
             directory = repository
             kind = .project
@@ -308,12 +309,10 @@ enum McpJSON {
     }
 
     static func map(_ error: JSONConfigError) -> McpConfigError {
-        switch error {
-        case .unparsable(let parse): .unparsableJSON(line: parse.line, column: parse.column)
-        case .rootNotAnObject: .rootNotAnObject
-        case .notAnObject(let path): .layoutConflict(path: path)
-        case .emptyPath: .invalidEdit
-        }
+        if case .unparsable(let parse) = error { return .unparsableJSON(line: parse.line, column: parse.column) }
+        if case .rootNotAnObject = error { return .rootNotAnObject }
+        if case .notAnObject(let path) = error { return .layoutConflict(path: path) }
+        return .invalidEdit
     }
 
     static func normalizedProjectKey(_ raw: String) -> String {
@@ -403,8 +402,7 @@ enum McpJSON {
         if let env = envObject(server.env, interpolate: opencode) {
             values.append((opencode ? "environment" : "env", env))
         }
-        switch server.transport {
-        case .stdio(let command, let arguments, let cwd):
+        if case .stdio(let command, let arguments, let cwd) = server.transport {
             if opencode {
                 values.append(("type", .string("local")))
                 values.append(("command", .array(([command] + arguments).map(OrderedJSON.string))))
@@ -414,7 +412,19 @@ enum McpJSON {
                 if !arguments.isEmpty { values.append(("args", .array(arguments.map(OrderedJSON.string)))) }
             }
             if let cwd { values.append(("cwd", .string(cwd))) }
-        case .http(let url, let headers), .sse(let url, let headers):
+        } else {
+            let url: String
+            let headers: McpEnvMap
+            if case .http(let endpoint, let entries) = server.transport {
+                url = endpoint
+                headers = entries
+            } else {
+                guard case .sse(let endpoint, let entries) = server.transport else {
+                    preconditionFailure("Unknown MCP transport")
+                }
+                url = endpoint
+                headers = entries
+            }
             let kind: String
             if opencode {
                 kind = "remote"

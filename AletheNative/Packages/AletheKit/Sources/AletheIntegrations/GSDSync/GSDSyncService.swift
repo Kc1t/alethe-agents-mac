@@ -40,7 +40,9 @@ public struct GSDSyncService: Sendable {
         return try result.get()
     }
 
-    public func export(sessionID: String, at path: URL, openCode executable: URL) async throws(OpenCodeExportError) -> OpenCodeExportSession {
+    public func export(
+        sessionID: String, at path: URL, openCode executable: URL
+    ) async throws(OpenCodeExportError) -> OpenCodeExportSession {
         let directory = await Self.offActor { PlanningGate.repositoryRoot(containing: path) } ?? path
         return try await OpenCodeExport.run(sessionID: sessionID, directory: directory, executable: executable)
     }

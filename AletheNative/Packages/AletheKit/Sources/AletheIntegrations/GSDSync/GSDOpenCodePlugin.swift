@@ -64,7 +64,9 @@ public enum GSDOpenCodePlugin {
         }
     }
 
-    static func writePlugin(_ source: String, root: URL, writer: ConfigFileWriter) throws(ConfigFileError) -> GSDPluginInstallReport.Outcome {
+    static func writePlugin(
+        _ source: String, root: URL, writer: ConfigFileWriter
+    ) throws(ConfigFileError) -> GSDPluginInstallReport.Outcome {
         let snapshot = try writer.read(root.appending(path: pluginRelativePath))
         guard shouldWritePlugin(existing: snapshot.exists ? snapshot.text : nil, bundledVersion: managedVersion(of: source) ?? 0) else {
             return .skipped
@@ -74,7 +76,9 @@ public enum GSDOpenCodePlugin {
         return .written
     }
 
-    static func writeModelChain(_ chain: [String], root: URL, writer: ConfigFileWriter) throws(ConfigFileError) -> GSDPluginInstallReport.Outcome {
+    static func writeModelChain(
+        _ chain: [String], root: URL, writer: ConfigFileWriter
+    ) throws(ConfigFileError) -> GSDPluginInstallReport.Outcome {
         let snapshot = try writer.read(root.appending(path: modelChainRelativePath))
         let body = OrderedJSON.object(OrderedJSONObject([("modelChain", .array(chain.map(OrderedJSON.string)))])).rendered()
         guard !snapshot.exists || snapshot.text != body else { return .unchanged }
@@ -82,7 +86,9 @@ public enum GSDOpenCodePlugin {
         return .written
     }
 
-    static func mergeConfigEntry(root: URL, writer: ConfigFileWriter) throws(ConfigFileError) -> (GSDPluginInstallReport.Outcome, ConfigBackup?) {
+    static func mergeConfigEntry(
+        root: URL, writer: ConfigFileWriter
+    ) throws(ConfigFileError) -> (GSDPluginInstallReport.Outcome, ConfigBackup?) {
         let url = root.appending(path: openCodeConfigName)
         var attempt = 0
         while true {
@@ -108,10 +114,13 @@ public enum GSDOpenCodePlugin {
             editor = JSONConfigEditor(root: OrderedJSONObject([("$schema", .string(schemaURL))]))
         }
         var list: [OrderedJSON]
-        switch editor.value(at: ["plugin"]) {
-        case .none: list = []
-        case .array(let items): list = items
-        case .some: return nil
+        let pluginValue = editor.value(at: ["plugin"])
+        if case .none = pluginValue {
+            list = []
+        } else if case .array(let items) = pluginValue {
+            list = items
+        } else {
+            return nil
         }
         if list.contains(.string(configEntry)) { return existing ?? editor.rendered() }
         list.append(.string(configEntry))

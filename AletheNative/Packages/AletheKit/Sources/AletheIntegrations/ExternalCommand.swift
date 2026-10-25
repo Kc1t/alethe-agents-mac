@@ -73,11 +73,9 @@ public enum ExternalCommand {
         } catch {
             throw .cancelled
         }
-        switch outcome {
-        case .finished(let result): return result
-        case .timedOut: throw .timedOut(timeout)
-        case .cancelled: throw .cancelled
-        }
+        if case .finished(let result) = outcome { return result }
+        if case .timedOut = outcome { throw .timedOut(timeout) }
+        throw .cancelled
     }
 
     private final class CommandRun: @unchecked Sendable {
@@ -207,16 +205,16 @@ public enum ExternalCommand {
     }
 }
 
-public extension ExternalCommandResult {
-    init(exitCode: Int32, stdout: String, stderr: String) {
+extension ExternalCommandResult {
+    public init(exitCode: Int32, stdout: String, stderr: String) {
         self.init(status: exitCode, stdout: stdout, stderr: stderr)
     }
 
-    var exitCode: Int32 { status }
+    public var exitCode: Int32 { status }
 }
 
-public extension ExternalCommand {
-    static func run(_ executable: String, _ arguments: [String], directory: URL? = nil,
+extension ExternalCommand {
+    public static func run(_ executable: String, _ arguments: [String], directory: URL? = nil,
                     timeout: Duration) async throws(ExternalCommandError) -> ExternalCommandResult {
         try await run(URL(filePath: executable), arguments, directory: directory, timeout: timeout)
     }

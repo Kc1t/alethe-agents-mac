@@ -156,7 +156,10 @@ enum DiscordIPCSocket {
         var buffer = [UInt8](repeating: 0, count: count)
         var offset = 0
         while offset < count {
-            let received = buffer.withUnsafeMutableBytes { Darwin.recv(fd, $0.baseAddress! + offset, count - offset, 0) }
+            let received = buffer.withUnsafeMutableBytes { raw in
+                guard let base = raw.baseAddress else { return -1 }
+                return Darwin.recv(fd, base + offset, count - offset, 0)
+            }
             if received < 0, errno == EINTR { continue }
             guard received > 0 else { return nil }
             offset += received
@@ -177,7 +180,10 @@ enum DiscordIPCSocket {
     static func drain(_ fd: Int32) -> Bool {
         var buffer = [UInt8](repeating: 0, count: 4096)
         while true {
-            let received = buffer.withUnsafeMutableBytes { Darwin.recv(fd, $0.baseAddress!, $0.count, MSG_DONTWAIT) }
+            let received = buffer.withUnsafeMutableBytes { raw in
+                guard let base = raw.baseAddress else { return -1 }
+                return Darwin.recv(fd, base, raw.count, MSG_DONTWAIT)
+            }
             if received > 0 { continue }
             if received == 0 { return false }
             return errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR

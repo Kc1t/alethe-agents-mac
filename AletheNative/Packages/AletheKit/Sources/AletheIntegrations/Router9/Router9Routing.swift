@@ -48,10 +48,8 @@ public struct Router9Status: Hashable, Sendable {
     }
 
     public func install(_ source: Router9Source) -> Router9Install {
-        switch source {
-        case .managed: managed
-        case .external: external
-        }
+        if case .managed = source { return managed }
+        return external
     }
 }
 
@@ -77,11 +75,8 @@ public enum Router9 {
     enum Dialect { case anthropic, openai }
 
     static func dialect(for agent: AgentKind) -> Dialect? {
-        switch agent {
-        case .claude: .anthropic
-        case .codex, .opencode: .openai
-        default: nil
-        }
+        let dialects: [AgentKind: Dialect] = [.claude: .anthropic, .codex: .openai, .opencode: .openai]
+        return dialects[agent]
     }
 
     public static func supports(_ agent: AgentKind) -> Bool { dialect(for: agent) != nil }
@@ -104,10 +99,8 @@ public enum Router9 {
         let apiKey = config.apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !apiKey.isEmpty, let dialect = dialect(for: agent) else { return [:] }
         let base = baseURL(port: config.port)
-        switch dialect {
-        case .anthropic: return ["ANTHROPIC_BASE_URL": base, "ANTHROPIC_AUTH_TOKEN": apiKey]
-        case .openai: return ["OPENAI_BASE_URL": "\(base)/v1", "OPENAI_API_KEY": apiKey]
-        }
+        if case .anthropic = dialect { return ["ANTHROPIC_BASE_URL": base, "ANTHROPIC_AUTH_TOKEN": apiKey] }
+        return ["OPENAI_BASE_URL": "\(base)/v1", "OPENAI_API_KEY": apiKey]
     }
 
     public static func hasInstall(_ status: Router9Status?) -> Bool {

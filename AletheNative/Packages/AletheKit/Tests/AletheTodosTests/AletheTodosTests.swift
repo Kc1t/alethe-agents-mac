@@ -13,13 +13,13 @@ private func temporaryDirectory() -> URL {
 @Suite struct TodoStoreTests {
     @Test func addInsertsBeforeCompletedAndNormalizes() {
         let store = TodoStore(storage: nil)
-        let a = store.add(title: "  A  ", tags: ["#Review", "review", "a b!"])!
+        guard let a = store.add(title: "  A  ", tags: ["#Review", "review", "a b!"]) else { Issue.record("Missing test fixture"); return }
         #expect(a.title == "A")
         #expect(a.tags == ["review", "a", "b"])
         #expect(store.add(title: "   ") == nil)
-        let b = store.add(title: "B")!
+        guard let b = store.add(title: "B") else { Issue.record("Missing test fixture"); return }
         store.toggle(a.id)
-        let c = store.add(title: "C")!
+        guard let c = store.add(title: "C") else { Issue.record("Missing test fixture"); return }
         #expect(store.todos.map(\.id) == [b.id, c.id, a.id])
         #expect(store.todos.map(\.order) == [0, 1, 2])
         store.toggle(a.id)
@@ -29,8 +29,8 @@ private func temporaryDirectory() -> URL {
 
     @Test func editTagsDeleteAndScopes() {
         let store = TodoStore(storage: nil)
-        let a = store.add(title: "Global")!
-        let b = store.add(title: "Mine", scope: .project("p1"))!
+        guard let a = store.add(title: "Global") else { Issue.record("Missing test fixture"); return }
+        guard let b = store.add(title: "Mine", scope: .project("p1")) else { Issue.record("Missing test fixture"); return }
         store.rename(a.id, to: "Renamed")
         store.rename(a.id, to: "  ")
         store.addTag(a.id, "Bug")
@@ -49,8 +49,10 @@ private func temporaryDirectory() -> URL {
 
     @Test func reorderStaysWithinCompletionGroup() {
         let store = TodoStore(storage: nil)
-        let a = store.add(title: "A")!, b = store.add(title: "B")!, c = store.add(title: "C")!
-        let d = store.add(title: "D")!
+        guard let a = store.add(title: "A") else { Issue.record("Missing test fixture"); return }
+        guard let b = store.add(title: "B") else { Issue.record("Missing test fixture"); return }
+        guard let c = store.add(title: "C") else { Issue.record("Missing test fixture"); return }
+        guard let d = store.add(title: "D") else { Issue.record("Missing test fixture"); return }
         store.toggle(d.id)
         store.reorder(c.id, onto: a.id)
         #expect(store.todos.map(\.title) == ["C", "A", "B", "D"])
@@ -64,9 +66,9 @@ private func temporaryDirectory() -> URL {
 
     @Test func pullRequestTodosAreDeduplicated() {
         let store = TodoStore(storage: nil)
-        let url = URL(string: "https://github.com/o/r/pull/7")!
-        let first = store.addPullRequest(number: 7, title: "Fix", url: url)!
-        let again = store.addPullRequest(number: 7, title: "Fix", url: url)!
+        guard let url = URL(string: "https://github.com/o/r/pull/7") else { Issue.record("Missing test fixture"); return }
+        guard let first = store.addPullRequest(number: 7, title: "Fix", url: url) else { Issue.record("Missing test fixture"); return }
+        guard let again = store.addPullRequest(number: 7, title: "Fix", url: url) else { Issue.record("Missing test fixture"); return }
         #expect(first.id == again.id)
         #expect(first.title == "PR #7: Fix")
         #expect(first.tags == ["pr"])
@@ -78,7 +80,10 @@ private func temporaryDirectory() -> URL {
         let storage = PluginStorage(root: root, pluginID: TodosPlugin.manifest.id, debounce: .milliseconds(1))
         let store = TodoStore(storage: storage)
         await store.load()
-        let a = store.add(title: "Persist me", tags: ["x"], scope: .project("p"))!
+        guard let a = store.add(title: "Persist me", tags: ["x"], scope: .project("p")) else {
+            Issue.record("Missing test fixture")
+            return
+        }
         store.add(title: "Second")
         store.toggle(a.id)
         store.setPullRequestURL(a.id, URL(string: "https://example.com/pr/1"))

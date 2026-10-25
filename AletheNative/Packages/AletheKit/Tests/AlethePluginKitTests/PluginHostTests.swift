@@ -8,9 +8,13 @@ private struct Boom: Error {}
 private final class TabsPlugin: AlethePlugin {
     static let manifest = PluginManifest(id: "test.tabs", version: "1.0.0", name: "Tabs", capabilities: [.storage])
     func activate(context: PluginContext) throws {
-        try context.addSidebarTab(SidebarTabContribution(id: "tabs.main", title: "Tabs", symbol: "list.bullet", side: .right, viewID: "tabs.view"))
+        try context.addSidebarTab(
+            SidebarTabContribution(id: "tabs.main", title: "Tabs", symbol: "list.bullet", side: .right, viewID: "tabs.view")
+        )
         try context.addCommand(CommandContribution(id: "tabs.open", title: "Open Tabs") {})
-        try context.addSettingsPage(SettingsPageContribution(id: "tabs.settings", title: "Tabs", symbol: "gear", viewID: "tabs.settings.view"))
+        try context.addSettingsPage(
+            SettingsPageContribution(id: "tabs.settings", title: "Tabs", symbol: "gear", viewID: "tabs.settings.view")
+        )
     }
 }
 

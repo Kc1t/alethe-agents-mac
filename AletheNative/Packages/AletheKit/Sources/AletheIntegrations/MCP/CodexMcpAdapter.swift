@@ -10,10 +10,9 @@ public struct CodexMcpAdapter: McpAdapter {
     ]
 
     public func configSources(scope: McpScope, repository: URL?, home: McpHome) -> [McpSource] {
-        switch scope {
-        case .global:
+        if case .global = scope {
             return [McpSource(url: home.path(".codex", "config.toml"), kind: .user)]
-        case .project:
+        } else {
             guard let repository else { return [] }
             return [McpSource(url: repository.appending(path: ".codex/config.toml", directoryHint: .notDirectory), kind: .project)]
         }
@@ -58,12 +57,11 @@ public struct CodexMcpAdapter: McpAdapter {
     }
 
     static func seconds(_ value: TOMLValue?) -> UInt32? {
-        switch value {
-        case .integer(let number)?: return UInt32(exactly: number)
-        case .float(let number)? where number.isFinite && number >= 0:
+        if case .integer(let number)? = value { return UInt32(exactly: number) }
+        if case .float(let number)? = value, number.isFinite && number >= 0 {
             return UInt32(clamping: Int64(min(number.rounded(), Double(UInt32.max))))
-        default: return nil
         }
+        return nil
     }
 
     public func upsert(_ text: String, source: McpSource, server: McpServer) throws(McpConfigError) -> String {
@@ -72,13 +70,16 @@ public struct CodexMcpAdapter: McpAdapter {
         var entry = document.table(at: path) ?? TOMLTable(style: .section)
         for key in Self.managedKeys { entry[key] = nil }
 
-        switch server.transport {
-        case .stdio(let command, let arguments, let cwd):
+        if case .stdio(let command, let arguments, let cwd) = server.transport {
             entry["command"] = .string(command)
             if !arguments.isEmpty { entry["args"] = .array(arguments.map(TOMLValue.string)) }
             if let cwd { entry["cwd"] = .string(cwd) }
-        case .http(let url, _), .sse(let url, _):
+        } else if case .http(let url, _) = server.transport {
             entry["url"] = .string(url)
+        } else if case .sse(let url, _) = server.transport {
+            entry["url"] = .string(url)
+        } else {
+            preconditionFailure("Unexpected CodexMcpAdapter case")
         }
         if let variable = server.bearerTokenEnvVar { entry["bearer_token_env_var"] = .string(variable) }
         if let seconds = server.timeouts.startupSeconds { entry["startup_timeout_sec"] = .integer(Int64(seconds)) }
@@ -133,11 +134,11 @@ public struct CodexMcpAdapter: McpAdapter {
     }
 
     static func map(_ error: any Error) -> McpConfigError {
-        switch error as? TOMLError {
-        case .malformed(let line, let column, _)?: .unparsableTOML(line: line, column: column)
-        case .notFound?: .notFound
-        case .conflict?, .unsupportedLayout?: .layoutConflict(path: ["mcp_servers"])
-        case .invalidEdit?, nil: .invalidEdit
-        }
+        let tomlError = error as? TOMLError
+        if case .malformed(let line, let column, _)? = tomlError { return .unparsableTOML(line: line, column: column) }
+        if case .notFound? = tomlError { return .notFound }
+        if case .conflict? = tomlError { return .layoutConflict(path: ["mcp_servers"]) }
+        if case .unsupportedLayout? = tomlError { return .layoutConflict(path: ["mcp_servers"]) }
+        return .invalidEdit
     }
 }

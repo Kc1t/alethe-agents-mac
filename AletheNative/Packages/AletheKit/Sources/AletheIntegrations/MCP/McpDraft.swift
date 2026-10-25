@@ -92,33 +92,33 @@ public struct McpServerDraft: Hashable, Sendable {
         original = server
         name = server.name
         env = McpEnvDraft.rows(server.env)
-        switch server.transport {
-        case .stdio(let command, let arguments, let cwd):
+        if case .stdio(let command, let arguments, let cwd) = server.transport {
             self.command = command
             self.arguments = arguments.joined(separator: "\n")
             self.cwd = cwd ?? ""
-        case .http(let url, let headers):
+        } else if case .http(let url, let headers) = server.transport {
             kind = .http
             self.url = url
             self.headers = McpEnvDraft.rows(headers)
-        case .sse(let url, let headers):
+        } else if case .sse(let url, let headers) = server.transport {
             kind = .sse
             self.url = url
             self.headers = McpEnvDraft.rows(headers)
+        } else {
+            preconditionFailure("Unexpected McpDraft case")
         }
     }
 
     public init(option: McpInstallOption, name: String) {
         self.init()
         self.name = name
-        switch option.kind {
-        case .stdio:
+        if case .stdio = option.kind {
             command = option.command ?? ""
             arguments = option.args.joined(separator: "\n")
-        case .http:
+        } else if case .http = option.kind {
             kind = .http
             url = option.url ?? ""
-        case .sse:
+        } else {
             kind = .sse
             url = option.url ?? ""
         }
@@ -141,16 +141,15 @@ public struct McpServerDraft: Hashable, Sendable {
             return out
         }
         let transport: McpTransport
-        switch kind {
-        case .stdio:
+        if case .stdio = kind {
             let arguments = arguments.split(whereSeparator: \.isNewline)
                 .map { $0.trimmingCharacters(in: .whitespaces) }
                 .filter { !$0.isEmpty }
             let cwd = cwd.trimmingCharacters(in: .whitespacesAndNewlines)
             transport = .stdio(command: command, arguments: arguments, cwd: cwd.isEmpty ? nil : cwd)
-        case .http:
+        } else if case .http = kind {
             transport = .http(url: url, headers: map(headers))
-        case .sse:
+        } else {
             transport = .sse(url: url, headers: map(headers))
         }
         var server = original ?? McpServer(name: name, transport: transport)
@@ -167,10 +166,12 @@ extension McpTransport {
 
 extension McpTransportView {
     public var summary: String {
-        switch self {
-        case .stdio(let command, let arguments, _): ([command] + arguments).filter { !$0.isEmpty }.joined(separator: " ")
-        case .http(let url, _), .sse(let url, _): url
+        if case .stdio(let command, let arguments, _) = self {
+            return ([command] + arguments).filter { !$0.isEmpty }.joined(separator: " ")
         }
+        if case .http(let url, _) = self { return url }
+        guard case .sse(let url, _) = self else { preconditionFailure("Unknown MCP transport view") }
+        return url
     }
 }
 

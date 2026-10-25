@@ -6,11 +6,12 @@ public enum DiscordPresenceView: Hashable, Sendable {
     case orchestration
 
     public var state: String {
-        switch self {
-        case .dashboard: "Viewing the dashboard"
-        case .terminals: "Managing terminals"
-        case .orchestration: "Orchestrating AI agents"
-        }
+        let descriptions: [Self: String] = [
+            .dashboard: "Viewing the dashboard",
+            .terminals: "Managing terminals",
+            .orchestration: "Orchestrating AI agents"
+        ]
+        return descriptions[self] ?? "Viewing the dashboard"
     }
 }
 

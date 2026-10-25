@@ -69,10 +69,13 @@ public struct JSONConfigEditor: Sendable, Equatable {
     ) throws(JSONConfigError) {
         guard !path.isEmpty else { throw .emptyPath }
         var entry: OrderedJSONObject
-        switch value(at: path) {
-        case .none: entry = OrderedJSONObject()
-        case .object(let existing): entry = existing
-        case .some: throw .notAnObject(path: path)
+        let existingValue = value(at: path)
+        if case .none = existingValue {
+            entry = OrderedJSONObject()
+        } else if case .object(let existing) = existingValue {
+            entry = existing
+        } else {
+            throw .notAnObject(path: path)
         }
         for key in managedKeys { entry.removeValue(forKey: key) }
         for (key, value) in values { entry[key] = value }
@@ -100,13 +103,12 @@ public struct JSONConfigEditor: Sendable, Equatable {
             return
         }
         var child: OrderedJSONObject
-        switch object[key] {
-        case .none:
+        if case .none = object[key] {
             guard create else { return }
             child = OrderedJSONObject()
-        case .object(let existing):
+        } else if case .object(let existing) = object[key] {
             child = existing
-        case .some:
+        } else {
             throw .notAnObject(path: Array(fullPath[..<(path.startIndex + 1)]))
         }
         try update(&child, path: path.dropFirst(), fullPath: fullPath, create: create, body)

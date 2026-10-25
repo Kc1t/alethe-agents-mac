@@ -33,7 +33,10 @@ private struct Fixture {
 }
 
 private func frontmatterValue(_ content: String, _ field: String) -> String? {
-    guard content.hasPrefix("---\n"), let end = content.range(of: "\n---\n", range: content.index(content.startIndex, offsetBy: 4)..<content.endIndex) else {
+    guard content.hasPrefix("---\n"),
+          let end = content.range(
+            of: "\n---\n", range: content.index(content.startIndex, offsetBy: 4)..<content.endIndex
+          ) else {
         return nil
     }
     let block = content[content.index(content.startIndex, offsetBy: 4)..<end.lowerBound]
@@ -118,7 +121,12 @@ private func frontmatterValue(_ content: String, _ field: String) -> String? {
 }
 
 @Suite struct AgentLibraryInstallTests {
-    private let template = AgentLibraryCatalog.template(named: "qa-reviewer")!
+    private let template: AgentTemplate = {
+        guard let template = AgentLibraryCatalog.template(named: "qa-reviewer") else {
+            preconditionFailure("Missing qa-reviewer fixture")
+        }
+        return template
+    }()
 
     @Test func installsAndUninstalls() throws {
         let fixture = Fixture()
@@ -270,7 +278,7 @@ private func frontmatterValue(_ content: String, _ field: String) -> String? {
 
     @Test func libraryAgentsSurviveEconomyOff() throws {
         let fixture = Fixture()
-        try fixture.store.install(AgentLibraryCatalog.template(named: "docs-writer")!, in: fixture.scope)
+        try fixture.store.install(try #require(AgentLibraryCatalog.template(named: "docs-writer")), in: fixture.scope)
         try fixture.store.setEconomy(true, in: fixture.scope)
         try fixture.store.setEconomy(false, in: fixture.scope)
         #expect(fixture.store.installed(in: fixture.scope).map(\.name) == ["docs-writer"])

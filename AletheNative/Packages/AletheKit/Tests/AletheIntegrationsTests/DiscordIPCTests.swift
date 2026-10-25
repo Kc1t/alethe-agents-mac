@@ -17,7 +17,11 @@ import Testing
     @Test func activityPayloadMatchesTheCrate() {
         let activity = DiscordActivity(details: "Working with Alethe", state: "Managing terminals/tabs", startedAt: 1_700_000_000)
         let payload = DiscordIPC.activityPayload(activity, pid: 4242, nonce: "0b3c2c1e-1111-4222-8333-444455556666")
-        #expect(String(decoding: payload, as: UTF8.self) == #"{"args":{"activity":{"assets":{"large_image":"alethe","large_text":"Alethe"},"details":"Working with Alethe","state":"Managing terminals/tabs","timestamps":{"start":1700000000}},"pid":4242},"cmd":"SET_ACTIVITY","nonce":"0b3c2c1e-1111-4222-8333-444455556666"}"#)
+        #expect(String(decoding: payload, as: UTF8.self) == #"""
+        {"args":{"activity":{"assets":{"large_image":"alethe","large_text":"Alethe"},"details":"Working with Alethe","\#
+        state":"Managing terminals/tabs","timestamps":{"start":1700000000}},"pid":4242},"cmd":"SET_ACTIVITY","nonce":"\#
+        0b3c2c1e-1111-4222-8333-444455556666"}
+        """#)
     }
 
     @Test func clearPayloadSendsANullActivity() {

@@ -23,21 +23,34 @@ public enum McpStoreError: Error, Equatable, Sendable, CustomStringConvertible {
     case file(ConfigFileError)
 
     public var description: String {
-        switch self {
-        case .unsupportedScope: "unsupported_scope"
-        case .notFound: "not_found"
-        case .invalidName: "invalid_name"
-        case .invalidCommand: "invalid_command"
-        case .invalidURL: "invalid_url"
-        case .unsupportedFields(let fields): "unsupported_fields:" + fields.map(\.field).joined(separator: ",")
-        case .selfCheckFailed: "self_check_failed"
-        case .backupMismatch: "backup_mismatch"
-        case .cancelled: "cancelled"
-        case .config(let error): error.description
-        case .file(.changedSinceRead): "changed_since_read"
-        case .file(.unreadable): "unreadable"
-        case .file(.backupFailed): "backup_failed"
-        case .file(.writeFailed): "write_failed"
+        if case .unsupportedScope = self {
+            return "unsupported_scope"
+        } else if case .notFound = self {
+            return "not_found"
+        } else if case .invalidName = self {
+            return "invalid_name"
+        } else if case .invalidCommand = self {
+            return "invalid_command"
+        } else if case .invalidURL = self {
+            return "invalid_url"
+        } else if case .unsupportedFields(let fields) = self {
+            return "unsupported_fields:" + fields.map(\.field).joined(separator: ",")
+        } else if case .selfCheckFailed = self {
+            return "self_check_failed"
+        } else if case .backupMismatch = self {
+            return "backup_mismatch"
+        } else if case .cancelled = self {
+            return "cancelled"
+        } else if case .config(let error) = self {
+            return error.description
+        } else if case .file(.changedSinceRead) = self {
+            return "changed_since_read"
+        } else if case .file(.unreadable) = self {
+            return "unreadable"
+        } else if case .file(.backupFailed) = self {
+            return "backup_failed"
+        } else {
+            return "write_failed"
         }
     }
 }
@@ -48,10 +61,10 @@ public enum McpMutation: Hashable, Sendable {
     case setEnabled(name: String, enabled: Bool)
 
     public var target: String {
-        switch self {
-        case .upsert(let server): server.name
-        case .remove(let name), .setEnabled(let name, _): name
-        }
+        if case .upsert(let server) = self { return server.name }
+        if case .remove(let name) = self { return name }
+        guard case .setEnabled(let name, _) = self else { preconditionFailure("Unknown MCP mutation") }
+        return name
     }
 
     var creates: Bool {
@@ -152,19 +165,20 @@ public final class McpStore: Sendable {
         let name = server.name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty, !name.contains(where: { "/\\\"\n".contains($0) }) else { throw .invalidName }
         let transport: McpTransport
-        switch server.transport {
-        case .stdio(let command, let arguments, let cwd):
+        if case .stdio(let command, let arguments, let cwd) = server.transport {
             let command = command.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !command.isEmpty else { throw .invalidCommand }
             transport = .stdio(command: command, arguments: arguments, cwd: cwd)
-        case .http(let url, let headers):
+        } else if case .http(let url, let headers) = server.transport {
             let url = url.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !url.isEmpty else { throw .invalidURL }
             transport = .http(url: url, headers: cleaned(headers))
-        case .sse(let url, let headers):
+        } else if case .sse(let url, let headers) = server.transport {
             let url = url.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !url.isEmpty else { throw .invalidURL }
             transport = .sse(url: url, headers: cleaned(headers))
+        } else {
+            preconditionFailure("Unexpected McpStore case")
         }
         var out = server
         out.name = name
@@ -355,10 +369,14 @@ public final class McpStore: Sendable {
 
         let next: String
         do {
-            switch mutation {
-            case .upsert(let server): next = try adapter.upsert(raw, source: source, server: server)
-            case .remove(let name): next = try adapter.remove(raw, source: source, name: name)
-            case .setEnabled(let name, let enabled): next = try adapter.setEnabled(raw, source: source, name: name, enabled: enabled)
+            if case .upsert(let server) = mutation {
+                next = try adapter.upsert(raw, source: source, server: server)
+            } else if case .remove(let name) = mutation {
+                next = try adapter.remove(raw, source: source, name: name)
+            } else if case .setEnabled(let name, let enabled) = mutation {
+                next = try adapter.setEnabled(raw, source: source, name: name, enabled: enabled)
+            } else {
+                preconditionFailure("Unexpected McpStore case")
             }
         } catch {
             throw .config(error)

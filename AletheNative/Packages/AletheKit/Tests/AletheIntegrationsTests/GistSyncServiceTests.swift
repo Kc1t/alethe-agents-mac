@@ -21,8 +21,11 @@ final class GistStubProtocol: URLProtocol, @unchecked Sendable {
         var recorded = request
         recorded.httpBody = request.httpBody ?? request.httpBodyStream.map(Self.read)
         let (status, body) = stub.answer(recorded)
-        let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: "HTTP/1.1",
-                                       headerFields: ["Content-Type": "application/json"])!
+        guard let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: "HTTP/1.1",
+                                       headerFields: ["Content-Type": "application/json"]) else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+            return
+        }
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: body)
         client?.urlProtocolDidFinishLoading(self)
@@ -80,7 +83,10 @@ final class GistStub: Sendable {
     }
 
     static func json(_ status: Int, _ object: Any) -> (Int, Data) {
-        (status, try! JSONSerialization.data(withJSONObject: object))
+        guard let data = try? JSONSerialization.data(withJSONObject: object) else {
+            preconditionFailure("Invalid JSON fixture")
+        }
+        return (status, data)
     }
 }
 

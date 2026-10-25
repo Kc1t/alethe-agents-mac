@@ -2,9 +2,10 @@ import AletheModel
 
 extension Router9Source {
     public init(_ preference: AletheModel.Router9Source) {
-        switch preference {
-        case .managed: self = .managed
-        case .external: self = .external
+        if case .managed = preference {
+            self = .managed
+        } else {
+            self = .external
         }
     }
 }

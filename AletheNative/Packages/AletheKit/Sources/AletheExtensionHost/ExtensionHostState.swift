@@ -30,16 +30,14 @@ public struct ExtensionHostState: Codable, Equatable, Sendable {
     }
 
     public mutating func requestEnable(_ manifest: PluginManifest) -> ExtensionEnableOutcome {
-        switch ledger.decision(for: manifest) {
-        case .allowed:
+        let decision = ledger.decision(for: manifest)
+        if case .allowed = decision {
             enabled.insert(manifest.id)
             return .enabled
-        case .promptRequired(let missing):
-            return .needsConsent(missing)
-        case .denied:
-            ledger.forget(manifest.id)
-            return .needsConsent(manifest.capabilities)
         }
+        if case .promptRequired(let missing) = decision { return .needsConsent(missing) }
+        ledger.forget(manifest.id)
+        return .needsConsent(manifest.capabilities)
     }
 
     public mutating func approve(_ manifest: PluginManifest, at date: Date = Date()) {
@@ -80,9 +78,7 @@ public struct ExtensionHostState: Codable, Equatable, Sendable {
 
 public enum ExtensionRequestRouter {
     public static func requiredCapability(for request: HostRequest) -> PluginCapability {
-        switch request {
-        case .storageGet, .storageSet: .storage
-        }
+        .storage
     }
 
     public static func handle(
@@ -92,14 +88,15 @@ public enum ExtensionRequestRouter {
     ) async -> HostResponse {
         let capability = requiredCapability(for: request)
         guard isAllowed(capability) else { return .denied(capability: capability.rawValue) }
-        switch request {
-        case .storageGet(let key):
+        if case .storageGet(let key) = request {
             guard case .string(let value)? = await storage.value(forKey: key) else { return .value(nil) }
             return .value(value)
-        case .storageSet(let key, let value):
-            await storage.set(value.map(JSONValue.string), forKey: key)
-            return .done
         }
+        guard case .storageSet(let key, let value) = request else {
+            preconditionFailure("Unknown host request")
+        }
+        await storage.set(value.map(JSONValue.string), forKey: key)
+        return .done
     }
 
     public static func storageID(for bundleIdentifier: String) -> String {

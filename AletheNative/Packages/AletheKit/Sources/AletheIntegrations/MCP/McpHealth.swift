@@ -74,11 +74,9 @@ public enum McpHealthParser {
             let trimmed = raw.drop(while: { decoration.contains($0) })
             guard let space = trimmed.firstIndex(of: " ") else { return nil }
             var status: McpHealthStatus
-            switch trimmed[..<space] {
-            case "✓": status = .connected
-            case "✗", "✕", "×": status = .failed
-            default: return nil
-            }
+            let statuses: [Substring: McpHealthStatus] = ["✓": .connected, "✗": .failed, "✕": .failed, "×": .failed]
+            guard let parsedStatus = statuses[trimmed[..<space]] else { return nil }
+            status = parsedStatus
             let rest = trimmed[trimmed.index(after: space)...]
             guard let name = rest.split(whereSeparator: \.isWhitespace).first, !name.isEmpty else { return nil }
             if rest.lowercased().contains("auth") { status = .needsAuth }
@@ -87,21 +85,19 @@ public enum McpHealthParser {
     }
 
     public static func cli(for agent: McpAgent) -> (binary: String, arguments: [String])? {
-        switch agent {
-        case .claude: ("claude", ["mcp", "list"])
-        case .codex: ("codex", ["mcp", "list", "--json"])
-        case .opencode: ("opencode", ["mcp", "list"])
-        case .antigravity, .cursor: nil
-        }
+        let commands: [McpAgent: (String, [String])] = [
+            .claude: ("claude", ["mcp", "list"]),
+            .codex: ("codex", ["mcp", "list", "--json"]),
+            .opencode: ("opencode", ["mcp", "list"])
+        ]
+        return commands[agent]
     }
 
     public static func parse(_ stdout: String, for agent: McpAgent) -> [McpHealth] {
-        switch agent {
-        case .claude: parseClaude(stdout)
-        case .codex: parseCodex(stdout)
-        case .opencode: parseOpencode(stdout)
-        case .antigravity, .cursor: []
-        }
+        if agent == .claude { return parseClaude(stdout) }
+        if agent == .codex { return parseCodex(stdout) }
+        if agent == .opencode { return parseOpencode(stdout) }
+        return []
     }
 }
 
@@ -118,7 +114,9 @@ public struct McpHealthChecker: Sendable {
     public init(
         resolve: @escaping @Sendable (String) -> String? = { LauncherResolver().resolve($0) },
         timeout: Duration = McpHealthChecker.timeout,
-        run: @escaping Runner = { (executable: String, arguments: [String], timeout: Duration) async throws(ExternalCommandError) -> ExternalCommandResult in
+        run: @escaping Runner = {
+            (executable: String, arguments: [String], timeout: Duration)
+                async throws(ExternalCommandError) -> ExternalCommandResult in
             try await ExternalCommand.run(executable, arguments, timeout: timeout)
         }
     ) {
@@ -135,11 +133,9 @@ public struct McpHealthChecker: Sendable {
         do {
             result = try await run(executable, cli.arguments, timeout)
         } catch {
-            switch error {
-            case .timedOut: throw .timedOut
-            case .cancelled: throw .cancelled
-            case .launchFailed: throw .cliFailed
-            }
+            if case .timedOut = error { throw .timedOut }
+            if case .cancelled = error { throw .cancelled }
+            throw .cliFailed
         }
         return McpHealthParser.parse(result.stdout, for: agent)
     }

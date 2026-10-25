@@ -109,7 +109,9 @@ private func temporaryDirectory() -> URL {
         let directory = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let storage = PluginStorage(root: directory, pluginID: "ext.x")
-        let response = await ExtensionRequestRouter.handle(.storageSet(key: "k", value: "v"), isAllowed: { $0 != .storage }, storage: storage)
+        let response = await ExtensionRequestRouter.handle(
+            .storageSet(key: "k", value: "v"), isAllowed: { $0 != .storage }, storage: storage
+        )
         #expect(response == .denied(capability: "storage"))
         #expect(await storage.value(forKey: "k") == nil)
     }

@@ -41,10 +41,9 @@ public enum GistPullResult: Hashable, Sendable {
     case tauriImport(TauriGistPull)
 
     public var stagingRoot: URL {
-        switch self {
-        case .replacesProfile(let pull): pull.stagingRoot
-        case .tauriImport(let pull): pull.stagingRoot
-        }
+        if case .replacesProfile(let pull) = self { return pull.stagingRoot }
+        guard case .tauriImport(let pull) = self else { preconditionFailure("Unknown gist pull preview") }
+        return pull.stagingRoot
     }
 }
 

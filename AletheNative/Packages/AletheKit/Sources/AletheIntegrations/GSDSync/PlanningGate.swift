@@ -118,13 +118,12 @@ public enum PlanningGate {
                 .trimmingCharacters(in: .whitespaces)
                 .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
                 .trimmingCharacters(in: CharacterSet(charactersIn: "'"))
-            switch key {
-            case "status": status = value.lowercased()
-            case "progress":
+            if key == "status" {
+                status = value.lowercased()
+            } else if key == "progress" {
                 var number = Substring(value)
                 while number.hasSuffix("%") { number = number.dropLast() }
                 progress = UInt8(number.trimmingCharacters(in: .whitespaces)).map(Int.init)
-            default: break
             }
         }
         return (status, progress)

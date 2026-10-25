@@ -3,7 +3,10 @@ import Testing
 @testable import AlethePluginKit
 
 @Suite struct PluginWebRegistryTests {
-    private let raw = Data(#"{"id":"test.notes","name":"Notes","version":"1.0","kind":"ui","apiVersion":1,"description":"Notes panel","capabilities":["ui.sidebarTab"],"spec":{"unknown":{"retained":true}},"entry":"index.js"}"#.utf8)
+    private let raw = Data(#"""
+    {"id":"test.notes","name":"Notes","version":"1.0","kind":"ui","apiVersion":1,"description":"Notes panel","capa\#
+    bilities":["ui.sidebarTab"],"spec":{"unknown":{"retained":true}},"entry":"index.js"}
+    """#.utf8)
 
     @Test func registrationPreservesUnknownFieldsAndDoesNotEnableExecution() async throws {
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)

@@ -150,11 +150,11 @@ private enum GraphJSON {
     }
 
     static func id(_ value: Any?) -> String? {
-        switch value {
-        case let string as String: return string
-        case let number as NSNumber where CFGetTypeID(number) != CFBooleanGetTypeID(): return number.stringValue
-        default: return nil
+        if let string = value as? String { return string }
+        if let number = value as? NSNumber, CFGetTypeID(number) != CFBooleanGetTypeID() {
+            return number.stringValue
         }
+        return nil
     }
 
     static func firstString(_ object: [String: Any], _ keys: [String], numbers: Bool = false) -> String? {

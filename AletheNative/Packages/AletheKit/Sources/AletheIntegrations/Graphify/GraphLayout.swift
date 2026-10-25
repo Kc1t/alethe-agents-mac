@@ -87,98 +87,10 @@ public enum ForceLayout {
             if target != source { degrees[target] += 1 }
         }
 
-        let k = max(options.spacing, 1)
-        let side = k * Double(max(count, 1)).squareRoot()
-        var random = SplitMix64(seed: options.seed)
-        var xs = [Double](repeating: 0, count: count)
-        var ys = [Double](repeating: 0, count: count)
-        for node in 0..<count {
-            xs[node] = (random.nextUnit() - 0.5) * side
-            ys[node] = (random.nextUnit() - 0.5) * side
-        }
-        guard count > 1 else {
-            return GraphLayout(positions: zip(xs, ys).map { GraphPoint(x: $0, y: $1) }, edges: links, degrees: degrees)
-        }
-
-        let cellSize = 2 * k
-        let k2 = k * k
-        let gravity = 0.9 * k / side
-        var temperature = side / 10
-        let cooling = temperature / Double(max(options.iterations, 1) + 1)
-        var dxs = [Double](repeating: 0, count: count)
-        var dys = [Double](repeating: 0, count: count)
-
-        for _ in 0..<max(options.iterations, 0) {
-            try Task.checkCancellation()
-            for node in 0..<count {
-                dxs[node] = 0
-                dys[node] = 0
-            }
-
-            var cells: [Cell: [Int]] = [:]
-            for node in 0..<count { cells[Cell(xs[node], ys[node], cellSize), default: []].append(node) }
-            for node in 0..<count {
-                let cell = Cell(xs[node], ys[node], cellSize)
-                for dx in -1...1 {
-                    for dy in -1...1 {
-                        guard let others = cells[Cell(x: cell.x + dx, y: cell.y + dy)] else { continue }
-                        for other in others where other != node {
-                            var ddx = xs[node] - xs[other], ddy = ys[node] - ys[other]
-                            var distance2 = ddx * ddx + ddy * ddy
-                            if distance2 < 1e-6 {
-                                let angle = Double((node &* 31 &+ other) % 360) * .pi / 180
-                                ddx = cos(angle) * 0.01
-                                ddy = sin(angle) * 0.01
-                                distance2 = 1e-4
-                            }
-                            guard distance2 < cellSize * cellSize else { continue }
-                            let factor = k2 / distance2
-                            dxs[node] += ddx * factor
-                            dys[node] += ddy * factor
-                        }
-                    }
-                }
-            }
-
-            for link in links where link.source != link.target {
-                let ddx = xs[link.source] - xs[link.target], ddy = ys[link.source] - ys[link.target]
-                let distance = (ddx * ddx + ddy * ddy).squareRoot()
-                guard distance > 1e-9 else { continue }
-                let factor = distance / k
-                dxs[link.source] -= ddx * factor
-                dys[link.source] -= ddy * factor
-                dxs[link.target] += ddx * factor
-                dys[link.target] += ddy * factor
-            }
-
-            for node in 0..<count {
-                let dx = dxs[node] - xs[node] * gravity * k
-                let dy = dys[node] - ys[node] * gravity * k
-                let length = (dx * dx + dy * dy).squareRoot()
-                guard length > 1e-9 else { continue }
-                let step = min(length, temperature) / length
-                xs[node] += dx * step
-                ys[node] += dy * step
-            }
-            temperature = max(temperature - cooling, k * 0.01)
-        }
-        return GraphLayout(positions: zip(xs, ys).map { GraphPoint(x: $0, y: $1) }, edges: links, degrees: degrees)
+        var simulation = ForceSimulation(count: count, options: options)
+        return try GraphLayout(positions: simulation.positions(links: links), edges: links, degrees: degrees)
     }
 
-    private struct Cell: Hashable {
-        var x: Int
-        var y: Int
-
-        init(x: Int, y: Int) {
-            self.x = x
-            self.y = y
-        }
-
-        init(_ px: Double, _ py: Double, _ size: Double) {
-            x = Int((px / size).rounded(.down))
-            y = Int((py / size).rounded(.down))
-        }
-    }
 }
 
 struct SplitMix64 {

@@ -46,8 +46,11 @@ public enum Spotify {
         charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~")
 
     public static func authorizeURL(clientID: String, state: String) -> URL {
-        URL(string: "\(authorizeURL)?response_type=code&client_id=\(encode(clientID))&scope=\(encode(scopes))"
-            + "&redirect_uri=\(encode(redirectURI))&state=\(encode(state))")!
+        guard let url = URL(
+            string: "\(authorizeURL)?response_type=code&client_id=\(encode(clientID))&scope=\(encode(scopes))"
+                + "&redirect_uri=\(encode(redirectURI))&state=\(encode(state))"
+        ) else { preconditionFailure("Invalid Spotify authorization URL") }
+        return url
     }
 
     public static func randomState(length: Int = stateLength) -> String {

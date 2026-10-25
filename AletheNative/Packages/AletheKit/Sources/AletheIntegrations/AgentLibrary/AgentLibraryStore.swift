@@ -51,7 +51,9 @@ public struct AgentLibraryStore: Sendable {
     }
 
     @discardableResult
-    public func install(_ template: AgentTemplate, in scope: AgentLibraryScope, overwriteForeign: Bool = false) throws(AgentLibraryError) -> AgentLibraryChange {
+    public func install(
+        _ template: AgentTemplate, in scope: AgentLibraryScope, overwriteForeign: Bool = false
+    ) throws(AgentLibraryError) -> AgentLibraryChange {
         guard Self.isValidName(template.name) else { throw .invalidName(template.name) }
         let url = scope.agentsDirectory.appending(path: template.fileName)
         let snapshot = try read(url)
@@ -63,7 +65,9 @@ public struct AgentLibraryStore: Sendable {
     }
 
     @discardableResult
-    public func uninstall(_ name: String, in scope: AgentLibraryScope, force: Bool = false) throws(AgentLibraryError) -> AgentLibraryChange {
+    public func uninstall(
+        _ name: String, in scope: AgentLibraryScope, force: Bool = false
+    ) throws(AgentLibraryError) -> AgentLibraryChange {
         guard Self.isValidName(name) else { throw .invalidName(name) }
         let snapshot = try read(scope.agentsDirectory.appending(path: "\(name).md"))
         guard snapshot.exists else { return AgentLibraryChange() }
@@ -137,7 +141,9 @@ public struct AgentLibraryStore: Sendable {
         }
     }
 
-    private func write(_ text: String, over snapshot: ConfigFileSnapshot, slot: ConfigBackupSlot) throws(AgentLibraryError) -> AgentLibraryChange.Edit? {
+    private func write(
+        _ text: String, over snapshot: ConfigFileSnapshot, slot: ConfigBackupSlot
+    ) throws(AgentLibraryError) -> AgentLibraryChange.Edit? {
         let data = Data(text.utf8)
         guard snapshot.contents != data else { return nil }
         do {

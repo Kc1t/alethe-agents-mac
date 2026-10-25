@@ -61,7 +61,8 @@ func stdioServer(_ name: String) -> McpServer {
             #expect(!text.contains("header-secret"))
             #expect(!text.contains("env-secret"))
         }
-        #expect(String(describing: server.env["PASS"]!).contains("passthrough: PASS"))
+        guard let passthrough = server.env["PASS"] else { Issue.record("Missing passthrough fixture"); return }
+        #expect(String(describing: passthrough).contains("passthrough: PASS"))
     }
 
     @Test func passthroughEnvIsUnsupportedOnClaudeButFineOnCodex() {

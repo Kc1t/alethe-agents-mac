@@ -4,13 +4,14 @@ public enum SkillAgent: String, CaseIterable, Codable, Hashable, Sendable {
     case claude, codex, opencode, antigravity, shared
 
     public var segments: [String] {
-        switch self {
-        case .claude: [".claude", "skills"]
-        case .codex: [".codex", "skills"]
-        case .opencode: [".config", "opencode", "skill"]
-        case .antigravity: [".gemini", "skills"]
-        case .shared: [".agents", "skills"]
-        }
+        let directories: [Self: [String]] = [
+            .claude: [".claude", "skills"],
+            .codex: [".codex", "skills"],
+            .opencode: [".config", "opencode", "skill"],
+            .antigravity: [".gemini", "skills"],
+            .shared: [".agents", "skills"]
+        ]
+        return directories[self] ?? []
     }
 }
 

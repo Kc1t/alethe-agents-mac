@@ -70,14 +70,13 @@ public struct Router9Launch: Hashable, Sendable {
     static func make(source: Router9Source, port: Int, paths: Router9Paths, entryScriptExists: Bool,
                      node: String?, external: String?) throws(Router9Error) -> Router9Launch {
         var launch: Router9Launch
-        switch source {
-        case .managed:
+        if case .managed = source {
             guard entryScriptExists else { throw .notInstalled }
             guard let node else { throw .nodeNotFound }
             launch = Router9Launch(executable: node, arguments: [paths.entryScript.plainPath],
                                    directory: paths.installDirectory.plainPath,
                                    environment: ["DATA_DIR": paths.dataDirectory.plainPath])
-        case .external:
+        } else {
             guard let external else { throw .notInstalled }
             launch = Router9Launch(executable: external, arguments: [], directory: nil, environment: [:])
         }
@@ -238,8 +237,8 @@ public actor Router9Service {
     }
 }
 
-private extension URL {
-    var plainPath: String {
+extension URL {
+    fileprivate var plainPath: String {
         let path = path(percentEncoded: false)
         return path.count > 1 && path.hasSuffix("/") ? String(path.dropLast()) : path
     }

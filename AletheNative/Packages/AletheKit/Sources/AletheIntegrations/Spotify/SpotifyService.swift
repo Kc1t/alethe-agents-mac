@@ -209,11 +209,9 @@ public actor SpotifyService {
     }
 
     static func label(_ error: SpotifyError) -> String {
-        switch error {
-        case .authorizationDenied: "authorizationDenied"
-        case .listenerFailed: "listenerFailed"
-        case .tokenRequestFailed(let status, _): "tokenRequestFailed \(status)"
-        default: String(describing: error)
-        }
+        if case .authorizationDenied = error { return "authorizationDenied" }
+        if case .listenerFailed = error { return "listenerFailed" }
+        if case .tokenRequestFailed(let status, _) = error { return "tokenRequestFailed \(status)" }
+        return String(describing: error)
     }
 }

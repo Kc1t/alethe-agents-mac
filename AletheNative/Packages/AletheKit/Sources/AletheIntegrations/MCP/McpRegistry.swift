@@ -53,13 +53,12 @@ public struct McpInstallOption: Hashable, Sendable, Codable {
             }
             return map
         }
-        switch kind {
-        case .stdio:
+        if case .stdio = kind {
             return McpServer(name: name, transport: .stdio(command: command ?? "", arguments: args, cwd: nil),
                              env: entries(env))
-        case .http:
+        } else if case .http = kind {
             return McpServer(name: name, transport: .http(url: url ?? "", headers: entries(headers)))
-        case .sse:
+        } else {
             return McpServer(name: name, transport: .sse(url: url ?? "", headers: entries(headers)))
         }
     }
@@ -175,17 +174,8 @@ public enum McpRegistryParser {
     }
 
     static func runtime(registryType: String, hint: String?) -> String? {
-        switch hint {
-        case "npx", "uvx", "docker", "dnx": return hint
-        default:
-            switch registryType {
-            case "npm": return "npx"
-            case "pypi": return "uvx"
-            case "oci": return "docker"
-            case "nuget": return "dnx"
-            default: return nil
-            }
-        }
+        if let hint, ["npx", "uvx", "docker", "dnx"].contains(hint) { return hint }
+        return ["npm": "npx", "pypi": "uvx", "oci": "docker", "nuget": "dnx"][registryType]
     }
 
     private static func packageInstall(_ package: Object) -> McpInstallOption? {
@@ -287,16 +277,17 @@ public actor McpRegistry {
         } catch {
             fetched = .failure(error)
         }
-        switch fetched {
-        case .success(let page):
+        if case .success(let page) = fetched {
             if isFirstPage { store(page, for: key) }
             return page
-        case .failure(let error):
+        } else if case .failure(let error) = fetched {
             if error == .cancelled || !isFirstPage { throw error }
             guard let cached = readCache().queries[key] else { throw error }
             var page = cached.page
             page.staleSince = Date(timeIntervalSince1970: TimeInterval(cached.fetchedAt) / 1000)
             return page
+        } else {
+            preconditionFailure("Unexpected McpRegistry case")
         }
     }
 

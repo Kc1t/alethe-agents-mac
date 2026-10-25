@@ -20,9 +20,7 @@ public enum PlaywrightMcp {
 
     public static func arguments(mode: PlaywrightBrowserMode, dedicatedHeadless: Bool,
                                  sharedEndpoint: String?) -> [String] {
-        switch mode {
-        case .shared: arguments(endpoint: sharedEndpoint, dedicatedHeadless: nil)
-        case .dedicated: arguments(endpoint: nil, dedicatedHeadless: dedicatedHeadless)
-        }
+        if case .shared = mode { return arguments(endpoint: sharedEndpoint, dedicatedHeadless: nil) }
+        return arguments(endpoint: nil, dedicatedHeadless: dedicatedHeadless)
     }
 }

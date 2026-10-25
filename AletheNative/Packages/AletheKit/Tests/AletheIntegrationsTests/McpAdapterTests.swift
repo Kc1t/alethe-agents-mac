@@ -474,7 +474,9 @@ private let opencodeInline = """
     }
 
     @Test func antigravityHasNoProjectScope() {
-        #expect(antigravity.configSources(scope: .project, repository: URL(filePath: "/repo"), home: McpHome(home: URL(filePath: "/home"))).isEmpty)
+        #expect(antigravity.configSources(
+            scope: .project, repository: URL(filePath: "/repo"), home: McpHome(home: URL(filePath: "/home"))
+        ).isEmpty)
     }
 
     @Test func antigravityWritesTheClaudeShapeAndKeepsUnknownKeys() throws {
@@ -514,7 +516,9 @@ private let opencodeInline = """
         #expect(paths(.antigravity) == ["/home/me/.gemini/config/mcp_config.json"])
         for agent in McpAgent.allCases {
             #expect(McpAdapters.adapter(for: agent).agent == agent)
-            #expect(McpAdapters.adapter(for: agent).configSources(scope: .global, repository: nil, home: home).allSatisfy { $0.kind == .user })
+            #expect(McpAdapters.adapter(for: agent).configSources(
+                scope: .global, repository: nil, home: home
+            ).allSatisfy { $0.kind == .user })
         }
     }
 

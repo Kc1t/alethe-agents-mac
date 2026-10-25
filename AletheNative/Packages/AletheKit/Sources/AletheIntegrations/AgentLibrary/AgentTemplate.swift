@@ -5,19 +5,21 @@ public enum AgentLibraryScope: Hashable, Sendable {
     case user(home: URL)
 
     public var agentsDirectory: URL {
-        let root = switch self {
-        case .project(let folder): folder
-        case .user(let home): home
+        let root: URL
+        if case .project(let folder) = self {
+            root = folder
+        } else if case .user(let home) = self {
+            root = home
+        } else {
+            preconditionFailure("Unknown agent library scope")
         }
         return root.appending(path: ".claude", directoryHint: .isDirectory)
             .appending(path: "agents", directoryHint: .isDirectory)
     }
 
     public var backupSlot: ConfigBackupSlot {
-        switch self {
-        case .project: ConfigBackupSlot(agent: "claude", kind: "agents_project")
-        case .user: ConfigBackupSlot(agent: "claude", kind: "agents_user")
-        }
+        if case .project = self { return ConfigBackupSlot(agent: "claude", kind: "agents_project") }
+        return ConfigBackupSlot(agent: "claude", kind: "agents_user")
     }
 }
 

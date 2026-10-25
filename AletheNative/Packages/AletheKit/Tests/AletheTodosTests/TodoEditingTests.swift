@@ -27,8 +27,8 @@ actor MemoryFiles {
     @Test func moveBetweenGlobalAndProjectKeepsOrderAndStamps() {
         let clock = Date(timeIntervalSince1970: 500)
         let store = TodoStore(storage: nil, now: { clock })
-        let a = store.add(title: "A")!
-        let b = store.add(title: "B", scope: .project("p1"))!
+        guard let a = store.add(title: "A") else { Issue.record("Missing test fixture"); return }
+        guard let b = store.add(title: "B", scope: .project("p1")) else { Issue.record("Missing test fixture"); return }
         store.move(a.id, to: .project("p1"))
         #expect(store.todos(in: .global).isEmpty)
         #expect(store.todos(in: .project("p1")).map(\.id) == [a.id, b.id])
@@ -43,7 +43,7 @@ actor MemoryFiles {
 
     @Test func editingTagsNormalizesAndCaps() {
         let store = TodoStore(storage: nil)
-        let a = store.add(title: "Tagged", tags: ["old"])!
+        guard let a = store.add(title: "Tagged", tags: ["old"]) else { Issue.record("Missing test fixture"); return }
         store.setTags(a.id, ["#New", "new", "two words", "#x,y"])
         #expect(store.todo(id: a.id)?.tags == ["new", "two", "words", "x", "y"])
         store.setTags(a.id, ["a", "b", "c", "d", "e", "f", "g"])
@@ -86,7 +86,9 @@ actor MemoryFiles {
     }
 
     @Test func ensureRethrowsErrorsOtherThanAMissingFile() async {
-        let denied = TodoFileAccess(read: { _ in throw CocoaError(.fileReadNoPermission) }, write: { _, _ in Issue.record("must not write") })
+        let denied = TodoFileAccess(
+            read: { _ in throw CocoaError(.fileReadNoPermission) }, write: { _, _ in Issue.record("must not write") }
+        )
         await #expect(throws: CocoaError.self) {
             try await TodoTemplate.ensure(in: URL(filePath: "/locked", directoryHint: .isDirectory), using: denied)
         }

@@ -159,7 +159,13 @@ private func pageBody(cursor: String? = "abc:1.0") -> Data {
     }
 
     private static func ok(_ data: Data) -> McpRegistry.Fetch {
-        { request in (data, HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!) }
+        { request in
+            guard let url = request.url,
+                  let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil) else {
+                throw URLError(.badServerResponse)
+            }
+            return (data, response)
+        }
     }
 
     private static let offline: McpRegistry.Fetch = { _ in throw URLError(.notConnectedToInternet) }
@@ -230,7 +236,11 @@ private func pageBody(cursor: String? = "abc:1.0") -> Data {
         let profile = try temporaryProfile()
         defer { try? FileManager.default.removeItem(at: profile) }
         let failing = McpRegistry(profileDirectory: profile, fetch: { request in
-            (Data(), HTTPURLResponse(url: request.url!, statusCode: 503, httpVersion: nil, headerFields: nil)!)
+            guard let url = request.url,
+                  let response = HTTPURLResponse(url: url, statusCode: 503, httpVersion: nil, headerFields: nil) else {
+                throw URLError(.badServerResponse)
+            }
+            return (Data(), response)
         })
         await #expect(throws: McpRegistryError.status(503)) { try await failing.search(cursor: "x") }
 
@@ -252,7 +262,11 @@ private func pageBody(cursor: String? = "abc:1.0") -> Data {
         let requests = Requests()
         let registry = McpRegistry(profileDirectory: profile, userAgent: "Alethe/test", fetch: { request in
             requests.append(request)
-            return (pageBody(), HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+            guard let url = request.url,
+                  let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil) else {
+                throw URLError(.badServerResponse)
+            }
+            return (pageBody(), response)
         })
         _ = try await registry.search(query: "a", limit: 5)
         #expect(requests.all.count == 1)

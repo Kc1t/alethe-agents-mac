@@ -24,14 +24,9 @@ public enum McpAgent: String, Hashable, Sendable, Codable, CaseIterable, CustomS
     case antigravity
 
     public init?(parsing raw: String) {
-        switch raw.trimmingCharacters(in: .whitespaces).lowercased() {
-        case "claude": self = .claude
-        case "codex": self = .codex
-        case "cursor", "cursor-agent": self = .cursor
-        case "opencode": self = .opencode
-        case "antigravity", "agy": self = .antigravity
-        default: return nil
-        }
+        let normalized = raw.trimmingCharacters(in: .whitespaces).lowercased()
+        let aliases = ["cursor-agent": "cursor", "agy": "antigravity"]
+        self.init(rawValue: aliases[normalized] ?? normalized)
     }
 
     public init?(kind: AgentKind) {
@@ -99,18 +94,18 @@ public enum McpTransport: Hashable, Sendable {
     }
 
     public var headers: McpEnvMap? {
-        switch self {
-        case .stdio: nil
-        case .http(_, let headers), .sse(_, let headers): headers
-        }
+        if case .http(_, let headers) = self { return headers }
+        if case .sse(_, let headers) = self { return headers }
+        return nil
     }
 
     public var view: McpTransportView {
-        switch self {
-        case .stdio(let command, let arguments, let cwd): .stdio(command: command, arguments: arguments, cwd: cwd)
-        case .http(let url, let headers): .http(url: url, headers: headers.mapValues(\.view))
-        case .sse(let url, let headers): .sse(url: url, headers: headers.mapValues(\.view))
+        if case .stdio(let command, let arguments, let cwd) = self {
+            return .stdio(command: command, arguments: arguments, cwd: cwd)
         }
+        if case .http(let url, let headers) = self { return .http(url: url, headers: headers.mapValues(\.view)) }
+        guard case .sse(let url, let headers) = self else { preconditionFailure("Unknown MCP transport") }
+        return .sse(url: url, headers: headers.mapValues(\.view))
     }
 }
 
@@ -255,20 +250,16 @@ public struct McpCapability: Hashable, Sendable {
 
 extension McpAgent {
     public var capability: McpCapability {
-        switch self {
-        case .claude, .cursor:
-            McpCapability(agent: self, projectScope: true, enabledFlag: false, envPassthrough: false,
-                          timeouts: false, headers: true, remote: true)
-        case .codex:
-            McpCapability(agent: self, projectScope: true, enabledFlag: true, envPassthrough: true,
-                          timeouts: true, headers: false, remote: true)
-        case .opencode:
-            McpCapability(agent: self, projectScope: true, enabledFlag: true, envPassthrough: true,
-                          timeouts: false, headers: true, remote: true)
-        case .antigravity:
-            McpCapability(agent: self, projectScope: false, enabledFlag: false, envPassthrough: false,
-                          timeouts: false, headers: true, remote: true)
+        if self == .codex {
+            return McpCapability(agent: self, projectScope: true, enabledFlag: true, envPassthrough: true,
+                                 timeouts: true, headers: false, remote: true)
         }
+        if self == .opencode {
+            return McpCapability(agent: self, projectScope: true, enabledFlag: true, envPassthrough: true,
+                                 timeouts: false, headers: true, remote: true)
+        }
+        return McpCapability(agent: self, projectScope: self != .antigravity, enabledFlag: false, envPassthrough: false,
+                             timeouts: false, headers: true, remote: true)
     }
 }
 

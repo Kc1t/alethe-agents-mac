@@ -121,15 +121,14 @@ final class SpotifyLoopbackListener: @unchecked Sendable {
         listener.newConnectionHandler = { [weak self] connection in self?.accept(connection) }
         listener.stateUpdateHandler = { [weak self] state in
             guard let self else { return }
-            switch state {
-            case .ready:
+            if case .ready = state {
                 let first = lock.withLock { () -> Bool in defer { announcedReady = true }; return !announcedReady }
                 guard first else { return }
                 Task { if await !ready() { self.finish(.failure(.browserUnavailable)) } }
-            case .failed(let error), .waiting(let error):
+            } else if case .failed(let error) = state {
                 finish(.failure(Self.map(error)))
-            default:
-                break
+            } else if case .waiting(let error) = state {
+                finish(.failure(Self.map(error)))
             }
         }
         listener.start(queue: queue)
@@ -166,26 +165,30 @@ final class SpotifyLoopbackListener: @unchecked Sendable {
             guard let self else { return connection.cancel() }
             var buffer = buffer
             if let data { buffer.append(data) }
-            switch HTTPRequest.parse(buffer, bodyLimit: 0) {
-            case .incomplete where !complete && error == nil:
+            let parsed = HTTPRequest.parse(buffer, bodyLimit: 0)
+            if case .incomplete = parsed, !complete && error == nil {
                 receive(connection, buffer: buffer)
-            case .request(let request):
-                switch SpotifyCallback.evaluate(method: request.method, target: request.path,
-                                                expectedState: expectedState) {
-                case .notFound:
-                    respond(connection, status: "404 Not Found", html: nil)
-                case .invalid:
-                    respond(connection, status: "400 Bad Request", html: nil)
-                case .code(let code):
-                    respond(connection, status: "200 OK", html: pages.html(success: true))
-                    finish(.success(code))
-                case .failure(let failure):
-                    respond(connection, status: "200 OK", html: pages.html(success: false))
-                    finish(.failure(failure))
-                }
-            default:
+            } else if case .request(let request) = parsed {
+                handle(request, connection: connection)
+            } else {
                 respond(connection, status: "400 Bad Request", html: nil)
             }
+        }
+    }
+
+    private func handle(_ request: HTTPRequest, connection: NWConnection) {
+        let callback = SpotifyCallback.evaluate(method: request.method, target: request.path,
+                                                expectedState: expectedState)
+        if case .notFound = callback {
+            respond(connection, status: "404 Not Found", html: nil)
+        } else if case .invalid = callback {
+            respond(connection, status: "400 Bad Request", html: nil)
+        } else if case .code(let code) = callback {
+            respond(connection, status: "200 OK", html: pages.html(success: true))
+            finish(.success(code))
+        } else if case .failure(let failure) = callback {
+            respond(connection, status: "200 OK", html: pages.html(success: false))
+            finish(.failure(failure))
         }
     }
 

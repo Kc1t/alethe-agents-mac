@@ -63,7 +63,10 @@ struct SpotifyAPITests {
     }
 
     @Test func currentlyPlayingParsesPlaybackState() throws {
-        let json = #"{"is_playing":true,"progress_ms":4200,"item":{"name":"Song","artists":[{"name":"A"},{"name":"B"}],"album":{"name":"LP","images":[]},"duration_ms":9000}}"#
+        let json = #"""
+        {"is_playing":true,"progress_ms":4200,"item":{"name":"Song","artists":[{"name":"A"},{"name":"B"}],"album":{"na\#
+        me":"LP","images":[]},"duration_ms":9000}}
+        """#
         let track = try #require(SpotifyNowPlaying.parseCurrentlyPlaying(Data(json.utf8)))
         #expect(track.playing)
         #expect(track.progressMs == 4200)
@@ -147,12 +150,19 @@ final class SpotifyStubProtocol: URLProtocol, @unchecked Sendable {
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
     override func startLoading() {
-        let record = Sent(url: request.url!, method: request.httpMethod ?? "GET",
+        guard let url = request.url else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badURL))
+            return
+        }
+        let record = Sent(url: url, method: request.httpMethod ?? "GET",
                           headers: request.allHTTPHeaderFields ?? [:], body: Self.body(of: request))
         Self.sent.withLock { $0.append(record) }
         let (status, body) = Self.responder.withLock { $0 }?(record) ?? (500, "")
-        let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: "HTTP/1.1",
-                                       headerFields: ["Content-Type": "application/json"])!
+        guard let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: "HTTP/1.1",
+                                       headerFields: ["Content-Type": "application/json"]) else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+            return
+        }
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: Data(body.utf8))
         client?.urlProtocolDidFinishLoading(self)
@@ -302,7 +312,11 @@ struct SpotifyServiceTests {
                              for: .spotifyTokens, profile: profile)
         SpotifyStubProtocol.responder.withLock { $0 = { request in
             if request.url == Spotify.nowPlayingURL { return (204, "") }
-            return (200, #"{"items":[{"track":{"name":"Last","artists":[{"name":"Band"}],"album":{"name":"Rec","images":[{"url":"https://i/large"},{"url":"https://i/small"}]},"duration_ms":1000,"external_urls":{"spotify":"https://open.spotify.com/track/x"}}}]}"#)
+            return (200, #"""
+            {"items":[{"track":{"name":"Last","artists":[{"name":"Band"}],"album":{"name":"Rec","images":[{"url":"https://\#
+            i/large"},{"url":"https://i/small"}]},"duration_ms":1000,"external_urls":{"spotify":"https://open.spotify.com/\#
+            track/x"}}}]}
+            """#)
         } }
         let (service, _) = service(secrets: secrets)
         let track = try #require(try await service.current(clientID: "id"))

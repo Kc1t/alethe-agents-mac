@@ -107,10 +107,11 @@ public enum OpenCodeExport {
 
     static func part(_ object: [String: Any]) -> OpenCodeExportPart {
         let type = object["type"] as? String ?? ""
-        switch type {
-        case "text": return .text(object["text"] as? String ?? "")
-        case "reasoning": return .reasoning(object["text"] as? String ?? "")
-        case "tool":
+        if case "text" = type {
+            return .text(object["text"] as? String ?? "")
+        } else if case "reasoning" = type {
+            return .reasoning(object["text"] as? String ?? "")
+        } else if case "tool" = type {
             let state = object["state"] as? [String: Any] ?? [:]
             return .tool(
                 name: object["tool"] as? String ?? "",
@@ -118,14 +119,18 @@ public enum OpenCodeExport {
                 input: (state["input"] as? [String: Any]).flatMap(toolInput),
                 output: state["output"] as? String
             )
-        case "patch": return .patch
-        default: return .other(type: type)
+        } else if case "patch" = type {
+            return .patch
+        } else {
+            return .other(type: type)
         }
     }
 
     static func toolInput(_ input: [String: Any]) -> String? {
         if let description = input["description"] as? String { return description }
-        guard let data = try? JSONSerialization.data(withJSONObject: input, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]) else {
+        guard let data = try? JSONSerialization.data(
+            withJSONObject: input, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+        ) else {
             return nil
         }
         return String(decoding: data, as: UTF8.self)

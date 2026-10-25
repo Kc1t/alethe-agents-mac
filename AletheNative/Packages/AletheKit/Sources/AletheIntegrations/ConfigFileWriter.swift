@@ -22,10 +22,10 @@ public struct ConfigBackupSlot: Hashable, Sendable {
 
     private static func sanitize(_ value: String) -> String {
         let cleaned = value.lowercased().unicodeScalars.map { scalar -> Character in
-            switch scalar {
-            case "a"..."z", "0"..."9", "_": Character(scalar)
-            default: "_"
+            if ("a"..."z").contains(scalar) || ("0"..."9").contains(scalar) || scalar == "_" {
+                return Character(scalar)
             }
+            return "_"
         }
         return cleaned.isEmpty ? "_" : String(cleaned)
     }
@@ -84,7 +84,9 @@ public struct ConfigFileWriter: Sendable {
     }
 
     @discardableResult
-    public func write(_ data: Data, over snapshot: ConfigFileSnapshot, backupSlot slot: ConfigBackupSlot?) throws(ConfigFileError) -> ConfigWriteReport {
+    public func write(
+        _ data: Data, over snapshot: ConfigFileSnapshot, backupSlot slot: ConfigBackupSlot?
+    ) throws(ConfigFileError) -> ConfigWriteReport {
         let current = try read(snapshot.url)
         guard current == snapshot else { throw .changedSinceRead(snapshot.url) }
         var backup: ConfigBackup?
@@ -96,7 +98,9 @@ public struct ConfigFileWriter: Sendable {
     }
 
     @discardableResult
-    public func write(_ text: String, over snapshot: ConfigFileSnapshot, backupSlot slot: ConfigBackupSlot?) throws(ConfigFileError) -> ConfigWriteReport {
+    public func write(
+        _ text: String, over snapshot: ConfigFileSnapshot, backupSlot slot: ConfigBackupSlot?
+    ) throws(ConfigFileError) -> ConfigWriteReport {
         try write(Data(text.utf8), over: snapshot, backupSlot: slot)
     }
 

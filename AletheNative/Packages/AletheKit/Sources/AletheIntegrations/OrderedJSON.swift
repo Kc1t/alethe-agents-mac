@@ -138,16 +138,16 @@ extension OrderedJSON {
         mutating func parseValue(depth: Int) throws(OrderedJSONParseError) -> OrderedJSON {
             guard depth < Self.maxDepth else { throw error("nesting too deep") }
             guard let byte = current else { throw error("unexpected end of input") }
-            switch byte {
-            case UInt8(ascii: "{"): return try parseObject(depth: depth)
-            case UInt8(ascii: "["): return try parseArray(depth: depth)
-            case UInt8(ascii: "\""): return .string(try parseString())
-            case UInt8(ascii: "t"): return try expect("true", .bool(true))
-            case UInt8(ascii: "f"): return try expect("false", .bool(false))
-            case UInt8(ascii: "n"): return try expect("null", .null)
-            case UInt8(ascii: "-"), UInt8(ascii: "0")...UInt8(ascii: "9"): return try parseNumber()
-            default: throw error("unexpected character")
+            if byte == UInt8(ascii: "{") { return try parseObject(depth: depth) }
+            if byte == UInt8(ascii: "[") { return try parseArray(depth: depth) }
+            if byte == UInt8(ascii: "\"") { return .string(try parseString()) }
+            if byte == UInt8(ascii: "t") { return try expect("true", .bool(true)) }
+            if byte == UInt8(ascii: "f") { return try expect("false", .bool(false)) }
+            if byte == UInt8(ascii: "n") { return try expect("null", .null) }
+            if byte == UInt8(ascii: "-") || (UInt8(ascii: "0")...UInt8(ascii: "9")).contains(byte) {
+                return try parseNumber()
             }
+            throw error("unexpected character")
         }
 
         mutating func parseObject(depth: Int) throws(OrderedJSONParseError) -> OrderedJSON {
@@ -168,12 +168,13 @@ extension OrderedJSON {
                 skipWhitespace()
                 object[key] = try parseValue(depth: depth + 1)
                 skipWhitespace()
-                switch current {
-                case UInt8(ascii: ","): index += 1
-                case UInt8(ascii: "}"):
+                if current == UInt8(ascii: ",") {
+                    index += 1
+                } else if current == UInt8(ascii: "}") {
                     index += 1
                     return .object(object)
-                default: throw error("expected ',' or '}'")
+                } else {
+                    throw error("expected ',' or '}'")
                 }
             }
         }
@@ -190,12 +191,13 @@ extension OrderedJSON {
                 skipWhitespace()
                 items.append(try parseValue(depth: depth + 1))
                 skipWhitespace()
-                switch current {
-                case UInt8(ascii: ","): index += 1
-                case UInt8(ascii: "]"):
+                if current == UInt8(ascii: ",") {
+                    index += 1
+                } else if current == UInt8(ascii: "]") {
                     index += 1
                     return .array(items)
-                default: throw error("expected ',' or ']'")
+                } else {
+                    throw error("expected ',' or ']'")
                 }
             }
         }
@@ -248,37 +250,35 @@ extension OrderedJSON {
                 index += 1
                 guard let escape = current else { throw error("unterminated string") }
                 index += 1
-                switch escape {
-                case UInt8(ascii: "\""): scalars.append("\"")
-                case UInt8(ascii: "\\"): scalars.append("\\")
-                case UInt8(ascii: "/"): scalars.append("/")
-                case UInt8(ascii: "b"): scalars.append("\u{08}")
-                case UInt8(ascii: "f"): scalars.append("\u{0C}")
-                case UInt8(ascii: "n"): scalars.append("\n")
-                case UInt8(ascii: "r"): scalars.append("\r")
-                case UInt8(ascii: "t"): scalars.append("\t")
-                case UInt8(ascii: "u"):
-                    let unit = try parseHex4()
-                    if (0xD800..<0xDC00).contains(unit) {
-                        guard current == UInt8(ascii: "\\"), index + 1 < bytes.count, bytes[index + 1] == UInt8(ascii: "u") else {
-                            throw error("lone surrogate")
-                        }
-                        index += 2
-                        let low = try parseHex4()
-                        guard (0xDC00..<0xE000).contains(low),
-                              let scalar = Unicode.Scalar(0x10000 + ((unit - 0xD800) << 10) + (low - 0xDC00)) else {
-                            throw error("lone surrogate")
-                        }
-                        scalars.append(scalar)
-                    } else if let scalar = Unicode.Scalar(unit) {
-                        scalars.append(scalar)
-                    } else {
-                        throw error("lone surrogate")
-                    }
-                default: throw error("invalid escape")
-                }
+                scalars.append(try parseEscape(escape))
                 runStart = index
             }
+        }
+
+        private mutating func parseEscape(_ escape: UInt8) throws(OrderedJSONParseError) -> Unicode.Scalar {
+            let escapes: [UInt8: Unicode.Scalar] = [
+                UInt8(ascii: "\""): "\"", UInt8(ascii: "\\"): "\\", UInt8(ascii: "/"): "/",
+                UInt8(ascii: "b"): "\u{08}", UInt8(ascii: "f"): "\u{0C}", UInt8(ascii: "n"): "\n",
+                UInt8(ascii: "r"): "\r", UInt8(ascii: "t"): "\t"
+            ]
+            if let scalar = escapes[escape] { return scalar }
+            guard escape == UInt8(ascii: "u") else { throw error("invalid escape") }
+            let unit = try parseHex4()
+            if (0xD800..<0xDC00).contains(unit) {
+                guard current == UInt8(ascii: "\\"), index + 1 < bytes.count,
+                      bytes[index + 1] == UInt8(ascii: "u") else {
+                    throw error("lone surrogate")
+                }
+                index += 2
+                let low = try parseHex4()
+                guard (0xDC00..<0xE000).contains(low),
+                      let scalar = Unicode.Scalar(0x10000 + ((unit - 0xD800) << 10) + (low - 0xDC00)) else {
+                    throw error("lone surrogate")
+                }
+                return scalar
+            }
+            guard let scalar = Unicode.Scalar(unit) else { throw error("lone surrogate") }
+            return scalar
         }
 
         mutating func parseHex4() throws(OrderedJSONParseError) -> UInt32 {
@@ -300,12 +300,15 @@ extension OrderedJSON {
     }
 
     private func render(into output: inout String, indent: Int) {
-        switch self {
-        case .null: output += "null"
-        case .bool(let value): output += value ? "true" : "false"
-        case .number(let literal): output += literal
-        case .string(let value): Self.renderString(value, into: &output)
-        case .array(let items):
+        if case .null = self {
+            output += "null"
+        } else if case .bool(let value) = self {
+            output += value ? "true" : "false"
+        } else if case .number(let literal) = self {
+            output += literal
+        } else if case .string(let value) = self {
+            Self.renderString(value, into: &output)
+        } else if case .array(let items) = self {
             guard !items.isEmpty else { output += "[]"; return }
             output += "[\n"
             for (offset, item) in items.enumerated() {
@@ -314,7 +317,7 @@ extension OrderedJSON {
                 output += offset == items.count - 1 ? "\n" : ",\n"
             }
             output += String(repeating: "  ", count: indent) + "]"
-        case .object(let object):
+        } else if case .object(let object) = self {
             guard !object.isEmpty else { output += "{}"; return }
             output += "{\n"
             for (offset, member) in object.members.enumerated() {
@@ -325,23 +328,23 @@ extension OrderedJSON {
                 output += offset == object.count - 1 ? "\n" : ",\n"
             }
             output += String(repeating: "  ", count: indent) + "}"
+        } else {
+            preconditionFailure("Unexpected OrderedJSON case")
         }
     }
 
     private static func renderString(_ value: String, into output: inout String) {
         output += "\""
         for scalar in value.unicodeScalars {
-            switch scalar {
-            case "\"": output += "\\\""
-            case "\\": output += "\\\\"
-            case "\n": output += "\\n"
-            case "\r": output += "\\r"
-            case "\t": output += "\\t"
-            case "\u{08}": output += "\\b"
-            case "\u{0C}": output += "\\f"
-            case _ where scalar.value < 0x20:
+            let escapes: [Unicode.Scalar: String] = [
+                "\"": "\\\"", "\\": "\\\\", "\n": "\\n", "\r": "\\r", "\t": "\\t", "\u{08}": "\\b", "\u{0C}": "\\f"
+            ]
+            if let escaped = escapes[scalar] {
+                output += escaped
+            } else if scalar.value < 0x20 {
                 output += "\\u" + String(format: "%04x", scalar.value)
-            default: output.unicodeScalars.append(scalar)
+            } else {
+                output.unicodeScalars.append(scalar)
             }
         }
         output += "\""
@@ -368,15 +371,14 @@ extension OrderedJSON {
     }
 
     private func renderCompact(into output: inout String) {
-        switch self {
-        case .array(let items):
+        if case .array(let items) = self {
             output += "["
             for (offset, item) in items.enumerated() {
                 if offset > 0 { output += "," }
                 item.renderCompact(into: &output)
             }
             output += "]"
-        case .object(let object):
+        } else if case .object(let object) = self {
             output += "{"
             for (offset, member) in object.members.enumerated() {
                 if offset > 0 { output += "," }
@@ -385,8 +387,10 @@ extension OrderedJSON {
                 member.value.renderCompact(into: &output)
             }
             output += "}"
-        case .string(let value): Self.renderString(value, into: &output)
-        default: render(into: &output, indent: 0)
+        } else if case .string(let value) = self {
+            Self.renderString(value, into: &output)
+        } else {
+            render(into: &output, indent: 0)
         }
     }
 
