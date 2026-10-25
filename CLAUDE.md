@@ -164,6 +164,44 @@ Versioned in this repo:
 
 The domain glossary (Group, Project, Container, Pane, Sub-tab, PTY) is summarized in `CONTRIBUTING.md`.
 
+## 8. Swift code standards (`AletheNative/`)
+
+Enforced by SwiftLint (`AletheNative/.swiftlint.yml`, pinned 0.65.1, `brew install swiftlint`) through
+`AletheNative/Scripts/lint.sh`, which `test.sh` runs. Code that predates the standards is grandfathered in
+`AletheNative/Scripts/lint-baseline.json`: **new or changed code must not add violations.** `src/` and `src-tauri/` are a
+baseline snapshot and are not subject to this section.
+
+- **No comments.** No `//`, `///`, `/* */` or `// MARK:`. Rename, extract and restructure until the code reads on its own;
+  the reason for a decision belongs in the commit message or `docs/`. The only comment allowed is a `// swiftlint:`
+  directive, and it needs a justification in the commit message.
+- **No `switch`**, statement or expression. Use a lookup table (`[Kind: Value]`), a protocol or enum property,
+  `if` / `guard`, `if case`, or optional pattern matching.
+- **Size limits** (warning / error, both fail the gate):
+
+  | Unit | Limit |
+  | --- | --- |
+  | File | 300 / 500 lines |
+  | Type body | 250 / 400 lines |
+  | Function body | 40 / 60 lines |
+  | Line | 120 / 140 characters |
+  | Function parameters | 5 / 7 |
+  | Cyclomatic complexity | 10 / 15 |
+  | Nesting | types 2, functions 3 |
+  | Tuple members | 2 / 3 |
+
+- **Banned:** `!` force unwrap, `try!`, `as!`, implicitly unwrapped optionals, `print` (use `Logger`), `AnyView`,
+  `DispatchQueue` (use async/await, actors, `@MainActor`) and `Task` bodies that drop thrown errors.
+- **Conventions reviewers check** (not machine-enforced):
+  - Early exit with `guard`; no `else` after a `return`.
+  - `struct` and `let` by default; `final class` when a class is needed; `private` unless wider access is required.
+  - No boolean flag parameters; split the function or pass an enum.
+  - One primary type per file, named after the file.
+  - Inject dependencies; no new singletons.
+  - Named constants or `Metrics` instead of magic numbers.
+  - Follow the Swift API Design Guidelines for naming; no abbreviations.
+- **Baseline workflow:** a violation you fix is removed with `Scripts/lint.sh --update-baseline`, which refuses to run when
+  any rule would end up with more violations than before. Never regenerate it to silence a new violation.
+
 ## Language and comment rules
 
 - English is the default language for all versioned repository content, including source comments,
@@ -174,7 +212,8 @@ The domain glossary (Group, Project, Container, Pane, Sub-tab, PTY) is summarize
   exception: translated UI text belongs in the matching locale file.
 - When editing existing mixed-language content, translate the touched content to English when practical
   instead of extending the language inconsistency.
-- Keep comments concise. Add them only when they explain non-obvious behavior, constraints, or decisions.
+- Swift code under `AletheNative/` takes no comments at all (section 8). Elsewhere, keep comments concise and add them
+  only when they explain non-obvious behavior, constraints, or decisions.
 
 This project has a knowledge graph at `graphify-out/`. For codebase-structure questions
 (architecture, god nodes, cross-file relationships), use the `graphify-query` skill instead of

@@ -1,0 +1,166 @@
+included:
+  - Alethe
+  - AletheUITests
+  - Packages/AletheKit/Sources
+  - Packages/AletheKit/Tests
+
+excluded:
+  - build
+  - Vendor
+  - Samples
+  - "**/.build"
+  - "**/*.generated.swift"
+
+reporter: xcode
+
+disabled_rules:
+  - todo
+  - trailing_comma
+  - opening_brace
+
+opt_in_rules:
+  - closure_end_indentation
+  - closure_spacing
+  - collection_alignment
+  - contains_over_filter_count
+  - contains_over_filter_is_empty
+  - contains_over_first_not_nil
+  - contains_over_range_nil_comparison
+  - direct_return
+  - empty_collection_literal
+  - empty_count
+  - empty_string
+  - empty_xctest_method
+  - explicit_init
+  - fallthrough
+  - fatal_error_message
+  - first_where
+  - flatmap_over_map_reduce
+  - force_unwrapping
+  - identical_operands
+  - implicit_return
+  - implicitly_unwrapped_optional
+  - joined_default_parameter
+  - last_where
+  - legacy_multiple
+  - legacy_objc_type
+  - literal_expression_end_indentation
+  - lower_acl_than_parent
+  - modifier_order
+  - no_extension_access_modifier
+  - operator_usage_whitespace
+  - overridden_super_call
+  - override_in_extension
+  - prefer_key_path
+  - prefer_zero_over_explicit_init
+  - private_action
+  - private_outlet
+  - private_subject
+  - prohibited_super_call
+  - reduce_into
+  - redundant_nil_coalescing
+  - redundant_type_annotation
+  - return_value_from_void_function
+  - shorthand_optional_binding
+  - single_test_class
+  - sorted_first_last
+  - sorted_imports
+  - static_operator
+  - toggle_bool
+  - unavailable_function
+  - unhandled_throwing_task
+  - unneeded_parentheses_in_closure_argument
+  - unowned_variable_capture
+  - vertical_whitespace_closing_braces
+  - vertical_whitespace_opening_braces
+  - weak_delegate
+  - yoda_condition
+
+file_length:
+  warning: 300
+  error: 500
+  ignore_comment_only_lines: true
+
+type_body_length:
+  warning: 250
+  error: 400
+
+function_body_length:
+  warning: 40
+  error: 60
+
+line_length:
+  warning: 120
+  error: 140
+  ignores_urls: true
+  ignores_interpolated_strings: true
+
+function_parameter_count:
+  warning: 5
+  error: 7
+
+cyclomatic_complexity:
+  warning: 10
+  error: 15
+
+nesting:
+  type_level: 2
+  function_level: 3
+
+large_tuple:
+  warning: 2
+  error: 3
+
+identifier_name:
+  min_length:
+    warning: 3
+  max_length:
+    warning: 40
+    error: 60
+  excluded: [id, x, y, z, i, j, dx, dy, to, at, in, by, ok, up, on, lhs, rhs]
+
+type_name:
+  min_length: 3
+  max_length:
+    warning: 50
+    error: 70
+
+force_cast: error
+force_try: error
+force_unwrapping: error
+
+custom_rules:
+  no_comments:
+    name: "No comments"
+    message: "Comments are not allowed. Rename, extract or restructure until the code explains itself."
+    regex: '(?<!/)(?:/{2,3}|/\*)(?!\s*swiftlint:)'
+    match_kinds: [comment, comment.mark, doccomment, doccomment.field]
+    severity: error
+
+  no_switch:
+    name: "No switch"
+    message: "switch is not allowed. Use a lookup table, a protocol, if/else or pattern matching."
+    regex: '\bswitch\b'
+    match_kinds: keyword
+    severity: error
+
+  no_print:
+    name: "No print"
+    message: "print() is not allowed. Use Logger."
+    regex: '\bprint\('
+    match_kinds: identifier
+    severity: error
+
+  no_any_view:
+    name: "No AnyView"
+    message: "AnyView defeats SwiftUI diffing. Use @ViewBuilder, a generic or a concrete view."
+    regex: '\bAnyView\b'
+    match_kinds: typeidentifier
+    severity: warning
+
+  no_dispatch_queue:
+    name: "No DispatchQueue"
+    message: "Prefer Swift concurrency (async/await, actors, @MainActor) over DispatchQueue."
+    regex: '\bDispatchQueue\b'
+    match_kinds: [identifier, typeidentifier]
+    severity: warning
