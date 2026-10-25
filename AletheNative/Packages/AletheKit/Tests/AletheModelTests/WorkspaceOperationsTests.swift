@@ -166,11 +166,11 @@ import Testing
         #expect(model.document.projects.map(\.name) == ["A"])
     }
 
-    @Test func closingTheLastTabClosesItsPane() {
+    @Test func closingTheLastTabClosesItsPane() throws {
         var doc = WorkspaceDocument()
         let project = doc.addProject(name: "a", folder: "/a")
         let first = PaneTab(agent: "shell"), second = PaneTab(agent: "claude")
-        let pane = doc.addPane(to: project, tab: first)!
+        let pane = try #require(doc.addPane(to: project, tab: first))
         doc.updateProject(project) { $0.panes[0].tabs.append(second); $0.panes[0].activeTabID = first.id }
         doc.closeTab(first.id)
         #expect(doc.pane(pane)?.pane.tabs.map(\.id) == [second.id])

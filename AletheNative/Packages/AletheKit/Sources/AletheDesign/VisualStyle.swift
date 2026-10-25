@@ -18,7 +18,7 @@ extension Theme {
         ]
         for (token, source) in neutral { colors[token] = self.colors[source] }
         colors[.accentRing] = ThemeColor(hex: "#00000000")
-        let flat = ThemeShadow(x: 0, y: 0, blur: 0, color: ThemeColor(hex: "#00000000")!)
+        let flat = ThemeShadow(x: 0, y: 0, blur: 0, color: Self.missingTokenColor)
         return Theme(id: id, isLight: isLight, swatch: swatch, colors: colors,
                      shadows: Dictionary(uniqueKeysWithValues: ShadowLevel.allCases.map { ($0, flat) }), terminal: terminal)
     }

@@ -18,7 +18,8 @@ struct WebProjectFileTests {
             {"id":"pane-1","name":"Planner","cwd":"/work/shop","disabled":false,"laneVisible":true,"activeTabId":"tab-1",
              "topbarPinned":true,"tabs":[{"id":"tab-1","type":"claude","name":"Build","cwd":"/work/shop",
                "ptyId":"live-web-process","sessionId":"resume-me","extraArgs":["--dangerously-skip-permissions"],"runtimeProfile":"lean"}]},
-            {"id":"board","kind":"orchestrator","name":"Board","cwd":"/work/shop","tabs":[],"activeTabId":"","disabled":false,"laneVisible":null},
+            {"id":"board","kind":"orchestrator","name":"Board","cwd":"/work/shop","tabs":[],"activeTabId":"",
+                "disabled":false,"laneVisible":null},
             {"id":"plugin","kind":"plugin","pluginId":"custom-plugin","tabs":[]}
           ]
         }

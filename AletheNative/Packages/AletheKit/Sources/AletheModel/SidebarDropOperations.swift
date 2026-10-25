@@ -6,9 +6,11 @@ extension WorkspaceDocument {
     public mutating func dropProject(_ id: ProjectID, beside target: ProjectID, edge: SidebarDropEdge) {
         guard id != target, let location = location(of: target) else { return }
         let ids: [ProjectID]
-        switch location {
-        case .ungrouped: ids = ungroupedProjectIDs
-        case .group(let group): ids = self.group(group)?.projectIDs ?? []
+        if case .ungrouped = location { ids = ungroupedProjectIDs } else {
+            guard case .group(let group) = location else {
+                preconditionFailure("Unexpected enum case")
+            }
+            ids = self.group(group)?.projectIDs ?? []
         }
         guard let index = ids.firstIndex(of: target) else { return }
         moveProject(id, to: location, at: index + (edge == .after ? 1 : 0))

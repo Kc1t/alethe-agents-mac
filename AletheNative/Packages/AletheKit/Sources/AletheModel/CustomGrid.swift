@@ -131,12 +131,12 @@ public struct CustomGrid: Codable, Hashable, Sendable {
         }
         var span = 0
         for step in 1... {
-            let free = switch edge {
-            case .right: columnFree(cell.col + cell.colSpan - 1 + step)
-            case .left: columnFree(cell.col - step)
-            case .bottom: rowFree(cell.row + cell.rowSpan - 1 + step)
-            case .top: rowFree(cell.row - step)
+            let free = if case .right = edge {
+                columnFree(cell.col + cell.colSpan - 1 + step)
             }
+            else if case .left = edge { columnFree(cell.col - step) }
+            else if case .bottom = edge { rowFree(cell.row + cell.rowSpan - 1 + step) }
+            else { rowFree(cell.row - step) }
             guard free else { break }
             span = step
         }
@@ -151,13 +151,10 @@ public struct CustomGrid: Codable, Hashable, Sendable {
         let amount = steps > 0 ? min(steps, freeSpan(ids, id, edge)) : -min(-steps, span - 1)
         guard amount != 0 else { return self }
         var next = cell
-        switch edge {
-        case .right: next.colSpan += amount
-        case .bottom: next.rowSpan += amount
-        case .left:
+        if case .right = edge { next.colSpan += amount } else if case .bottom = edge { next.rowSpan += amount } else if case .left = edge {
             next.col -= amount
             next.colSpan += amount
-        case .top:
+        } else {
             next.row -= amount
             next.rowSpan += amount
         }
@@ -240,9 +237,9 @@ public struct CustomGridHistoryEntry: Codable, Hashable, Sendable, Identifiable 
         let values = try decoder.container(keyedBy: CodingKeys.self)
         id = try values.decode(String.self, forKey: .id)
         layout = try values.decode(CustomGrid.self, forKey: .layout)
-        if let timestamp = try? values.decode(Double.self, forKey: .savedAt), timestamp > 100_000_000_000 {
-            savedAt = Date(timeIntervalSince1970: timestamp / 1000)
-        } else {
+        if let timestamp = try? values.decode(Double.self, forKey: .savedAt),
+            timestamp > 100_000_000_000 { savedAt = Date(timeIntervalSince1970: timestamp / 1000) }
+        else {
             savedAt = try values.decode(Date.self, forKey: .savedAt)
         }
     }
@@ -262,14 +259,25 @@ public enum CustomGridPreset: String, CaseIterable, Sendable {
     public func layout(_ ids: [String]) -> CustomGrid {
         let count = max(1, ids.count)
         let focusRows = max(1, ids.count - 1)
-        switch self {
-        case .balanced:
-            return .auto(ids, cols: max(1, min(4, Int(Double(count).squareRoot().rounded(.up)))))
-        case .columns:
-            return .auto(ids, cols: count)
-        case .rows:
-            return .auto(ids, cols: 1)
-        case .focusLeft, .focusTop:
+        if case .balanced = self { return .auto(ids, cols: max(1, min(4, Int(Double(count).squareRoot().rounded(.up))))) }
+        else if case .columns = self { return .auto(ids, cols: count) }
+        else if case .rows = self { return .auto(ids, cols: 1) }
+        else if case .focusLeft = self {
+            var cells: [String: GridCell] = [:]
+            let left = self == .focusLeft
+            for (index, id) in ids.enumerated() {
+                if index == 0 {
+                    let lead = ids.count > 1 ? 1 : 2
+                    cells[id] = left ? GridCell(col: 1, row: 1, colSpan: lead, rowSpan: focusRows)
+                        : GridCell(col: 1, row: 1, colSpan: focusRows, rowSpan: lead)
+                } else {
+                    cells[id] = left ? GridCell(col: 2, row: index) : GridCell(col: index, row: 2)
+                }
+            }
+            let two = ids.count > 1 ? 2 : 1
+            return left ? CustomGrid(cols: two, rows: focusRows, cells: cells)
+                : CustomGrid(cols: focusRows, rows: two, cells: cells)
+        } else {
             var cells: [String: GridCell] = [:]
             let left = self == .focusLeft
             for (index, id) in ids.enumerated() {
@@ -300,9 +308,7 @@ extension WorkspaceDocument {
             arrangement.layoutMode = .grid
             if recordHistory {
                 var history = arrangement.gridLayoutHistory ?? []
-                if history.first?.layout != clean {
-                    history.insert(CustomGridHistoryEntry(layout: clean), at: 0)
-                }
+                if history.first?.layout != clean { history.insert(CustomGridHistoryEntry(layout: clean), at: 0) }
                 arrangement.gridLayoutHistory = Array(history.prefix(Self.maxGridLayoutHistory))
             }
             project.activeArrangement = arrangement

@@ -4,10 +4,22 @@ public enum AletheSettingsRowSurface: Equatable, Sendable {
     case standalone, option, remote, plugin, version, metric, task, agent, empty, toolbar
 
     var horizontal: CGFloat {
-        switch self { case .empty: 18; case .toolbar: 10; case .version: 14; case .metric, .task: 10; default: 12 }
+        if case .empty = self { return 18 }
+        else if case .toolbar = self { return 10 }
+        else if case .version = self { return 14 }
+        else if case .metric = self { return 10 }
+        else if case .task = self { return 10 }
+        else { return 12 }
     }
     var vertical: CGFloat {
-        switch self { case .empty: 18; case .toolbar: 8; case .remote, .plugin, .version: 12; case .metric, .task: 8; default: 10 }
+        if case .empty = self { return 18 }
+        else if case .toolbar = self { return 8 }
+        else if case .remote = self { return 12 }
+        else if case .plugin = self { return 12 }
+        else if case .version = self { return 12 }
+        else if case .metric = self { return 8 }
+        else if case .task = self { return 8 }
+        else { return 10 }
     }
 }
 
@@ -33,9 +45,11 @@ public struct AletheSettingsRowSurfaceModifier: ViewModifier {
             content
                 .padding(.horizontal, metrics.size(surface.horizontal))
                 .padding(.vertical, metrics.size(surface.vertical))
-                .background(theme[surface == .toolbar ? .panel : .bgSunken], in: RoundedRectangle(cornerRadius: metrics.radius(surface == .metric || surface == .task ? .sm : .md)))
+                .background(theme[surface == .toolbar ? .panel : .bgSunken],
+                    in: RoundedRectangle(cornerRadius: metrics.radius(surface == .metric || surface == .task ? .sm : .md)))
                 .overlay(RoundedRectangle(cornerRadius: metrics.radius(surface == .metric || surface == .task ? .sm : .md))
-                    .strokeBorder(theme[.border], style: StrokeStyle(lineWidth: metrics.size(1), dash: surface == .empty ? [metrics.size(3)] : [])))
+                    .strokeBorder(theme[.border], style: StrokeStyle(lineWidth: metrics.size(1), dash: surface ==
+                        .empty ? [metrics.size(3)] : [])))
         } else { content }
     }
 }

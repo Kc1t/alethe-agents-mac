@@ -56,9 +56,9 @@ struct ActivityStatsTests {
         #expect(raw.contains("\"appOpenMs\""))
     }
 
-    @Test func days() {
+    @Test func days() throws {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
+        calendar.timeZone = try #require(TimeZone(identifier: "UTC"))
         let now = Date(timeIntervalSince1970: 1_782_950_400)
         #expect(ActivityStats.lastDays(3, until: now, calendar: calendar) == ["2026-06-30", "2026-07-01", "2026-07-02"])
     }

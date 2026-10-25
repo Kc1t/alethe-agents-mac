@@ -31,11 +31,9 @@ public struct Metrics: Hashable, Sendable {
     public func space(_ space: Space) -> CGFloat { space.rawValue * scale }
     public func radius(_ radius: Radius) -> CGFloat {
         guard style == .clean else { return radius.rawValue * scale }
-        let clean: CGFloat = switch radius {
-        case .sm: 3
-        case .md: 4
-        case .lg: 6
-        }
+        let clean: CGFloat = if case .sm = radius {
+            3
+        } else if case .md = radius { 4 } else { 6 }
         return clean * scale
     }
     public func size(_ points: CGFloat) -> CGFloat { points * scale }

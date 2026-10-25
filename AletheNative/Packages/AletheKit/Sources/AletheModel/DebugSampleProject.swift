@@ -17,9 +17,7 @@ public enum DebugSampleProject {
     public static func open(in document: inout WorkspaceDocument, folder: URL, name: String, webInterface: Bool = false) -> ProjectID {
         let id = document.projects.first { $0.folder == folder.path }?.id
             ?? document.addProject(name: name, folder: folder.path, color: .blue)
-        if webInterface {
-            document.openWebProject(id)
-        } else {
+        if webInterface { document.openWebProject(id) } else {
             document.workspace.isolatedPaneID = nil
             document.workspace.fullscreenProjectID = nil
             document.open(id)

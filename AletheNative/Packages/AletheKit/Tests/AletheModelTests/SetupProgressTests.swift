@@ -4,7 +4,7 @@ import Testing
 struct SetupProgressTests {
     @Test func stepsCompleteFromWhatExists() {
         var document = WorkspaceDocument()
-        #expect(SetupProgress(document: document, agentsFound: false, marked: nil).count == 0)
+        #expect(SetupProgress(document: document, agentsFound: false, marked: nil).isEmpty)
         let project = Project(name: "A", folder: "/a")
         document.projects = [project]
         document.ungroupedProjectIDs = [project.id]

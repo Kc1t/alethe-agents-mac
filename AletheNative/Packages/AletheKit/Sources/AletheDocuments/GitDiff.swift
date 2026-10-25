@@ -97,11 +97,13 @@ public enum DiffParser {
             added.removeAll()
         }
         for line in hunk.lines {
-            switch line.kind {
-            case .removed: removed.append(line)
-            case .added: added.append(line)
-            case .context, .note:
-                flush()
+            if case .removed = line.kind { return removed.append(line) }
+            else if case .added = line.kind { return added.append(line) }
+            else if case .context = line.kind {
+                return flush()
+                rows.append(DiffSplitRow(left: line, right: line))
+            } else {
+                return flush()
                 rows.append(DiffSplitRow(left: line, right: line))
             }
         }
@@ -165,9 +167,7 @@ public enum GitDiff {
             }
             if data.count > maxBytes { return .failure(.tooLarge) }
             let text = String(decoding: data, as: UTF8.self)
-            if text.contains("Binary files "), text.contains(" differ"), !text.contains("\n@@") {
-                return .failure(.binary)
-            }
+            if text.contains("Binary files "), text.contains(" differ"), !text.contains("\n@@") { return .failure(.binary) }
             return .success(text)
         }.value
     }

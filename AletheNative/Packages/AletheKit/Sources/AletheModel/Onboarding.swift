@@ -10,11 +10,12 @@ public enum OnboardingStep: String, CaseIterable, Codable, Sendable {
 
     public static func steps(tauriDataAvailable: Bool, mcpEnabled: Bool) -> [OnboardingStep] {
         allCases.filter { step in
-            switch step {
-            case .importData: tauriDataAvailable
-            case .mcp: mcpEnabled
-            case .name, .appearance, .agents, .features: true
-            }
+            if case .importData = step { return tauriDataAvailable }
+            else if case .mcp = step { return mcpEnabled }
+            else if case .name = step { return true }
+            else if case .appearance = step { return true }
+            else if case .agents = step { return true }
+            else { return true }
         }
     }
 }

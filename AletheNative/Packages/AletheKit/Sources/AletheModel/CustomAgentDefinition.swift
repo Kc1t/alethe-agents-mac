@@ -9,8 +9,10 @@ public struct CustomAgentDefinition: Codable, Hashable, Sendable, Identifiable {
     public var icon: String? = "bot"
     public var iconSpec: CustomAgentIconSpec? = .init(kind: "preset", key: "bot")
     public init() {}
-    public static let accents = ["shell", "claude", "codex", "opencode", "cursor", "copilot", "antigravity", "kiro", "freebuff", "mimo"].map { "--agent-" + $0 }
-    public static let icons = ["bot", "shell", "wsl", "claude", "codex", "copilot", "cursor", "opencode", "antigravity", "kiro", "mimo", "freebuff"]
+    public static let accents = ["shell", "claude", "codex", "opencode", "cursor", "copilot", "antigravity", "kiro",
+        "freebuff", "mimo"].map { "--agent-" + $0 }
+    public static let icons = ["bot", "shell", "wsl", "claude", "codex", "copilot", "cursor", "opencode", "antigravity",
+        "kiro", "mimo", "freebuff"]
     public static func isID(_ id: String) -> Bool { id.range(of: #"^[a-z0-9-]{2,32}$"#, options: .regularExpression) != nil }
     public static func validURL(_ text: String) -> Bool {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -28,8 +30,7 @@ public struct CustomAgentDefinition: Codable, Hashable, Sendable, Identifiable {
             if let active = quote {
                 if char == active { quote = nil } else { current.append(char) }
                 started = true
-            } else if char == "\"" || char == "'" { quote = char; started = true }
-            else if char == " " || char == "\t" {
+            } else if char == "\"" || char == "'" { quote = char; started = true } else if char == " " || char == "\t" {
                 if started { tokens.append(current); current = ""; started = false }
             } else { current.append(char); started = true }
         }
@@ -49,16 +50,22 @@ public struct CustomAgentDefinition: Codable, Hashable, Sendable, Identifiable {
         if cliCommand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "cliEmpty" }
         if tokens == nil { return "cliUnsafe" }
         if let flag = unrestrictedFlag, !flag.isEmpty,
-           (!flag.hasPrefix("-") || flag.utf16.count > 64 || flag.rangeOfCharacter(from: .whitespacesAndNewlines) != nil || Self.tokenize("agent " + flag) == nil) { return "cliUnsafe" }
+           (!flag.hasPrefix("-") || flag.utf16.count > 64 ||
+               flag.rangeOfCharacter(from: .whitespacesAndNewlines) != nil || Self.tokenize("agent " + flag) == nil) { return "cliUnsafe" }
         if let accentToken, !Self.accents.contains(accentToken) { return "cliUnsafe" }
         if let icon, !Self.icons.contains(icon) { return "cliUnsafe" }
+        return iconValidationError()
+    }
+
+    private func iconValidationError() -> String? {
         if let spec = iconSpec {
-            switch spec.kind {
-            case "preset": if !Self.icons.contains(spec.key ?? "") { return "cliUnsafe" }
-            case "url": if !Self.validURL(spec.href ?? "") { return "iconUrl" }
-            case "file": if spec.assetId != id { return "iconFile" }
-            default: return "iconFile"
-            }
+            if case "preset" = spec.kind {
+                if !Self.icons.contains(spec.key ?? "") { return "cliUnsafe" }
+            } else if case "url" = spec.kind {
+                if !Self.validURL(spec.href ?? "") { return "iconUrl" }
+            } else if case "file" = spec.kind {
+                if spec.assetId != id { return "iconFile" }
+            } else { return "iconFile" }
         }
         return nil
     }

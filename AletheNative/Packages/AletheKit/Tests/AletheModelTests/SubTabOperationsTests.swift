@@ -3,17 +3,30 @@ import Testing
 @testable import AletheModel
 
 @Suite struct SubTabOperationsTests {
-    private func sample(tabs count: Int) -> (WorkspaceDocument, ProjectID, PaneID, [TabID]) {
+    private struct Sample {
+        var doc: WorkspaceDocument
+        var project: ProjectID
+        var pane: PaneID
+        var tabs: [TabID]
+    }
+
+    private func sample(tabs count: Int) -> Sample {
         var doc = WorkspaceDocument()
         let project = doc.addProject(name: "a", folder: "/a")
         let tabs = (0..<count).map { PaneTab(agent: $0 == 0 ? "shell" : "claude", title: "t\($0)") }
-        let pane = doc.addPane(to: project, tab: tabs[0])!
+        guard let pane = doc.addPane(to: project, tab: tabs[0]) else {
+            preconditionFailure("The fixture project must accept a pane")
+        }
         for tab in tabs.dropFirst() { doc.addTab(tab, to: pane) }
-        return (doc, project, pane, tabs.map(\.id))
+        return Sample(doc: doc, project: project, pane: pane, tabs: tabs.map(\.id))
     }
 
     @Test func addingATabShowsAndFocusesIt() {
-        var (doc, project, pane, tabs) = sample(tabs: 1)
+        let fixture = sample(tabs: 1)
+        var doc = fixture.doc
+        var project = fixture.project
+        var pane = fixture.pane
+        var tabs = fixture.tabs
         doc.workspace.focusedPaneID = nil
         doc.close(project)
         let added = PaneTab(agent: "codex")
@@ -26,7 +39,8 @@ import Testing
     }
 
     @Test func addingToAMissingPaneDoesNothing() {
-        var (doc, _, _, _) = sample(tabs: 1)
+        let fixture = sample(tabs: 1)
+        var doc = fixture.doc
         let before = doc
         let wasAdded = doc.addTab(PaneTab(agent: "shell"), to: .make())
         #expect(!wasAdded)
@@ -34,7 +48,10 @@ import Testing
     }
 
     @Test func closingTheActiveTabShowsTheNextThenThePrevious() {
-        var (doc, _, pane, tabs) = sample(tabs: 3)
+        let fixture = sample(tabs: 3)
+        var doc = fixture.doc
+        var pane = fixture.pane
+        var tabs = fixture.tabs
         doc.activateTab(tabs[1])
         doc.closeTab(tabs[1])
         #expect(doc.pane(pane)?.pane.activeTabID == tabs[2])
@@ -43,14 +60,21 @@ import Testing
     }
 
     @Test func closingAnInactiveTabKeepsTheActiveOne() {
-        var (doc, _, pane, tabs) = sample(tabs: 3)
+        let fixture = sample(tabs: 3)
+        var doc = fixture.doc
+        var pane = fixture.pane
+        var tabs = fixture.tabs
         doc.closeTab(tabs[0])
         #expect(doc.pane(pane)?.pane.activeTabID == tabs[2])
         #expect(doc.pane(pane)?.pane.tabs.map(\.id) == [tabs[1], tabs[2]])
     }
 
     @Test func activatingSelectsTheProjectAndFocusesThePane() {
-        var (doc, project, pane, tabs) = sample(tabs: 2)
+        let fixture = sample(tabs: 2)
+        var doc = fixture.doc
+        var project = fixture.project
+        var pane = fixture.pane
+        var tabs = fixture.tabs
         doc.workspace.focusedPaneID = nil
         doc.workspace.selectedProjectID = nil
         doc.activateTab(tabs[0])
@@ -60,7 +84,10 @@ import Testing
     }
 
     @Test func cyclingWrapsAround() {
-        var (doc, _, pane, tabs) = sample(tabs: 3)
+        let fixture = sample(tabs: 3)
+        var doc = fixture.doc
+        var pane = fixture.pane
+        var tabs = fixture.tabs
         doc.activateTab(tabs[2])
         #expect(doc.tab(1, from: pane) == tabs[0])
         #expect(doc.tab(-1, from: pane) == tabs[1])
@@ -69,7 +96,9 @@ import Testing
     }
 
     @Test func laneIsShownWithSeveralTabsOrWhenAskedFor() {
-        var (doc, _, pane, _) = sample(tabs: 1)
+        let fixture = sample(tabs: 1)
+        var doc = fixture.doc
+        var pane = fixture.pane
         #expect(doc.pane(pane)?.pane.isLaneVisible == false)
         doc.setLaneVisible(true, for: pane)
         #expect(doc.pane(pane)?.pane.isLaneVisible == true)
@@ -80,7 +109,9 @@ import Testing
     }
 
     @Test func laneVisibilityIsOptionalInTheFile() throws {
-        let (doc, _, pane, _) = sample(tabs: 1)
+        let fixture = sample(tabs: 1)
+        let doc = fixture.doc
+        let pane = fixture.pane
         var json = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(doc)) as? [String: Any])
         var projects = try #require(json["projects"] as? [[String: Any]])
         var panes = try #require(projects[0]["panes"] as? [[String: Any]])

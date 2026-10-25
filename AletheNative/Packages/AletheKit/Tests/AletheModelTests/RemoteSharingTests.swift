@@ -22,23 +22,29 @@ import Testing
         let web = doc.addProject(name: "web", folder: "/p/web")
         let first = PaneTab(agent: "claude", sessionID: "s1")
         let second = PaneTab(agent: "shell", workingDirectory: "/p/api/sub")
-        let sharedPane = doc.addPane(to: api, tab: first)!
+        guard let sharedPane = doc.addPane(to: api, tab: first) else {
+            preconditionFailure("The fixture project must accept a pane")
+        }
         _ = doc.addTab(second, to: sharedPane)
-        let privatePane = doc.addPane(to: api, tab: PaneTab(agent: "codex"))!
-        let webPane = doc.addPane(to: web, tab: PaneTab(agent: "shell"))!
+        guard let privatePane = doc.addPane(to: api, tab: PaneTab(agent: "codex")) else {
+            preconditionFailure("The fixture project must accept a pane")
+        }
+        guard let webPane = doc.addPane(to: web, tab: PaneTab(agent: "shell")) else {
+            preconditionFailure("The fixture project must accept a pane")
+        }
         doc.setRemoteShared(sharedPane, true)
         return Seeded(doc: doc, group: group, api: api, web: web, sharedPane: sharedPane, privatePane: privatePane,
                       webPane: webPane, first: first, second: second)
     }
 
-    @Test func onlyTabsOfSharedPanesAreListed() {
+    @Test func onlyTabsOfSharedPanesAreListed() throws {
         let seed = seeded()
 
         let shared = seed.doc.remoteSharedTerminals
 
         #expect(shared.map(\.tab.id) == [seed.first.id, seed.second.id])
         #expect(shared.allSatisfy { $0.paneID == seed.sharedPane && $0.projectID == seed.api })
-        #expect(seed.doc.remoteSharedTerminals(in: seed.doc.project(seed.web)!).isEmpty)
+        #expect(seed.doc.remoteSharedTerminals(in: try #require(seed.doc.project(seed.web))).isEmpty)
     }
 
     @Test func aTabFolderWinsOverTheProjectFolder() {

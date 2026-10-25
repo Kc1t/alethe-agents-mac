@@ -55,20 +55,20 @@ import Testing
 @Suite struct PaneGridGeometryTests {
     let rect = CGRect(x: 0, y: 0, width: 410, height: 310)
 
-    @Test func onePaneFillsTheArea() {
+    @Test func onePaneFillsTheArea() throws {
         let geometry = PaneGridGeometry(count: 1, in: rect, weights: GridWeights(), gap: 10, handle: 6)
         #expect(geometry.paneFrames == [rect])
         #expect(geometry.dividers.isEmpty)
     }
 
-    @Test func twoPanesSitSideBySide() {
+    @Test func twoPanesSitSideBySide() throws {
         let geometry = PaneGridGeometry(count: 2, in: rect, weights: GridWeights(), gap: 10, handle: 6)
         #expect(geometry.paneFrames == [CGRect(x: 0, y: 0, width: 200, height: 310),
                                         CGRect(x: 210, y: 0, width: 200, height: 310)])
         #expect(geometry.dividers[.column(row: 0)] == CGRect(x: 202, y: 0, width: 6, height: 310))
     }
 
-    @Test func anOddLastPaneSpansItsRow() {
+    @Test func anOddLastPaneSpansItsRow() throws {
         let geometry = PaneGridGeometry(count: 3, in: rect,
                                         weights: GridWeights(columns: [0.25, 0.75], rows: [2, 1]), gap: 10, handle: 6)
         #expect(geometry.paneFrames == [CGRect(x: 0, y: 0, width: 100, height: 200),
@@ -82,7 +82,7 @@ import Testing
 @Suite struct PaneLayoutModeTests {
     let rect = CGRect(x: 0, y: 0, width: 410, height: 310)
 
-    @Test func spotlightPutsTheFirstPaneLargeOnTheLeft() {
+    @Test func spotlightPutsTheFirstPaneLargeOnTheLeft() throws {
         let geometry = PaneGridGeometry(count: 3, in: rect, weights: GridWeights(), gap: 10, handle: 6, mode: .spotlight)
         #expect(geometry.paneFrames.count == 3)
         #expect(geometry.paneFrames[0] == CGRect(x: 0, y: 0, width: 260, height: 310))
@@ -92,7 +92,7 @@ import Testing
         #expect(geometry.dividers[.row(0)]?.minX == 270, "stack dividers span only the stack")
     }
 
-    @Test func sidebarPutsTheFirstPaneLargeOnTheRight() {
+    @Test func sidebarPutsTheFirstPaneLargeOnTheRight() throws {
         let geometry = PaneGridGeometry(count: 2, in: rect, weights: GridWeights(), gap: 10, handle: 6, mode: .sidebar)
         #expect(geometry.paneFrames[0].minX > geometry.paneFrames[1].minX)
         #expect(geometry.paneFrames[1].width < geometry.paneFrames[0].width)
@@ -100,14 +100,14 @@ import Testing
         #expect(Set(geometry.dividers.keys) == [.column(row: 0)])
     }
 
-    @Test func onePaneFillsTheAreaInEveryMode() {
+    @Test func onePaneFillsTheAreaInEveryMode() throws {
         for mode in PaneLayoutMode.allCases {
             let geometry = PaneGridGeometry(count: 1, in: rect, weights: GridWeights(), gap: 10, handle: 6, mode: mode)
             #expect(geometry.paneFrames == [rect])
         }
     }
 
-    @Test func customColumnWeightsWin() {
+    @Test func customColumnWeightsWin() throws {
         let weights = GridWeights(columns: [0.5, 0.5])
         let geometry = PaneGridGeometry(count: 2, in: rect, weights: weights, gap: 10, handle: 6, mode: .spotlight)
         #expect(geometry.paneFrames[0].width == 200)
@@ -126,24 +126,24 @@ import Testing
 }
 
 @Suite struct FlushPaneGeometryTests {
-    @Test func cleanSplitHandlesOverlapOnlyFourPointsOnEachSide() {
+    @Test func cleanSplitHandlesOverlapOnlyFourPointsOnEachSide() throws {
         let rect = CGRect(x: 0, y: 0, width: 411, height: 311)
         for mode in [PaneLayoutMode.auto, .spotlight, .sidebar] {
             let geometry = PaneGridGeometry(count: 4, in: rect, weights: GridWeights(), gap: 0, handle: 8, mode: mode)
-            let column = geometry.dividers[.column(row: 0)]!
+            let column = try #require(geometry.dividers[.column(row: 0)])
             #expect(column.width == 8)
             for frame in geometry.paneFrames {
                 #expect(rect.contains(frame))
                 #expect(frame.width > 0 && frame.height > 0)
             }
-            let left = geometry.paneFrames.filter { $0.maxX <= column.midX }.map(\.maxX).max()!
-            let right = geometry.paneFrames.filter { $0.minX >= column.midX }.map(\.minX).min()!
+            let left = try #require(geometry.paneFrames.filter { $0.maxX <= column.midX }.map(\.maxX).max())
+            let right = try #require(geometry.paneFrames.filter { $0.minX >= column.midX }.map(\.minX).min())
             #expect(abs(left - right) < 0.000001)
             #expect(abs(column.minX - (left - 4)) < 0.000001)
         }
     }
 
-    @Test func webGridHandlesStayInsideLeadingCellsAndRespectSpans() {
+    @Test func webGridHandlesStayInsideLeadingCellsAndRespectSpans() throws {
         let grid = CustomGrid(cols: 2, rows: 2, cells: [
             "a": GridCell(col: 1, row: 1, colSpan: 2),
             "b": GridCell(col: 1, row: 2),

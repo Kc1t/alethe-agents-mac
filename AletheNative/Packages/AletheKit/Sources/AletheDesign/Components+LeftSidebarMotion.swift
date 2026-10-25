@@ -7,30 +7,18 @@ extension Motion {
 
         public func animation(reduceMotion: Bool, clean: Bool = false) -> Animation? {
             guard !reduceMotion else { return nil }
-            let duration: Double
-            switch self {
-            case .tabColor: duration = clean ? 0.12 : 0.14
-            case .tabFill: duration = clean ? 0.12 : 0.16
-            case .tabLift: duration = clean ? 0.12 : 0.18
-            case .layout, .profile: duration = clean ? 0.12 : 0.10
-            case .status: duration = 0.10
-            case .quickNavigation: duration = clean ? 0.12 : 0.15
-            case .rowSlot: duration = 0.12
-            case .chevron: duration = 0.16
-            case .collapse: duration = 0.17
-            case .collapseOpacity: duration = 0.13
-            case .panel: duration = 0.26
-            case .profilePopover: duration = 0.12
-            case .cleanPopover: duration = 0.18
-            }
-            switch self {
-            case .tabLift, .chevron, .collapse, .panel, .cleanPopover:
+            let baseDurations: [Self: Double] = [
+                .tabColor: 0.14, .tabFill: 0.16, .tabLift: 0.18, .layout: 0.10, .profile: 0.10,
+                .status: 0.10, .quickNavigation: 0.15, .rowSlot: 0.12, .chevron: 0.16,
+                .collapse: 0.17, .collapseOpacity: 0.13, .panel: 0.26, .profilePopover: 0.12, .cleanPopover: 0.18,
+            ]
+            let cleanEffects: [Self] = [.tabColor, .tabFill, .tabLift, .layout, .profile, .quickNavigation]
+            let duration = clean && cleanEffects.contains(self) ? 0.12 : baseDurations[self] ?? 0.18
+            if [.tabLift, .chevron, .collapse, .panel, .cleanPopover].contains(self) {
                 return .timingCurve(0.16, 1, 0.3, 1, duration: duration)
-            case .profilePopover:
-                return .timingCurve(0, 0, 0.58, 1, duration: duration)
-            default:
-                return .timingCurve(0.25, 0.1, 0.25, 1, duration: duration)
             }
+            if self == .profilePopover { return .timingCurve(0, 0, 0.58, 1, duration: duration) }
+            return .timingCurve(0.25, 0.1, 0.25, 1, duration: duration)
         }
     }
 }

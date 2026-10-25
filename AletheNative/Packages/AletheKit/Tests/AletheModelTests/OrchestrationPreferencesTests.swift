@@ -32,7 +32,8 @@ import Testing
     }
 
     @Test func shortcutConditionsAndPlaceholderValuesStayLiteral() {
-        let shortcut = OrchestratorShortcut(name: "Apply", text: "{jobId} {branch} {worktree} {project} {agent} {unknown}", rule: "finishedIsolated")
+        let shortcut = OrchestratorShortcut(name: "Apply",
+            text: "{jobId} {branch} {worktree} {project} {agent} {unknown}", rule: "finishedIsolated")
         #expect(shortcut.matches(done: true, isolated: true, native: false))
         #expect(!shortcut.matches(done: true, isolated: false, native: false))
         #expect(!shortcut.matches(done: true, isolated: true, native: true))

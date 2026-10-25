@@ -101,9 +101,7 @@ extension WorkspaceDocument {
         if result.openProjectIDs.count != snapshot.openProjectIDs.count { result.containerWeights = [] }
         let open = Set(result.openProjectIDs)
         result.collapsedProjectIDs = snapshot.collapsedProjectIDs.filter { open.contains($0) }
-        if let selected = snapshot.selectedProjectID, !open.contains(selected) {
-            result.selectedProjectID = result.openProjectIDs.first
-        }
+        if let selected = snapshot.selectedProjectID, !open.contains(selected) { result.selectedProjectID = result.openProjectIDs.first }
         if let focused = snapshot.focusedPaneID, pane(focused).map({ !open.contains($0.project.id) }) ?? true {
             result.focusedPaneID = nil
         }
@@ -129,9 +127,7 @@ extension WorkspaceDocument {
 
     public func label(of tab: WorkspaceTab) -> (name: String, more: Int)? {
         if let group = tab.webGroupID.flatMap({ id in groups.first { $0.id == id } }) { return (group.name, 0) }
-        if let pane = tab.webPaneID.flatMap(pane)?.pane {
-            return (pane.activeTab?.title ?? pane.activeTab?.agent ?? "", 0)
-        }
+        if let pane = tab.webPaneID.flatMap(pane)?.pane { return (pane.activeTab?.title ?? pane.activeTab?.agent ?? "", 0) }
         if tab.kind == .project, let project = tab.projectID.flatMap(project) { return (project.name, 0) }
         let names = tab.snapshot.openProjectIDs.compactMap { project($0)?.name }
         guard let first = names.first else { return nil }

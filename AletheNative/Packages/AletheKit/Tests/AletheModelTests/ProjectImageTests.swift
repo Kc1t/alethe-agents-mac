@@ -55,9 +55,7 @@ import Testing
             var json = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
             json["iconUrl"] = NSNull()
             let encoded = try JSONSerialization.data(withJSONObject: json)
-            if index == 0 {
-                #expect(try JSONDecoder().decode(Project.self, from: encoded).iconUrl == nil)
-            } else {
+            if index == 0 { #expect(try JSONDecoder().decode(Project.self, from: encoded).iconUrl == nil) } else {
                 #expect(try JSONDecoder().decode(ProjectGroup.self, from: encoded).iconUrl == nil)
             }
         }

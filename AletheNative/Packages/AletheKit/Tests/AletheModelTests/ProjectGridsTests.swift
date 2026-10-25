@@ -10,14 +10,14 @@ import Testing
         return (doc, project, panes)
     }
 
-    @Test func namesAreValidated() {
+    @Test func namesAreValidated() throws {
         var (doc, project, _) = sample()
         #expect(doc.gridNameProblem("  ", in: project) == .empty)
         #expect(doc.gridNameProblem("Main", in: project) == .reserved)
         #expect(doc.gridNameProblem("Principal", in: project) == .reserved)
         doc.createGrid(named: "Review", in: project)
         #expect(doc.gridNameProblem("review", in: project) == .taken)
-        let review = try! #require(doc.project(project)?.namedGrids.first?.id)
+        let review = try #require(doc.project(project)?.namedGrids.first?.id)
         #expect(doc.gridNameProblem("Review", in: project, except: review) == nil, "renaming to itself is fine")
     }
 
@@ -32,7 +32,7 @@ import Testing
         #expect(doc.project(project)?.visiblePanes.map(\.id) == panes)
     }
 
-    @Test func eachGridKeepsItsOwnLayout() {
+    @Test func eachGridKeepsItsOwnLayout() throws {
         var (doc, project, _) = sample()
         doc.setLayoutMode(.spotlight, for: project)
         let grid = doc.createGrid(named: "Review", in: project)
@@ -42,29 +42,29 @@ import Testing
         #expect(doc.project(project)?.layout == .spotlight)
         doc.activateGrid(grid, in: project)
         #expect(doc.project(project)?.layout == .sidebar)
-        #expect(doc.project(project)?.weightsKey == "\(project.rawValue):\(grid!.rawValue)")
+        #expect(doc.project(project)?.weightsKey == "\(project.rawValue):\(try #require(grid).rawValue)")
     }
 
-    @Test func movingAPaneAndRevealingIt() {
+    @Test func movingAPaneAndRevealingIt() throws {
         var (doc, project, panes) = sample()
         let grid = doc.createGrid(named: "Review", in: project)
         doc.activateGrid(nil, in: project)
         doc.movePane(panes[1], toGrid: grid)
         #expect(doc.project(project)?.visiblePanes.map(\.id) == [panes[0]])
-        doc.activateTab(try! #require(doc.pane(panes[1])?.pane.tabs.first?.id))
+        doc.activateTab(try #require(doc.pane(panes[1])?.pane.tabs.first?.id))
         #expect(doc.project(project)?.shownGridID == grid, "activating a hidden pane's tab shows its grid")
     }
 
-    @Test func deletingKeepsOrClosesPanes() {
+    @Test func deletingKeepsOrClosesPanes() throws {
         var (doc, project, panes) = sample()
         let created = doc.createGrid(named: "Review", in: project)
-        let grid = try! #require(created)
+        let grid = try #require(created)
         doc.movePane(panes[0], toGrid: grid)
         doc.deleteGrid(grid, in: project, closingPanes: false)
         #expect(doc.project(project)?.grids == nil)
         #expect(doc.project(project)?.visiblePanes.count == 2, "kept panes go back to the main grid")
         let createdSecond = doc.createGrid(named: "Scratch", in: project)
-        let second = try! #require(createdSecond)
+        let second = try #require(createdSecond)
         doc.movePane(panes[1], toGrid: second)
         doc.deleteGrid(second, in: project, closingPanes: true)
         #expect(doc.project(project)?.panes.map(\.id) == [panes[0]])

@@ -3,11 +3,11 @@ import Testing
 @testable import AletheModel
 
 @Suite struct SuspensionTests {
-    @Test func disablingATerminal() {
+    @Test func disablingATerminal() throws {
         var doc = WorkspaceDocument()
         let project = doc.addProject(name: "p", folder: "/p")
         let paneID = doc.addPane(to: project, tab: PaneTab(agent: "shell"))
-        let pane = try! #require(paneID)
+        let pane = try #require(paneID)
         doc.setDisabled(pane, true)
         #expect(doc.pane(pane)?.pane.isDisabled == true)
         #expect(doc.disabledTabIDs == Set(doc.pane(pane)?.pane.tabs.map(\.id) ?? []))
@@ -46,7 +46,8 @@ import Testing
     }
 
     @Test func olderGroupsAndPanesDecode() throws {
-        let group = try JSONDecoder().decode(ProjectGroup.self, from: Data(#"{"id":"g","name":"G","projectIDs":[],"isCollapsed":false}"#.utf8))
+        let group = try JSONDecoder().decode(ProjectGroup.self,
+            from: Data(#"{"id":"g","name":"G","projectIDs":[],"isCollapsed":false}"#.utf8))
         #expect(group.suspended == nil)
     }
 }

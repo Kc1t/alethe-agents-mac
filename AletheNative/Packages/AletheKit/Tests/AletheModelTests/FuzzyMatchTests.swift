@@ -13,13 +13,13 @@ import Testing
         #expect(FuzzyMatch.match("ab", in: "a_xab")?.positions == [3, 4])
     }
 
-    @Test func prefixesAndWordStartsBeatScatteredMatches() {
-        let prefix = FuzzyMatch.match("api", in: "api-server")!.score
-        let scattered = FuzzyMatch.match("api", in: "a pretty idea")!.score
-        let inside = FuzzyMatch.match("api", in: "rapid")!.score
+    @Test func prefixesAndWordStartsBeatScatteredMatches() throws {
+        let prefix = (try #require(FuzzyMatch.match("api", in: "api-server"))).score
+        let scattered = (try #require(FuzzyMatch.match("api", in: "a pretty idea"))).score
+        let inside = (try #require(FuzzyMatch.match("api", in: "rapid"))).score
         #expect(prefix > inside && prefix > scattered)
-        let camel = FuzzyMatch.match("nt", in: "newTerminal")!.score
-        let plain = FuzzyMatch.match("nt", in: "count")!.score
+        let camel = (try #require(FuzzyMatch.match("nt", in: "newTerminal"))).score
+        let plain = (try #require(FuzzyMatch.match("nt", in: "count"))).score
         #expect(camel > plain, "a camel-case word start counts as a boundary")
     }
 

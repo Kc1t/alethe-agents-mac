@@ -63,9 +63,7 @@ public enum ProfileBackup {
         let written = work.appending(path: "backup.zip")
         try run("/usr/bin/ditto", ["-c", "-k", "--norsrc", "--noextattr", "--noqtn", staging.path, written.path])
         try manager.createDirectory(at: archive.deletingLastPathComponent(), withIntermediateDirectories: true)
-        if manager.fileExists(atPath: archive.path) {
-            _ = try manager.replaceItemAt(archive, withItemAt: written)
-        } else {
+        if manager.fileExists(atPath: archive.path) { _ = try manager.replaceItemAt(archive, withItemAt: written) } else {
             try manager.moveItem(at: written, to: archive)
         }
     }
@@ -163,9 +161,7 @@ public enum ProfileBackup {
         guard let data = try? Data(contentsOf: workspace),
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               object["projects"] is [Any] else { throw BackupError.notAProfileBackup }
-        if let version = object["schemaVersion"] as? Int, version > WorkspaceDocument.currentVersion {
-            throw BackupError.newerFormat
-        }
+        if let version = object["schemaVersion"] as? Int, version > WorkspaceDocument.currentVersion { throw BackupError.newerFormat }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let manifest = (try? Data(contentsOf: staging.appending(path: BackupManifest.fileName)))
@@ -261,8 +257,7 @@ public enum DataMaintenance {
         try? manager.removeItem(at: locations.pendingOperation)
         defer { try? manager.removeItem(at: locations.importStaging) }
         guard let operation else { return nil }
-        switch operation {
-        case .importProfile(let id, let path):
+        if case .importProfile(let id, let path) = operation {
             let staged = URL(filePath: path, directoryHint: .isDirectory)
             let staging = locations.importStaging.resolvingSymlinksInPath().path
             guard staged.resolvingSymlinksInPath().path.hasPrefix(staging + "/"),
@@ -278,10 +273,10 @@ public enum DataMaintenance {
                 if hadTarget { try? manager.moveItem(at: previous, to: target) }
                 throw error
             }
-        case .resetProfile(let id):
+        } else if case .resetProfile(let id) = operation {
             let target = locations.profileDirectory(id)
             if manager.fileExists(atPath: target.path) { try manager.removeItem(at: target) }
-        case .eraseAll:
+        } else {
             let keep = maintenanceEntries(locations)
             for name in (try? manager.contentsOfDirectory(atPath: locations.root.path)) ?? [] where !keep.contains(name) {
                 try manager.removeItem(at: locations.root.appending(path: name))

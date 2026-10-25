@@ -53,9 +53,8 @@ public struct OrchestrationPreferences: Codable, Hashable, Sendable {
                 if let role = try? OrchestrationRole(from: decoder) { roles.append(role) }
             }
         }
-        if let value = try? c.decode(Double.self, forKey: .maxConcurrent), value.isFinite {
-            maxConcurrent = Int(min(16, max(1, value.rounded())))
-        }
+        if let value = try? c.decode(Double.self, forKey: .maxConcurrent), value.isFinite { maxConcurrent = Int(min(16,
+            max(1, value.rounded()))) }
         defaultTimeoutSeconds = (try? c.decode(Int.self, forKey: .defaultTimeoutSeconds)) ?? 900
         workerDisabledPlugins = (try? c.decode([String].self, forKey: .workerDisabledPlugins)) ?? []
         routing = (try? c.decode(OrchestrationRouting.self, forKey: .routing)) ?? .init()
@@ -106,7 +105,8 @@ public struct OrchestrationSkill: Codable, Hashable, Sendable {
     public var normalized: Self {
         var next = self
         if !["auto", "skill", "mcp"].contains(backend) { next.backend = "auto" }
-        if !["auto", "economy", "balanced", "quality", "research", "parallel", "rescue"].contains(defaultStrategy) { next.defaultStrategy = "auto" }
+        if !["auto", "economy", "balanced", "quality", "research", "parallel",
+            "rescue"].contains(defaultStrategy) { next.defaultStrategy = "auto" }
         if !["ask", "automatic", "never"].contains(providerSwitch) { next.providerSwitch = "ask" }
         if let conserveProvider, !Self.providers.contains(conserveProvider) { next.conserveProvider = nil }
         if let preferredProvider, !Self.providers.contains(preferredProvider) { next.preferredProvider = nil }
@@ -186,5 +186,6 @@ public struct OrchestrationQuotaGate: Codable, Hashable, Sendable {
     public var window = "short"
     public var below = 80
     public init() {}
-    public var isValid: Bool { ["claude", "codex"].contains(agent) && ["short", "week", "opus"].contains(window) && (1...99).contains(below) }
+    public var isValid: Bool { ["claude", "codex"].contains(agent) && ["short", "week", "opus"].contains(window) &&
+        (1...99).contains(below) }
 }

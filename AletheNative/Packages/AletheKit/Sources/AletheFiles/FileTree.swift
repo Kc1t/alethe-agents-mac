@@ -77,9 +77,7 @@ public final class FileTree {
 
     public func expand(_ directory: URL) throws {
         let key = directory.standardizedFileURL
-        if listings[key] == nil {
-            listings[key] = try Self.list(key, filter: filter)
-        }
+        if listings[key] == nil { listings[key] = try Self.list(key, filter: filter) }
         expanded.insert(key)
     }
 

@@ -3,9 +3,11 @@ public enum SidebarChild: Hashable, Sendable {
     case project(ProjectID)
 
     var orderToken: String {
-        switch self {
-        case .group(let id): "g:\(id.rawValue)"
-        case .project(let id): "p:\(id.rawValue)"
+        if case .group(let id) = self { return "g:\(id.rawValue)" } else {
+            guard case .project(let id) = self else {
+                preconditionFailure("Unexpected enum case")
+            }
+            return "p:\(id.rawValue)"
         }
     }
 }
@@ -33,13 +35,15 @@ extension WorkspaceDocument {
         if let container, group(container) == nil { return }
         let oldContainer: GroupID?
         var movingGroup: ProjectGroup?
-        switch item {
-        case .project(let id):
+        if case .project(let id) = item {
             guard project(id) != nil else { return }
             oldContainer = groups.first { $0.projectIDs.contains(id) }?.id
             ungroupedProjectIDs.removeAll { $0 == id }
             for index in groups.indices { groups[index].projectIDs.removeAll { $0 == id } }
-        case .group(let id):
+        } else {
+            guard case .group(let id) = item else {
+                preconditionFailure("Unexpected enum case")
+            }
             guard let moving = group(id) else { return }
             if let container, isGroup(container, inside: id) { return }
             oldContainer = moving.parentID

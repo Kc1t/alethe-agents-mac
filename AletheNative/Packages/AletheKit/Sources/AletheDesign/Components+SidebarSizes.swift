@@ -7,9 +7,9 @@ public struct AletheSidebarSizeLayoutStyle: ButtonStyle {
     public init(isSelected: Bool) { self.isSelected = isSelected }
 
     @ViewBuilder public func makeBody(configuration: Configuration) -> some View {
-        if metrics.isWebInterface && metrics.style == .clean {
-            SidebarSizeLayoutButton(configuration: configuration, isSelected: isSelected)
-        } else {
+        if metrics.isWebInterface && metrics.style == .clean { SidebarSizeLayoutButton(configuration: configuration,
+            isSelected: isSelected) }
+        else {
             AletheSidebarMotionTabStyle(isSelected: isSelected, layout: true)
                 .makeBody(configuration: configuration)
         }

@@ -15,9 +15,14 @@ import Testing
         ".gradient", "CAGradientLayer", "NSGradient",
     ]
 
-    private static let colorConstructorPattern = try! NSRegularExpression(
-        pattern: #"(?<![A-Za-z0-9_])(?:"#
-            + colorConstructors.map(NSRegularExpression.escapedPattern(for:)).joined(separator: "|") + ")")
+    private static let colorConstructorPattern: NSRegularExpression = {
+        let pattern = #"(?<![A-Za-z0-9_])(?:"#
+            + colorConstructors.map(NSRegularExpression.escapedPattern(for:)).joined(separator: "|") + ")"
+        guard let expression = try? NSRegularExpression(pattern: pattern) else {
+            preconditionFailure("The color constructor pattern must be valid")
+        }
+        return expression
+    }()
 
     static func swiftSources() -> [URL] {
         let dirs = ["Alethe", "Packages/AletheKit/Sources"].map { root.appending(path: $0) }

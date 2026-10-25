@@ -4,6 +4,13 @@ import Testing
 @testable import AletheModel
 
 @Suite struct TauriImportPeripheralsTests {
+    private struct Imported {
+        var workspace: WorkspaceDocument
+        var preferences: PreferencesDocument
+        var report: TauriImport.Report
+        var secrets: TauriImport.Secrets
+    }
+
     private static let context = TauriImport.Context(agents: ["claude", "codex", "shell"], themes: ["elite-indigo"])
     private static let secretValues = [
         "FIXTURE-SPOTIFY-SECRET-0001", "FIXTURE-ROUTER9-KEY-0002", "FIXTURE-SPOTIFY-ACCESS-0003",
@@ -17,7 +24,7 @@ import Testing
     }
 
     private func imported(context: TauriImport.Context = context) throws
-        -> (WorkspaceDocument, PreferencesDocument, TauriImport.Report, TauriImport.Secrets) {
+        -> Imported {
         let projects = try folder().appending(path: "projects.json")
         let file = try TauriImport.File(data: Data(contentsOf: projects))
         let companions = TauriImport.Companions.beside(projects)
@@ -25,11 +32,14 @@ import Testing
         var preferences = PreferencesDocument()
         let report = TauriImport.apply(file, companions: companions, to: &workspace, preferences: &preferences,
                                        context: context)
-        return (workspace, preferences, report, TauriImport.secrets(in: file, companions: companions, context: context))
+        return Imported(workspace: workspace, preferences: preferences, report: report,
+            secrets: TauriImport.secrets(in: file, companions: companions, context: context))
     }
 
     @Test func mapsPeripheralPreferences() throws {
-        let (_, prefs, report, _) = try imported()
+        let fixture = try imported()
+        let prefs = fixture.preferences
+        let report = fixture.report
         #expect(prefs.spotifyClientID == "fixture-spotify-client-id", "trimmed")
         #expect(prefs.discordPresence == true)
         #expect(prefs.router9 == Router9Preferences(enabled: true, autoStart: true, source: .external, port: 20200,
@@ -41,7 +51,8 @@ import Testing
     }
 
     @Test func mapsRemoteSharingAndRouting() throws {
-        let (workspace, _, _, _) = try imported()
+        let fixture = try imported()
+        let workspace = fixture.workspace
         let project = try #require(workspace.projects.first)
         let shared = Dictionary(uniqueKeysWithValues: project.panes.map { ($0.id.rawValue, $0.remoteShared) })
         #expect(shared["t-shared"] == true)
@@ -53,7 +64,9 @@ import Testing
     }
 
     @Test func reportsSecretsWithTheirValues() throws {
-        let (_, _, report, secrets) = try imported()
+        let fixture = try imported()
+        let report = fixture.report
+        let secrets = fixture.secrets
         #expect(report.secrets == Set(KeychainItem.allCases))
         #expect(Set(secrets.values.keys) == report.secrets)
         func text(_ item: KeychainItem) -> String? { secrets.values[item].map { String(decoding: $0, as: UTF8.self) } }
@@ -71,7 +84,11 @@ import Testing
     }
 
     @Test func secretsAreAbsentFromEveryWrittenFile() async throws {
-        let (workspace, preferences, report, secrets) = try imported()
+        let fixture = try imported()
+        let workspace = fixture.workspace
+        let preferences = fixture.preferences
+        let report = fixture.report
+        let secrets = fixture.secrets
         let store = InMemorySecretStore()
         for (item, value) in secrets.values { try store.set(value, for: item, profile: "default") }
         #expect(try store.string(for: .githubToken, profile: "default") == "FIXTURE-GITHUB-TOKEN-0005")
@@ -102,7 +119,10 @@ import Testing
     @Test func nothingSecretWithoutPreferences() throws {
         var context = Self.context
         context.includePreferences = false
-        let (_, prefs, report, secrets) = try imported(context: context)
+        let fixture = try imported(context: context)
+        let prefs = fixture.preferences
+        let report = fixture.report
+        let secrets = fixture.secrets
         #expect(report.secrets.isEmpty && report.gistSync == nil && secrets.values.isEmpty)
         #expect(prefs.router9 == nil && prefs.remote == nil && prefs.spotifyClientID == nil)
     }

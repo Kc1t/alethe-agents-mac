@@ -64,12 +64,11 @@ public struct ProjectSettingsFile: Equatable, Sendable {
         var changes: [Change] = []
         if let name, name != project.name { changes.append(.name(from: project.name, to: name)) }
         if let color, color != project.color { changes.append(.color(from: project.color, to: color)) }
-        if let autoWorktree, autoWorktree != project.usesAutoWorktree {
-            changes.append(.autoWorktree(from: project.usesAutoWorktree, to: autoWorktree))
-        }
-        if let worktreeMode, worktreeMode != project.effectiveWorktreeMode {
-            changes.append(.worktreeMode(from: project.effectiveWorktreeMode, to: worktreeMode))
-        }
+        if let autoWorktree,
+            autoWorktree != project.usesAutoWorktree { changes.append(.autoWorktree(from: project.usesAutoWorktree, to: autoWorktree)) }
+        if let worktreeMode,
+            worktreeMode != project.effectiveWorktreeMode { changes.append(.worktreeMode(from: project.effectiveWorktreeMode,
+            to: worktreeMode)) }
         if let layoutMode, layoutMode != project.layout { changes.append(.layoutMode(from: project.layout, to: layoutMode)) }
         if let githubURL, githubURL != project.githubURL { changes.append(.githubURL(from: project.githubURL, to: githubURL)) }
         return changes

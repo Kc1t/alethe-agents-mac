@@ -63,7 +63,7 @@ import Testing
         #expect(document.schemaVersion == 2)
     }
 
-    @Test func contentPanesHaveNoTabsAndRefuseThem() {
+    @Test func contentPanesHaveNoTabsAndRefuseThem() throws {
         var doc = WorkspaceDocument()
         let project = doc.addProject(name: "a", folder: "/a")
         #expect(doc.addPane(to: project, content: .terminal) == nil, "terminals are added with a tab")
@@ -73,8 +73,8 @@ import Testing
         #expect(doc.workspace.openProjectIDs == [project])
         let added = id.map { doc.addTab(PaneTab(agent: "shell"), to: $0) } ?? true
         #expect(!added)
-        #expect(doc.pane(pane!)?.pane.tabs.isEmpty == true)
-        #expect(doc.pane(pane!)?.pane.isLaneVisible == false)
+        #expect(doc.pane(try #require(pane))?.pane.tabs.isEmpty == true)
+        #expect(doc.pane(try #require(pane))?.pane.isLaneVisible == false)
         #expect(Pane(content: .web(url: "x", options: WebPaneOptions()), tabs: [PaneTab(agent: "shell")]).tabs.isEmpty)
     }
 }

@@ -25,9 +25,7 @@ public enum FileIcons {
     public static func symbolName(forFileName fileName: String) -> String {
         let lower = fileName.lowercased()
         if [".gitignore", ".gitattributes", ".gitmodules"].contains(lower) { return "arrow.triangle.branch" }
-        if lower == "dockerfile" || lower.hasPrefix("docker-compose") || lower == ".dockerignore" {
-            return "shippingbox"
-        }
+        if lower == "dockerfile" || lower.hasPrefix("docker-compose") || lower == ".dockerignore" { return "shippingbox" }
         if lower == ".env" || lower.hasPrefix(".env.") { return "key" }
         guard let dot = lower.lastIndex(of: "."), dot != lower.startIndex else { return defaultSymbol }
         let ext = String(lower[lower.index(after: dot)...])

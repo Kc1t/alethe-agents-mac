@@ -126,9 +126,7 @@ extension WorkspaceDocument {
         if case .group(let group) = location, self.group(group) == nil { return }
         let source = self.location(of: id)
         var target = index
-        if source == location, let current = ids(in: location).firstIndex(of: id), current < index {
-            target -= 1
-        }
+        if source == location, let current = ids(in: location).firstIndex(of: id), current < index { target -= 1 }
         detach(id)
         insert(id, into: location, at: target)
     }
@@ -162,9 +160,7 @@ extension WorkspaceDocument {
         if workspace.isolatedPaneID == paneID { workspace.isolatedPaneID = nil }
         updateProject(project.id) { $0.panes.removeAll { $0.id == paneID }; $0.reconcilePaneGroups() }
         workspace.gridWeights.removeValue(forKey: project.weightsKey)
-        if workspace.focusedPaneID == paneID {
-            workspace.focusedPaneID = self.project(project.id)?.visiblePanes.last?.id
-        }
+        if workspace.focusedPaneID == paneID { workspace.focusedPaneID = self.project(project.id)?.visiblePanes.last?.id }
     }
 
     public func paneHolding(_ tabID: TabID) -> (project: Project, pane: Pane)? {
@@ -302,9 +298,8 @@ extension WorkspaceDocument {
         let to = max(0, min(index, workspace.openProjectIDs.count - 1))
         guard from != to else { return }
         workspace.openProjectIDs.insert(workspace.openProjectIDs.remove(at: from), at: to)
-        if workspace.containerWeights.count == workspace.openProjectIDs.count {
-            workspace.containerWeights.insert(workspace.containerWeights.remove(at: from), at: to)
-        }
+        if workspace.containerWeights.count ==
+            workspace.openProjectIDs.count { workspace.containerWeights.insert(workspace.containerWeights.remove(at: from), at: to) }
     }
 
     public mutating func setCollapsed(_ id: ProjectID, _ collapsed: Bool) {
@@ -350,9 +345,11 @@ extension WorkspaceDocument {
     }
 
     private func ids(in location: ProjectLocation) -> [ProjectID] {
-        switch location {
-        case .ungrouped: ungroupedProjectIDs
-        case .group(let id): group(id)?.projectIDs ?? []
+        if case .ungrouped = location { return ungroupedProjectIDs } else {
+            guard case .group(let id) = location else {
+                preconditionFailure("Unexpected enum case")
+            }
+            return group(id)?.projectIDs ?? []
         }
     }
 
@@ -362,10 +359,10 @@ extension WorkspaceDocument {
     }
 
     private mutating func insert(_ id: ProjectID, into location: ProjectLocation, at index: Int) {
-        switch location {
-        case .ungrouped:
-            ungroupedProjectIDs.insert(id, at: max(0, min(index, ungroupedProjectIDs.count)))
-        case .group(let groupID):
+        if case .ungrouped = location { ungroupedProjectIDs.insert(id, at: max(0, min(index, ungroupedProjectIDs.count))) } else {
+            guard case .group(let groupID) = location else {
+                preconditionFailure("Unexpected enum case")
+            }
             guard let g = groups.firstIndex(where: { $0.id == groupID }) else {
                 ungroupedProjectIDs.append(id)
                 return
@@ -375,8 +372,6 @@ extension WorkspaceDocument {
     }
 
     private mutating func normalizeContainerWeights() {
-        if workspace.containerWeights.count != workspace.openProjectIDs.count {
-            workspace.containerWeights = []
-        }
+        if workspace.containerWeights.count != workspace.openProjectIDs.count { workspace.containerWeights = [] }
     }
 }

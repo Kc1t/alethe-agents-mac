@@ -5,26 +5,23 @@ public enum GitBadge: String, Hashable, Sendable, CaseIterable {
     case conflict, modified, stagedModified, added, untracked, renamed, deleted
 
     public var priority: Int {
-        switch self {
-        case .conflict: 100
-        case .modified: 80
-        case .stagedModified: 70
-        case .added: 60
-        case .untracked: 50
-        case .renamed: 40
-        case .deleted: 30
-        }
+        if case .conflict = self { return 100 }
+        else if case .modified = self { return 80 }
+        else if case .stagedModified = self { return 70 }
+        else if case .added = self { return 60 }
+        else if case .untracked = self { return 50 }
+        else if case .renamed = self { return 40 }
+        else { return 30 }
     }
 
     public var letter: String {
-        switch self {
-        case .conflict: "!"
-        case .modified, .stagedModified: "M"
-        case .added: "A"
-        case .untracked: "U"
-        case .renamed: "R"
-        case .deleted: "D"
-        }
+        if case .conflict = self { return "!" }
+        else if case .modified = self { return "M" }
+        else if case .stagedModified = self { return "M" }
+        else if case .added = self { return "A" }
+        else if case .untracked = self { return "U" }
+        else if case .renamed = self { return "R" }
+        else { return "D" }
     }
 }
 
@@ -42,26 +39,25 @@ public struct GitBadgeIndex: Hashable, Sendable {
     }
 
     static func badge(for entry: GitStatusEntry) -> GitBadge? {
-        switch entry.kind {
-        case .ignored: return nil
-        case .unmerged: return .conflict
-        case .untracked: return .untracked
-        case .ordinary, .renamed:
-            let staged: GitBadge? = switch entry.index {
-            case .added?: .added
-            case .deleted?: .deleted
-            case .renamed?, .copied?: .renamed
-            case nil: nil
-            default: .stagedModified
-            }
-            let unstaged: GitBadge? = switch entry.worktree {
-            case .deleted?: .deleted
-            case .renamed?, .copied?: .renamed
-            case nil: nil
-            default: .modified
-            }
-            return [staged, unstaged].compactMap { $0 }.max { $0.priority < $1.priority }
-        }
+        if entry.kind == .ignored { return nil }
+        if entry.kind == .unmerged { return .conflict }
+        if entry.kind == .untracked { return .untracked }
+        let staged = stagedBadge(for: entry)
+        let unstaged = unstagedBadge(for: entry)
+        return [staged, unstaged].compactMap { $0 }.max { $0.priority < $1.priority }
+    }
+
+    private static func stagedBadge(for entry: GitStatusEntry) -> GitBadge? {
+        if entry.index == .added { return .added }
+        if entry.index == .deleted { return .deleted }
+        if entry.index == .renamed || entry.index == .copied { return .renamed }
+        return entry.index == nil ? nil : .stagedModified
+    }
+
+    private static func unstagedBadge(for entry: GitStatusEntry) -> GitBadge? {
+        if entry.worktree == .deleted { return .deleted }
+        if entry.worktree == .renamed || entry.worktree == .copied { return .renamed }
+        return entry.worktree == nil ? nil : .modified
     }
 
     private mutating func register(_ path: String, _ badge: GitBadge) {

@@ -7,11 +7,7 @@ public enum WebResourceMode: String, Codable, CaseIterable, Hashable, Sendable {
 
     public func hiddenEvictionDelay(underMemoryPressure: Bool) -> Duration? {
         if underMemoryPressure { return .zero }
-        switch self {
-        case .appFirst: return .seconds(1)
-        case .balanced: return .seconds(30)
-        case .keepAlive: return nil
-        }
+        if case .appFirst = self { return .seconds(1) } else if case .balanced = self { return .seconds(30) } else { return nil }
     }
 }
 

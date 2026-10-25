@@ -27,7 +27,8 @@ import Testing
         #expect(CustomAgentDefinition.icoError(Data([1, 2, 3, 4])) == "iconFileInvalid")
     }
     @Test func definitionAndDiscriminatedIconsRoundTrip() throws {
-        for icon in [CustomAgentIconSpec(kind: "preset", key: "bot"), .init(kind: "url", href: "https://example.com/icon.jpg"), .init(kind: "file", assetId: "my-agent")] {
+        for icon in [CustomAgentIconSpec(kind: "preset", key: "bot"), .init(kind: "url",
+            href: "https://example.com/icon.jpg"), .init(kind: "file", assetId: "my-agent")] {
             var agent = CustomAgentDefinition()
             agent.id = "my-agent"; agent.iconSpec = icon
             let data = try JSONEncoder().encode(agent)

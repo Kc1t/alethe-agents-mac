@@ -63,7 +63,8 @@ struct ProjectSettingsFileTests {
     }
 
     @Test func readsAnUpstreamExport() throws {
-        let json = ##"{"id":"p1","name":"Shop","color":"#ef4444","groupId":null,"terminals":[],"layoutMode":"spotlight","collapsed":false,"createdAt":1,"autoWorktree":true}"##
+        let json = ##"{"id":"p1","name":"Shop","color":"#ef4444","groupId":null,"terminals":[],"## +
+            ##""layoutMode":"spotlight","collapsed":false,"createdAt":1,"autoWorktree":true}"##
         let file = try ProjectSettingsFile(data: Data(json.utf8))
         #expect(file.color == .red)
         #expect(file.layoutMode == .spotlight)

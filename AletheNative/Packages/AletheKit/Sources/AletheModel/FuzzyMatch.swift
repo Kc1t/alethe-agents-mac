@@ -21,7 +21,7 @@ public enum FuzzyMatch {
             positions.append(index)
             index += 1
         }
-        var end = positions.last!
+        guard var end = positions.last else { return nil }
         var tightened: [Int] = []
         for character in needle.reversed() {
             while end >= 0, haystack[end] != character { end -= 1 }
@@ -34,23 +34,20 @@ public enum FuzzyMatch {
         for (offset, position) in positions.enumerated() {
             score += 1
             if offset > 0, positions[offset - 1] == position - 1 { score += 5 }
-            if position == 0 {
-                score += 8
-            } else if isBoundary(original[position - 1], original[position]) {
+            if position == 0 { score += 8 } else if isBoundary(original[position - 1], original[position]) {
                 score += 6
             }
             if original[position] == Array(query.filter { !$0.isWhitespace })[offset] { score += 1 }
         }
-        score -= (positions.last! - positions.first!) - (positions.count - 1)
-        score -= positions.first! / 4
+        guard let first = positions.first, let last = positions.last else { return nil }
+        score -= (last - first) - (positions.count - 1)
+        score -= first / 4
         score -= haystack.count / 16
         return Result(score: score, positions: positions)
     }
 
     private static func isBoundary(_ previous: Character, _ current: Character) -> Bool {
-        if previous == " " || previous == "-" || previous == "_" || previous == "/" || previous == "." || previous == "·" {
-            return true
-        }
+        if previous == " " || previous == "-" || previous == "_" || previous == "/" || previous == "." || previous == "·" { return true }
         return previous.isLowercase && current.isUppercase
     }
 

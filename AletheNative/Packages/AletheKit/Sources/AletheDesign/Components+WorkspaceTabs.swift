@@ -6,17 +6,15 @@ extension Motion {
 
         public func animation(reduceMotion: Bool) -> Animation? {
             guard !reduceMotion else { return nil }
-            let duration: Double = switch self {
-            case .tab: 0.14
-            case .close: 0.12
-            case .laneSelection: 0.16
-            case .insertion: 0.18
-            case .pane: 0.15
-            case .action: 0.10
+            let duration: Double = if case .tab = self {
+                0.14
             }
-            if self == .insertion {
-                return .timingCurve(0.175, 0.885, 0.32, 1.275, duration: duration)
-            }
+            else if case .close = self { 0.12 }
+            else if case .laneSelection = self { 0.16 }
+            else if case .insertion = self { 0.18 }
+            else if case .pane = self { 0.15 }
+            else { 0.10 }
+            if self == .insertion { return .timingCurve(0.175, 0.885, 0.32, 1.275, duration: duration) }
             return .timingCurve(0.25, 0.1, 0.25, 1, duration: duration)
         }
     }

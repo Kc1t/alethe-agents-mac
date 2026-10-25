@@ -7,11 +7,10 @@ public enum PaneLayoutMode: String, Codable, CaseIterable, Sendable {
     case grid
 
     var defaultColumns: [Double] {
-        switch self {
-        case .auto, .grid: []
-        case .spotlight: [0.65, 0.35]
-        case .sidebar: [0.22, 0.78]
-        }
+        if case .auto = self { return [] }
+        else if case .grid = self { return [] }
+        else if case .spotlight = self { return [0.65, 0.35] }
+        else { return [0.22, 0.78] }
     }
 }
 
@@ -55,9 +54,7 @@ public enum TrackMath {
             return rubberBand.map { floor - $0(floor - size, floor) } ?? floor
         }
         var leading = sizes[divider] + delta
-        if leading < floor {
-            leading = resisted(leading)
-        } else if pair - leading < floor {
+        if leading < floor { leading = resisted(leading) } else if pair - leading < floor {
             leading = pair - resisted(pair - leading)
         }
         var result = sizes
@@ -100,10 +97,10 @@ public struct PaneGridGeometry: Equatable, Sendable {
             self = Self.custom(grid: grid, ids: ids, in: rect, weights: weights, gap: gap, handle: handle)
             if handlesInsideLeadingCell {
                 for (divider, frame) in dividers {
-                    switch divider {
-                    case .gridColumn: dividers[divider] = frame.offsetBy(dx: -(handle + gap) / 2, dy: 0)
-                    case .gridRow: dividers[divider] = frame.offsetBy(dx: 0, dy: -(handle + gap) / 2)
-                    default: break
+                    if case .gridColumn = divider { dividers[divider] = frame.offsetBy(dx: -(handle + gap) / 2, dy: 0) }
+                    else if case .gridRow = divider { dividers[divider] = frame.offsetBy(dx: 0, dy: -(handle + gap) / 2) }
+                    else {
+
                     }
                 }
             }
@@ -159,7 +156,8 @@ public struct PaneGridGeometry: Equatable, Sendable {
     private static func custom(grid: CustomGrid, ids: [String], in rect: CGRect, weights: GridWeights, gap: CGFloat,
                                handle: CGFloat) -> PaneGridGeometry {
         var result = PaneGridGeometry(count: 0, in: rect, weights: GridWeights(), gap: gap, handle: handle)
-        let columnSizes = TrackMath.sizes(count: grid.cols, weights: weights.columns.count == grid.cols ? weights.columns : grid.colSizes ?? [],
+        let columnSizes = TrackMath.sizes(count: grid.cols, weights: weights.columns.count ==
+            grid.cols ? weights.columns : grid.colSizes ?? [],
                                       total: rect.width, gap: gap)
         let rowSizes = TrackMath.sizes(count: grid.rows, weights: weights.rows.count == grid.rows ? weights.rows : grid.rowSizes ?? [],
                                    total: rect.height, gap: gap)
@@ -177,7 +175,8 @@ public struct PaneGridGeometry: Equatable, Sendable {
             grid.cells[id].map { frame(col: $0.col, row: $0.row, colSpan: $0.colSpan, rowSpan: $0.rowSpan) } ?? .zero
         }
         let occupancy = grid.occupancy(ids)
-        result.freeSlots = grid.freeCells(ids).map { Slot(col: $0.col, row: $0.row, frame: frame(col: $0.col, row: $0.row, colSpan: 1, rowSpan: 1)) }
+        result.freeSlots = grid.freeCells(ids).map { Slot(col: $0.col, row: $0.row, frame: frame(col: $0.col,
+            row: $0.row, colSpan: 1, rowSpan: 1)) }
         func separates(_ a: String?, _ b: String?) -> Bool { a != b && (a != nil || b != nil) }
         for boundary in 0..<max(0, grid.cols - 1) {
             let center = columnX[boundary + 1] - gap / 2

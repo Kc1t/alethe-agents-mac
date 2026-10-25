@@ -16,7 +16,8 @@ import Testing
     }
 
     @Test func usagePillsMigrateToToolbarItems() async throws {
-        let json = #"{"schemaVersion":1,"themeID":"nord","uiScale":1,"alwaysStartUnrestricted":false,"usagePills":["codex","claude","gemini"]}"#
+        let json = #"{"schemaVersion":1,"themeID":"nord","uiScale":1,"alwaysStartUnrestricted":false,"# +
+            #""usagePills":["codex","claude","gemini"]}"#
         let (preferences, outcome, written) = try await migrated(json)
         guard case .migrated(from: 1, _) = outcome else {
             Issue.record("expected a migration from v1, got \(outcome)")
@@ -49,7 +50,8 @@ import Testing
         let preferences = PreferencesDocument()
         let hidden = ToolbarItemKind.allCases.filter { !preferences.showsToolbarItem($0) }
         #expect(hidden == [.router9])
-        #expect(ToolbarItemKind.usageProviders.compactMap(ToolbarItemKind.usagePill(for:)) == [.usageClaude, .usageCodex, .usageAntigravity])
+        #expect(ToolbarItemKind.usageProviders.compactMap(ToolbarItemKind.usagePill(for:)) == [.usageClaude,
+            .usageCodex, .usageAntigravity])
         #expect(ToolbarItemKind.memory.usageProvider == nil && ToolbarItemKind.usageCodex.usageProvider == "codex")
         #expect(ToolbarItemKind.aiUsage.usageProvider == nil)
     }

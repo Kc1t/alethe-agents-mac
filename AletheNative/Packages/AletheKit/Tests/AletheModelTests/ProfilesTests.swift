@@ -142,7 +142,8 @@ import Testing
         #expect(index.duplicateName(for: work, format: "%@ copy", defaultName: defaultName) == "Work copy")
         try index.createProfile(named: "Work copy", defaultName: defaultName)
         #expect(index.duplicateName(for: work, format: "%@ copy", defaultName: defaultName) == "Work copy 2")
-        #expect(index.duplicateName(for: ProfileIndexDocument.defaultProfileID, format: "%@ copy", defaultName: defaultName) == "Default copy")
+        #expect(index.duplicateName(for: ProfileIndexDocument.defaultProfileID, format: "%@ copy",
+            defaultName: defaultName) == "Default copy")
     }
 
     @Test func olderIndexDecodesWithoutLastUse() throws {

@@ -121,7 +121,8 @@ public struct ActivityTotals: Codable, Hashable, Sendable {
             if sample.userActive { totals.userActiveMs += duration } else { totals.userIdleMs += duration }
             if let project = sample.activeProjectID {
                 projects[project, default: ProjectTotals()].focusedMs += duration
-                if sample.userActive { projects[project]!.activeMs += duration } else { projects[project]!.idleMs += duration }
+                if sample.userActive { projects[project, default: ProjectTotals()].activeMs += duration }
+                else { projects[project, default: ProjectTotals()].idleMs += duration }
             }
         }
 
@@ -138,9 +139,7 @@ public struct ActivityTotals: Codable, Hashable, Sendable {
             var entry = agents[agent.agent] ?? AgentTotals()
             if agent.working {
                 entry.workingMs += duration
-                if sample.appFocused && agent.terminalID == sample.activeTerminalID {
-                    entry.focusedMs += duration
-                } else {
+                if sample.appFocused && agent.terminalID == sample.activeTerminalID { entry.focusedMs += duration } else {
                     entry.backgroundMs += duration
                 }
             } else {

@@ -88,8 +88,8 @@ public struct AletheSidebarFieldBorder: ViewModifier {
     }
 }
 
-public extension Motion {
-    static func sidebarEntrance(duration: Double, reduceMotion: Bool) -> Animation? {
+extension Motion {
+    public static func sidebarEntrance(duration: Double, reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : .timingCurve(0.16, 1, 0.3, 1, duration: duration)
     }
 }
@@ -103,12 +103,10 @@ public struct AletheSidebarWebEntrance: ViewModifier {
     public init(_ part: Part) { self.part = part }
 
     private var duration: Double {
-        switch part {
-        case .sidebar: 0.26
-        case .header: 0.24
-        case .composer: 0.28
-        case .content: 0.3
-        }
+        if case .sidebar = part { return 0.26 }
+        else if case .header = part { return 0.24 }
+        else if case .composer = part { return 0.28 }
+        else { return 0.3 }
     }
 
     public func body(content: Content) -> some View {

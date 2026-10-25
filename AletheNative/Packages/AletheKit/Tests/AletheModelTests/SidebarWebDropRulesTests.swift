@@ -22,7 +22,10 @@ import Testing
             second = doc.addProject(name: "Second", folder: "/second", in: .group(outer))
             foreign = doc.addProject(name: "Foreign", folder: "/foreign", in: .group(other))
             loose = doc.addProject(name: "Loose", folder: "/loose")
-            pane = doc.addPane(to: first, tab: PaneTab(agent: "shell"))!
+            guard let addedPane = doc.addPane(to: first, tab: PaneTab(agent: "shell")) else {
+                preconditionFailure("The fixture project must accept a pane")
+            }
+            pane = addedPane
             doc.updateGroup(inner) { $0.isCollapsed = true }
         }
     }

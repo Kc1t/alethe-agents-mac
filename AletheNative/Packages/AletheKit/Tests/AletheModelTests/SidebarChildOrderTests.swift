@@ -180,16 +180,17 @@ import Testing
             let g = doc.groups[next(doc.groups.count)].id
             let p = doc.projects[next(doc.projects.count)].id
             let container: GroupID? = next(3) == 0 ? nil : doc.groups[next(doc.groups.count)].id
-            switch next(5) {
-            case 0:
+            let matchedValue = next(5)
+            if case 0 = matchedValue {
                 let children = doc.sidebarChildren(of: container)
                 let sibling = children.isEmpty || next(3) == 0 ? nil : children[next(children.count)]
                 doc.place(next(2) == 0 ? .group(g) : .project(p), in: container, before: sibling)
-            case 1: doc.moveProject(p, to: container.map { .group($0) } ?? .ungrouped, at: next(15))
-            case 2: doc.moveGroup(g, toParent: container, at: next(7))
-            case 3: doc.removeProject(p)
-            default: doc.deleteGroup(g)
+            } else if case 1 = matchedValue {
+                doc.moveProject(p, to: container.map { .group($0) } ?? .ungrouped, at: next(15))
             }
+            else if case 2 = matchedValue { doc.moveGroup(g, toParent: container, at: next(7)) }
+            else if case 3 = matchedValue { doc.removeProject(p) }
+            else { doc.deleteGroup(g) }
             check(doc)
         }
     }

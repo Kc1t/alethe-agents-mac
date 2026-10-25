@@ -43,13 +43,15 @@ public final class MarkdownFile {
                 }
             }.value
             guard generation == self.generation else { return }
-            switch result {
-            case .success(let (text, blocks)):
+            if case .success(let (text, blocks)) = result {
                 source = text
                 self.blocks = blocks
                 loadError = nil
                 if !isEditing { draft = text }
-            case .failure(let error):
+            } else {
+                guard case .failure(let error) = result else {
+                    preconditionFailure("Unexpected enum case")
+                }
                 loadError = error.localizedDescription
             }
             isLoaded = true

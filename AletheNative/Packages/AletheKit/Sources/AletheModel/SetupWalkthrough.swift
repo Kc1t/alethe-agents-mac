@@ -19,6 +19,7 @@ public struct SetupProgress: Equatable, Sendable {
     }
 
     public var count: Int { done.count }
+    public var isEmpty: Bool { done.isEmpty }
     public var total: Int { SetupStep.allCases.count }
     public var isComplete: Bool { count == total }
 }

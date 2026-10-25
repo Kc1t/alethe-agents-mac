@@ -3,22 +3,38 @@ import Testing
 @testable import AletheModel
 
 @Suite struct WebSidebarNavigationTests {
-    private func sample() -> (WorkspaceDocument, GroupID, ProjectID, ProjectID, PaneID, PaneID) {
+    private struct Sample {
+        var doc: WorkspaceDocument
+        var group: GroupID
+        var a: ProjectID
+        var b: ProjectID
+        var first: PaneID
+        var second: PaneID
+    }
+
+    private func sample() -> Sample {
         var doc = WorkspaceDocument()
         let group = doc.addGroup(name: "Group")
         let a = doc.addProject(name: "A", folder: "/a", in: .group(group))
         let b = doc.addProject(name: "B", folder: "/b")
-        let first = doc.addPane(to: a, tab: PaneTab(agent: "shell"))!
-        let second = doc.addPane(to: b, tab: PaneTab(agent: "shell"))!
+        guard let first = doc.addPane(to: a, tab: PaneTab(agent: "shell")) else {
+            preconditionFailure("The fixture project must accept a pane")
+        }
+        guard let second = doc.addPane(to: b, tab: PaneTab(agent: "shell")) else {
+            preconditionFailure("The fixture project must accept a pane")
+        }
         doc.startClean()
         doc.workspace.tabs = []
         doc.workspace.history = []
         doc.workspace.historyIndex = -1
-        return (doc, group, a, b, first, second)
+        return Sample(doc: doc, group: group, a: a, b: b, first: first, second: second)
     }
 
     @Test func projectClickLeavesGroupEvenWhenAlreadyVisible() {
-        var (doc, group, a, _, _, _) = sample()
+        let fixture = sample()
+        var doc = fixture.doc
+        var group = fixture.group
+        var a = fixture.a
         doc.openWebGroup(group, adding: false)
         let groupTab = doc.workspace.activeTabID
         doc.openWebProject(a)
@@ -31,7 +47,11 @@ import Testing
     }
 
     @Test func groupOpenRecursesAndExcludesEmptyProjectsInDocumentOrder() {
-        var (doc, group, a, b, _, _) = sample()
+        let fixture = sample()
+        var doc = fixture.doc
+        var group = fixture.group
+        var a = fixture.a
+        var b = fixture.b
         let child = doc.addGroup(name: "Child", parent: group)
         doc.moveProject(b, to: .group(child), at: 0)
         _ = doc.addProject(name: "Empty", folder: "/empty", in: .group(group))
@@ -43,7 +63,9 @@ import Testing
     }
 
     @Test func emptyGroupOpensAnEmptyTab() {
-        var (doc, _, _, b, _, _) = sample()
+        let fixture = sample()
+        var doc = fixture.doc
+        var b = fixture.b
         let empty = doc.addGroup(name: "Empty")
         doc.openWebProject(b)
         doc.openWebGroup(empty, adding: false)
@@ -54,7 +76,9 @@ import Testing
     }
 
     @Test func emptyGroupAppendIsANoop() {
-        var (doc, _, _, b, _, _) = sample()
+        let fixture = sample()
+        var doc = fixture.doc
+        var b = fixture.b
         let empty = doc.addGroup(name: "Empty")
         doc.openWebProject(b)
         let before = doc.currentSnapshot
@@ -66,7 +90,11 @@ import Testing
     }
 
     @Test func groupAppendPreservesCurrentTabAndExistingContainers() {
-        var (doc, group, a, b, _, _) = sample()
+        let fixture = sample()
+        var doc = fixture.doc
+        var group = fixture.group
+        var a = fixture.a
+        var b = fixture.b
         doc.openWebProject(b)
         let tab = doc.workspace.activeTabID
         doc.workspace.flat = true
@@ -83,13 +111,19 @@ import Testing
     }
 
     @Test func appendWithoutActiveTabOpensGroupTab() {
-        var (doc, group, _, _, _, _) = sample()
+        let fixture = sample()
+        var doc = fixture.doc
+        var group = fixture.group
         doc.openWebGroup(group, adding: true)
         #expect(doc.activeWorkspaceTab?.webGroupID == group)
     }
 
     @Test func savedGroupTabRestoresItsCompositionAndFocus() {
-        var (doc, group, _, b, first, _) = sample()
+        let fixture = sample()
+        var doc = fixture.doc
+        var group = fixture.group
+        var b = fixture.b
+        var first = fixture.first
         doc.openWebGroup(group, adding: false)
         let tab = doc.workspace.activeTabID
         doc.focusWebPane(first)
@@ -101,7 +135,12 @@ import Testing
     }
 
     @Test func visibleTerminalClickPreservesComposition() {
-        var (doc, group, a, b, first, _) = sample()
+        let fixture = sample()
+        var doc = fixture.doc
+        var group = fixture.group
+        var a = fixture.a
+        var b = fixture.b
+        var first = fixture.first
         doc.openWebProject(b)
         doc.openWebGroup(group, adding: true)
         let tab = doc.workspace.activeTabID
@@ -114,7 +153,11 @@ import Testing
     }
 
     @Test func hiddenTerminalClickOpensItsProjectGrid() {
-        var (doc, _, a, b, first, _) = sample()
+        let fixture = sample()
+        var doc = fixture.doc
+        var a = fixture.a
+        var b = fixture.b
+        var first = fixture.first
         doc.openWebProject(b)
         doc.focusWebPane(first)
         #expect(doc.workspace.openProjectIDs == [a])
@@ -123,8 +166,13 @@ import Testing
     }
 
     @Test func terminalDoubleClickOpensAndReusesAnIndividualTab() {
-        var (doc, _, a, _, first, _) = sample()
-        let other = doc.addPane(to: a, tab: PaneTab(agent: "codex"))!
+        let fixture = sample()
+        var doc = fixture.doc
+        var a = fixture.a
+        var first = fixture.first
+        guard let other = doc.addPane(to: a, tab: PaneTab(agent: "codex")) else {
+            preconditionFailure("The fixture project must accept a pane")
+        }
         doc.openWebProject(a)
         doc.openWebPane(first)
         let tab = doc.workspace.activeTabID
@@ -138,7 +186,11 @@ import Testing
     }
 
     @Test func paneMoveKeepsSessionsAndUsesDestinationGrid() {
-        var (doc, _, a, b, first, _) = sample()
+        let fixture = sample()
+        var doc = fixture.doc
+        var a = fixture.a
+        var b = fixture.b
+        var first = fixture.first
         let original = doc.pane(first)?.pane.tabs
         let grid = doc.createGrid(named: "Work", in: b)
         doc.moveWebPane(first, to: b)
@@ -149,7 +201,9 @@ import Testing
     }
 
     @Test func sourceIdentitySurvivesEncodingWithoutNewFields() throws {
-        var (doc, group, _, _, _, _) = sample()
+        let fixture = sample()
+        var doc = fixture.doc
+        var group = fixture.group
         doc.openWebGroup(group, adding: false)
         let data = try JSONEncoder().encode(doc)
         var decoded = try JSONDecoder().decode(WorkspaceDocument.self, from: data)
@@ -159,14 +213,19 @@ import Testing
     }
 
     @Test func groupLabelTracksRename() throws {
-        var (doc, group, _, _, _, _) = sample()
+        let fixture = sample()
+        var doc = fixture.doc
+        var group = fixture.group
         doc.openWebGroup(group, adding: false)
         doc.updateGroup(group) { $0.name = "Renamed" }
         #expect(doc.label(of: try #require(doc.activeWorkspaceTab))?.name == "Renamed")
     }
 
     @Test func nativeProjectSelectionStillPreservesAnOpenComposition() {
-        var (doc, _, a, b, _, _) = sample()
+        let fixture = sample()
+        var doc = fixture.doc
+        var a = fixture.a
+        var b = fixture.b
         doc.openInTab(a)
         doc.open(b)
         doc.syncActiveTab()

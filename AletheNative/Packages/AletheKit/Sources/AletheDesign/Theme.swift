@@ -40,7 +40,12 @@ public struct Theme: Identifiable, Hashable, Sendable, Codable {
         shadows[level] ?? ThemeShadow(x: 0, y: 0, blur: 0, color: Self.missingTokenColor)
     }
 
-    private static let missingTokenColor = ThemeColor(hex: "#00000000")!
+    static let missingTokenColor: ThemeColor = {
+        guard let color = ThemeColor(hex: "#00000000") else {
+            preconditionFailure("The transparent theme color must be valid")
+        }
+        return color
+    }()
 
     init(id: String, isLight: Bool, swatch: [ThemeColor], colors: [ThemeToken: ThemeColor],
          shadows: [ShadowLevel: ThemeShadow], terminal: TerminalPalette) {

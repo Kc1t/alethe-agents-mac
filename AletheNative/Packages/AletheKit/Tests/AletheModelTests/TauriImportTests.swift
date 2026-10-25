@@ -163,7 +163,8 @@ import Testing
         for profile in ["default", "WorkID", "orphan"] {
             try Data("{}".utf8).write(to: root.appending(path: "profiles/\(profile)/projects.json"))
         }
-        let index = #"{"version":1,"active_profile_id":"WorkID","profiles":[{"id":"default","name":"Default"},{"id":"WorkID","name":"Work"},{"id":"empty","name":"Empty"}]}"#
+        let index = #"{"version":1,"active_profile_id":"WorkID","profiles":[{"id":"default","name":"Default"},"# +
+            #"{"id":"WorkID","name":"Work"},{"id":"empty","name":"Empty"}]}"#
         try Data(index.utf8).write(to: root.appending(path: "profiles.json"))
 
         let profiles = TauriDataLocation.profiles(root: root)

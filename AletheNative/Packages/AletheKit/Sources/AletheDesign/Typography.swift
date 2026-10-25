@@ -6,33 +6,34 @@ public enum TextStyle: CaseIterable, Sendable {
     case caption, footnote, body, headline, title3, title2, title1, largeTitle
 
     var size: CGFloat {
-        switch self {
-        case .caption: 10
-        case .footnote: 11
-        case .body: 13
-        case .headline: 13
-        case .title3: 15
-        case .title2: 17
-        case .title1: 22
-        case .largeTitle: 26
-        }
+        if case .caption = self { return 10 }
+        else if case .footnote = self { return 11 }
+        else if case .body = self { return 13 }
+        else if case .headline = self { return 13 }
+        else if case .title3 = self { return 15 }
+        else if case .title2 = self { return 17 }
+        else if case .title1 = self { return 22 }
+        else { return 26 }
     }
 
     var weight: Font.Weight {
-        switch self {
-        case .headline: .semibold
-        case .title1, .title2, .title3, .largeTitle: .bold
-        default: .regular
-        }
+        if case .headline = self { return .semibold }
+        else if case .title1 = self { return .bold }
+        else if case .title2 = self { return .bold }
+        else if case .title3 = self { return .bold }
+        else if case .largeTitle = self { return .bold }
+        else { return .regular }
     }
 
     var leading: CGFloat {
-        switch self {
-        case .caption, .footnote, .body: 0.25
-        case .headline, .title3: 0.2
-        case .title2, .title1: 0.12
-        case .largeTitle: 0.06
-        }
+        if case .caption = self { return 0.25 }
+        else if case .footnote = self { return 0.25 }
+        else if case .body = self { return 0.25 }
+        else if case .headline = self { return 0.2 }
+        else if case .title3 = self { return 0.2 }
+        else if case .title2 = self { return 0.12 }
+        else if case .title1 = self { return 0.12 }
+        else { return 0.06 }
     }
 }
 

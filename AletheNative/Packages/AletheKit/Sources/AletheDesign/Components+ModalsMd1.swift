@@ -35,29 +35,23 @@ public struct AletheInstallActionStyle: ButtonStyle {
         }
 
         private func foreground(_ hot: Bool) -> Color {
-            switch kind {
-            case .primary: theme[.accentOn]
-            case .link: theme[hot ? .fg : .fgMuted]
-            case .danger: theme[hot ? .statusOffline : .fgMuted]
-            case .quiet: theme[hot ? .fg : .fgMuted]
-            }
+            if case .primary = kind { return theme[.accentOn] }
+            else if case .link = kind { return theme[hot ? .fg : .fgMuted] }
+            else if case .danger = kind { return theme[hot ? .statusOffline : .fgMuted] }
+            else { return theme[hot ? .fg : .fgMuted] }
         }
 
         private func background(_ hot: Bool) -> Color {
-            switch kind {
-            case .primary: theme[.accent]
-            case .quiet: hot ? theme[.bgElevated] : .clear
-            default: theme[.bg]
-            }
+            if case .primary = kind { return theme[.accent] }
+            else if case .quiet = kind { return hot ? theme[.bgElevated] : .clear }
+            else { return theme[.bg] }
         }
 
         private func border(_ hot: Bool) -> Color {
-            switch kind {
-            case .primary: theme[.accent]
-            case .link: theme[hot ? .accent : .border]
-            case .danger: theme[hot ? .statusOffline : .border]
-            case .quiet: hot ? theme[.border] : .clear
-            }
+            if case .primary = kind { return theme[.accent] }
+            else if case .link = kind { return theme[hot ? .accent : .border] }
+            else if case .danger = kind { return theme[hot ? .statusOffline : .border] }
+            else { return hot ? theme[.border] : .clear }
         }
     }
 }

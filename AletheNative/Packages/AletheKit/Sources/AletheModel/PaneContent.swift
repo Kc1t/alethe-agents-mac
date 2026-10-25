@@ -15,36 +15,33 @@ public enum PaneContent: Hashable, Sendable {
     }
 
     public var kind: Kind {
-        switch self {
-        case .terminal: .terminal
-        case .markdown: .markdown
-        case .image: .image
-        case .video: .video
-        case .diff: .diff
-        case .web: .web
-        case .graphify: .graphify
-        case .orchestrator: .orchestrator
-        }
+        if case .terminal = self { return .terminal }
+        else if case .markdown = self { return .markdown }
+        else if case .image = self { return .image }
+        else if case .video = self { return .video }
+        else if case .diff = self { return .diff }
+        else if case .web = self { return .web }
+        else if case .graphify = self { return .graphify }
+        else { return .orchestrator }
     }
 
     public var isTerminal: Bool { self == .terminal }
 
     public var filePath: String? {
-        switch self {
-        case .markdown(let path), .image(let path), .video(let path): path
-        default: nil
-        }
+        if case .markdown(let path) = self { return path }
+        else if case .image(let path) = self { return path }
+        else if case .video(let path) = self { return path }
+        else { return nil }
     }
 
     public static func forFile(_ rawPath: String) -> PaneContent? {
         let path = rawPath.trimmingCharacters(in: .whitespaces)
             .replacingOccurrences(of: #":\d+(:\d+)?$"#, with: "", options: .regularExpression)
-        switch (path as NSString).pathExtension.lowercased() {
-        case "mp4", "m4v", "mov", "avi", "mkv", "webm", "ogv": return .video(path: path)
-        case "png", "jpg", "jpeg", "gif", "webp", "bmp", "avif", "ico", "svg": return .image(path: path)
-        case "md", "markdown", "mdx": return .markdown(path: path)
-        default: return nil
-        }
+        let fileExtension = (path as NSString).pathExtension.lowercased()
+        if ["mp4", "m4v", "mov", "avi", "mkv", "webm", "ogv"].contains(fileExtension) { return .video(path: path) }
+        if ["png", "jpg", "jpeg", "gif", "webp", "bmp", "avif", "ico", "svg"].contains(fileExtension) { return .image(path: path) }
+        if ["md", "markdown", "mdx"].contains(fileExtension) { return .markdown(path: path) }
+        return nil
     }
 }
 
@@ -54,31 +51,39 @@ extension PaneContent: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let path = try container.decodeIfPresent(String.self, forKey: .path)
-        switch try container.decode(Kind.self, forKey: .kind) {
-        case .terminal: self = .terminal
-        case .markdown: self = .markdown(path: path ?? "")
-        case .image: self = .image(path: path ?? "")
-        case .video: self = .video(path: path ?? "")
-        case .diff: self = .diff(path: path, staged: try container.decodeIfPresent(Bool.self, forKey: .staged) ?? false)
-        case .web:
+        let matchedValue = try container.decode(Kind.self, forKey: .kind)
+        if case .terminal = matchedValue { self = .terminal }
+        else if case .markdown = matchedValue { self = .markdown(path: path ?? "") }
+        else if case .image = matchedValue { self = .image(path: path ?? "") }
+        else if case .video = matchedValue { self = .video(path: path ?? "") }
+        else if case .diff = matchedValue { self = .diff(path: path, staged: try container.decodeIfPresent(Bool.self,
+            forKey: .staged) ?? false) }
+        else if case .web = matchedValue {
             self = .web(url: try container.decodeIfPresent(String.self, forKey: .url) ?? "",
-                        options: try container.decodeIfPresent(WebPaneOptions.self, forKey: .options) ?? WebPaneOptions())
-        case .graphify: self = .graphify
-        case .orchestrator: self = .orchestrator
-        }
+            options: try container.decodeIfPresent(WebPaneOptions.self, forKey: .options) ?? WebPaneOptions())
+        } else if case .graphify = matchedValue { self = .graphify } else { self = .orchestrator }
     }
 
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(kind, forKey: .kind)
-        switch self {
-        case .terminal, .graphify, .orchestrator: break
-        case .markdown(let path), .image(let path), .video(let path):
-            try container.encode(path, forKey: .path)
-        case .diff(let path, let staged):
+        if case .terminal = self {
+
+        } else if case .graphify = self {
+
+        } else if case .orchestrator = self {
+
+        }
+        else if case .markdown(let path) = self { try container.encode(path, forKey: .path) }
+        else if case .image(let path) = self { try container.encode(path, forKey: .path) }
+        else if case .video(let path) = self { try container.encode(path, forKey: .path) }
+        else if case .diff(let path, let staged) = self {
             try container.encodeIfPresent(path, forKey: .path)
             if staged { try container.encode(true, forKey: .staged) }
-        case .web(let url, let options):
+        } else {
+            guard case .web(let url, let options) = self else {
+                preconditionFailure("Unexpected enum case")
+            }
             try container.encode(url, forKey: .url)
             if options != WebPaneOptions() { try container.encode(options, forKey: .options) }
         }

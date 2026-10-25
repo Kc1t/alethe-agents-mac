@@ -72,11 +72,9 @@ public struct TerminalRuntime: Hashable, Sendable {
 
 public enum ResourceSupervision {
     public static func mayHibernate(_ level: MemoryPressure, policy: ResourcePolicy) -> Bool {
-        switch policy.mode {
-        case .manual: false
-        case .pressure: level == .critical
-        case .idle: true
-        }
+        if case .manual = policy.mode { return false }
+        else if case .pressure = policy.mode { return level == .critical }
+        else { return true }
     }
 
     public static func candidates(_ runtimes: [TerminalRuntime], policy: ResourcePolicy, now: TimeInterval) -> [TabID] {

@@ -45,31 +45,24 @@ private struct Converter {
     let base: URL?
 
     func block(_ markup: Markup) -> MarkdownBlock? {
-        switch markup {
-        case let heading as Heading:
-            return .heading(level: heading.level, text: inlines(heading.children))
-        case let paragraph as Paragraph:
+        if let heading = markup as? Heading { return .heading(level: heading.level, text: inlines(heading.children)) }
+        else if let paragraph = markup as? Paragraph {
             let children = Array(paragraph.children)
-            if children.count == 1, let image = children.first as? Markdown.Image {
-                return .image(source: MarkdownBlocks.resolve(image.source, base: base), alt: image.plainText)
-            }
+            if children.count == 1,
+                let image = children.first as? Markdown.Image { return .image(source: MarkdownBlocks.resolve(image.source, base: base),
+                alt: image.plainText) }
             return .paragraph(inlines(children))
-        case let code as CodeBlock:
+        } else if let code = markup as? CodeBlock {
             let language = code.language.flatMap { $0.isEmpty ? nil : $0 }
             return .code(language: language, code: code.code.hasSuffix("\n") ? String(code.code.dropLast()) : code.code)
-        case let quote as BlockQuote:
+        } else if let quote = markup as? BlockQuote {
             return .quote(quote.children.compactMap { block($0) })
-        case let list as OrderedList:
-            return .list(ordered: true, start: Int(list.startIndex), items: items(list.children))
-        case let list as UnorderedList:
-            return .list(ordered: false, start: 1, items: items(list.children))
-        case let table as Markdown.Table:
+        }
+        else if let list = markup as? OrderedList { return .list(ordered: true, start: Int(list.startIndex), items: items(list.children)) }
+        else if let list = markup as? UnorderedList { return .list(ordered: false, start: 1, items: items(list.children)) }
+        else if let table = markup as? Markdown.Table {
             let alignments = table.columnAlignments.map { alignment -> MarkdownColumnAlignment in
-                switch alignment {
-                case .center: .center
-                case .right: .trailing
-                default: .leading
-                }
+                if case .center = alignment { return .center } else if case .right = alignment { return .trailing } else { return .leading }
             }
             let header = Array(table.head.cells.map { inlines($0.children) })
             let rows = Array(table.body.rows.map { row in Array(row.cells.map { inlines($0.children) }) })
@@ -77,13 +70,10 @@ private struct Converter {
             return .table(header: pad(header, to: width),
                           alignments: alignments + Array(repeating: .leading, count: max(0, width - alignments.count)),
                           rows: rows.map { pad($0, to: width) })
-        case is ThematicBreak:
-            return .rule
-        case let html as HTMLBlock:
-            return .html(html.rawHTML.trimmingCharacters(in: .newlines))
-        default:
-            return nil
         }
+        else if markup is ThematicBreak { return .rule }
+        else if let html = markup as? HTMLBlock { return .html(html.rawHTML.trimmingCharacters(in: .newlines)) }
+        else { return nil }
     }
 
     private func pad(_ cells: [AttributedString], to width: Int) -> [AttributedString] {
@@ -116,34 +106,25 @@ private struct Converter {
             for child in children { result += inline(child, intent: intent.union(extra)) }
             return result
         }
-        switch markup {
-        case let text as Markdown.Text:
-            return styled(text.string)
-        case let emphasis as Emphasis:
-            return nested(emphasis.children, .emphasized)
-        case let strong as Strong:
-            return nested(strong.children, .stronglyEmphasized)
-        case let strike as Strikethrough:
-            return nested(strike.children, .strikethrough)
-        case let code as InlineCode:
-            return styled(code.code, .code)
-        case let link as Markdown.Link:
+        if let text = markup as? Markdown.Text { return styled(text.string) }
+        else if let emphasis = markup as? Emphasis { return nested(emphasis.children, .emphasized) }
+        else if let strong = markup as? Strong { return nested(strong.children, .stronglyEmphasized) }
+        else if let strike = markup as? Strikethrough { return nested(strike.children, .strikethrough) }
+        else if let code = markup as? InlineCode { return styled(code.code, .code) }
+        else if let link = markup as? Markdown.Link {
             var text = nested(link.children, [])
             if let url = MarkdownBlocks.resolve(link.destination, base: base) { text.link = url }
             return text
-        case let image as Markdown.Image:
+        } else if let image = markup as? Markdown.Image {
             var text = styled(image.plainText.isEmpty ? (image.source ?? "") : image.plainText)
             if let url = MarkdownBlocks.resolve(image.source, base: base) { text.link = url }
             return text
-        case is SoftBreak:
-            return styled(" ")
-        case is LineBreak:
-            return styled("\n")
-        case let html as InlineHTML:
-            return styled(html.rawHTML, .code)
-        case let symbol as SymbolLink:
-            return styled(symbol.destination ?? "", .code)
-        default:
+        }
+        else if markup is SoftBreak { return styled(" ") }
+        else if markup is LineBreak { return styled("\n") }
+        else if let html = markup as? InlineHTML { return styled(html.rawHTML, .code) }
+        else if let symbol = markup as? SymbolLink { return styled(symbol.destination ?? "", .code) }
+        else {
             if let container = markup as? InlineContainer { return nested(container.children, []) }
             return styled(markup.format())
         }

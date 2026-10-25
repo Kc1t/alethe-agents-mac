@@ -138,9 +138,7 @@ extension WorkspaceDocument {
         }
         updatePane(paneID) { $0.gridID = gridID }
         if workspace.isolatedPaneID == paneID { workspace.isolatedPaneID = nil }
-        if workspace.focusedPaneID == paneID {
-            workspace.focusedPaneID = self.project(project.id)?.visiblePanes.first?.id
-        }
+        if workspace.focusedPaneID == paneID { workspace.focusedPaneID = self.project(project.id)?.visiblePanes.first?.id }
     }
 
     public mutating func deleteGrid(_ gridID: ProjectGridID, in projectID: ProjectID, closingPanes: Bool) {

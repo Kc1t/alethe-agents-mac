@@ -1,24 +1,24 @@
 import SwiftUI
 
-public extension Motion {
-    static func sidebarColor(reduceMotion: Bool) -> Animation? {
+extension Motion {
+    public static func sidebarColor(reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : .timingCurve(0.25, 0.1, 0.25, 1, duration: 0.14)
     }
 
-    static func sidebarOpacity(reduceMotion: Bool) -> Animation? {
+    public static func sidebarOpacity(reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : .timingCurve(0.25, 0.1, 0.25, 1, duration: 0.12)
     }
 
-    static func sidebarChevron(reduceMotion: Bool) -> Animation? {
+    public static func sidebarChevron(reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : .timingCurve(0.16, 1, 0.3, 1, duration: 0.16)
     }
 
-    static func sidebarDrag(reduceMotion: Bool) -> Animation? {
+    public static func sidebarDrag(reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : .timingCurve(0.16, 1, 0.3, 1, duration: 0.18)
     }
 
-    static let sidebarDotPeriod = 1.8 / 1.2
-    static func sidebarDotAppearance(elapsed: Double, order: Int) -> (opacity: Double, size: CGFloat) {
+    public static let sidebarDotPeriod = 1.8 / 1.2
+    public static func sidebarDotAppearance(elapsed: Double, order: Int) -> (opacity: Double, size: CGFloat) {
         let phase = (max(0, elapsed) + Double(order) * 0.05 / 1.2)
             .truncatingRemainder(dividingBy: sidebarDotPeriod) / sidebarDotPeriod
         let opacity = sidebarSteppedValue(phase, stops: [
@@ -46,13 +46,10 @@ public extension Motion {
         return stops.last?.1 ?? 0
     }
 
-    enum SidebarSpinner: Sendable {
+    public enum SidebarSpinner: Sendable {
         case mcp, pullRequests
         public var period: Double {
-            switch self {
-            case .mcp: 0.9
-            case .pullRequests: 1
-            }
+            if case .mcp = self { return 0.9 } else { return 1 }
         }
     }
 }
@@ -90,9 +87,9 @@ public struct AletheAnimatedRightSidebarTabStyle: ButtonStyle {
     }
     @Environment(\.metrics) private var metrics
     @ViewBuilder public func makeBody(configuration: Configuration) -> some View {
-        if metrics.isWebInterface {
-            AnimatedRightSidebarTabBody(configuration: configuration, selected: selected, width: width, height: height)
-        } else {
+        if metrics.isWebInterface { AnimatedRightSidebarTabBody(configuration: configuration, selected: selected,
+            width: width, height: height) }
+        else {
             AletheRightSidebarTabStyle(selected: selected, width: width, height: height)
                 .makeBody(configuration: configuration)
         }

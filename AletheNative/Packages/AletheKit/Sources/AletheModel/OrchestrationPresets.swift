@@ -9,11 +9,9 @@ extension OrchestrationPreferences {
         let builder = OrchestrationRole(name: "builder", agent: "claude", model: "sonnet", effort: "medium", fallback: "codex-builder")
         let expert = OrchestrationRole(name: "expert", agent: "claude", model: "opus", effort: "high", fallback: "builder")
         let owned: [OrchestrationRole]
-        switch preset {
-        case "economy": owned = [scout, handyman, .init(name: "builder", effort: "medium", fallback: "scout")]
-        case "performance": owned = [builder, codexBuilder, expert]
-        default: owned = [scout, handyman, builder, codexBuilder, expert]
-        }
+        if case "economy" = preset { owned = [scout, handyman, .init(name: "builder", effort: "medium", fallback: "scout")] }
+        else if case "performance" = preset { owned = [builder, codexBuilder, expert] }
+        else { owned = [scout, handyman, builder, codexBuilder, expert] }
         roles = owned + roles.filter { current in !owned.contains { $0.name == current.name } }
         func rule(_ role: String, kinds: [String] = [], efforts: [String] = [], gate: Int? = nil) -> OrchestrationRoutingRule {
             var rule = OrchestrationRoutingRule(role: role)
@@ -21,11 +19,12 @@ extension OrchestrationPreferences {
             if let gate { var quota = OrchestrationQuotaGate(); quota.window = "opus"; quota.below = gate; rule.gates = [quota] }
             return rule
         }
-        switch preset {
-        case "economy": routing.rules = [rule("scout", kinds: ["research", "scrap", "docs"]), rule("scout", efforts: ["light"]), rule("handyman", kinds: ["review"]), rule("builder", efforts: ["standard", "deep"])]
-        case "performance": routing.rules = [rule("builder", efforts: ["light"]), rule("expert", efforts: ["deep"], gate: 80), rule("builder")]
-        default: routing.rules = [rule("scout", kinds: ["research", "scrap", "docs"]), rule("scout", efforts: ["light"]), rule("handyman", kinds: ["review"]), rule("expert", efforts: ["deep"], gate: 50), rule("builder")]
-        }
+        if case "economy" = preset { routing.rules = [rule("scout", kinds: ["research", "scrap", "docs"]), rule("scout",
+            efforts: ["light"]), rule("handyman", kinds: ["review"]), rule("builder", efforts: ["standard", "deep"])] }
+        else if case "performance" = preset { routing.rules = [rule("builder", efforts: ["light"]), rule("expert",
+            efforts: ["deep"], gate: 80), rule("builder")] }
+        else { routing.rules = [rule("scout", kinds: ["research", "scrap", "docs"]), rule("scout", efforts: ["light"]),
+            rule("handyman", kinds: ["review"]), rule("expert", efforts: ["deep"], gate: 50), rule("builder")] }
         routing.preset = preset
         self = normalized
     }
