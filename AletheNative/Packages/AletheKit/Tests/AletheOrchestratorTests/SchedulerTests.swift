@@ -274,7 +274,10 @@ private func next(_ iterator: inout AsyncStream<BusEvent>.AsyncIterator) async -
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         let json = String(decoding: try encoder.encode(task), as: UTF8.self)
-        #expect(json == #"{"assignedAgentId":null,"dependencies":[],"id":"p-1","leaseResource":null,"priority":0,"projectId":"p","status":"ready","title":"t","worktreePath":null}"#)
+        #expect(json == #"""
+            {"assignedAgentId":null,"dependencies":[],"id":"p-1","leaseResource":null,"priority":0,"projectId"\#
+            :"p","status":"ready","title":"t","worktreePath":null}
+            """#)
         #expect(try JSONDecoder().decode(SchedulerTask.self, from: Data(json.utf8)) == task)
     }
 }

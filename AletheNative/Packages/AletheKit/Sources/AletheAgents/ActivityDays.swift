@@ -45,9 +45,9 @@ public enum ActivityDays {
 
     public static func streak(_ days: [Day]) -> Int {
         var index = days.count - 1
-        while index >= 0, days[index].count == 0 { index -= 1 }
+        while index >= 0, days[index].count == .zero { index -= 1 }
         var streak = 0
-        while index >= 0, days[index].count > 0 {
+        while index >= 0, days[index].count > .zero {
             streak += 1
             index -= 1
         }
@@ -77,7 +77,8 @@ public enum ActivityDays {
         }
         defer { sqlite3_close(handle) }
         var statement: OpaquePointer?
-        guard sqlite3_prepare_v2(handle, "SELECT time_created FROM message WHERE time_created >= ?1", -1, &statement, nil) == SQLITE_OK else { return }
+        guard sqlite3_prepare_v2(handle, "SELECT time_created FROM message WHERE time_created >= ?1", -1, &statement,
+            nil) == SQLITE_OK else { return }
         defer { sqlite3_finalize(statement) }
         sqlite3_bind_int64(statement, 1, Int64(start.timeIntervalSince1970 * 1000))
         while sqlite3_step(statement) == SQLITE_ROW {
@@ -91,7 +92,10 @@ public enum ActivityDays {
 
     static func day(_ date: Date) -> String {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC")!
+        guard let timeZone = TimeZone(identifier: "UTC") else {
+            preconditionFailure("UTC time zone must be available")
+        }
+        calendar.timeZone = timeZone
         let parts = calendar.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
     }

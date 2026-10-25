@@ -6,38 +6,53 @@ import AletheIntegrations
 private enum Transcript {
     static let alpha = """
     {"id":1,"result":{"userAgent":"codex_app_server/0.46.0","platformFamily":"unix","platformOs":"macos"}}
-    {"id":2,"result":{"thread":{"id":"thr_alpha","preview":"","modelProvider":"openai","createdAt":1758800000},"model":"gpt-5-codex","cwd":"/tmp/alethe-orch-parallel","approvalPolicy":"never","sandbox":{"type":"workspaceWrite"}}}
+    {"id":2,"result":{"thread":{"id":"thr_alpha","preview":"","modelProvider":"openai","createdAt":1758800000}\
+    ,"model":"gpt-5-codex","cwd":"/tmp/alethe-orch-parallel","approvalPolicy":"never","sandbox":{"type":"works\
+    paceWrite"}}}
     {"method":"thread/started","params":{"thread":{"id":"thr_alpha"}}}
     {"id":3,"result":{"turn":{"id":"turn_1","items":[],"status":"inProgress"}}}
     {"method":"turn/started","params":{"threadId":"thr_alpha","turn":{"id":"turn_1","items":[],"status":"inProgress"}}}
-    {"method":"turn/plan/updated","params":{"threadId":"thr_alpha","turnId":"turn_1","explanation":null,"plan":[{"step":"Create ALPHA.txt","status":"inProgress"},{"step":"Confirm its content","status":"pending"}]}}
+    {"method":"turn/plan/updated","params":{"threadId":"thr_alpha","turnId":"turn_1","explanation":null,"plan"\
+    :[{"step":"Create ALPHA.txt","status":"inProgress"},{"step":"Confirm its content","status":"pending"}]}}
     {"method":"item/started","params":{"threadId":"thr_alpha","turnId":"turn_1","item":{"type":"agentMessage","id":"msg_1","text":""}}}
     {"method":"item/agentMessage/delta","params":{"threadId":"thr_alpha","turnId":"turn_1","itemId":"msg_1","delta":"Creating ALPHA.txt "}}
     {"method":"item/agentMessage/delta","params":{"threadId":"thr_alpha","turnId":"turn_1","itemId":"msg_1","delta":"now."}}
-    {"method":"item/completed","params":{"threadId":"thr_alpha","turnId":"turn_1","item":{"type":"agentMessage","id":"msg_1","text":"Creating ALPHA.txt now."}}}
-    {"method":"item/completed","params":{"threadId":"thr_alpha","turnId":"turn_1","item":{"type":"fileChange","id":"fc_1","changes":[{"path":"ALPHA.txt","kind":"add"}],"status":"completed"}}}
-    {"method":"turn/diff/updated","params":{"threadId":"thr_alpha","turnId":"turn_1","diff":"diff --git a/ALPHA.txt b/ALPHA.txt\\nnew file mode 100644\\n--- /dev/null\\n+++ b/ALPHA.txt\\n@@ -0,0 +1 @@\\n+ALPHA\\n"}}
-    {"method":"thread/tokenUsage/updated","params":{"threadId":"thr_alpha","turnId":"turn_1","tokenUsage":{"total":{"totalTokens":5120,"inputTokens":4800,"cachedInputTokens":3072,"outputTokens":320,"reasoningOutputTokens":64},"last":{"totalTokens":5120,"inputTokens":4800,"cachedInputTokens":3072,"outputTokens":320,"reasoningOutputTokens":64},"modelContextWindow":272000}}}
-    {"method":"item/completed","params":{"threadId":"thr_alpha","turnId":"turn_1","item":{"type":"agentMessage","id":"msg_2","text":"  Created ALPHA.txt containing ALPHA.  "}}}
+    {"method":"item/completed","params":{"threadId":"thr_alpha","turnId":"turn_1","item":{"type":"agentMessage\
+    ","id":"msg_1","text":"Creating ALPHA.txt now."}}}
+    {"method":"item/completed","params":{"threadId":"thr_alpha","turnId":"turn_1","item":{"type":"fileChange",\
+    "id":"fc_1","changes":[{"path":"ALPHA.txt","kind":"add"}],"status":"completed"}}}
+    {"method":"turn/diff/updated","params":{"threadId":"thr_alpha","turnId":"turn_1","diff":"diff --git a/ALPH\
+    A.txt b/ALPHA.txt\\nnew file mode 100644\\n--- /dev/null\\n+++ b/ALPHA.txt\\n@@ -0,0 +1 @@\\n+ALPHA\\n"}}
+    {"method":"thread/tokenUsage/updated","params":{"threadId":"thr_alpha","turnId":"turn_1","tokenUsage":{"to\
+    tal":{"totalTokens":5120,"inputTokens":4800,"cachedInputTokens":3072,"outputTokens":320,"reasoningOutputTo\
+    kens":64},"last":{"totalTokens":5120,"inputTokens":4800,"cachedInputTokens":3072,"outputTokens":320,"reaso\
+    ningOutputTokens":64},"modelContextWindow":272000}}}
+    {"method":"item/completed","params":{"threadId":"thr_alpha","turnId":"turn_1","item":{"type":"agentMessage\
+    ","id":"msg_2","text":"  Created ALPHA.txt containing ALPHA.  "}}}
     {"method":"turn/completed","params":{"threadId":"thr_alpha","turn":{"id":"turn_1","items":[],"status":"completed"}}}
     """
 
     static let alphaWritten = """
-    {"id":1,"method":"initialize","params":{"clientInfo":{"name":"alethe-orchestrator","title":"Alethe","version":"1"},"capabilities":{"experimentalApi":true}}}
+    {"id":1,"method":"initialize","params":{"clientInfo":{"name":"alethe-orchestrator","title":"Alethe","versi\
+    on":"1"},"capabilities":{"experimentalApi":true}}}
     {"method":"initialized"}
-    {"id":2,"method":"thread/start","params":{"cwd":"/tmp/alethe-orch-parallel","approvalPolicy":"never","approvalsReviewer":"user","sandbox":"workspace-write","config":{"tools":{"web_search":{"mode":"disabled"}}}}}
-    {"id":3,"method":"turn/start","params":{"threadId":"thr_alpha","input":[{"type":"text","text":"Create a file ALPHA.txt whose entire content is the word ALPHA."}],"approvalPolicy":"never"}}
+    {"id":2,"method":"thread/start","params":{"cwd":"/tmp/alethe-orch-parallel","approvalPolicy":"never","appr\
+    ovalsReviewer":"user","sandbox":"workspace-write","config":{"tools":{"web_search":{"mode":"disabled"}}}}}
+    {"id":3,"method":"turn/start","params":{"threadId":"thr_alpha","input":[{"type":"text","text":"Create a fi\
+    le ALPHA.txt whose entire content is the word ALPHA."}],"approvalPolicy":"never"}}
     """
 
     static let blocked = """
     {"id":1,"result":{"userAgent":"codex_app_server/0.46.0"}}
     {"id":2,"result":{"thread":{"id":"thr_ask"}}}
     {"method":"turn/started","params":{"threadId":"thr_ask","turn":{"id":"turn_7","items":[],"status":"inProgress"}}}
-    {"id":0,"method":"item/commandExecution/requestApproval","params":{"threadId":"thr_ask","turnId":"turn_7","itemId":"cmd_1","command":"curl -sSf https://example.com","cwd":"/tmp/repo","reason":"needs network access"}}
+    {"id":0,"method":"item/commandExecution/requestApproval","params":{"threadId":"thr_ask",\
+    "turnId":"turn_7","itemId":"cmd_1","command":"curl -sSf https://example.com","cwd":"/tmp/repo","reason":"needs network access"}}
     """
 
     static let blockedAfterAnswer = """
-    {"method":"item/completed","params":{"threadId":"thr_ask","turnId":"turn_7","item":{"type":"agentMessage","id":"msg_1","text":"Fetched the page."}}}
+    {"method":"item/completed","params":{"threadId":"thr_ask","turnId":"turn_7","item":{"type":"agentMessage",\
+    "id":"msg_1","text":"Fetched the page."}}}
     {"method":"turn/completed","params":{"threadId":"thr_ask","turn":{"id":"turn_7","items":[],"status":"completed"}}}
     """
 
@@ -123,12 +138,18 @@ private func alphaSession() -> CodexWorkerSession {
                       approvalPolicy: policy.approvalPolicy, sandbox: policy.sandbox)
         var session = CodexWorkerSession(job: job, firstTurn: job.spec)
         let opening = try #require(session.handshake().last)
-        #expect(opening.compactRendered() == #"{"id":2,"method":"thread/start","params":{"cwd":"/tmp/repo","approvalPolicy":{"granular":{"sandbox_approval":true,"request_permissions":true,"rules":true,"skill_approval":true,"mcp_elicitations":true}},"approvalsReviewer":"user","sandbox":"workspace-write","config":{"tools":{"web_search":{"mode":"disabled"}}}}}"#)
+        #expect(opening.compactRendered() == #"""
+            {"id":2,"method":"thread/start","params":{"cwd":"/tmp/repo","approvalPolicy":{"granular":{"sandbox\#
+            _approval":true,"request_permissions":true,"rules":true,"skill_approval":true,"mcp_elicitations":t\#
+            rue}},"approvalsReviewer":"user","sandbox":"workspace-write","config":{"tools":{"web_search":{"mod\#
+            e":"disabled"}}}}}
+            """#)
 
         let asked = replay(&session, Transcript.blocked, nowMs: 1_700)
         for event in asked.events { job.apply(event) }
         #expect(job.status == .blocked)
-        #expect(job.pending?.compactRendered() == #"{"rpcId":0,"kind":"command","command":"curl -sSf https://example.com","cwd":"/tmp/repo","reason":"needs network access","askedAtMs":1700}"#)
+        #expect(job.pending?.compactRendered() == #"{"rpcId":0,"kind":"command","command":"curl -sSf https://example.com","# +
+            #""cwd":"/tmp/repo","reason":"needs network access","askedAtMs":1700}"#)
         #expect(asked.outgoing.count == 1)
 
         let answer = try session.answer("accept")
@@ -162,7 +183,10 @@ private func alphaSession() -> CodexWorkerSession {
         let step = session.receive(line: #"{"id":2,"result":{"thread":{"id":"thr_old"}}}"#)
         #expect(step.events == [.threadReady(threadID: "thr_old")])
         #expect(rendered(step.outgoing) == [
-            #"{"id":3,"method":"turn/start","params":{"threadId":"thr_old","input":[{"type":"text","text":"the follow-up"}],"approvalPolicy":"never"}}"#,
+            #"""
+                {"id":3,"method":"turn/start","params":{"threadId":"thr_old","input":[{"type":"text","text":"t\#
+                he follow-up"}],"approvalPolicy":"never"}}
+                """#,
         ])
     }
 
@@ -178,7 +202,9 @@ private func alphaSession() -> CodexWorkerSession {
 
     @Test func aFileChangeApprovalIsItsOwnKind() {
         var session = alphaSession()
-        let step = session.receive(line: #"{"id":5,"method":"item/fileChange/requestApproval","params":{"reason":"outside the workspace"}}"#, nowMs: 9)
+        let step = session.receive(line: #"""
+            {"id":5,"method":"item/fileChange/requestApproval","params":{"reason":"outside the workspace"}}
+            """#, nowMs: 9)
         #expect(step.events == [.approvalRequested(CodexApprovalRequest(
             rpcID: 5, kind: .fileChange, command: nil, cwd: nil, reason: "outside the workspace", askedAtMs: 9
         ))])
@@ -249,11 +275,17 @@ private func alphaSession() -> CodexWorkerSession {
         _ = session.receive(line: #"{"id":2,"result":{"thread":{"id":"thr"}}}"#)
         _ = session.receive(line: #"{"method":"turn/started","params":{"turn":{"id":"t1"}}}"#)
         let steer = try session.steer("focus on tests")
-        #expect(steer.compactRendered() == #"{"id":11,"method":"turn/steer","params":{"threadId":"thr","input":[{"type":"text","text":"focus on tests"}],"expectedTurnId":"t1"}}"#)
+        #expect(steer.compactRendered() == #"""
+            {"id":11,"method":"turn/steer","params":{"threadId":"thr","input":[{"type":"text","text":"focus on\#
+             tests"}],"expectedTurnId":"t1"}}
+            """#)
         _ = session.receive(line: #"{"method":"turn/completed","params":{}}"#)
         #expect(throws: OrchestratorToolError("job job-01 has no running turn to steer")) { try session.steer("late") }
         let next = try session.startTurn("and now the docs")
-        #expect(next.compactRendered() == #"{"id":12,"method":"turn/start","params":{"threadId":"thr","input":[{"type":"text","text":"and now the docs"}],"approvalPolicy":"never"}}"#)
+        #expect(next.compactRendered() == #"""
+            {"id":12,"method":"turn/start","params":{"threadId":"thr","input":[{"type":"text","text":"and now \#
+            the docs"}],"approvalPolicy":"never"}}
+            """#)
         #expect(session.reply.isEmpty && session.report.isEmpty)
     }
 

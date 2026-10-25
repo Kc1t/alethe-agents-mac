@@ -30,7 +30,10 @@ struct AIUsageTests {
     }
 
     @Test func claudeWindows() throws {
-        let body = Data(#"{"five_hour":{"utilization":42.5,"resets_at":"2026-09-25T15:00:00.123Z"},"seven_day":{"utilization":100,"resets_at":"2026-09-30T00:00:00Z"},"seven_day_opus":null}"#.utf8)
+        let body = Data(#"""
+            {"five_hour":{"utilization":42.5,"resets_at":"2026-09-25T15:00:00.123Z"},"seven_day":{"utilization\#
+            ":100,"resets_at":"2026-09-30T00:00:00Z"},"seven_day_opus":null}
+            """#.utf8)
         let usage = try #require(AIUsage.parseClaude(body))
         #expect(usage.windows.map(\.label) == ["5h", "7d"])
         #expect(usage.windows[0].usedPercent == 42.5)

@@ -42,10 +42,12 @@ public enum McpLaunchConfig {
     }
 
     public static func file(for kind: AgentKind, servers: [McpLaunchServer]) -> Data? {
-        switch kind {
-        case .claude: claudeConfig(servers)
-        case .opencode: opencodeConfig(servers)
-        default: nil
+        if case .claude = kind {
+            return claudeConfig(servers)
+        } else if case .opencode = kind {
+            return opencodeConfig(servers)
+        } else {
+            return nil
         }
     }
 
@@ -105,18 +107,23 @@ public enum McpLaunchConfig {
         return key.isEmpty ? "_" : key
     }
 
+    private static let escapedScalars: [Unicode.Scalar: String] = [
+        "\\": "\\\\",
+        "\"": "\\\"",
+        "\n": "\\n",
+        "\r": "\\r",
+        "\t": "\\t",
+    ]
+
     static func tomlString(_ value: String) -> String {
         var out = "\""
         for scalar in value.unicodeScalars {
-            switch scalar {
-            case "\\": out += "\\\\"
-            case "\"": out += "\\\""
-            case "\n": out += "\\n"
-            case "\r": out += "\\r"
-            case "\t": out += "\\t"
-            case _ where scalar.value < 0x20 || scalar.value == 0x7F:
+            if let escaped = escapedScalars[scalar] {
+                out += escaped
+            } else if scalar.value < 0x20 || scalar.value == 0x7F {
                 out += String(format: "\\u%04X", scalar.value)
-            default: out.unicodeScalars.append(scalar)
+            } else {
+                out.unicodeScalars.append(scalar)
             }
         }
         return out + "\""

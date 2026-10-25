@@ -17,20 +17,28 @@ public struct QueueItem: Codable, Hashable, Sendable, Identifiable {
         case cancelled
 
         public var pending: Bool {
-            switch self {
-            case .queued, .waitingLimit: true
-            default: false
+            if case .queued = self {
+                return true
+            } else if case .waitingLimit = self {
+                return true
+            } else {
+                return false
             }
         }
 
         public var name: String {
-            switch self {
-            case .queued: "queued"
-            case .waitingLimit: "waitingLimit"
-            case .running: "running"
-            case .done: "done"
-            case .failed: "failed"
-            case .cancelled: "cancelled"
+            if case .queued = self {
+                return "queued"
+            } else if case .waitingLimit = self {
+                return "waitingLimit"
+            } else if case .running = self {
+                return "running"
+            } else if case .done = self {
+                return "done"
+            } else if case .failed = self {
+                return "failed"
+            } else {
+                return "cancelled"
             }
         }
     }
@@ -92,10 +100,15 @@ public struct QueueItem: Codable, Hashable, Sendable, Identifiable {
             "state": .string(state.name),
             "resetsAt": .optional(resetsAt?.ISO8601Format()),
         ]
-        switch release {
-        case .whenAgentHasRoom: object["release"] = "whenAgentHasRoom"
-        case .at(let date): object["at"] = .string(date.ISO8601Format())
-        case .afterJob(let id): object["afterJob"] = .string(id)
+        if case .whenAgentHasRoom = release {
+            object["release"] = "whenAgentHasRoom"
+        } else if case .at(let date) = release {
+            object["at"] = .string(date.ISO8601Format())
+        } else {
+            guard case .afterJob(let id) = release else {
+                preconditionFailure("Invalid enum case")
+            }
+            object["afterJob"] = .string(id)
         }
         if case .running(let id) = state { object["jobId"] = .string(id) }
         return .object(object)
@@ -112,10 +125,15 @@ public struct QueueItem: Codable, Hashable, Sendable, Identifiable {
         }
         if let fitness, fitness.isStrained,
            fitness.resetsAt.map({ $0 > now }) ?? true { return false }
-        switch release {
-        case .whenAgentHasRoom: return true
-        case .at(let date): return date <= now
-        case .afterJob(let id): return settledJobs.contains(id)
+        if case .whenAgentHasRoom = release {
+            return true
+        } else if case .at(let date) = release {
+            return date <= now
+        } else {
+            guard case .afterJob(let id) = release else {
+                preconditionFailure("Invalid enum case")
+            }
+            return settledJobs.contains(id)
         }
     }
 }

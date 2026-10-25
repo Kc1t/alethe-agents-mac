@@ -50,16 +50,15 @@ public enum OrchestratorMCP {
         let params = message["params"]?.objectValue ?? [:]
 
         let response: OrderedJSON
-        switch method {
-        case "initialize":
+        if case "initialize" = method {
             response = result(id: id, [
                 "protocolVersion": .string(params["protocolVersion"]?.stringValue ?? defaultProtocolVersion),
                 "capabilities": ["tools": ["listChanged": false]],
                 "serverInfo": ["name": .string(serverName), "title": "Alethe", "version": "1"],
             ])
-        case "tools/list":
+        } else if case "tools/list" = method {
             response = result(id: id, ["tools": tools])
-        case "tools/call":
+        } else if case "tools/call" = method {
             let name = params["name"]?.stringValue ?? ""
             let arguments = params["arguments"]?.objectValue ?? [:]
             do {
@@ -72,9 +71,9 @@ public enum OrchestratorMCP {
                     "isError": true,
                 ])
             }
-        case "ping":
+        } else if case "ping" = method {
             response = result(id: id, [:])
-        default:
+        } else {
             response = [
                 "jsonrpc": "2.0",
                 "id": id,

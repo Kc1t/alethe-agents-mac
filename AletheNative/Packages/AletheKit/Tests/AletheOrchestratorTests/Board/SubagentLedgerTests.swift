@@ -10,9 +10,15 @@ import AletheAgents
 
     @Test func aSubagentTakesTheOldestPromptOfItsTypeAndFinishes() throws {
         var ledger = SubagentLedger()
-        _ = ledger.ingest(try hook(#"{"hook_event_name":"PreToolUse","tool_name":"Agent","tool_input":{"subagent_type":"Explore","description":"Find the parser","prompt":"Look for it"}}"#),
+        _ = ledger.ingest(try hook(#"""
+            {"hook_event_name":"PreToolUse","tool_name":"Agent","tool_input":{"subagent_type":"Explore","descr\#
+            iption":"Find the parser","prompt":"Look for it"}}
+            """#),
                           planner: "pty-1", sourceAgent: "claude", nowMs: 0)
-        _ = ledger.ingest(try hook(#"{"hook_event_name":"PreToolUse","tool_name":"Task","tool_input":{"subagent_type":"Explore","prompt":"Second"}}"#),
+        _ = ledger.ingest(try hook(#"""
+            {"hook_event_name":"PreToolUse","tool_name":"Task","tool_input":{"subagent_type":"Explore","prompt\#
+            ":"Second"}}
+            """#),
                           planner: "pty-1", sourceAgent: "claude", nowMs: 0)
         let started = ledger.ingest(try hook(#"{"hook_event_name":"SubagentStart","agent_id":"a1","agent_type":"Explore"}"#),
                                     planner: "pty-1", sourceAgent: "claude", nowMs: 1_000)
@@ -22,7 +28,10 @@ import AletheAgents
         #expect(ledger.nodes.map(\.prompt) == ["Find the parser", "Second"])
         #expect(ledger.nodes.allSatisfy { $0.status == .running && $0.plannerID == "pty-1" && $0.kind == .subagent })
 
-        let stopped = ledger.ingest(try hook(#"{"hook_event_name":"SubagentStop","agent_id":"a1","last_assistant_message":"Found it","agent_transcript_path":"/t/a1.jsonl"}"#),
+        let stopped = ledger.ingest(try hook(#"""
+            {"hook_event_name":"SubagentStop","agent_id":"a1","last_assistant_message":"Found it","agent_trans\#
+            cript_path":"/t/a1.jsonl"}
+            """#),
                                     planner: "pty-1", sourceAgent: "claude", nowMs: 4_000)
         #expect(stopped.transcript == SubagentLedger.Transcript(nodeID: "a1", path: "/t/a1.jsonl"))
         #expect(ledger.nodes[0].status == .done && ledger.nodes[0].endedAt == 4_000 && ledger.nodes[0].result == "Found it")
@@ -44,7 +53,10 @@ import AletheAgents
 
     @Test func teammatesAreOneNodeAcrossTheirTurns() throws {
         var ledger = SubagentLedger()
-        _ = ledger.ingest(try hook(#"{"hook_event_name":"PreToolUse","tool_name":"Agent","tool_input":{"name":"reviewer","team_name":"squad","prompt":"Review"}}"#),
+        _ = ledger.ingest(try hook(#"""
+            {"hook_event_name":"PreToolUse","tool_name":"Agent","tool_input":{"name":"reviewer","team_name":"s\#
+            quad","prompt":"Review"}}
+            """#),
                           planner: "pty-1", sourceAgent: "claude", nowMs: 0)
         _ = ledger.ingest(try hook(#"{"hook_event_name":"SubagentStart","agent_id":"i1","agent_type":"reviewer"}"#),
                           planner: "pty-1", sourceAgent: "claude", nowMs: 1)
@@ -64,14 +76,23 @@ import AletheAgents
 
     @Test func backgroundShellsRunUntilTheyAreStopped() throws {
         var ledger = SubagentLedger()
-        _ = ledger.ingest(try hook(#"{"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"npm run dev","run_in_background":true},"tool_response":{"backgroundTaskId":"sh1"}}"#),
+        _ = ledger.ingest(try hook(#"""
+            {"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"npm run dev","run_in_\#
+            background":true},"tool_response":{"backgroundTaskId":"sh1"}}
+            """#),
                           planner: "pty-1", sourceAgent: "claude", nowMs: 0)
         #expect(ledger.nodes.first?.id == "background:sh1" && ledger.nodes.first?.kind == .background)
         #expect(ledger.nodes.first?.prompt == "npm run dev")
-        _ = ledger.ingest(try hook(#"{"hook_event_name":"PostToolUse","tool_name":"KillShell","tool_input":{"shell_id":"sh1"},"tool_response":{"message":"Killed"}}"#),
+        _ = ledger.ingest(try hook(#"""
+            {"hook_event_name":"PostToolUse","tool_name":"KillShell","tool_input":{"shell_id":"sh1"},"tool_res\#
+            ponse":{"message":"Killed"}}
+            """#),
                           planner: "pty-1", sourceAgent: "claude", nowMs: 9)
         #expect(ledger.nodes.first?.status == .done && ledger.nodes.first?.result == "Killed")
-        #expect(ledger.ingest(try hook(#"{"hook_event_name":"PostToolUse","agent_id":"a1","tool_name":"Bash","tool_input":{"run_in_background":true},"tool_response":{"backgroundTaskId":"sh2"}}"#),
+        #expect(ledger.ingest(try hook(#"""
+            {"hook_event_name":"PostToolUse","agent_id":"a1","tool_name":"Bash","tool_input":{"run_in_backgrou\#
+            nd":true},"tool_response":{"backgroundTaskId":"sh2"}}
+            """#),
                               planner: "pty-1", sourceAgent: "claude", nowMs: 10) == .none)
     }
 

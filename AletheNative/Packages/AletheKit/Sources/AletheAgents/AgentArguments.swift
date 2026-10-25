@@ -17,30 +17,29 @@ public struct AgentArguments: Equatable, Sendable {
         sessionID: String? = nil,
         makeSessionID: () -> String = { UUID().uuidString.lowercased() }
     ) -> AgentArguments {
-        switch kind {
-        case .claude:
+        if case .claude = kind {
             let clean = stripping(base, flagsWithValue: ["--resume", "-r", "--session-id"], flags: ["--continue", "-c"])
             if let sessionID {
                 return AgentArguments(arguments: ["--resume", sessionID] + clean, sessionID: sessionID)
             }
             let created = makeSessionID()
             return AgentArguments(arguments: ["--session-id", created] + clean, sessionID: created, createdSession: true)
-        case .codex:
+        } else if case .codex = kind {
             let clean = strippingCodexResume(base)
             return AgentArguments(arguments: sessionID.map { ["resume", $0] + clean } ?? clean, sessionID: sessionID)
-        case .opencode:
+        } else if case .opencode = kind {
             let clean = stripping(base, flagsWithValue: ["--session", "-s"], flags: ["--continue", "-c", "--resume"])
             return AgentArguments(arguments: sessionID.map { ["--session", $0] + clean } ?? clean, sessionID: sessionID)
-        case .antigravity:
+        } else if case .antigravity = kind {
             let clean = stripping(base, flagsWithValue: ["--conversation"], flags: ["--continue", "-c"])
             return AgentArguments(arguments: sessionID.map { ["--conversation", $0] + clean } ?? clean, sessionID: sessionID)
-        case .kiro:
+        } else if case .kiro = kind {
             return AgentArguments(arguments: ["chat"] + base)
-        case .cursor:
+        } else if case .cursor = kind {
             let clean = stripping(base, flagsWithValue: ["--resume"], flags: ["--continue"])
                 .filter { !$0.hasPrefix("--resume=") }
             return AgentArguments(arguments: sessionID.map { ["--resume", $0] + clean } ?? clean, sessionID: sessionID)
-        default:
+        } else {
             return AgentArguments(arguments: base)
         }
     }

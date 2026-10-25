@@ -24,151 +24,8 @@ public enum BoardLayout {
         mediaByJobID: [String: MediaItem] = [:]
     ) -> BoardGraph {
         guard !runs.isEmpty else { return .empty }
-
-        func height(_ id: String) -> Double {
-            if let measured = heights[id], measured > 0 { return jsRound(measured) }
-            return defaultNodeHeight
-        }
-
-        let spans = runs.map { run -> Double in
-            let count = Double(run.jobs.count)
-            return run.jobs.isEmpty ? nodeWidth : count * nodeWidth + (count - 1) * siblingGap
-        }
-        var lefts: [Double] = []
-        var cursor = canvasPadding
-        for span in spans {
-            lefts.append(cursor)
-            cursor += span + treeGap
-        }
-
-        let plannerHeight = plannerID.map { height(plannerNodeID($0)) } ?? 0
-        let runTop = canvasPadding + (plannerID != nil ? plannerHeight + levelGap : 0)
-        let runHeights = runs.map { height(rootNodeID($0.id)) }
-        let workerTop = runTop + (runHeights.max() ?? 0) + levelGap
-
-        let roots = runs.indices.map { index in
-            GraphNode(
-                id: rootNodeID(runs[index].id),
-                kind: .run,
-                depth: plannerID != nil ? 1 : 0,
-                index: index,
-                x: jsRound(lefts[index] + (spans[index] - nodeWidth) / 2),
-                y: runTop,
-                width: nodeWidth,
-                height: runHeights[index]
-            )
-        }
-
-        var workers: [GraphNode] = []
-        var media: [GraphNode] = []
-        var trees: [GraphTree] = []
-        var runEdges: [GraphEdge] = []
-
-        for (index, run) in runs.enumerated() {
-            let root = roots[index]
-            var bottom = root.y + root.height
-
-            for (column, job) in run.jobs.enumerated() {
-                let node = GraphNode(
-                    id: job.id,
-                    kind: .worker,
-                    depth: root.depth + 1,
-                    index: column,
-                    x: lefts[index] + Double(column) * (nodeWidth + siblingGap),
-                    y: workerTop,
-                    width: nodeWidth,
-                    height: height(job.id)
-                )
-                workers.append(node)
-                bottom = max(bottom, node.y + node.height)
-                let lane = RunLane(job.status)
-                let start = BoardPoint(x: root.centerX, y: root.y + root.height)
-                let end = BoardPoint(x: node.centerX, y: node.y)
-                let label = connectorLabelPoint(from: start, to: end)
-                runEdges.append(GraphEdge(
-                    id: "\(root.id)->\(node.id)",
-                    from: root.id,
-                    to: node.id,
-                    lane: lane,
-                    start: start,
-                    end: end,
-                    note: job.routing.flatMap { GraphEdgeNote(routing: $0, at: label) }
-                ))
-
-                if mediaByJobID[job.id] != nil {
-                    let mediaID = mediaNodeID(job.id)
-                    let card = GraphNode(
-                        id: mediaID,
-                        kind: .media,
-                        depth: node.depth + 1,
-                        index: column,
-                        x: node.x,
-                        y: node.y + node.height + levelGap,
-                        width: nodeWidth,
-                        height: height(mediaID)
-                    )
-                    media.append(card)
-                    bottom = max(bottom, card.y + card.height)
-                    runEdges.append(GraphEdge(
-                        id: "\(node.id)->\(card.id)",
-                        from: node.id,
-                        to: card.id,
-                        lane: lane,
-                        start: BoardPoint(x: node.centerX, y: node.y + node.height),
-                        end: BoardPoint(x: card.centerX, y: card.y),
-                        note: nil
-                    ))
-                }
-            }
-
-            trees.append(GraphTree(
-                id: run.id,
-                label: run.label,
-                lane: run.state,
-                x: lefts[index],
-                y: root.y,
-                width: spans[index],
-                height: bottom - root.y
-            ))
-        }
-
-        var planner: GraphNode?
-        var plannerEdges: [GraphEdge] = []
-        if let plannerID, let first = roots.first, let last = roots.last {
-            let node = GraphNode(
-                id: plannerNodeID(plannerID),
-                kind: .planner,
-                depth: 0,
-                index: 0,
-                x: jsRound((first.centerX + last.centerX) / 2 - nodeWidth / 2),
-                y: canvasPadding,
-                width: nodeWidth,
-                height: plannerHeight
-            )
-            planner = node
-            for (index, root) in roots.enumerated() {
-                plannerEdges.append(GraphEdge(
-                    id: "\(node.id)->\(root.id)",
-                    from: node.id,
-                    to: root.id,
-                    lane: runs[index].state,
-                    start: BoardPoint(x: node.centerX, y: node.y + node.height),
-                    end: BoardPoint(x: root.centerX, y: root.y),
-                    note: nil
-                ))
-            }
-        }
-
-        return BoardGraph(
-            planner: planner,
-            trees: trees,
-            roots: roots,
-            workers: workers,
-            media: media,
-            edges: plannerEdges + runEdges,
-            width: cursor - treeGap + canvasPadding,
-            height: (trees.map { $0.y + $0.height }.max() ?? 0) + canvasPadding
-        )
+        var assembly = BoardLayoutAssembly(runs: runs, heights: heights, plannerID: plannerID, mediaByJobID: mediaByJobID)
+        return assembly.makeGraph()
     }
 
     public static func connectorLabelPoint(from start: BoardPoint, to end: BoardPoint) -> BoardPoint {
@@ -284,12 +141,17 @@ public enum ConnectorStep: Hashable, Sendable {
     case quad(control: BoardPoint, to: BoardPoint)
 
     public var svg: String {
-        switch self {
-        case .move(let point): "M\(jsNumber(point.x)) \(jsNumber(point.y))"
-        case .vertical(let y): "V\(jsNumber(y))"
-        case .horizontal(let x): "H\(jsNumber(x))"
-        case .quad(let control, let to):
-            "Q\(jsNumber(control.x)) \(jsNumber(control.y)) \(jsNumber(to.x)) \(jsNumber(to.y))"
+        if case .move(let point) = self {
+            return "M\(jsNumber(point.x)) \(jsNumber(point.y))"
+        } else if case .vertical(let y) = self {
+            return "V\(jsNumber(y))"
+        } else if case .horizontal(let x) = self {
+            return "H\(jsNumber(x))"
+        } else {
+            guard case .quad(let control, let to) = self else {
+                preconditionFailure("Invalid enum case")
+            }
+            return "Q\(jsNumber(control.x)) \(jsNumber(control.y)) \(jsNumber(to.x)) \(jsNumber(to.y))"
         }
     }
 }

@@ -25,7 +25,8 @@ import AletheIntegrations
         #expect(await posts.bodies == [#"{"jsonrpc":"2.0","id":7,"method":"ping"}"#])
 
         let compact = #"{"jsonrpc":"2.0","id":"a","result":{"tools":[]}}"#
-        #expect(await bridge(reply: compact + "\n", posts: posts).handle(line: #"{"jsonrpc":"2.0","id":"a","method":"tools/list"}"#) == compact)
+        #expect(await bridge(reply: compact + "\n",
+            posts: posts).handle(line: #"{"jsonrpc":"2.0","id":"a","method":"tools/list"}"#) == compact)
     }
 
     @Test func aNotificationIsForwardedButGetsNoLine() async {
@@ -55,7 +56,8 @@ import AletheIntegrations
         #expect(refused.id == 4 && refused.message.contains("credentials"))
         let off = try errorObject(await bridge(status: 404, posts: posts).handle(line: #"{"jsonrpc":"2.0","id":5,"method":"ping"}"#))
         #expect(off.id == 5 && off.message.contains("off"))
-        let empty = try errorObject(await bridge(status: 200, reply: " \n", posts: posts).handle(line: #"{"jsonrpc":"2.0","id":6,"method":"ping"}"#))
+        let empty = try errorObject(await bridge(status: 200, reply: " \n",
+            posts: posts).handle(line: #"{"jsonrpc":"2.0","id":6,"method":"ping"}"#))
         #expect(empty.id == 6)
     }
 
@@ -94,7 +96,9 @@ import AletheIntegrations
         FileManager.default.createFile(atPath: malformed.path, contents: Data(#"{"endpoint":"https://x","token":"t","planner":"p"}"#.utf8),
                                        attributes: [.posixPermissions: 0o600])
         #expect(throws: OrchestratorBridgeFile.ReadError.malformed) { try OrchestratorBridgeFile.read(from: malformed) }
-        #expect(throws: OrchestratorBridgeFile.ReadError.unreadable) { try OrchestratorBridgeFile.read(from: folder.appending(path: "missing")) }
+        #expect(throws: OrchestratorBridgeFile.ReadError.unreadable) {
+            try OrchestratorBridgeFile.read(from: folder.appending(path: "missing"))
+        }
     }
 
     @Test func codexPlannersGetTheHelperWithOnlyTheFileAsArgument() {

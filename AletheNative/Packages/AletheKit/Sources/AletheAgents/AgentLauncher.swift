@@ -97,18 +97,15 @@ public struct AgentLauncher: Sendable {
         var session = AgentArguments.build(for: request.kind, base: base, sessionID: request.sessionID,
                                            makeSessionID: makeSessionID)
         let mcpFile = request.mcpServers.isEmpty ? nil : request.mcpConfigPath
-        switch request.kind {
-        case .claude:
+        if case .claude = request.kind {
             var flags = mcpFile.map { ["--mcp-config=\($0)"] } ?? []
             if let path = request.hooks?.claudeSettingsPath { flags += ["--settings", path] }
             session.arguments.insert(contentsOf: flags, at: min(2, session.arguments.count))
-        case .codex:
+        } else if case .codex = request.kind {
             let mcp = McpLaunchConfig.codexArguments(request.mcpServers)
             session.arguments = (request.hooks?.codexArguments ?? []) + mcp + session.arguments
-        case .opencode:
+        } else if case .opencode = request.kind {
             if let mcpFile { environment["OPENCODE_CONFIG"] = mcpFile }
-        default:
-            break
         }
         if request.kind == .opencode {
             environment["OPENTUI_FORCE_EXPLICIT_WIDTH"] = "false"

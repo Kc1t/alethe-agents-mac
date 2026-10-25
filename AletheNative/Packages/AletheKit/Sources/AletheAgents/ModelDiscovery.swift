@@ -1,11 +1,12 @@
 import Foundation
 
 public enum ModelDiscovery {
+    private static let modelFlags: [AgentKind: String] = [
+        .claude: "--model", .codex: "--model", .opencode: "--model", .cursor: "--model", .copilot: "--model",
+    ]
+
     public static func modelFlag(for kind: AgentKind) -> String? {
-        switch kind {
-        case .claude, .codex, .opencode, .cursor, .copilot: "--model"
-        default: nil
-        }
+        modelFlags[kind]
     }
 
     public static func listsModels(_ kind: AgentKind) -> Bool {

@@ -61,7 +61,8 @@ private func makeCore(
     ))
 }
 
-private func call(_ core: OrchestratorCore, _ name: String, _ arguments: OrderedJSON, planner: String? = nil) async throws -> OrderedJSONObject {
+private func call(_ core: OrchestratorCore, _ name: String, _ arguments: OrderedJSON, planner: String? = nil) async throws
+    -> OrderedJSONObject {
     let body: OrderedJSON = [
         "jsonrpc": "2.0", "id": 10, "method": "tools/call",
         "params": ["name": .string(name), "arguments": arguments],

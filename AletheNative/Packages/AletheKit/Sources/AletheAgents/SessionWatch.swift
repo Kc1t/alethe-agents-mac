@@ -23,14 +23,17 @@ public struct SessionWatch: Sendable {
 
     public static func snapshot(_ kind: AgentKind, cwd: String, executable: String? = nil,
                                 homeDirectory: String = NSHomeDirectory()) async -> [SessionSnapshot] {
-        switch kind {
-        case .claude: return ClaudeSessions.snapshot(cwd: cwd, homeDirectory: homeDirectory)
-        case .codex: return CodexSessions.snapshot(cwd: cwd, homeDirectory: homeDirectory)
-        case .antigravity: return AntigravitySessions.snapshot(cwd: cwd, homeDirectory: homeDirectory)
-        case .opencode:
+        if case .claude = kind {
+            return ClaudeSessions.snapshot(cwd: cwd, homeDirectory: homeDirectory)
+        } else if case .codex = kind {
+            return CodexSessions.snapshot(cwd: cwd, homeDirectory: homeDirectory)
+        } else if case .antigravity = kind {
+            return AntigravitySessions.snapshot(cwd: cwd, homeDirectory: homeDirectory)
+        } else if case .opencode = kind {
             guard let executable else { return [] }
             return await OpenCodeSessions.snapshot(cwd: cwd, executable: executable)
-        default: return []
+        } else {
+            return []
         }
     }
 }

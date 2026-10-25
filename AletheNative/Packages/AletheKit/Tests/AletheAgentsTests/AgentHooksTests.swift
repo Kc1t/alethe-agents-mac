@@ -44,7 +44,11 @@ import Testing
     }
 
     @Test func subagentHooksParseTheirFields() throws {
-        let body = #"{"hook_event_name":"PostToolUse","session_id":"s","tool_name":"Bash","tool_input":{"command":"npm run dev","description":"","run_in_background":true,"timeout":5},"tool_response":{"backgroundTaskId":"sh1"},"agent_transcript_path":"/t/a.jsonl"}"#
+        let body = #"""
+            {"hook_event_name":"PostToolUse","session_id":"s","tool_name":"Bash","tool_input":{"command":"npm \#
+            run dev","description":"","run_in_background":true,"timeout":5},"tool_response":{"backgroundTaskId\#
+            ":"sh1"},"agent_transcript_path":"/t/a.jsonl"}
+            """#
         let hook = try #require(SubagentHook.parse(Data(body.utf8)))
         #expect(hook == SubagentHook(event: "PostToolUse", toolName: "Bash", input: ["command": "npm run dev"],
                                      runInBackground: true, response: ["backgroundTaskId": "sh1"], transcriptPath: "/t/a.jsonl"))
@@ -71,7 +75,8 @@ import Testing
     }
 
     @Test func launchesCarryTheWiring() throws {
-        let launcher = AgentLauncher(launchers: LauncherCache(stillExists: { _ in true }), overrides: ["claude": "/bin/echo", "codex": "/bin/echo"])
+        let launcher = AgentLauncher(launchers: LauncherCache(stillExists: { _ in true }), overrides: ["claude": "/bin/echo",
+            "codex": "/bin/echo"])
         let claude = try launcher.command(for: AgentLaunchRequest(kind: .claude, sessionID: "s1",
                                                                   hooks: .init(claudeSettingsPath: "/tmp/h.json")))
         #expect(claude.shellCommand?.contains("'--resume' 's1' '--settings' '/tmp/h.json'") == true)
@@ -111,7 +116,7 @@ import Testing
         let endpoint = try #require(await server.start())
         defer { server.stop() }
         func post(token: String) async throws -> Int {
-            var request = URLRequest(url: URL(string: "\(endpoint)/hook/claude")!)
+            var request = URLRequest(url: try #require(URL(string: "\(endpoint)/hook/claude")))
             request.httpMethod = "POST"
             request.setValue(token, forHTTPHeaderField: "X-Alethe-Token")
             request.setValue("tab1", forHTTPHeaderField: "X-Alethe-Tab")
@@ -133,7 +138,8 @@ import Testing
     @Test func mcpIsRoutedWithItsPlanner() {
         let server = AgentHookServer(token: "secret") { _, _, _ in Issue.record("hook handler called for /mcp") }
         server.setMcpHandler { _, _ in .accepted }
-        guard case .mcp(_, let body, let planner) = server.route(Self.request("/mcp", headers: ["x-alethe-planner": "tab7"], body: "hi")) else {
+        guard case .mcp(_, let body, let planner) = server.route(Self.request("/mcp", headers: ["x-alethe-planner": "tab7"],
+            body: "hi")) else {
             Issue.record("not routed to the MCP handler"); return
         }
         #expect(body == Data("hi".utf8) && planner == "tab7")
@@ -168,7 +174,7 @@ import Testing
         let endpoint = try #require(await server.start())
         defer { server.stop() }
         func post(_ body: String, token: String = "secret") async throws -> (Int, String, String?) {
-            var request = URLRequest(url: URL(string: "\(endpoint)/mcp")!)
+            var request = URLRequest(url: try #require(URL(string: "\(endpoint)/mcp")))
             request.httpMethod = "POST"
             request.setValue(token, forHTTPHeaderField: "X-Alethe-Token")
             request.setValue("tab1", forHTTPHeaderField: "X-Alethe-Planner")

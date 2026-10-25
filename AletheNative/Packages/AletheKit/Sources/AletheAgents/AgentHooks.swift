@@ -22,15 +22,18 @@ public struct AgentHookEvent: Equatable, Sendable {
         guard let object = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
               let name = object["hook_event_name"] as? String else { return nil }
         let session = (object["session_id"] as? String).flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 }
-        switch name {
-        case "SessionStart": return AgentHookEvent(activity: .idle, sessionID: session)
-        case "UserPromptSubmit": return AgentHookEvent(activity: .working, sessionID: session)
-        case "Stop": return AgentHookEvent(activity: .done)
-        case "Notification":
+        if case "SessionStart" = name {
+            return AgentHookEvent(activity: .idle, sessionID: session)
+        } else if case "UserPromptSubmit" = name {
+            return AgentHookEvent(activity: .working, sessionID: session)
+        } else if case "Stop" = name {
+            return AgentHookEvent(activity: .done)
+        } else if case "Notification" = name {
             let message = object["message"] as? String
             let idle = message?.lowercased().contains("waiting for your input") == true
             return AgentHookEvent(activity: idle ? .done : .needsInput, message: message)
-        default: return nil
+        } else {
+            return nil
         }
     }
 
@@ -117,8 +120,7 @@ public struct ActivityMonitor: Sendable {
     public mutating func input(_ text: String, at now: TimeInterval) -> AgentActivity? {
         var result: AgentActivity?
         for character in text {
-            switch character {
-            case "\r", "\n":
+            if ["\r", "\n"].contains(character) {
                 let submitted = line.trimmingCharacters(in: .whitespaces)
                 line = ""
                 if !submitted.isEmpty {
@@ -129,9 +131,9 @@ public struct ActivityMonitor: Sendable {
                     deadline = nil
                     result = .working
                 }
-            case "\u{8}", "\u{7F}":
+            } else if ["\u{8}", "\u{7F}"].contains(character) {
                 if !line.isEmpty { line.removeLast() }
-            default:
+            } else {
                 if character.asciiValue.map({ $0 >= 0x20 }) ?? true { line.append(character) }
             }
         }
@@ -156,7 +158,10 @@ public struct ActivityMonitor: Sendable {
     }
 
     static func stripControls(_ text: String) -> String {
-        text.replacingOccurrences(of: #"\x{1B}\[[0-?]*[ -/]*[@-~]|\x{1B}\][^\x{07}]*(?:\x{07}|\x{1B}\\)|\x{1B}[PX^_].*?\x{1B}\\|\x{1B}[@-_]"#,
+        text.replacingOccurrences(of: #"""
+            \x{1B}\[[0-?]*[ -/]*[@-~]|\x{1B}\][^\x{07}]*(?:\x{07}|\x{1B}\\)|\x{1B}[PX^_].*?\x{1B}\\|\x{1B}[@-_\#
+            ]
+            """#,
                                   with: "", options: .regularExpression)
     }
 }

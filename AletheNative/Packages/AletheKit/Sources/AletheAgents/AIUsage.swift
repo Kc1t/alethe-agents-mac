@@ -57,15 +57,17 @@ public enum AIUsage {
     }
 
     public static func isAuthenticated(_ provider: AgentKind, homeDirectory: String = NSHomeDirectory()) -> Bool {
-        switch provider {
-        case .claude:
-            return claudeToken(homeDirectory: homeDirectory, allowInteraction: false) != nil || keychainContains(service: "Claude Code-credentials")
-        case .codex:
+        if case .claude = provider {
+            return claudeToken(homeDirectory: homeDirectory, allowInteraction: false) != nil
+                || keychainContains(service: "Claude Code-credentials")
+        } else if case .codex = provider {
             let home = ProcessInfo.processInfo.environment["CODEX_HOME"] ?? "\(homeDirectory)/.codex"
             guard let data = FileManager.default.contents(atPath: "\(home)/auth.json") else { return false }
             return codexAuthenticated(data)
-        case .antigravity: return keychainContains(service: "gemini", account: "antigravity")
-        default: return false
+        } else if case .antigravity = provider {
+            return keychainContains(service: "gemini", account: "antigravity")
+        } else {
+            return false
         }
     }
 

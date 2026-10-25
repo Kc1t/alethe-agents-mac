@@ -5,15 +5,14 @@ public enum SessionResume {
 
     public static func isResumable(_ kind: AgentKind, sessionID: String, cwd: String?,
                                    homeDirectory: String = NSHomeDirectory()) -> Bool {
-        switch kind {
-        case .claude:
+        if case .claude = kind {
             return ClaudeTranscripts.exists(sessionID: sessionID, homeDirectory: homeDirectory)
-        case .codex:
+        } else if case .codex = kind {
             guard let cwd else { return false }
             return CodexSessions.snapshot(cwd: cwd, homeDirectory: homeDirectory).contains { $0.id == sessionID }
-        case .antigravity:
+        } else if case .antigravity = kind {
             return AntigravitySessions.snapshot(cwd: "", homeDirectory: homeDirectory).contains { $0.id == sessionID }
-        default:
+        } else {
             return true
         }
     }
@@ -23,13 +22,15 @@ public enum SessionResume {
     }
 
     public static func snapshot(_ kind: AgentKind, cwd: String, executable: String?) async -> [SessionSnapshot] {
-        switch kind {
-        case .codex: return CodexSessions.snapshot(cwd: cwd)
-        case .antigravity: return AntigravitySessions.snapshot(cwd: cwd)
-        case .opencode:
+        if case .codex = kind {
+            return CodexSessions.snapshot(cwd: cwd)
+        } else if case .antigravity = kind {
+            return AntigravitySessions.snapshot(cwd: cwd)
+        } else if case .opencode = kind {
             guard let executable else { return [] }
             return await OpenCodeSessions.snapshot(cwd: cwd, executable: executable)
-        default: return []
+        } else {
+            return []
         }
     }
 
@@ -61,11 +62,14 @@ public enum SessionResume {
     }
 
     public static func sessions(_ kind: AgentKind, cwd: String) -> [SessionSnapshot] {
-        switch kind {
-        case .claude: ClaudeSessions.snapshot(cwd: cwd)
-        case .codex: CodexSessions.snapshot(cwd: cwd)
-        case .antigravity: AntigravitySessions.snapshot(cwd: cwd)
-        default: []
+        if case .claude = kind {
+            return ClaudeSessions.snapshot(cwd: cwd)
+        } else if case .codex = kind {
+            return CodexSessions.snapshot(cwd: cwd)
+        } else if case .antigravity = kind {
+            return AntigravitySessions.snapshot(cwd: cwd)
+        } else {
+            return []
         }
     }
 }

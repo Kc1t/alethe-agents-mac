@@ -48,8 +48,7 @@ extension OrchestratorCore {
         guard !isShutDown else { throw OrchestratorToolError("the orchestrator is shutting down") }
         let prompts = promptQueue()
         let ids = arguments["ids"]?.arrayValue?.compactMap(\.stringValue) ?? []
-        switch name {
-        case "alethe_queue_add":
+        if case "alethe_queue_add" = name {
             guard let prompt = arguments["prompt"]?.stringValue, !prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 throw OrchestratorToolError("prompt must not be empty")
             }
@@ -58,11 +57,13 @@ extension OrchestratorCore {
             }
             var release = QueueItem.Release.whenAgentHasRoom
             if let at = arguments["at"] {
-                guard let value = at.stringValue, let date = Self.queueDate(value) else { throw OrchestratorToolError("at must be an ISO 8601 date") }
+                guard let value = at.stringValue, let date = Self.queueDate(value)
+                    else { throw OrchestratorToolError("at must be an ISO 8601 date") }
                 release = .at(date)
             }
             if let afterJob = arguments["afterJob"] {
-                guard let id = afterJob.stringValue, jobs[id] != nil else { throw OrchestratorToolError("afterJob must name an existing job") }
+                guard let id = afterJob.stringValue, jobs[id] != nil
+                    else { throw OrchestratorToolError("afterJob must name an existing job") }
                 release = .afterJob(id)
             }
             let item = QueueItem(prompt: prompt, agent: arguments["agent"]?.stringValue ?? WorkerAgent.codex,
@@ -71,10 +72,12 @@ extension OrchestratorCore {
                                  priority: arguments["priority"]?.intValue ?? 0, release: release, planner: planner)
             do { return ["items": .array(try await prompts.add([item]).map(\.json))] }
             catch { throw OrchestratorToolError(String(describing: error)) }
-        case "alethe_queue_cancel": await prompts.cancel(ids)
-        case "alethe_queue_run_now": await prompts.runNow(ids)
-        case "alethe_queue_reorder": await prompts.reorder(ids)
-        default: break
+        } else if case "alethe_queue_cancel" = name {
+            await prompts.cancel(ids)
+        } else if case "alethe_queue_run_now" = name {
+            await prompts.runNow(ids)
+        } else if case "alethe_queue_reorder" = name {
+            await prompts.reorder(ids)
         }
         var result: OrderedJSONObject = ["items": .array(await prompts.list().map(\.json))]
         if await prompts.persistenceError != nil { result["persistenceError"] = "could not read or write the prompt queue" }

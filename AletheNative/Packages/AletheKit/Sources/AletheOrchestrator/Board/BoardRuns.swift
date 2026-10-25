@@ -9,15 +9,12 @@ public enum RunLane: String, Hashable, Sendable, CaseIterable {
     case failed
     case finished
 
+    private static let lanes: [JobStatus: RunLane] = [
+        .blocked: .blocked, .running: .running, .queued: .queued, .interrupted: .interrupted, .failed: .failed,
+    ]
+
     public init(_ status: JobStatus) {
-        switch status {
-        case .blocked: self = .blocked
-        case .running: self = .running
-        case .queued: self = .queued
-        case .interrupted: self = .interrupted
-        case .failed: self = .failed
-        case .done, .cancelled, .released: self = .finished
-        }
+        self = Self.lanes[status] ?? .finished
     }
 
     static let statePriority: [RunLane] = [.blocked, .failed, .interrupted, .running, .queued, .finished]
@@ -59,11 +56,7 @@ public struct RunAttention: Hashable, Sendable {
         case interrupted
 
         public var runLane: RunLane {
-            switch self {
-            case .blocked: .blocked
-            case .failed: .failed
-            case .interrupted: .interrupted
-            }
+            RunLane(rawValue: rawValue) ?? .interrupted
         }
     }
 

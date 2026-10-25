@@ -27,11 +27,13 @@ public enum ClaudeSteer: Hashable, Sendable {
     case queued(jobID: String, waiting: Int)
 
     public var result: OrderedJSON {
-        switch self {
-        case .interrupt(let jobID, _):
-            ["steered": .string(jobID)]
-        case .queued(let jobID, let waiting):
-            [
+        if case .interrupt(let jobID, _) = self {
+            return ["steered": .string(jobID)]
+        } else {
+            guard case .queued(let jobID, let waiting) = self else {
+                preconditionFailure("Invalid enum case")
+            }
+            return [
                 "queued": .string(jobID),
                 "waiting": .integer(waiting),
                 "note": "worker is not running a turn; the steer starts as its next one",
@@ -87,27 +89,27 @@ public enum ClaudeWorkerProtocol {
 
     public static func handle(_ message: OrderedJSON, job: inout Job) -> ClaudeWorkerEvent {
         guard let object = message.objectValue else { return .ignored }
-        switch object["type"]?.stringValue ?? "" {
-        case "rate_limit_event":
+        let eventType = object["type"]?.stringValue ?? ""
+        if case "rate_limit_event" = eventType {
             guard let info = object["rate_limit_info"] else { return .ignored }
             job.quota = info
             return .updated
 
-        case "system":
-            switch object["subtype"]?.stringValue ?? "" {
-            case "init":
+        } else if case "system" = eventType {
+            let subtype = object["subtype"]?.stringValue ?? ""
+            if case "init" = subtype {
                 guard let sessionID = object["session_id"]?.stringValue else { return .ignored }
                 if job.threadID == nil { job.threadID = sessionID }
                 return .updated
-            case "permission_denied":
+            } else if case "permission_denied" = subtype {
                 let note = object["message"]?.stringValue ?? "a tool call was denied permission"
                 appendReply("\n[blocked] \(note)\n", to: &job)
                 return .updated
-            default:
+            } else {
                 return .ignored
             }
 
-        case "assistant":
+        } else if case "assistant" = eventType {
             let blocks = object["message"]?.objectValue?["content"]?.arrayValue ?? []
             let text = blocks
                 .filter { $0.objectValue?["type"]?.stringValue == "text" }
@@ -117,10 +119,10 @@ public enum ClaudeWorkerProtocol {
             appendReply(text, to: &job)
             return .updated
 
-        case "result":
+        } else if case "result" = eventType {
             return .turnEnded(result(object, job: &job))
 
-        default:
+        } else {
             return .ignored
         }
     }

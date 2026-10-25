@@ -16,7 +16,9 @@ import Testing
         let resumed = try Self.command(AgentLaunchRequest(kind: .claude, extraArguments: ["--verbose"], sessionID: "s1",
                                                           hooks: .init(claudeSettingsPath: "/tmp/h.json"),
                                                           mcpServers: [Self.graphify], mcpConfigPath: "/tmp/m.json"))
-        #expect(resumed.shellCommand?.hasSuffix("'--resume' 's1' '--mcp-config=/tmp/m.json' '--settings' '/tmp/h.json' '--verbose'") == true)
+        #expect(resumed.shellCommand?.hasSuffix(
+            "'--resume' 's1' '--mcp-config=/tmp/m.json' '--settings' '/tmp/h.json' '--verbose'"
+        ) == true)
         let fresh = try Self.command(AgentLaunchRequest(kind: .claude, mcpServers: [Self.graphify], mcpConfigPath: "/tmp/m.json"))
         #expect(fresh.shellCommand?.hasSuffix("'--session-id' 'new' '--mcp-config=/tmp/m.json'") == true)
     }
@@ -39,7 +41,10 @@ import Testing
                                                           hooks: .init(codexArguments: ["-c", "notify=[]"]),
                                                           mcpServers: [Self.graphify]))
         #expect(command.shellCommand?.hasSuffix(
-            #"'-c' 'notify=[]' '-c' 'mcp_servers.graphify.command="/usr/local/bin/graphify"' '-c' 'mcp_servers.graphify.args=["/repo","--mcp"]' 'resume' 'c1'"#) == true)
+            #"""
+                '-c' 'notify=[]' '-c' 'mcp_servers.graphify.command="/usr/local/bin/graphify"' '-c' 'mcp_serve\#
+                rs.graphify.args=["/repo","--mcp"]' 'resume' 'c1'
+                """#) == true)
         #expect(command.environment["OPENCODE_CONFIG"] == nil)
     }
 

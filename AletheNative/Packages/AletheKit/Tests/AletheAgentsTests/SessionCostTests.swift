@@ -19,8 +19,15 @@ import Testing
 
     @Test func claudeTranscriptsSumUsagePerModel() throws {
         let path = try file([
-            #"{"type":"assistant","message":{"model":"claude-opus-4","usage":{"input_tokens":100,"output_tokens":50,"cache_read_input_tokens":10,"cache_creation":{"ephemeral_5m_input_tokens":5,"ephemeral_1h_input_tokens":7}}}}"#,
-            #"{"type":"assistant","message":{"model":"claude-opus-4","usage":{"input_tokens":1,"output_tokens":2,"cache_creation_input_tokens":3}}}"#,
+            #"""
+                {"type":"assistant","message":{"model":"claude-opus-4","usage":{"input_tokens":100,"output_tok\#
+                ens":50,"cache_read_input_tokens":10,"cache_creation":{"ephemeral_5m_input_tokens":5,"ephemera\#
+                l_1h_input_tokens":7}}}}
+                """#,
+            #"""
+                {"type":"assistant","message":{"model":"claude-opus-4","usage":{"input_tokens":1,"output_token\#
+                s":2,"cache_creation_input_tokens":3}}}
+                """#,
             #"{"type":"assistant","message":{"model":"claude-haiku-4","usage":{"input_tokens":4,"output_tokens":90}}}"#,
             #"{"type":"user","message":{"content":"no usage here"}}"#,
         ])
@@ -34,8 +41,14 @@ import Testing
 
     @Test func codexTakesTheLastCumulativeCount() throws {
         let path = try file([
-            #"{"type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":10,"output_tokens":5,"cached_input_tokens":1}}}}"#,
-            #"{"type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":30,"output_tokens":9,"cached_input_tokens":4}}}}"#,
+            #"""
+                {"type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens\#
+                ":10,"output_tokens":5,"cached_input_tokens":1}}}}
+                """#,
+            #"""
+                {"type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens\#
+                ":30,"output_tokens":9,"cached_input_tokens":4}}}}
+                """#,
         ])
         defer { try? FileManager.default.removeItem(atPath: path) }
         let cost = SessionCosts.codex(rollout: path)

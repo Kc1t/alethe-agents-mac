@@ -14,9 +14,10 @@ public struct InstallToolchain: Equatable, Sendable {
     public enum Requirement: Sendable { case npm, brew }
 
     func has(_ requirement: Requirement) -> Bool {
-        switch requirement {
-        case .npm: npm
-        case .brew: brew
+        if case .npm = requirement {
+            return npm
+        } else {
+            return brew
         }
     }
 }
@@ -86,19 +87,24 @@ public enum AgentInstallCatalog {
     public static func methods(for kind: AgentKind, toolchain: InstallToolchain?) -> [InstallMethod] {
         (entries[kind]?.methods ?? [])
             .filter { method in method.requires.map { toolchain?.has($0) ?? false } ?? true }
-            .sorted { InstallMethod.Kind.allCases.firstIndex(of: $0.kind)! < InstallMethod.Kind.allCases.firstIndex(of: $1.kind)! }
+            .sorted {
+                guard let left = InstallMethod.Kind.allCases.firstIndex(of: $0.kind),
+                      let right = InstallMethod.Kind.allCases.firstIndex(of: $1.kind) else {
+                    preconditionFailure("Install method kinds must be present in allCases")
+                }
+                return left < right
+            }
     }
 
     public static func uninstallMethods(for kind: AgentKind, toolchain: InstallToolchain?) -> [InstallMethod] {
         methods(for: kind, toolchain: toolchain).compactMap { method in
             let command: String
-            switch method.kind {
-            case .npm:
+            if case .npm = method.kind {
                 guard let package = method.command.split(separator: " ").last else { return nil }
                 command = "npm uninstall -g \(package)"
-            case .brew:
+            } else if case .brew = method.kind {
                 command = method.command.replacingOccurrences(of: "brew install", with: "brew uninstall")
-            case .native:
+            } else {
                 return nil
             }
             var uninstall = method

@@ -44,11 +44,16 @@ public struct DelegateRequest: Hashable, Sendable {
         let cwd = arguments["cwd"]?.stringValue ?? FileManager.default.currentDirectoryPath
         let agent = arguments["agent"]?.stringValue.flatMap { $0.isEmpty ? nil : $0 } ?? WorkerAgent.codex
         let label = arguments["label"]?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let timeoutMs: UInt64? = switch arguments["timeoutSeconds"]?.uint64Value {
-        case 0: nil
-        case let seconds?: seconds.multipliedReportingOverflow(by: 1000).overflow ? .max : seconds * 1000
-        case nil: OrchestratorLimits.defaultJobTimeoutMs
-        }
+        let timeoutMs: UInt64? = {
+            let timeoutSeconds = arguments["timeoutSeconds"]?.uint64Value
+            if case 0 = timeoutSeconds {
+                return nil
+            } else if case let seconds? = timeoutSeconds {
+                return seconds.multipliedReportingOverflow(by: 1000).overflow ? .max : seconds * 1000
+            } else {
+                return OrchestratorLimits.defaultJobTimeoutMs
+            }
+        }()
         self.init(
             tasks: tasks, agent: agent, cwd: cwd, label: label?.isEmpty == false ? label : nil, timeoutMs: timeoutMs,
             askForApproval: arguments["askForApproval"]?.boolValue ?? false,
@@ -66,31 +71,32 @@ extension OrchestratorCore: OrchestratorToolHandler {
     }
 
     func dispatchTool(name: String, arguments: OrderedJSONObject, planner: String?) async throws(OrchestratorToolError) -> OrderedJSON {
-        switch name {
-        case "alethe_delegate":
+        if case "alethe_delegate" = name {
             let configured = try configuredArguments(arguments, planner: planner)
             let request = try DelegateRequest(arguments: configured)
             if arguments["queue"]?.boolValue == true, fitnessReadings[request.agent]?.isStrained == true {
                 return try await enqueueDelegate(request, planner: planner)
             }
             return try await delegate(request, planner: planner)
-        case "alethe_queue_add", "alethe_queue_list", "alethe_queue_cancel", "alethe_queue_run_now", "alethe_queue_reorder":
+        } else if [
+            "alethe_queue_add", "alethe_queue_list", "alethe_queue_cancel", "alethe_queue_run_now", "alethe_queue_reorder",
+        ].contains(name) {
             return try await queueTool(name: name, arguments: arguments, planner: planner)
-        case "alethe_check":
+        } else if case "alethe_check" = name {
             return await check(
                 wait: arguments["wait"]?.boolValue ?? false,
                 untilAllSettled: arguments["untilAllSettled"]?.boolValue ?? true,
                 timeoutMs: arguments["timeoutMs"]?.uint64Value ?? OrchestratorLimits.defaultCheckWaitMs
             )
-        case "alethe_status":
+        } else if case "alethe_status" = name {
             return snapshot().json
-        case "alethe_cancel":
+        } else if case "alethe_cancel" = name {
             return ["cancelled": .array(cancel(Self.jobIDs(arguments)).map(OrderedJSON.string))]
-        case "alethe_release":
+        } else if case "alethe_release" = name {
             return ["released": .array(release(Self.jobIDs(arguments)).map(OrderedJSON.string))]
-        case "alethe_steer", "alethe_send", "alethe_answer", "alethe_diff":
+        } else if ["alethe_steer", "alethe_send", "alethe_answer", "alethe_diff"].contains(name) {
             return try followUpTool(name: name, arguments: arguments)
-        default:
+        } else {
             throw OrchestratorToolError("unknown tool \(name)")
         }
     }
@@ -154,7 +160,8 @@ extension OrchestratorCore: OrchestratorToolHandler {
         ]
     }
 
-    public func check(wait: Bool, untilAllSettled: Bool = true, timeoutMs: UInt64 = OrchestratorLimits.defaultCheckWaitMs) async -> OrderedJSON {
+    public func check(wait: Bool, untilAllSettled: Bool = true, timeoutMs: UInt64 = OrchestratorLimits.defaultCheckWaitMs) async
+        -> OrderedJSON {
         if wait {
             let clock = ContinuousClock()
             let deadline = clock.now.advanced(by: .milliseconds(min(timeoutMs, OrchestratorLimits.maxWaitMs)))

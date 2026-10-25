@@ -8,9 +8,13 @@ public enum WorkerProcessError: Error, Hashable, Sendable, CustomStringConvertib
     case spawn(errno: Int32)
 
     public var description: String {
-        switch self {
-        case .pipe(let code): "worker spawn failed: \(String(cString: strerror(code)))"
-        case .spawn(let code): "worker spawn failed: \(String(cString: strerror(code)))"
+        if case .pipe(let code) = self {
+            return "worker spawn failed: \(String(cString: strerror(code)))"
+        } else {
+            guard case .spawn(let code) = self else {
+                preconditionFailure("Invalid enum case")
+            }
+            return "worker spawn failed: \(String(cString: strerror(code)))"
         }
     }
 }

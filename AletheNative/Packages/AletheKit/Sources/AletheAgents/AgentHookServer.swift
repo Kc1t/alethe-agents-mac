@@ -39,15 +39,14 @@ public final class AgentHookServer: @unchecked Sendable {
         return await withCheckedContinuation { continuation in
             let resumed = LockedFlag()
             listener.stateUpdateHandler = { [weak self] state in
-                switch state {
-                case .ready:
+                if case .ready = state {
                     let port = listener.port?.rawValue
                     self?.lock.withLock { self?.boundPort = port }
                     if resumed.set() { continuation.resume(returning: self?.endpoint) }
-                case .failed, .cancelled:
+                } else if case .failed = state {
                     if resumed.set() { continuation.resume(returning: nil) }
-                default:
-                    break
+                } else if case .cancelled = state {
+                    if resumed.set() { continuation.resume(returning: nil) }
                 }
             }
             listener.start(queue: queue)
@@ -73,25 +72,30 @@ public final class AgentHookServer: @unchecked Sendable {
             guard let self else { return connection.cancel() }
             var buffer = buffer
             if let data { buffer.append(data) }
-            switch HTTPRequest.parse(buffer, bodyLimit: Self.bodyLimit) {
-            case .incomplete where !complete && error == nil:
+            let parsedRequest = HTTPRequest.parse(buffer, bodyLimit: Self.bodyLimit)
+            if case .incomplete = parsedRequest, !complete && error == nil {
                 self.receive(connection, buffer: buffer)
-            case .request(let request):
-                switch self.route(request) {
-                case .status(let status):
+            } else if case .request(let request) = parsedRequest {
+                let route = self.route(request)
+                if case .status(let status) = route {
                     self.respond(connection, status: status)
-                case .mcp(let handler, let body, let planner):
+                } else if case .mcp(let handler, let body, let planner) = route {
                     Task {
-                        switch await handler(body, planner) {
-                        case .body(let reply): self.respond(connection, status: 200, json: reply)
-                        case .accepted: self.respond(connection, status: 202)
-                        case .unavailable: self.respond(connection, status: 404)
+                        let reply = await handler(body, planner)
+                        if case .body(let reply) = reply {
+                            self.respond(connection, status: 200, json: reply)
+                        } else if case .accepted = reply {
+                            self.respond(connection, status: 202)
+                        } else {
+                            self.respond(connection, status: 404)
                         }
                     }
+                } else {
+                    preconditionFailure("Unhandled value")
                 }
-            case .tooLarge:
+            } else if case .tooLarge = parsedRequest {
                 self.respond(connection, status: 413)
-            default:
+            } else {
                 self.respond(connection, status: 400)
             }
         }

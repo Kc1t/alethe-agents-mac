@@ -36,8 +36,14 @@ import Testing
         try FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
         let lines = [
             #"{"type":"session_meta","payload":{"id":"s1","cwd":"/repo"}}"#,
-            #"{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"<environment_context>x</environment_context>"}]}}"#,
-            #"{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"Add dark mode"}]}}"#,
+            #"""
+                {"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_te\#
+                xt","text":"<environment_context>x</environment_context>"}]}}
+                """#,
+            #"""
+                {"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_te\#
+                xt","text":"Add dark mode"}]}}
+                """#,
         ]
         try Data(lines.joined(separator: "\n").utf8).write(to: URL(filePath: "\(folder)/rollout-1-s1.jsonl"))
         let found = ConversationHistory.codex(cwd: "/repo", homeDirectory: home)

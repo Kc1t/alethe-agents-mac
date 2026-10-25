@@ -15,7 +15,10 @@ extension OrchestratorCore {
         }
         guard !chosen.isEmpty else { return "" }
         let body = chosen.map { $0.text.trimmingCharacters(in: .whitespacesAndNewlines) }.joined(separator: "\n\n")
-        return "<alethe-rules>\nThese are Alethe's working rules for this task. If this repository states something different (CLAUDE.md, AGENTS.md, CONTRIBUTING.md), the repository wins.\n\n" + body + "\n</alethe-rules>\n\n"
+        return """
+            <alethe-rules>\nThese are Alethe's working rules for this task. If this repository states somethin\
+            g different (CLAUDE.md, AGENTS.md, CONTRIBUTING.md), the repository wins.\n\n
+            """ + body + "\n</alethe-rules>\n\n"
     }
 
     public func applySettings(_ settings: OrchestrationPreferences) {
@@ -27,29 +30,10 @@ extension OrchestratorCore {
         var result = arguments
         let settings = orchestrationSettings
         let plannerAgent = planners.first { $0.id == planner }?.agent
-        var selected: OrchestrationRole?
+        var selected = try routedRole(arguments, settings: settings, plannerAgent: plannerAgent)
         func find(_ name: String) -> OrchestrationRole? {
             settings.roles.first { $0.name == name && $0.orchestrator == plannerAgent }
                 ?? settings.roles.first { $0.name == name && $0.orchestrator == nil }
-        }
-        let kind = arguments["kind"]?.stringValue
-        let effortClass = arguments["effortClass"]?.stringValue ?? arguments["effort_class"]?.stringValue
-        if let kind, !OrchestrationRoutingRule.kinds.contains(kind) { throw OrchestratorToolError("unknown task kind \(kind)") }
-        if let effortClass, !OrchestrationRoutingRule.efforts.contains(effortClass) { throw OrchestratorToolError("unknown effort class \(effortClass)") }
-        if arguments["role"]?.stringValue == nil, arguments["model"]?.stringValue == nil, let kind {
-            for rule in settings.routing.rules where rule.enabled {
-                guard rule.kinds.isEmpty || rule.kinds.contains(kind),
-                      rule.efforts.isEmpty || effortClass.map(rule.efforts.contains) == true,
-                      rule.gates.allSatisfy({ gate in
-                          guard let reading = fitnessReadings[gate.agent] else { return true }
-                          let window = gate.window == "short" ? "5h" : gate.window == "opus" && gate.agent == "codex" ? "week" : gate.window
-                          let used = reading.windows[window] ?? (reading.worst == window ? reading.used : nil)
-                          return used.map { $0 < gate.below } ?? true
-                      }), let role = find(rule.role) else { continue }
-                if !settings.routing.allowOpusOnDeep, role.model?.lowercased().contains("opus") == true { continue }
-                selected = role
-                break
-            }
         }
         if let name = arguments["role"]?.stringValue {
             for field in ["agent", "model", "effort", "readOnly", "timeoutSeconds"] where arguments[field] != nil {
@@ -91,5 +75,37 @@ extension OrchestratorCore {
             result["rules"] = .string(canonical.name)
         }
         return result
+    }
+
+    private func routedRole(
+        _ arguments: OrderedJSONObject, settings: OrchestrationPreferences, plannerAgent: String?
+    ) throws(OrchestratorToolError) -> OrchestrationRole? {
+        var selected: OrchestrationRole?
+        func find(_ name: String) -> OrchestrationRole? {
+            settings.roles.first { $0.name == name && $0.orchestrator == plannerAgent }
+                ?? settings.roles.first { $0.name == name && $0.orchestrator == nil }
+        }
+        let kind = arguments["kind"]?.stringValue
+        let effortClass = arguments["effortClass"]?.stringValue ?? arguments["effort_class"]?.stringValue
+        if let kind, !OrchestrationRoutingRule.kinds.contains(kind) { throw OrchestratorToolError("unknown task kind \(kind)") }
+        if let effortClass, !OrchestrationRoutingRule.efforts.contains(effortClass) { throw OrchestratorToolError("unknown effort class \(effortClass)") }
+        if arguments["role"]?.stringValue == nil, arguments["model"]?.stringValue == nil, let kind {
+            for rule in settings.routing.rules where rule.enabled {
+                guard rule.kinds.isEmpty || rule.kinds.contains(kind),
+                      rule.efforts.isEmpty || effortClass.map(rule.efforts.contains) == true,
+                      rule.gates.allSatisfy({ routingGateAllows($0) }), let role = find(rule.role) else { continue }
+                if !settings.routing.allowOpusOnDeep, role.model?.lowercased().contains("opus") == true { continue }
+                selected = role
+                break
+            }
+        }
+        return selected
+    }
+
+    private func routingGateAllows(_ gate: OrchestrationQuotaGate) -> Bool {
+        guard let reading = fitnessReadings[gate.agent] else { return true }
+        let window = gate.window == "short" ? "5h" : gate.window == "opus" && gate.agent == "codex" ? "week" : gate.window
+        let used = reading.windows[window] ?? (reading.worst == window ? reading.used : nil)
+        return used.map { $0 < gate.below } ?? true
     }
 }

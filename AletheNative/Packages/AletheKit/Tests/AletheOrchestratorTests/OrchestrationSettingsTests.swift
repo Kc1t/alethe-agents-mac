@@ -29,7 +29,8 @@ import Testing
         #expect(try await core.workerRulesBlock(named: nil).isEmpty)
     }
     @Test func codexHandshakeKeepsReadOnlyModelEffortAndDisabledPlugins() {
-        var job = Job(id: "job-01", plannerID: nil, agent: "codex", runID: "run-01", runLabel: nil, spec: "Read", cwd: "/repo", sandbox: "read-only")
+        var job = Job(id: "job-01", plannerID: nil, agent: "codex", runID: "run-01", runLabel: nil, spec: "Read", cwd: "/repo",
+            sandbox: "read-only")
         job.model = "gpt-6"; job.effort = "high"; job.threadID = "thread-01"
         let session = CodexWorkerSession(job: job, firstTurn: "Read", disabledPlugins: ["ecc@ecc"])
         let opening = session.handshake().last?.objectValue

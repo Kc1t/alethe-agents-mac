@@ -58,7 +58,9 @@ import Testing
     }
 
     @Test func pickedFileMustBeTheAgentsCLI() {
-        let cursor = AgentRegistry.builtin.descriptor(for: .cursor)!
+        guard let cursor = AgentRegistry.builtin.descriptor(for: .cursor) else {
+            preconditionFailure("Built-in Cursor descriptor must exist")
+        }
         #expect(LauncherResolver.path("/opt/homebrew/bin/cursor-agent", matches: cursor))
         #expect(!LauncherResolver.path("/Applications/Cursor.app/Contents/MacOS/Cursor", matches: cursor))
     }

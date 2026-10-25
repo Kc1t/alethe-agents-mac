@@ -52,8 +52,11 @@ public final class WorkerLineWriter: Sendable {
         guard let fd = descriptor.withLock({ $0 }) else { return .failure(.closed) }
         var offset = 0
         while offset < bytes.count {
-            let written = bytes.withUnsafeBufferPointer { buffer in
-                Darwin.write(fd, buffer.baseAddress! + offset, buffer.count - offset)
+            let written = bytes.withUnsafeBufferPointer { buffer -> Int in
+                guard let baseAddress = buffer.baseAddress else {
+                    preconditionFailure("Nonempty write buffer must have a base address")
+                }
+                return Darwin.write(fd, baseAddress + offset, buffer.count - offset)
             }
             if written > 0 {
                 offset += written

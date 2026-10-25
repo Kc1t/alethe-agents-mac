@@ -32,12 +32,10 @@ public struct AgentFitness: Hashable, Sendable {
         windows = Dictionary(usage.windows.map { (Self.windowName($0.label), Int($0.usedPercent.rounded())) }, uniquingKeysWith: max)
     }
 
+    private static let windowNames = ["7d": "week", "7d Opus": "opus"]
+
     static func windowName(_ label: String) -> String {
-        switch label {
-        case "7d": "week"
-        case "7d Opus": "opus"
-        default: label
-        }
+        Self.windowNames[label] ?? label
     }
 
     public var strain: Double { rateLimited ? .greatestFiniteMagnitude : Double(used) }

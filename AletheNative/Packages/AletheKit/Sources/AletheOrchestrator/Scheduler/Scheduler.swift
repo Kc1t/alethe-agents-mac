@@ -220,15 +220,17 @@ public actor Scheduler {
     private func provisioned(taskID: String, projectID: String, agentID: String, title: String,
                              result: Result<WorktreeInfo, any Error>) async {
         guard var task = tasks[taskID] else { return }
-        switch result {
-        case .success(let info):
+        if case .success(let info) = result {
             task.worktreePath = info.path
             tasks[taskID] = task
             guard task.status == .running, task.assignedAgentID == agentID else { return }
             await publish(SchedulerEvent.agentSpawnRequested, prefix: "sched", task: task, data: [
                 "agent_id": .string(agentID), "worktree_path": .string(info.path), "task_title": .string(title),
             ])
-        case .failure(let error):
+        } else {
+            guard case .failure(let error) = result else {
+                preconditionFailure("Invalid enum case")
+            }
             guard task.status == .running, task.assignedAgentID == agentID else { return }
             task.status = .failed
             if let lease = task.leaseResource { leases.remove(lease) }

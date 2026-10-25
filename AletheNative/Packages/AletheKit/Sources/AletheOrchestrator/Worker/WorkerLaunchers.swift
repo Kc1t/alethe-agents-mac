@@ -27,8 +27,13 @@ public enum WorkerLaunchError: Error, Hashable, Sendable, CustomStringConvertibl
     case cliNotFound(agent: String, command: String)
 
     public var description: String {
-        switch self {
-        case .unconfigured(let agent), .cliNotFound(let agent, _): "no worker launcher configured for agent \(agent)"
+        if case .unconfigured(let agent) = self {
+            return "no worker launcher configured for agent \(agent)"
+        } else {
+            guard case .cliNotFound(let agent, _) = self else {
+                preconditionFailure("Invalid enum case")
+            }
+            return "no worker launcher configured for agent \(agent)"
         }
     }
 }

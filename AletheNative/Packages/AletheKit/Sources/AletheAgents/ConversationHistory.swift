@@ -156,18 +156,22 @@ public enum ConversationHistory {
                              homeDirectory: String = NSHomeDirectory()) -> String? {
         guard !sessionID.isEmpty, !sessionID.contains("/"),
               let path = SessionCosts.transcript(kind, sessionID: sessionID, cwd: cwd, homeDirectory: homeDirectory) else { return nil }
-        switch kind {
-        case .claude: return claudeSummary(id: sessionID, path: path).displayTitle
-        case .codex: return codexFirstPrompt(atPath: path)
-        default: return nil
+        if case .claude = kind {
+            return claudeSummary(id: sessionID, path: path).displayTitle
+        } else if case .codex = kind {
+            return codexFirstPrompt(atPath: path)
+        } else {
+            return nil
         }
     }
 
     public static func list(_ kind: AgentKind, cwd: String) -> [ConversationSummary] {
-        switch kind {
-        case .claude: claude(cwd: cwd)
-        case .codex: codex(cwd: cwd)
-        default: []
+        if case .claude = kind {
+            return claude(cwd: cwd)
+        } else if case .codex = kind {
+            return codex(cwd: cwd)
+        } else {
+            return []
         }
     }
 }

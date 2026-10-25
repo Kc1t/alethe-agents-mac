@@ -108,13 +108,15 @@ public struct OrchestratorBridge: Sendable {
             return id.map { Self.error(id: $0, "Alethe is not reachable") }
         }
         guard let id else { return nil }
-        switch reply.status {
-        case 200:
+        if case 200 = reply.status {
             if let line = Self.singleLine(reply.body) { return line }
             return Self.error(id: id, "Alethe sent an empty answer")
-        case 401: return Self.error(id: id, "Alethe refused this terminal's credentials; reopen the terminal")
-        case 404: return Self.error(id: id, "Alethe's orchestrator is off")
-        default: return Self.error(id: id, "Alethe answered HTTP \(reply.status)")
+        } else if case 401 = reply.status {
+            return Self.error(id: id, "Alethe refused this terminal's credentials; reopen the terminal")
+        } else if case 404 = reply.status {
+            return Self.error(id: id, "Alethe's orchestrator is off")
+        } else {
+            return Self.error(id: id, "Alethe answered HTTP \(reply.status)")
         }
     }
 

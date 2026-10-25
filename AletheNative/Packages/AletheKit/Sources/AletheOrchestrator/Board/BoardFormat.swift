@@ -38,8 +38,8 @@ public enum BoardFormat {
     }
 }
 
-private extension OrderedJSON {
-    subscript(key: String) -> OrderedJSON? { objectValue?[key] }
+extension OrderedJSON {
+    fileprivate subscript(key: String) -> OrderedJSON? { objectValue?[key] }
 }
 
 func jsRound(_ value: Double) -> Double {

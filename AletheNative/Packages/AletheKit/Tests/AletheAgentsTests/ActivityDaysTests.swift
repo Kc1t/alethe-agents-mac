@@ -21,7 +21,7 @@ struct ActivityDaysTests {
             #"{"type":"user","timestamp":"2026-07-02T09:00:00.000Z"}"#,
         ]
         try lines.joined(separator: "\n").write(to: folder.appending(path: "s.jsonl"), atomically: true, encoding: .utf8)
-        let now = ISO8601DateFormatter().date(from: "2026-07-02T12:00:00Z")!
+        let now = try #require(ISO8601DateFormatter().date(from: "2026-07-02T12:00:00Z"))
         let days = ActivityDays.collect(days: 3, now: now, homeDirectory: home.path)
         #expect(days.map(\.date) == ["2026-06-30", "2026-07-01", "2026-07-02"])
         #expect(days.map(\.count) == [0, 2, 1])

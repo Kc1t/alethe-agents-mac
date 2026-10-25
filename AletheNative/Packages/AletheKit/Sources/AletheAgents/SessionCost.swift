@@ -161,33 +161,34 @@ public enum SessionCosts {
 
     public static func transcript(_ kind: AgentKind, sessionID: String, cwd: String,
                                   homeDirectory: String = NSHomeDirectory()) -> String? {
-        switch kind {
-        case .claude:
+        if case .claude = kind {
             let projects = "\(homeDirectory)/.claude/projects"
             let names = Set([cwd, SessionPaths.normalize(cwd)].filter { !$0.isEmpty }.map(ClaudeSessions.projectFolderName(for:)))
             let folders = ((try? FileManager.default.contentsOfDirectory(atPath: projects)) ?? [])
                 .filter { folder in names.contains { $0.caseInsensitiveCompare(folder) == .orderedSame } }
             return folders.map { "\(projects)/\($0)/\(sessionID).jsonl" }.first { FileManager.default.fileExists(atPath: $0) }
-        case .codex:
+        } else if case .codex = kind {
             let root = "\(homeDirectory)/.codex/sessions"
             guard let enumerator = FileManager.default.enumerator(atPath: root) else { return nil }
             while let relative = enumerator.nextObject() as? String {
                 if relative.hasSuffix("\(sessionID).jsonl") { return "\(root)/\(relative)" }
             }
             return nil
-        default:
+        } else {
             return nil
         }
     }
 
     public static func cost(_ kind: AgentKind, sessionID: String, cwd: String, openCodeExecutable: String?) async -> SessionCost? {
-        switch kind {
-        case .claude: return transcript(.claude, sessionID: sessionID, cwd: cwd).map { claude(transcript: $0) }
-        case .codex: return transcript(.codex, sessionID: sessionID, cwd: cwd).map { codex(rollout: $0) }
-        case .opencode:
+        if case .claude = kind {
+            return transcript(.claude, sessionID: sessionID, cwd: cwd).map { claude(transcript: $0) }
+        } else if case .codex = kind {
+            return transcript(.codex, sessionID: sessionID, cwd: cwd).map { codex(rollout: $0) }
+        } else if case .opencode = kind {
             guard let database = await openCodeDatabase(executable: openCodeExecutable) else { return nil }
             return openCode(sessionID: sessionID, database: database)
-        default: return nil
+        } else {
+            return nil
         }
     }
 }

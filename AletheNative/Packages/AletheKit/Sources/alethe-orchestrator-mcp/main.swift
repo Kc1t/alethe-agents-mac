@@ -43,12 +43,11 @@ func runStandalone() async {
 }
 
 let arguments = Array(CommandLine.arguments.dropFirst())
-switch arguments.first {
-case OrchestratorPlannerLaunch.bridgeFlag where arguments.count == 2:
+if case OrchestratorPlannerLaunch.bridgeFlag = arguments.first, arguments.count == 2 {
     await runBridge(path: arguments[1])
-case nil:
+} else if case nil = arguments.first {
     await runStandalone()
-default:
+} else {
     fail("usage: alethe-orchestrator-mcp [--bridge <file>]", code: 64)
 }
 exit(0)

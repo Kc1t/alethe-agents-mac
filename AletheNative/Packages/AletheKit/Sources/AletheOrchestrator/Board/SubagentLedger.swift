@@ -45,13 +45,18 @@ public struct SubagentLedger: Sendable {
     public init() {}
 
     public mutating func ingest(_ hook: SubagentHook, planner: String?, sourceAgent: String, nowMs: UInt64) -> Outcome {
-        switch hook.event {
-        case "SubagentStart": return start(hook, planner: planner, sourceAgent: sourceAgent, nowMs: nowMs)
-        case "SubagentStop": return stop(hook, nowMs: nowMs)
-        case "PostToolUse" where hook.agentID == nil: return postToolUse(hook, planner: planner, sourceAgent: sourceAgent, nowMs: nowMs)
-        case "PreToolUse": return preToolUse(hook, planner: planner, sourceAgent: sourceAgent, nowMs: nowMs)
-        case "TeammateIdle": return teammateIdle(hook, planner: planner)
-        default: return .none
+        if case "SubagentStart" = hook.event {
+            return start(hook, planner: planner, sourceAgent: sourceAgent, nowMs: nowMs)
+        } else if case "SubagentStop" = hook.event {
+            return stop(hook, nowMs: nowMs)
+        } else if case "PostToolUse" = hook.event, hook.agentID == nil {
+            return postToolUse(hook, planner: planner, sourceAgent: sourceAgent, nowMs: nowMs)
+        } else if case "PreToolUse" = hook.event {
+            return preToolUse(hook, planner: planner, sourceAgent: sourceAgent, nowMs: nowMs)
+        } else if case "TeammateIdle" = hook.event {
+            return teammateIdle(hook, planner: planner)
+        } else {
+            return .none
         }
     }
 

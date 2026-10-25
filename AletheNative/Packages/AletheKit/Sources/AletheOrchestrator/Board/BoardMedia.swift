@@ -19,10 +19,19 @@ public struct MediaItem: Hashable, Sendable {
 public enum BoardMedia {
     public static let maxItems = 4
 
-    private static let localPath = try! NSRegularExpression(pattern: #"(?<![A-Za-z0-9:/~._\-])~?/[^\s"'`/][^\s"'`]*"#)
-    private static let url = try! NSRegularExpression(pattern: #"https?://[^\s"'`)]+"#)
-    private static let imageExtension = try! NSRegularExpression(pattern: #"\.(png|jpe?g|gif|webp|svg)$"#, options: .caseInsensitive)
-    private static let trailingPunctuation = try! NSRegularExpression(pattern: #"[.,;:!?)\]]+$"#)
+    private static let localPath = regularExpression(pattern: #"(?<![A-Za-z0-9:/~._\-])~?/[^\s"'`/][^\s"'`]*"#)
+    private static let url = regularExpression(pattern: #"https?://[^\s"'`)]+"#)
+    private static let imageExtension = regularExpression(pattern: #"\.(png|jpe?g|gif|webp|svg)$"#, options: .caseInsensitive)
+    private static let trailingPunctuation = regularExpression(pattern: #"[.,;:!?)\]]+$"#)
+
+    private static func regularExpression(
+        pattern: String, options: NSRegularExpression.Options = []
+    ) -> NSRegularExpression {
+        guard let expression = try? NSRegularExpression(pattern: pattern, options: options) else {
+            preconditionFailure("Board media patterns must be valid regular expressions")
+        }
+        return expression
+    }
 
     public static func extract(_ text: String) -> [MediaItem] {
         var items: [MediaItem] = []

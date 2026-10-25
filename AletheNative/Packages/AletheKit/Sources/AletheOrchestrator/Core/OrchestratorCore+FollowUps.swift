@@ -3,17 +3,16 @@ import AletheIntegrations
 
 extension OrchestratorCore {
     func followUpTool(name: String, arguments: OrderedJSONObject) throws(OrchestratorToolError) -> OrderedJSON {
-        switch name {
-        case "alethe_steer":
+        if case "alethe_steer" = name {
             return try steer(job: Self.requiredArgument(arguments, "jobId"), message: Self.requiredArgument(arguments, "message"))
-        case "alethe_send":
+        } else if case "alethe_send" = name {
             return try send(job: Self.requiredArgument(arguments, "jobId"), message: Self.requiredArgument(arguments, "message"))
-        case "alethe_answer":
+        } else if case "alethe_answer" = name {
             return try answer(job: Self.requiredArgument(arguments, "jobId"), decision: Self.requiredArgument(arguments, "decision"))
-        case "alethe_diff":
+        } else if case "alethe_diff" = name {
             let jobID = try Self.requiredArgument(arguments, "jobId")
             return ["jobId": .string(jobID), "diff": .string(try jobDiff(jobID))]
-        default:
+        } else {
             throw OrchestratorToolError("unknown tool \(name)")
         }
     }

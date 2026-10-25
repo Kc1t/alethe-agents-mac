@@ -250,46 +250,46 @@ public struct CodexWorkerSession: Hashable, Sendable {
             return response(id: id, object: object)
         }
 
-        switch method {
-        case "turn/started":
+        if case "turn/started" = method {
             activeTurnID = params["turn"]?.objectValue?["id"]?.stringValue
             return CodexWorkerStep(events: [.turnStarted(turnID: activeTurnID)])
-        case "item/completed":
+        } else if case "item/completed" = method {
             let item = params["item"]?.objectValue
             guard item?["type"]?.stringValue == "agentMessage" else { return CodexWorkerStep() }
             let text = (item?["text"]?.stringValue ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             guard !text.isEmpty else { return CodexWorkerStep() }
             report = text
             return CodexWorkerStep(events: [.report(text)])
-        case "item/agentMessage/delta":
+        } else if case "item/agentMessage/delta" = method {
             guard let delta = params["delta"]?.stringValue else { return CodexWorkerStep() }
             reply = Self.appendingReply(reply, delta)
             return CodexWorkerStep(events: [.replyDelta(delta)])
-        case "turn/plan/updated":
+        } else if case "turn/plan/updated" = method {
             let steps = params["plan"]?.arrayValue?.compactMap { $0.objectValue?["step"]?.stringValue } ?? []
             return CodexWorkerStep(events: [.planUpdated(steps)])
-        case "turn/diff/updated":
+        } else if case "turn/diff/updated" = method {
             return CodexWorkerStep(events: [.diffUpdated(params["diff"]?.stringValue)])
-        case "thread/tokenUsage/updated":
+        } else if case "thread/tokenUsage/updated" = method {
             return CodexWorkerStep(events: [.tokensUpdated(params["tokenUsage"])])
-        case "turn/completed", "turn/failed":
+        } else if ["turn/completed", "turn/failed"].contains(method) {
             let summary = report.isEmpty
                 ? orchestratorTail(reply, limit: OrchestratorLimits.replyLimit)
                 : report
             activeTurnID = nil
             pending = nil
             return CodexWorkerStep(events: [.turnEnded(succeeded: method == "turn/completed", summary: summary)])
-        default:
+        } else {
             return CodexWorkerStep()
         }
     }
 
     private mutating func request(rpcID: OrderedJSON, method: String, params: OrderedJSONObject, nowMs: UInt64) -> CodexWorkerStep {
         let kind: CodexApprovalRequest.Kind
-        switch method {
-        case "item/commandExecution/requestApproval": kind = .command
-        case "item/fileChange/requestApproval": kind = .fileChange
-        default:
+        if case "item/commandExecution/requestApproval" = method {
+            kind = .command
+        } else if case "item/fileChange/requestApproval" = method {
+            kind = .fileChange
+        } else {
             return CodexWorkerStep(outgoing: [[
                 "id": rpcID,
                 "error": ["code": -32601, "message": .string("unsupported request \(method)")],
@@ -344,19 +344,28 @@ public struct CodexWorkerSession: Hashable, Sendable {
 
 extension Job {
     public mutating func apply(_ event: CodexWorkerEvent) {
-        switch event {
-        case .threadReady(let threadID): self.threadID = threadID
-        case .turnStarted(let turnID): activeTurnID = turnID
-        case .replyDelta(let delta): reply = CodexWorkerSession.appendingReply(reply, delta)
-        case .report(let text): report = text
-        case .planUpdated(let steps): plan = steps
-        case .diffUpdated(let diff): self.diff = diff
-        case .tokensUpdated(let tokens): self.tokens = tokens
-        case .approvalRequested(let ask):
+        if case .threadReady(let threadID) = event {
+            self.threadID = threadID
+        } else if case .turnStarted(let turnID) = event {
+            activeTurnID = turnID
+        } else if case .replyDelta(let delta) = event {
+            reply = CodexWorkerSession.appendingReply(reply, delta)
+        } else if case .report(let text) = event {
+            report = text
+        } else if case .planUpdated(let steps) = event {
+            plan = steps
+        } else if case .diffUpdated(let diff) = event {
+            self.diff = diff
+        } else if case .tokensUpdated(let tokens) = event {
+            self.tokens = tokens
+        } else if case .approvalRequested(let ask) = event {
             pending = ask.json
             status = .blocked
-        case .turnEnded: activeTurnID = nil
-        case .requestFailed: break
+        } else if case .turnEnded = event {
+            activeTurnID = nil
+        } else if case .requestFailed = event {
+        } else {
+            preconditionFailure("Unhandled value")
         }
     }
 }

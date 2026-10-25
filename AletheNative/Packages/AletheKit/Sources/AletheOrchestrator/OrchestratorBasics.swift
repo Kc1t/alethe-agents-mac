@@ -29,10 +29,7 @@ public enum JobStatus: String, Hashable, Sendable, CaseIterable, Codable {
     case interrupted
 
     public var settled: Bool {
-        switch self {
-        case .done, .failed, .cancelled, .released, .interrupted: true
-        case .queued, .running, .blocked: false
-        }
+        [JobStatus.done, .failed, .cancelled, .released, .interrupted].contains(self)
     }
 }
 

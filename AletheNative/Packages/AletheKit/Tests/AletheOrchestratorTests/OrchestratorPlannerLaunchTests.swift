@@ -26,7 +26,9 @@ import AletheIntegrations
 
     @Test func aRegisteredPlannerShowsInTheSnapshot() async {
         let core = OrchestratorCore()
-        let planner = OrchestratorPlannerLaunch.planner(tab: "tab1", label: "Lead", kind: .claude)!
+        guard let planner = OrchestratorPlannerLaunch.planner(tab: "tab1", label: "Lead", kind: .claude) else {
+            preconditionFailure("Claude planner must be supported")
+        }
         await core.registerPlanner(planner)
         await core.registerPlanner(Planner(id: "tab1", label: "Renamed", agent: "claude"))
         #expect(await core.snapshot().planners == [Planner(id: "tab1", label: "Renamed", agent: "claude")])
@@ -67,7 +69,10 @@ import AletheIntegrations
         #expect(snapshot["planners"]?.arrayValue?.first?.objectValue?["id"]?.stringValue == "tab1")
         #expect(snapshot["concurrencyLimit"] != nil)
 
-        let delegated = try await post(#"{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"alethe_delegate","arguments":{"tasks":[]}}}"#)
+        let delegated = try await post(#"""
+            {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"alethe_delegate","arguments":{"tas\#
+            ks":[]}}}
+            """#)
         #expect(delegated.status == 200 && delegated.body.contains(#""isError":true"#))
 
         #expect(try await post(#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#).status == 202)

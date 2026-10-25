@@ -16,7 +16,8 @@ extension OrchestratorCore {
     }
 
     @concurrent
-    static func makeWorktrees(for ids: [String], repo: String, worktrees: GitWorktrees) async throws(OrchestratorToolError) -> [JobWorkspace] {
+    static func makeWorktrees(for ids: [String], repo: String, worktrees: GitWorktrees) async throws(OrchestratorToolError)
+        -> [JobWorkspace] {
         let folder = URL(fileURLWithPath: repo, isDirectory: true)
         var made: [JobWorkspace] = []
         for id in ids {
@@ -43,12 +44,16 @@ extension OrchestratorCore {
     }
 
     private static func describe(_ error: any Error, jobID: String) -> String {
-        switch error {
-        case GitError.notARepository: "not a git repository"
-        case GitError.gitMissing: "git not available"
-        case GitError.commandFailed(_, let stderr): stderr.trimmingCharacters(in: .whitespacesAndNewlines)
-        case GitWorktreeError.exists: "a worktree already exists for \(jobID)"
-        default: String(describing: error)
+        if case GitError.notARepository = error {
+            return "not a git repository"
+        } else if case GitError.gitMissing = error {
+            return "git not available"
+        } else if case GitError.commandFailed(_, let stderr) = error {
+            return stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+        } else if case GitWorktreeError.exists = error {
+            return "a worktree already exists for \(jobID)"
+        } else {
+            return String(describing: error)
         }
     }
 }

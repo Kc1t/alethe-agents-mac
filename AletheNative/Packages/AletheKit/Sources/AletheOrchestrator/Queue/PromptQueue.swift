@@ -140,7 +140,8 @@ public actor PromptQueue {
                 guard !stopped else { break }
                 guard let index = items.firstIndex(where: { $0.id == candidate.id }), items[index].state.pending else { continue }
                 let forcedRun = forced.contains(candidate.id)
-                guard forcedRun || candidate.isEligible(now: now, fitness: context.fitness[candidate.agent], settledJobs: settled) else { continue }
+                guard forcedRun || candidate.isEligible(now: now, fitness: context.fitness[candidate.agent], settledJobs: settled)
+                    else { continue }
                 items[index].state = .running("")
                 guard save() else { items[index].state = candidate.state; break }
                 starting = candidate.id
@@ -175,8 +176,8 @@ public actor PromptQueue {
     private func reconcile(_ context: Context, now: Date) {
         let jobs = Dictionary(context.jobs.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         for index in items.indices {
-            switch items[index].state {
-            case .running(let id) where starting != items[index].id:
+            let state = items[index].state
+            if case .running(let id) = state, starting != items[index].id {
                 guard let job = jobs[id] else { items[index].state = .failed; continue }
                 guard job.settled else { continue }
                 let text = job.report + "\n" + job.reply
@@ -187,17 +188,16 @@ public actor PromptQueue {
                     items[index].state = job.status == .cancelled ? .cancelled :
                         (job.status == .done || job.status == .released ? .done : .failed)
                 }
-            case .waitingLimit(let previous):
+            } else if case .waitingLimit(let previous) = state {
                 if let fitness = context.fitness[items[index].agent], fitness.isStrained,
                    let reset = fitness.resetsAt, reset > now {
                     items[index].state = .waitingLimit(max(previous ?? reset, reset))
                 }
-            case .queued:
+            } else if case .queued = state {
                 if let fitness = context.fitness[items[index].agent], fitness.isStrained,
                    fitness.resetsAt.map({ $0 > now }) ?? true {
                     items[index].state = .waitingLimit(fitness.resetsAt)
                 }
-            default: break
             }
         }
     }

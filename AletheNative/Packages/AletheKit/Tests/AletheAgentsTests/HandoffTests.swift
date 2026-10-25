@@ -25,7 +25,10 @@ import Testing
         let lines = [
             #"{"type":"user","message":{"content":"Fix it"}}"#,
             #"{"type":"assistant","isSidechain":true,"message":{"content":[{"type":"text","text":"subagent"}]}}"#,
-            #"{"type":"assistant","message":{"content":[{"type":"text","text":"Looking"},{"type":"tool_use","name":"Bash","input":{"command":"ls"}}]}}"#,
+            #"""
+                {"type":"assistant","message":{"content":[{"type":"text","text":"Looking"},{"type":"tool_use",\#
+                "name":"Bash","input":{"command":"ls"}}]}}
+                """#,
             #"{"type":"user","message":{"content":[{"type":"tool_result","content":"a.txt"}]}}"#,
         ]
         try Data(lines.joined(separator: "\n").utf8).write(to: URL(filePath: path))
@@ -46,7 +49,8 @@ import Testing
         try FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
         try Data(#"{"type":"user","message":{"content":"Add login with token=supersecretvalue"}}"#.utf8)
             .write(to: URL(filePath: "\(folder)/s1.jsonl"))
-        guard case .success(let draft) = Handoff.prepare(source: .claude, target: .codex, sessionID: "s1", cwd: repo, homeDirectory: home) else {
+        guard case .success(let draft) = Handoff.prepare(source: .claude, target: .codex, sessionID: "s1", cwd: repo,
+            homeDirectory: home) else {
             Issue.record("no draft"); return
         }
         #expect(draft.title.hasPrefix("Add login") && !draft.usedNewest)
@@ -59,7 +63,8 @@ import Testing
         defer { try? FileManager.default.removeItem(at: root) }
         let file = try Handoff.materialize("# capsule", in: root)
         #expect(try String(contentsOf: file, encoding: .utf8) == "# capsule")
-        #expect(throws: (any Error).self) { try Handoff.materialize(String(repeating: "x", count: Handoff.materializedByteLimit + 1), in: root) }
+        #expect(throws: (any Error).self) { try Handoff.materialize(String(repeating: "x", count: Handoff.materializedByteLimit + 1),
+            in: root) }
         Handoff.pruneOld(in: root, now: Date().addingTimeInterval(8 * 86_400))
         #expect(!FileManager.default.fileExists(atPath: file.path))
     }
@@ -67,7 +72,10 @@ import Testing
     @Test func parsesCodexAndClaudeQuestions() throws {
         let codex = try #require(Handoff.remoteQuestions(
             toolName: "request_user_input",
-            input: #"{"questions":[{"id":"scope","header":"Scope","question":"Which scope?","options":[{"label":"Focused","description":"Only Codex and Claude"}]}]}"#))
+            input: #"""
+                {"questions":[{"id":"scope","header":"Scope","question":"Which scope?","options":[{"label":"Fo\#
+                cused","description":"Only Codex and Claude"}]}]}
+                """#))
         #expect(codex[0].id == "scope")
         #expect(!codex[0].multiSelect)
 
@@ -89,8 +97,16 @@ import Testing
     }
 
     @Test func preservesAgentCallIDsForRemoteQuestions() throws {
-        let codexPath = try Self.fixture(#"{"type":"response_item","payload":{"type":"function_call","name":"request_user_input","call_id":"call-codex-42","arguments":"{\"questions\":[{\"id\":\"scope\",\"header\":\"Scope\",\"question\":\"Which scope?\",\"options\":[{\"label\":\"Focused\",\"description\":\"Only this area\"}]}]}"}}"#)
-        let claudePath = try Self.fixture(#"{"type":"assistant","message":{"content":[{"type":"tool_use","id":"toolu-claude-42","name":"AskUserQuestion","input":{"questions":[{"header":"Scope","question":"Which scope?","multiSelect":false,"options":[{"label":"Focused","description":"Only this area"}]}]}}]}}"#)
+        let codexPath = try Self.fixture(#"""
+            {"type":"response_item","payload":{"type":"function_call","name":"request_user_input","call_id":"c\#
+            all-codex-42","arguments":"{\"questions\":[{\"id\":\"scope\",\"header\":\"Scope\",\"question\":\"W\#
+            hich scope?\",\"options\":[{\"label\":\"Focused\",\"description\":\"Only this area\"}]}]}"}}
+            """#)
+        let claudePath = try Self.fixture(#"""
+            {"type":"assistant","message":{"content":[{"type":"tool_use","id":"toolu-claude-42","name":"AskUse\#
+            rQuestion","input":{"questions":[{"header":"Scope","question":"Which scope?","multiSelect":false,"\#
+            options":[{"label":"Focused","description":"Only this area"}]}]}}]}}
+            """#)
         defer { try? FileManager.default.removeItem(atPath: codexPath); try? FileManager.default.removeItem(atPath: claudePath) }
         let codex = Handoff.codexEvents(atPath: codexPath)
         let claude = Handoff.claudeEvents(atPath: claudePath)
@@ -123,7 +139,11 @@ import Testing
     }
 
     @Test func activeQuestionsComeFromTheLastEvent() throws {
-        let question = #"{"type":"assistant","message":{"content":[{"type":"tool_use","id":"toolu-1","name":"AskUserQuestion","input":{"questions":[{"header":"Scope","question":"Which scope?","options":[{"label":"A"},{"label":"B"}]}]}}]}}"#
+        let question = #"""
+            {"type":"assistant","message":{"content":[{"type":"tool_use","id":"toolu-1","name":"AskUserQuestio\#
+            n","input":{"questions":[{"header":"Scope","question":"Which scope?","options":[{"label":"A"},{"la\#
+            bel":"B"}]}]}}]}}
+            """#
         let (home, repo) = try Self.claudeSession(lines: [#"{"type":"user","message":{"content":"Go"}}"#, question])
         defer { try? FileManager.default.removeItem(atPath: home); try? FileManager.default.removeItem(atPath: repo) }
         let active = try #require(Handoff.activeQuestions(agent: .claude, folder: repo, session: "s1", homeDirectory: home))

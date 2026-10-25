@@ -34,7 +34,8 @@ private func call(_ core: OrchestratorCore, _ name: String, _ arguments: Ordered
 }
 
 private func delegate(_ core: OrchestratorCore, _ task: String, in folder: URL, agent: String) async throws -> String {
-    let delegated = try await call(core, "alethe_delegate", ["tasks": [.string(task)], "cwd": .string(folder.path), "agent": .string(agent)])
+    let delegated = try await call(core, "alethe_delegate", ["tasks": [.string(task)], "cwd": .string(folder.path),
+        "agent": .string(agent)])
     return try #require(delegated["jobs"]?.arrayValue?.first?.objectValue?["id"]?.stringValue, "\(delegated)")
 }
 
